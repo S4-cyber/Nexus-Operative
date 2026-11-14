@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.311'
+REVISION = '0.340.312'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -927,6 +927,13 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the standalone emergency-stop process samples the exact latch entry after its first confirmed observation and rechecks the same entry immediately before durable-halt handoff, so a concurrent clear or replacement loses ordering confirmation without suppressing the independent halt or final-latch attempts' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
+# Canonical root/ancestor sampling must finish after its trailing identity
+# observation.  Otherwise a same-inode parent alias inserted after the prior
+# resolution could authorize one storage step before the next sample failed.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; each emergency data-root and absent-root ancestor identity sample is followed by a final canonical-path resolution, preventing a same-inode parent alias inserted after the earlier resolution from authorizing root creation or the first latch write' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -951,7 +958,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.311 requires every sampled emergency data-root or absent-root ancestor path to resolve to its exact canonical pathname before and after identity inspection. A same-inode parent directory moved behind a newly inserted symlink can no longer preserve a pinned-path claim, redirect absent-root creation or reach SQLite after the first intent latch. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, risk limits, account checks and fail-closed exits remain unchanged. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL or administrator boundary, physical-power-loss proof, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.312 adds a final exact canonical-path resolution after the trailing identity observation in every emergency data-root and absent-root ancestor sample. A same-inode parent alias inserted after the earlier resolution can no longer let one root-creation or first-latch storage step proceed before the next guard notices the alias. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, risk limits, account checks and fail-closed exits remain unchanged. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL or administrator boundary, physical-power-loss proof, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

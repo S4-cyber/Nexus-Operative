@@ -193,6 +193,27 @@ def test_absent_data_root_same_inode_ancestor_alias_prevents_creation(
     assert not (retired/'nested'/'state').exists()
 
 
+def test_absent_root_tail_alias_during_ancestor_sample_prevents_creation(
+        tmp_path,monkeypatch):
+    parent=tmp_path/'selected';retired=tmp_path/'retired';parent.mkdir()
+    root=parent/'nested'/'state';original=Path.resolve;calls=[]
+    def alias_after_second_guard(self,*args,**kwargs):
+        result=original(self,*args,**kwargs)
+        if self==parent:
+            calls.append(1)
+            if len(calls)==3:
+                parent.rename(retired)
+                try:parent.symlink_to(retired,target_is_directory=True)
+                except (OSError,NotImplementedError):
+                    retired.rename(parent);pytest.skip('Directory symlinks unavailable')
+        return result
+    monkeypatch.setattr(Path,'resolve',alias_after_second_guard)
+    from nexus.emergency_cut_tool import activate
+    with pytest.raises(ValueError,match='DATA_ROOT_CHANGED'):activate(root)
+    assert parent.is_symlink()
+    assert not (retired/'nested').exists()
+
+
 def test_absent_data_root_ancestor_replacement_after_parent_creation_is_rejected(
         tmp_path,monkeypatch):
     parent=tmp_path/'selected';retired=tmp_path/'retired';parent.mkdir()
@@ -258,6 +279,30 @@ def test_same_inode_root_parent_alias_during_priority_cannot_claim_cut(
     assert not report['data_root_path_pinned']
     assert parent.is_symlink()
     assert not list(root.iterdir()) and not list((retired/'state').iterdir())
+
+
+def test_existing_root_tail_alias_during_initial_sample_prevents_storage(
+        tmp_path,monkeypatch):
+    parent=tmp_path/'selected';retired=tmp_path/'retired';root=parent/'state'
+    root.mkdir(parents=True);original=Path.resolve;calls=[]
+    def alias_after_second_guard(self,*args,**kwargs):
+        result=original(self,*args,**kwargs)
+        if self==root:
+            calls.append(1)
+            if len(calls)==3:
+                parent.rename(retired)
+                try:parent.symlink_to(retired,target_is_directory=True)
+                except (OSError,NotImplementedError):
+                    retired.rename(parent);pytest.skip('Directory symlinks unavailable')
+        return result
+    monkeypatch.setattr(Path,'resolve',alias_after_second_guard)
+    from nexus.emergency_cut_tool import activate
+    report=activate(root)
+    assert not report['passed'] and not report['halted']
+    assert report['emergency_cut_state']=='UNCONFIRMED'
+    assert not report['data_root_path_pinned']
+    assert parent.is_symlink()
+    assert not list((retired/'state').iterdir())
 
 
 def test_data_root_replacement_after_intent_never_targets_replacement_store(tmp_path,monkeypatch):

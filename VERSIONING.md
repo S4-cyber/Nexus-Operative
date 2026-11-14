@@ -1,10 +1,14 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.312 emergency canonical tail sample
+
+Every standalone emergency-stop data-root or absent-root ancestor identity sample now finishes with one more exact canonical-path resolution after its trailing `lstat`. A parent directory renamed and replaced by a symlink back to the same inode after the earlier resolution can no longer authorize root creation or the first latch write before the next root guard detects the alias. Two deterministic regressions cover absent-root creation and existing-root storage. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL/administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+**Current development build: 0.340.312 (pre-release).**
+
 ## v0.340.311 canonical emergency-root path sampling
 
 The standalone emergency stop now requires every sampled data-root or absent-root ancestor path to resolve to its exact canonical pathname before and after identity inspection. Renaming an intermediate parent and replacing it with a symlink back to the same directory inode can no longer preserve a stale pinned-path claim, create a previously absent root through that alias or reach SQLite after the first intent latch. Three deterministic regressions cover those seams. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL/administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
-
-**Current development build: 0.340.311 (pre-release).**
 
 ## v0.340.310 absent emergency-root creation lease
 

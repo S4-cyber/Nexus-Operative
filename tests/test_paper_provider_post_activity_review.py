@@ -473,8 +473,11 @@ def test_selected_leaf_symlink_cannot_be_hidden_by_parent_pinning(tmp_path, fiel
         link.symlink_to(selected)
     except (OSError, NotImplementedError):
         pytest.skip('symlink creation unavailable for this Windows profile')
-    assert subject._frozen_path(link, 'TEST_PATH_INVALID') == link
-    binding = dict(binding, **{field: link})
+    alias = tmp_path / (field + '-parent-alias')
+    alias.mkdir()
+    selected_alias = alias / '..' / link.name
+    assert subject._frozen_path(selected_alias, 'TEST_PATH_INVALID') == link
+    binding = dict(binding, **{field: selected_alias})
     with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
         subject.review(budget, expected_post_head=head,
             account_bindings=[binding])

@@ -511,3 +511,24 @@ def test_selected_leaf_replaced_with_symlink_during_semantic_read_fails_closed(
             account_bindings=[binding])
     assert selected.is_symlink()
     assert backup.read_bytes() == original_bytes
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_hardlink_alias_is_rejected_before_semantic_read(tmp_path, field):
+    budget, head, binding = prepared(tmp_path)
+    selected = Path(binding[field])
+    alias = tmp_path / (field + '-hardlink.sqlite3')
+    try:
+        alias.hardlink_to(selected)
+    except (OSError, NotImplementedError):
+        pytest.skip('hardlink creation unavailable for this test volume')
+    parent = tmp_path / (field + '-hardlink-parent')
+    parent.mkdir()
+    supplied = parent / '..' / alias.name
+    assert subject._frozen_path(supplied, 'TEST_PATH_INVALID') == alias
+    binding = dict(binding, **{field: supplied})
+    before = files(tmp_path)
+    with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
+        subject.review(budget, expected_post_head=head,
+            account_bindings=[binding])
+    assert files(tmp_path) == before

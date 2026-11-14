@@ -11,7 +11,7 @@ from pathlib import Path
 MAX_BYTES = 512 * 1024
 SHA = re.compile(r"[0-9a-f]{40}\Z")
 REQUIRED = {
-    "Public repository security": frozenset({"security"}),
+    "Public repository security": frozenset({"reachable-history-and-secrets"}),
     "Nexus research safety regression": frozenset({
         "offline-regression", "offline-release-evidence", "portal-browser-help"}),
     "Windows simulated-research build": frozenset({"test-and-build"}),

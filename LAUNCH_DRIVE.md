@@ -1,5 +1,13 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.303 provider reconciliation chain parent-alias binding
+
+Three read-only provider-POST compositions retained caller parent-alias spellings for pacing, activity and acceptance journals even though they repeatedly checked the selected file identities. The aliases are now resolved once before identity capture and every nested activity, reconciliation, accepted-history or fee-reference subread receives the pinned path. Existing exact-head, bounded-fingerprint, store-binding, independent-replay and fail-closed authority checks remain required.
+
+This change adds no Portal control or editable parameter; seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. Engagement remains OFF by default, with limits, account checks, fail-closed exits and the independent emergency cut intact. It is sampled local reconciliation-chain hardening, not broker/account or source acceptance, a genuine or sustained market trial, profitability, native Windows ordinary-user acceptance, funding/live/cloud readiness or release approval. Historical and synthetic results are not future profit predictions.
+
+The direct three-composition suite passed 166 tests with two existing dependency warnings; the broader provider/release surface reached 648 passes before the versioned evidence fixture was generated, then the finalized evidence/version/roadmap/Windows-workflow suite passed 95. All sixteen bounded offline profiles and saved evidence verify against 403 source files / `3ede2aad04936b35017098a9091e75c76a24b03a174cc5d6aeff5adfab7541d2`; evidence SHA256 is `9d52193640a0554c31d99bdb3ad2fcd4b934d5b80ca5cf714729a440c9c6ea53`. The 162-member v0.340.303 wheel SHA256 is `9eb3ca90e902999c098d4583abe52fd8fd40284da67b33e32711cb49d769fa98`. The staged 1,024-path/1,024-blob public audit and introduced credential-pattern scan found zero findings; fresh exact-source hosted gates remain mandatory. Weighted implementation remains 38% (roughly 30–45%, low confidence), with 0/9 independently accepted stages; release approval and trading permission remain false.
+
 ## v0.340.302 provider-post reconciliation parent-alias binding
 
 The provider-POST reconciliation composer froze caller path objects and repeatedly checked the selected five-file set, but it retained the original parent-alias spellings for three ancillary journals. A parent alias could switch to different stable journals inside one semantic subread and switch back before the next sampled identity check.

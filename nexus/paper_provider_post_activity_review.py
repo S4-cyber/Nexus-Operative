@@ -55,8 +55,8 @@ def _client_digest(value):
 
 def _frozen_path(value, code):
     try:
-        return Path(value)
-    except (TypeError, ValueError, OSError, AttributeError):
+        return Path(value).resolve()
+    except (TypeError, ValueError, OSError, RuntimeError, AttributeError):
         _fail(code)
 
 

@@ -185,6 +185,26 @@ def test_ancillary_paths_are_frozen_before_reference_review(
     assert len(seen)>=2 and all(path==original_path for path in seen)
 
 
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_ancillary_parent_aliases_are_resolved_before_reference_review(
+        tmp_path, monkeypatch, field):
+    args=subject._fixture(tmp_path);original_path=Path(args[field]).resolve()
+    alias=tmp_path/'caller-alias-component';alias.mkdir()
+    args[field]=alias/'..'/original_path.name
+    original=subject.references.review
+    seen=[]
+
+    def inspect_path(**kwargs):
+        seen.append(Path(kwargs[field]))
+        return original(**kwargs)
+
+    monkeypatch.setattr(subject.references,'review',inspect_path)
+    result=subject.review(**args)
+    assert result['journals_rechecked_unchanged']
+    assert len(seen)>=2 and all(path==original_path for path in seen)
+
+
 @pytest.mark.parametrize('target', (
     'post_budget', 'journal', 'pacing_path', 'activity_store_path',
     'acceptance_store_path'))

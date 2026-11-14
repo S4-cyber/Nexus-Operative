@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.312'
+REVISION = '0.340.313'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -934,6 +934,13 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; each emergency data-root and absent-root ancestor identity sample is followed by a final canonical-path resolution, preventing a same-inode parent alias inserted after the earlier resolution from authorizing root creation or the first latch write' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
+# The exact development Windows lane completed regression and installer
+# acceptance before its old outer timeout cancelled only the distribution
+# evidence tail. Preserve every gate with explicit finite measured margins.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the source-bound Windows regression and packaging lane now has a finite 150-minute outer budget and a separate 20-minute distribution-evidence tail after exact development run 43595758062 exhausted the old 120-minute budget only after full regression, EXE, install/reinstall, prior-version recovery, uninstall and phase review had passed' if item.id == 'M1' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -958,7 +965,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.312 adds a final exact canonical-path resolution after the trailing identity observation in every emergency data-root and absent-root ancestor sample. A same-inode parent alias inserted after the earlier resolution can no longer let one root-creation or first-latch storage step proceed before the next guard notices the alias. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, risk limits, account checks and fail-closed exits remain unchanged. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL or administrator boundary, physical-power-loss proof, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.313 preserves the complete source-bound Windows regression, EXE, installer, recovery and distribution-binding lane while increasing its finite outer budget from 120 to 150 minutes and bounding the release-trial/manifest tail at 20 minutes. Exact development run 43595758062 passed the complete test, Portal syntax, standalone private-tool, EXE startup, installer build, install/reinstall, prior-version recovery, data-preserving uninstall and phase-review steps before the old outer deadline cancelled the distribution-evidence tail; the cancelled run is not acceptance and fresh exact-source execution remains mandatory. Runtime behavior, OFF defaults, risk limits, account checks, fail-closed exits and independent emergency stop are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -20,10 +20,11 @@ permissions:
 jobs:
   test-and-build:
     runs-on: windows-latest
-    # Exact v0.340.289 reached 5,064 passing tests after 59m06s before the old
-    # deadline. Full regression, PyInstaller, prior-version install/reinstall/
-    # uninstall and evidence generation remain one source-bound bounded lane.
-    timeout-minutes: 120
+    # Exact development run 43595758062 passed the complete regression,
+    # PyInstaller, install/reinstall, prior-version recovery, uninstall and
+    # phase review before the old 120m deadline cancelled the source-bound
+    # distribution-evidence tail. Keep one finite lane with measured margin.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -140,6 +141,7 @@ jobs:
           python tools/windows_installer_phase_review.py --input "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phases.jsonl" --installer $installer --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json"
           if ($LASTEXITCODE -ne 0) { throw 'Installer phase evidence validation failed' }
       - name: Create distribution checksum manifest
+        timeout-minutes: 20
         shell: pwsh
         run: |
           $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"

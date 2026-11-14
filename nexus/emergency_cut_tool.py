@@ -24,27 +24,66 @@ PUBLIC_KEYS = frozenset(('mode','passed','halted','emergency_cut_state',
 
 
 def _resolved_data_root(data_root):
-    """Resolve one non-symlink data-root before cut storage access."""
+    """Resolve one non-symlink data-root and lease an absent root's ancestor."""
     candidate = Path(data_root or os.environ.get('NEXUS_PORTABLE_DATA',
         str(Path.home()/'.nexus-operative'))).expanduser()
     if candidate.is_symlink():raise ValueError('DATA_ROOT_SYMLINK')
     try:before = candidate.lstat()
     except FileNotFoundError:
-        return candidate.resolve(strict=False),None
+        resolved=candidate.resolve(strict=False)
+        anchor=resolved.parent
+        while True:
+            try:anchor_identity=anchor.lstat()
+            except FileNotFoundError:
+                parent=anchor.parent
+                if parent==anchor:raise ValueError('DATA_ROOT_CHANGED')
+                anchor=parent
+                continue
+            if (anchor.is_symlink() or
+                    not stat.S_ISDIR(anchor_identity.st_mode)):
+                raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
+            if anchor.resolve(strict=True)!=anchor:
+                raise ValueError('DATA_ROOT_CHANGED')
+            final=anchor.lstat()
+            if not os.path.samestat(anchor_identity,final):
+                raise ValueError('DATA_ROOT_CHANGED')
+            return resolved,None,(anchor,final)
     if not stat.S_ISDIR(before.st_mode):raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
     resolved = candidate.resolve(strict=True)
     after = candidate.lstat()
     if candidate.is_symlink() or not os.path.samestat(before,after):
         raise ValueError('DATA_ROOT_CHANGED')
-    return resolved,before
+    return resolved,before,None
 
 
-def _initialize_data_root(root):
-    """Exclusively create a root observed absent before priority elevation."""
+def _same_directory(path,identity):
+    """Sample one exact ordinary directory without following its leaf."""
+    try:current=path.lstat()
+    except OSError:return False
+    return (not path.is_symlink() and stat.S_ISDIR(current.st_mode)
+        and os.path.samestat(identity,current))
+
+
+def _initialize_data_root(root,anchor_lease):
+    """Create an absent root only inside its still-identical resolved ancestor."""
+    anchor,anchor_identity=anchor_lease
+    if not _same_directory(anchor,anchor_identity):
+        raise ValueError('DATA_ROOT_CHANGED')
     root.parent.mkdir(parents=True,exist_ok=True)
+    if not _same_directory(anchor,anchor_identity):
+        raise ValueError('DATA_ROOT_CHANGED')
+    try:parent_identity=root.parent.lstat()
+    except OSError:raise ValueError('DATA_ROOT_CHANGED') from None
+    if (root.parent.is_symlink() or
+            not stat.S_ISDIR(parent_identity.st_mode)):
+        raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
     try:root.mkdir(mode=0o700)
     except FileExistsError:raise ValueError('DATA_ROOT_CHANGED')
-    identity=root.lstat()
+    try:identity=root.lstat()
+    except OSError:raise ValueError('DATA_ROOT_CHANGED') from None
+    if (not _same_directory(anchor,anchor_identity) or
+            not _same_directory(root.parent,parent_identity)):
+        raise ValueError('DATA_ROOT_CHANGED')
     if root.is_symlink() or not stat.S_ISDIR(identity.st_mode):
         raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
     return identity
@@ -137,9 +176,10 @@ def _same_intent(order_path,identity):
 
 
 def activate(data_root=None):
-    root,root_identity = _resolved_data_root(data_root)
+    root,root_identity,root_anchor = _resolved_data_root(data_root)
     priority = _request_priority()
-    if root_identity is None:root_identity=_initialize_data_root(root)
+    if root_identity is None:
+        root_identity=_initialize_data_root(root,root_anchor)
     root_stable = _same_data_root(root,root_identity)
     order_path = root/'order_lifecycle.sqlite3'
     intent_preceded = durable_halt = final_intent = False

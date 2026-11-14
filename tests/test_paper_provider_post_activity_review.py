@@ -462,3 +462,73 @@ def test_fixture_is_private_and_never_authoritative():
     assert result['semantic_reader_failures_rechecked']
     assert result['output_never_authoritative']
     assert all(result[flag] is False for flag in subject.FLAGS)
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_leaf_symlink_cannot_be_hidden_by_parent_pinning(tmp_path, field):
+    budget, head, binding = prepared(tmp_path)
+    selected = Path(binding[field])
+    link = tmp_path / (field + '-selected-leaf.sqlite3')
+    try:
+        link.symlink_to(selected)
+    except (OSError, NotImplementedError):
+        pytest.skip('symlink creation unavailable for this Windows profile')
+    alias = tmp_path / (field + '-parent-alias')
+    alias.mkdir()
+    selected_alias = alias / '..' / link.name
+    assert subject._frozen_path(selected_alias, 'TEST_PATH_INVALID') == link
+    binding = dict(binding, **{field: selected_alias})
+    before = files(tmp_path)
+    with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
+        subject.review(budget, expected_post_head=head,
+            account_bindings=[binding])
+    assert files(tmp_path) == before
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_leaf_replaced_with_symlink_during_semantic_read_fails_closed(
+        tmp_path, monkeypatch, field):
+    budget, head, binding = prepared(tmp_path)
+    selected = Path(binding[field])
+    backup = tmp_path / (field + '-original.sqlite3')
+    staged_link = tmp_path / (field + '-replacement-link.sqlite3')
+    try:
+        staged_link.symlink_to(backup)
+    except (OSError, NotImplementedError):
+        pytest.skip('symlink creation unavailable for this Windows profile')
+    original_bytes = selected.read_bytes()
+    original = subject.posts.review
+
+    def replace(*args, **kwargs):
+        result = original(*args, **kwargs)
+        selected.replace(backup)
+        staged_link.replace(selected)
+        return result
+
+    monkeypatch.setattr(subject.posts, 'review', replace)
+    with pytest.raises(ValueError, match='PAPER_PROVIDER_POST_ACTIVITY_FILE_IDENTITY_CHANGED'):
+        subject.review(budget, expected_post_head=head,
+            account_bindings=[binding])
+    assert selected.is_symlink()
+    assert backup.read_bytes() == original_bytes
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_hardlink_alias_is_rejected_before_semantic_read(tmp_path, field):
+    budget, head, binding = prepared(tmp_path)
+    selected = Path(binding[field])
+    alias = tmp_path / (field + '-hardlink.sqlite3')
+    try:
+        alias.hardlink_to(selected)
+    except (OSError, NotImplementedError):
+        pytest.skip('hardlink creation unavailable for this test volume')
+    parent = tmp_path / (field + '-hardlink-parent')
+    parent.mkdir()
+    supplied = parent / '..' / alias.name
+    assert subject._frozen_path(supplied, 'TEST_PATH_INVALID') == alias
+    binding = dict(binding, **{field: supplied})
+    before = files(tmp_path)
+    with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
+        subject.review(budget, expected_post_head=head,
+            account_bindings=[binding])
+    assert files(tmp_path) == before

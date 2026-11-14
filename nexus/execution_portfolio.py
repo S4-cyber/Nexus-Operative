@@ -34,6 +34,7 @@ class AttachedPortfolio:
         try:current=self.path.lstat()
         except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
         if (stat.S_ISLNK(current.st_mode) or not stat.S_ISREG(current.st_mode) or
+                current.st_nlink!=1 or
                 not os.path.samestat(self.observed,current)):
             raise ValueError('LINKED_PORTFOLIO_CHANGED')
 
@@ -67,11 +68,13 @@ def attach_read_only(db, path):
     observed=path.lstat()  # Missing/inaccessible linked accounting must fail, not recreate.
     if stat.S_ISLNK(observed.st_mode):raise ValueError('LINKED_PORTFOLIO_SYMLINK')
     if not stat.S_ISREG(observed.st_mode):raise ValueError('LINKED_PORTFOLIO_REGULAR_FILE_REQUIRED')
+    if observed.st_nlink!=1:raise ValueError('LINKED_PORTFOLIO_SINGLE_LINK_REQUIRED')
     try:resolved=path.resolve(strict=True)
     except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
     try:after_resolve=path.lstat()
     except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
     if (stat.S_ISLNK(after_resolve.st_mode) or not stat.S_ISREG(after_resolve.st_mode) or
+            after_resolve.st_nlink!=1 or
             not os.path.samestat(observed,after_resolve)):
         raise ValueError('LINKED_PORTFOLIO_CHANGED')
     db.execute('ATTACH DATABASE ? AS portfolio', (resolved.as_uri()+'?mode=ro',))

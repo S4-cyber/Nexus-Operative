@@ -295,3 +295,55 @@ def test_unlinked_recovery_does_not_create_missing_portfolio(tmp_path,monkeypatc
     gateway.initialize_account(10000)
     portfolio=tmp_path/'paper_portfolio.sqlite3';portfolio.unlink()
     assert not gateway.recovery_report()['portfolio_reconciled'] and not portfolio.exists()
+
+
+def _hardlink(source, alias):
+    try:alias.hardlink_to(source)
+    except (OSError,NotImplementedError):pytest.skip('Hardlinks unavailable on this test volume')
+
+
+def test_hardlinked_order_history_refuses_read_without_modifying_source(tmp_path):
+    path=tmp_path/'order_lifecycle.sqlite3';gateway=DurableOrderGateway(path)
+    gateway.initialize_account(10000);alias=tmp_path/'order-alias.sqlite3';_hardlink(path,alias)
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='^ORDER_HISTORY_SINGLE_LINK_REQUIRED$'):
+        gateway.recovery_report()
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['journal_present']
+
+
+def test_order_history_hardlink_added_during_read_fails_closed(tmp_path):
+    path=tmp_path/'order_lifecycle.sqlite3';gateway=DurableOrderGateway(path)
+    gateway.initialize_account(10000);alias=tmp_path/'order-mid-read-alias.sqlite3'
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='^ORDER_HISTORY_CHANGED$'):
+        with gateway._read_connection() as db:
+            assert db is not None
+            _hardlink(path,alias)
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['journal_present']
+
+
+def test_hardlinked_linked_portfolio_refuses_recovery_without_modifying_source(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch);path=tmp_path/'paper_portfolio.sqlite3'
+    alias=tmp_path/'portfolio-alias.sqlite3';_hardlink(path,alias);before=path.read_bytes()
+    with pytest.raises(ValueError,match='^LINKED_PORTFOLIO_SINGLE_LINK_REQUIRED$'):
+        gateway.recovery_report()
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['portfolio_reconciled']
+
+
+def test_linked_portfolio_hardlink_added_during_read_fails_closed(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch);path=tmp_path/'paper_portfolio.sqlite3'
+    alias=tmp_path/'portfolio-mid-read-alias.sqlite3';before=path.read_bytes()
+    with gateway._read_connection() as db:
+        portfolio=execution_portfolio.attach_read_only(db,path)
+        _hardlink(path,alias)
+        with pytest.raises(ValueError,match='^LINKED_PORTFOLIO_CHANGED$'):
+            portfolio.require_current()
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['portfolio_reconciled']

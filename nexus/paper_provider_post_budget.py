@@ -65,6 +65,45 @@ def _digest(value, code):
     return value
 
 
+def _discard_uncommitted_new(path, identity):
+    """Remove only the exact empty file from an aborted first transaction.
+
+    A failed first SQLite transaction can roll the new main file back to zero
+    bytes.  That is not an initialized POST budget and would otherwise poison
+    an exact operator retry.  Cleanup is deliberately narrow: replacement,
+    links, bytes, a non-regular file or any SQLite sidecar retain the path and
+    fail closed for inspection.
+    """
+    path = Path(path)
+    sidecars = tuple(Path(str(path) + suffix) for suffix in
+                     ('-journal', '-wal', '-shm'))
+    try:
+        if (type(identity) is not tuple or len(identity) != 3 or
+                type(identity[0]) is not str):
+            raise RuntimeError
+        observed = path.lstat()
+        if ((str(path.resolve()), observed.st_dev, observed.st_ino) != identity or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or observed.st_nlink != 1 or
+                observed.st_size != 0):
+            raise RuntimeError
+        for sidecar in sidecars:
+            try:
+                sidecar.lstat()
+            except FileNotFoundError:
+                continue
+            raise RuntimeError
+        path.unlink()
+        for candidate in (path, *sidecars):
+            try:
+                candidate.lstat()
+            except FileNotFoundError:
+                continue
+            raise RuntimeError
+    except (OSError, RuntimeError, TypeError, ValueError):
+        _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+
+
 class PaperProviderPostBudget:
     """Hash-chained POST admission journal shared by cooperating callers."""
 
@@ -80,19 +119,27 @@ class PaperProviderPostBudget:
     def _path_check(self):
         check_existing(self.path, MAX_DATABASE_BYTES, 'PAPER_PROVIDER_POST_BUDGET_')
 
-    def _connect(self, write=False):
-        self._path_check(); new = False
+    def _open(self, write=False):
+        self._path_check(); new = False; created_identity = None; db = None
         if write and not self.path.exists():
             self.path.parent.mkdir(parents=True, exist_ok=True)
             try:
                 fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-                os.close(fd); new = True
             except FileExistsError:
                 pass
+            else:
+                new = True
+                try:
+                    opened = os.fstat(fd)
+                    created_identity = (str(self.path.resolve()),
+                                        opened.st_dev, opened.st_ino)
+                finally:
+                    os.close(fd)
             self._path_check()
-        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
-                             uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            db = sqlite3.connect(self.path.resolve().as_uri() +
+                                 ('?mode=rw' if write else '?mode=ro'),
+                                 uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE'); db.execute('PRAGMA synchronous=FULL')
@@ -102,15 +149,56 @@ class PaperProviderPostBudget:
                 if new:
                     db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._append(db, 0, dict(schema=SCHEMA, provider_sha256=self.provider_digest), ZERO)
-            return db
+            return db, new, created_identity
         except sqlite3.OperationalError as error:
-            db.close()
+            if db is not None:
+                try:
+                    db.close()
+                except BaseException:
+                    if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new: _discard_uncommitted_new(self.path, created_identity)
             if _database_busy(error):
                 _fail('DATABASE_BUSY')
             raise
         except BaseException:
-            db.close()
+            if db is not None:
+                try:
+                    db.close()
+                except BaseException:
+                    if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new: _discard_uncommitted_new(self.path, created_identity)
             raise
+
+    def _connect(self):
+        db, _new, _identity = self._open()
+        return db
+
+    @contextmanager
+    def _write_connection(self):
+        """Close one write connection and safely undo only a fresh rollback."""
+        db, new, created_identity = self._open(write=True)
+        try:
+            yield db
+        except BaseException:
+            try:
+                db.close()
+            except BaseException:
+                if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                raise
+            if new: _discard_uncommitted_new(self.path, created_identity)
+            raise
+        else:
+            uncommitted = db.in_transaction
+            try:
+                db.close()
+            except BaseException:
+                if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                raise
+            if new and uncommitted:
+                _discard_uncommitted_new(self.path, created_identity)
+                _fail('UNCOMMITTED_TRANSACTION')
 
     @staticmethod
     def _append(db, seq, body, previous):
@@ -270,7 +358,7 @@ class PaperProviderPostBudget:
         """
         expected = _digest(expected_head, 'HEAD_INVALID')
         with self.ownership() as owner:
-            with closing(self._connect(write=True)) as db:
+            with self._write_connection() as db:
                 with _transaction(db):
                     state = self._load(db); self._owned(owner)
                     comparable = (ZERO if state['events'] == 0 and
@@ -394,7 +482,7 @@ class PaperProviderPostBudget:
         if type(client_order_id) is not str or not 1 <= len(client_order_id.encode()) <= 128:
             _fail('CLIENT_ORDER_ID_INVALID')
         self._owned(ownership)
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _transaction(db):
                 state = self._load(db); self._owned(ownership); now = clock(admission())
                 self._admit(state, now)
@@ -420,7 +508,7 @@ class PaperProviderPostBudget:
         if outcome not in OUTCOMES: _fail('OUTCOME_INVALID')
         if type(actual_posts) is not int or actual_posts not in (0, 1): _fail('POST_COUNT_INVALID')
         if (outcome == 'NOT_SENT') != (actual_posts == 0): _fail('POST_COUNT_INVALID')
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _transaction(db):
                 state = self._load(db); pending = state['pending']
                 if pending is None or token != pending['token']: _fail('TOKEN_DISAGREEMENT')
@@ -443,7 +531,7 @@ class PaperProviderPostBudget:
         _digest(token, 'TOKEN_INVALID'); expected = _digest(expected_head, 'HEAD_INVALID')
         if confirm_interrupted is not True: _fail('CONFIRMATION_REQUIRED')
         with self.ownership() as owner:
-            with closing(self._connect(write=True)) as db:
+            with self._write_connection() as db:
                 with _transaction(db):
                     state = self._load(db); self._owned(owner); now = clock(admission())
                     pending = state['pending']
@@ -488,7 +576,7 @@ class PaperProviderPostBudget:
             recovery_state='OBSERVED_TERMINAL_RECONCILIATION_REQUIRED',
             lookup_by_original_client_id_required=False)
         self._owned(ownership)
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _transaction(db):
                 state = self._load(db); self._owned(ownership); now = clock(admission())
                 if state['head_sha256'] != head: _fail('HEAD_DISAGREEMENT')

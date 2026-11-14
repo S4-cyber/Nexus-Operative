@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.317'
+REVISION = '0.340.318'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -969,6 +969,14 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the Windows emergency-latch lease now opens the exact public parent path and rejects non-directory or reparse-point handles before entry access, while the native regression contract records ordinary Windows file-handle rename denial as conservative success rather than sampled-identity failure' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
+# A failed first provider-POST budget transaction must not strand an empty,
+# schema-less main file that blocks an exact clean retry. Cleanup is limited to
+# the captured new identity with zero bytes and no SQLite sidecars; ambiguity is
+# retained fail-closed for inspection.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; a failed first local provider-POST budget transaction now removes only its captured unchanged empty regular single-link main file when no SQLite sidecar exists, allowing one exact clean retry while replacement, bytes, links, sidecars or cleanup uncertainty remain retained and blocked' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -993,7 +1001,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.317 opens the exact public Windows emergency-latch parent with OPEN_REPARSE_POINT instead of leasing a pre-resolved target, then requires the native handle to report a directory without reparse attributes before any entry access. A late junction/symlink substitution therefore fails closed rather than moving the lease onto its target. The Windows regression contract now also records that an open latch file can deny rename before sampled-identity detection; this conservative denial is expected and is no longer misclassified as a failed safety property. POSIX directory descriptors and fsync remain unchanged. This is a local cooperating-process pathname lease, not administrator/ACL isolation, distributed coordination or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.318 closes a first-write recovery gap in the local provider-POST pacing journal. If the first SQLite setup or transaction aborts, Nexus closes the connection and removes only the captured unchanged empty regular single-link main file when no rollback, WAL or shared-memory sidecar exists, so an exact clean operator retry is not poisoned by a schema-less path. Replacement, bytes, links, sidecars, close failure or cleanup uncertainty retain the path and fail closed for review. This does not retry or rearm a provider request, reclaim attempt capacity, attest broker-wide pacing, authorize routing or accept an account. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,10 +1,69 @@
 """Independent local intent durability and conservative startup; no external IO."""
+import ctypes
 import os
 import stat
 from pathlib import Path
 import pytest
 from nexus import app as api, emergency_intent as intent
 from test_emergency_storage import control, rig
+
+
+def test_windows_directory_lease_excludes_delete_sharing_and_closes(
+        tmp_path,monkeypatch):
+    calls=[]
+    class Function:
+        argtypes=None;restype=None
+        def __init__(self,result):self.result=result
+        def __call__(self,*args):calls.append(args);return self.result
+    create=Function(37);close=Function(True)
+    class Kernel:
+        CreateFileW=create;CloseHandle=close
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
+    lease=intent._windows_pin_directory(tmp_path)
+    assert isinstance(lease,intent._WindowsDirectoryLease)
+    selected,access,sharing,security,disposition,flags,template=calls[0]
+    assert selected==str(tmp_path.resolve()) and access==0x80
+    assert sharing==0x3 and not sharing&0x4
+    assert security is None and disposition==3
+    assert flags==0x02200000 and template is None
+    lease.close();assert calls[1]==(37,) and lease.handle is None
+    lease.close();assert len(calls)==2
+
+
+def test_windows_directory_lease_uses_path_operations_and_closes(
+        tmp_path,monkeypatch):
+    order=tmp_path/'orders.sqlite3';closed=[];handles=iter((41,42))
+    def lease(_directory):
+        return intent._WindowsDirectoryLease(next(handles),lambda handle:closed.append(handle) or True)
+    monkeypatch.setattr(intent,'_pin_directory',lease)
+    intent.persist(order)
+    assert intent.path(order).read_bytes()==intent.RECORD and closed==[41]
+    intent.clear(order)
+    assert not intent.path(order).exists() and closed==[41,42]
+
+
+def test_windows_directory_lease_parent_drift_fails_before_entry(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';root.mkdir();order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    closed=[];lease=intent._WindowsDirectoryLease(43,lambda handle:closed.append(handle) or True)
+    def pin_then_replace(_directory):
+        root.rename(retired);root.mkdir();return lease
+    monkeypatch.setattr(intent,'_pin_directory',pin_then_replace)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.persist(order)
+    assert not intent.path(order).exists() and closed==[43]
+
+
+@pytest.mark.skipif(os.name!='nt',reason='native Win32 directory lease acceptance')
+def test_native_windows_directory_lease_blocks_parent_rename(tmp_path):
+    root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
+    lease=intent._windows_pin_directory(root)
+    try:
+        with pytest.raises(OSError):root.rename(retired)
+        assert root.is_dir() and not retired.exists()
+    finally:lease.close()
+    root.rename(retired)
+    assert retired.is_dir() and not root.exists()
 
 
 @pytest.mark.parametrize('contents',[b'',intent.RECORD,b'broken\x00private'])

@@ -11,6 +11,22 @@ from pathlib import Path
 RECORD = b'NEXUS_LOCAL_TRADING_CUT_V1\n'
 
 
+class _WindowsDirectoryLease:
+    """Win32 directory handle opened without rename/delete sharing."""
+    __slots__=('handle','_close')
+
+    def __init__(self,handle,close):
+        self.handle=handle;self._close=close
+
+    def close(self):
+        handle=self.handle
+        if handle is None:return
+        self.handle=None
+        if not self._close(handle):
+            import ctypes
+            raise ctypes.WinError(ctypes.get_last_error())
+
+
 def path(order_path):
     return Path(order_path).parent / 'emergency_cut.intent'
 
@@ -44,7 +60,7 @@ def _verify_directory(directory,identity,fd):
         before=directory.lstat()
         resolved_after=directory.resolve(strict=True)
         after=directory.lstat()
-        opened=None if fd is None else os.fstat(fd)
+        opened=None if fd is None or isinstance(fd,_WindowsDirectoryLease) else os.fstat(fd)
     except OSError:
         raise OSError('EMERGENCY_INTENT_DIRECTORY_CHANGED') from None
     if (resolved_before!=expected_resolved or
@@ -60,8 +76,7 @@ def _verify_directory(directory,identity,fd):
 
 
 def _pin_directory(directory):
-    # Windows cannot open directories for fsync through the standard os API.
-    if os.name == 'nt':return None
+    if os.name == 'nt':return _windows_pin_directory(directory)
     before=directory.lstat()
     flags=os.O_RDONLY | getattr(os,'O_DIRECTORY',0) | getattr(os,'O_NOFOLLOW',0)
     fd=os.open(directory,flags)
@@ -76,16 +91,47 @@ def _pin_directory(directory):
     return fd
 
 
+def _windows_pin_directory(directory):
+    """Hold the resolved directory against pathname rename until acknowledgement."""
+    import ctypes
+    from ctypes import wintypes
+    kernel=ctypes.WinDLL('kernel32',use_last_error=True)
+    create=kernel.CreateFileW;close=kernel.CloseHandle
+    create.argtypes=(wintypes.LPCWSTR,wintypes.DWORD,wintypes.DWORD,
+                     wintypes.LPVOID,wintypes.DWORD,wintypes.DWORD,wintypes.HANDLE)
+    create.restype=wintypes.HANDLE
+    close.argtypes=(wintypes.HANDLE,);close.restype=wintypes.BOOL
+    # FILE_READ_ATTRIBUTES; share reads/writes but deliberately not DELETE.
+    # OPEN_REPARSE_POINT prevents a late final-component redirect, while the
+    # caller has already resolved and rejected a reparse/symlink parent.
+    handle=create(str(directory.resolve(strict=True)),0x00000080,0x00000003,
+                  None,3,0x02000000|0x00200000,None)
+    if handle in (None,ctypes.c_void_p(-1).value):
+        raise ctypes.WinError(ctypes.get_last_error())
+    return _WindowsDirectoryLease(handle,close)
+
+
+def _directory_fd(lease):
+    return None if lease is None or isinstance(lease,_WindowsDirectoryLease) else lease
+
+
+def _close_directory(lease):
+    if lease is None:return
+    if isinstance(lease,_WindowsDirectoryLease):lease.close()
+    else:os.close(lease)
+
+
 def _sync_directory(directory,fd,identity):
     # Sync the directory actually used for the entry operation, then ensure its
     # pathname still resolves to that same directory before acknowledging it.
     # Windows has no standard directory-fsync descriptor, so the resolved-path
     # and identity sample remains mandatory even when ``fd`` is unavailable.
-    if fd is not None:os.fsync(fd)
+    if fd is not None and not isinstance(fd,_WindowsDirectoryLease):os.fsync(fd)
     _verify_directory(directory,identity,fd)
 
 
 def _entry_requested(order_path,target,fd):
+    fd=_directory_fd(fd)
     if fd is None:return requested(order_path)
     try:os.stat(target.name,dir_fd=fd,follow_symlinks=False)
     except FileNotFoundError:return False
@@ -99,8 +145,9 @@ def persist(order_path):
     directory_fd=_pin_directory(target.parent)
     try:
         _verify_directory(target.parent,directory_identity,directory_fd)
-        entry=target if directory_fd is None else target.name
-        options={} if directory_fd is None else {'dir_fd':directory_fd}
+        entry_fd=_directory_fd(directory_fd)
+        entry=target if entry_fd is None else target.name
+        options={} if entry_fd is None else {'dir_fd':entry_fd}
         try:fd = os.open(entry, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600,**options)
         except (FileExistsError, PermissionError):
             # Windows reports an existing directory as EACCES rather than EEXIST.
@@ -117,7 +164,7 @@ def persist(order_path):
                 os.fsync(stream.fileno())
         finally:_sync_directory(target.parent,directory_fd,directory_identity)
     finally:
-        if directory_fd is not None:os.close(directory_fd)
+        _close_directory(directory_fd)
 
 
 def clear(order_path):
@@ -127,10 +174,11 @@ def clear(order_path):
     directory_fd=_pin_directory(target.parent)
     try:
         _verify_directory(target.parent,directory_identity,directory_fd)
+        entry_fd=_directory_fd(directory_fd)
         try:
-            if directory_fd is None:target.unlink()
-            else:os.unlink(target.name,dir_fd=directory_fd)
+            if entry_fd is None:target.unlink()
+            else:os.unlink(target.name,dir_fd=entry_fd)
         except FileNotFoundError:pass
         _sync_directory(target.parent,directory_fd,directory_identity)
     finally:
-        if directory_fd is not None:os.close(directory_fd)
+        _close_directory(directory_fd)

@@ -92,23 +92,49 @@ def _pin_directory(directory):
 
 
 def _windows_pin_directory(directory):
-    """Hold the resolved directory against pathname rename until acknowledgement."""
+    """Hold the exact public directory against retargeting until acknowledgement."""
     import ctypes
     from ctypes import wintypes
     kernel=ctypes.WinDLL('kernel32',use_last_error=True)
-    create=kernel.CreateFileW;close=kernel.CloseHandle
+    create=kernel.CreateFileW;inspect=kernel.GetFileInformationByHandle
+    close=kernel.CloseHandle
+    class FileInformation(ctypes.Structure):
+        _fields_=(('dwFileAttributes',wintypes.DWORD),
+                  ('ftCreationTime',wintypes.FILETIME),
+                  ('ftLastAccessTime',wintypes.FILETIME),
+                  ('ftLastWriteTime',wintypes.FILETIME),
+                  ('dwVolumeSerialNumber',wintypes.DWORD),
+                  ('nFileSizeHigh',wintypes.DWORD),
+                  ('nFileSizeLow',wintypes.DWORD),
+                  ('nNumberOfLinks',wintypes.DWORD),
+                  ('nFileIndexHigh',wintypes.DWORD),
+                  ('nFileIndexLow',wintypes.DWORD))
     create.argtypes=(wintypes.LPCWSTR,wintypes.DWORD,wintypes.DWORD,
                      wintypes.LPVOID,wintypes.DWORD,wintypes.DWORD,wintypes.HANDLE)
     create.restype=wintypes.HANDLE
+    inspect.argtypes=(wintypes.HANDLE,ctypes.POINTER(FileInformation))
+    inspect.restype=wintypes.BOOL
     close.argtypes=(wintypes.HANDLE,);close.restype=wintypes.BOOL
     # FILE_READ_ATTRIBUTES; share reads/writes but deliberately not DELETE.
-    # OPEN_REPARSE_POINT prevents a late final-component redirect, while the
-    # caller has already resolved and rejected a reparse/symlink parent.
-    handle=create(str(directory.resolve(strict=True)),0x00000080,0x00000003,
+    # Open the public path itself rather than its resolved target. Combined
+    # with OPEN_REPARSE_POINT, this lets the handle inspection reject a late
+    # junction/symlink replacement instead of leasing its redirected target.
+    handle=create(str(directory.absolute()),0x00000080,0x00000003,
                   None,3,0x02000000|0x00200000,None)
     if handle in (None,ctypes.c_void_p(-1).value):
         raise ctypes.WinError(ctypes.get_last_error())
-    return _WindowsDirectoryLease(handle,close)
+    lease=_WindowsDirectoryLease(handle,close);information=FileInformation()
+    try:
+        if not inspect(handle,ctypes.byref(information)):
+            error=ctypes.get_last_error()
+            raise ctypes.WinError(error)
+        # FILE_ATTRIBUTE_DIRECTORY and FILE_ATTRIBUTE_REPARSE_POINT.
+        if (not information.dwFileAttributes&0x00000010 or
+                information.dwFileAttributes&0x00000400):
+            raise OSError('EMERGENCY_INTENT_DIRECTORY_CHANGED')
+    except BaseException:
+        lease.close();raise
+    return lease
 
 
 def _directory_fd(lease):

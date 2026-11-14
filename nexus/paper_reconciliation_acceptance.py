@@ -182,9 +182,10 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
     _pacing_store,activity_store,acceptance_store=stores
     stable_read=_stable_reader(journal_paths,journal_limits,journal_identities,
         journal_fingerprints,stores,binding)
-    before = stable_read(lambda: acceptance_status(expected_account_id=expected_account_id,
-        pacing_path=pacing_path, activity_store_path=activity_store_path,
-        acceptance_store_path=acceptance_store_path))
+    status_options=dict(expected_account_id=expected_account_id,
+        pacing_path=journal_paths[0],activity_store_path=journal_paths[1],
+        acceptance_store_path=journal_paths[2])
+    before = stable_read(lambda: acceptance_status(**status_options))
     if not _accepted(before):
         _fail('ACCEPTED_HISTORY_REQUIRED')
     if before['retention_head_sha256'] != expected_activity_head:
@@ -205,9 +206,7 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
         expected_account_id=expected_account_id, expected_head=expected_activity_head,
         opening_observation=first, closing_observation=last))
 
-    after = stable_read(lambda: acceptance_status(expected_account_id=expected_account_id,
-        pacing_path=pacing_path, activity_store_path=activity_store_path,
-        acceptance_store_path=acceptance_store_path))
+    after = stable_read(lambda: acceptance_status(**status_options))
     if before != after:
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     if component['head_sha256'] != after['retention_head_sha256']:
@@ -367,8 +366,9 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
     _pacing_store,activity_store,acceptance_store=stores
     stable_read=_stable_reader(journal_paths,journal_limits,journal_identities,
         journal_fingerprints,stores,binding)
-    status_options=dict(expected_account_id=expected_account_id,pacing_path=pacing_path,
-        activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path)
+    status_options=dict(expected_account_id=expected_account_id,
+        pacing_path=journal_paths[0],activity_store_path=journal_paths[1],
+        acceptance_store_path=journal_paths[2])
     before=stable_read(lambda: acceptance_status(**status_options))
     if not _accepted(before): _fail('ACCEPTED_HISTORY_REQUIRED')
     observations=stable_read(lambda:[portable.validate(value) for value in
@@ -393,8 +393,9 @@ def review_with_stability_guards(*, expected_account_id, pacing_path, activity_s
             guard['observed_inventory']!=inner['observed_inventory']):
             _fail('GUARD_BALANCE_CHANGED')
 
-    accepted=stable_read(lambda: review(expected_account_id=expected_account_id,pacing_path=pacing_path,
-        activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path,
+    accepted=stable_read(lambda: review(expected_account_id=expected_account_id,
+        pacing_path=journal_paths[0],activity_store_path=journal_paths[1],
+        acceptance_store_path=journal_paths[2],
         expected_activity_head=expected_activity_head,opening_observation=opening,
         closing_observation=closing))
     if accepted['observation_review']['arithmetic_evaluated'] is not True:

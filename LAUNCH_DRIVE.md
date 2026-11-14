@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.301 reconciliation semantic-path binding
+
+The accepted-history reconciliation review pinned the resolved pacing, activity and acceptance journal files before composition, but its semantic status calls still received the caller's original path spellings. A mutable parent alias could therefore redirect those subreads after the journal set was fingerprinted while the pinned files themselves remained unchanged.
+
+v0.340.301 passes the pre-resolved regular single-link journal paths through every acceptance-status subread and the nested four-observation stability review. Caller aliases can no longer retarget semantic replay after scope capture. Existing identity, fingerprint, exact-head, store-binding, read-only failure and authority checks remain mandatory.
+
+No Portal control or modifiable parameter changed, so seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain intact. This is sampled local reconciliation path-scope hardening, not an atomic multi-file snapshot, ACL/administrator boundary, broker/account acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, funding/live/cloud readiness or release approval. Rough implementation remains weighted 38% (roughly 30–45%, low confidence), with 0/9 major stages fully accepted. Release approval and trading permission remain false; historical results and synthetic scores are not future profit predictions.
+
+The direct reconciliation module passed 53 tests and the broader reconciliation/observation/release/version/roadmap/Windows-workflow scope passed 624 with one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 403 source files / `929104d40ac3e99d7e936c6d9dad65290f5ce47ce8a43abc62e25e06e4ba10d3`; `validation/release_trials_0_340_301.json` SHA256 is `fceecaeb441ed5f2fa671e70f21ac193c8160ddd43fec06cd0f36c900ad89167`. Compilation, dependency integrity, deterministic-roadmap equality and Portal JavaScript syntax passed. The 162-member v0.340.301 wheel reports the synchronized version and has SHA256 `95c81ad0d42f52abdf20d4a14e771c8dc53bbf0efe7f205a374dd06b3feaac3a`. The staged 1,022-path / 1,022-blob public-artifact audit and high-confidence introduced credential-pattern scan found zero findings. Local Gitleaks and native Windows/Inno Setup remain unavailable; fresh exact-source hosted security, evidence/browser, Windows regression and installer execution are mandatory before publication.
+
 ## v0.340.300 paper pacing main-connection binding
 
 The paper-read pacing writer preflighted its public SQLite path before opening it, but it did not require the resulting connection to report that exact path as its only `main` database or compare the connection's existing serialized main content with the exact bounded public main file before application mutation. A pathname/connection substitution or faulty connection seam could therefore direct a valid-looking append at a different or changed store.

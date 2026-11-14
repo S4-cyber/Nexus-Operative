@@ -376,6 +376,31 @@ def test_reconciliation_rejects_retargeted_store_objects(
     assert snapshot(tmp_path)==before
 
 
+@pytest.mark.parametrize('guarded_review', (False, True))
+def test_reconciliation_semantic_subreads_use_pinned_resolved_journal_paths(
+        tmp_path,monkeypatch,guarded_review):
+    options=guarded(tmp_path) if guarded_review else prepared(tmp_path)
+    alias=tmp_path/'caller-alias-component';alias.mkdir()
+    fields=('pacing_path','activity_store_path','acceptance_store_path')
+    for field in fields:
+        options[field]=alias/'..'/options[field].name
+    expected=tuple((tmp_path/options[field].name).resolve() for field in fields)
+    original=subject.acceptance_status;observed=[]
+    def inspected(**kwargs):
+        observed.append(tuple(kwargs[field] for field in fields))
+        return original(**kwargs)
+    monkeypatch.setattr(subject,'acceptance_status',inspected)
+    before=snapshot(tmp_path)
+    if guarded_review:
+        subject.review_with_stability_guards(**options)
+        assert len(observed)==4
+    else:
+        subject.review(**options)
+        assert len(observed)==2
+    assert observed and all(paths==expected for paths in observed)
+    assert snapshot(tmp_path)==before
+
+
 def test_reconciliation_refuses_rollback_sidecar_before_arithmetic(tmp_path,monkeypatch):
     options=prepared(tmp_path)
     sidecar=options['activity_store_path'].with_name(

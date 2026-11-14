@@ -462,3 +462,19 @@ def test_fixture_is_private_and_never_authoritative():
     assert result['semantic_reader_failures_rechecked']
     assert result['output_never_authoritative']
     assert all(result[flag] is False for flag in subject.FLAGS)
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_leaf_symlink_cannot_be_hidden_by_parent_pinning(tmp_path, field):
+    budget, head, binding = prepared(tmp_path)
+    selected = Path(binding[field])
+    link = tmp_path / (field + '-selected-leaf.sqlite3')
+    try:
+        link.symlink_to(selected)
+    except (OSError, NotImplementedError):
+        pytest.skip('symlink creation unavailable for this Windows profile')
+    assert subject._frozen_path(link, 'TEST_PATH_INVALID') == link
+    binding = dict(binding, **{field: link})
+    with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
+        subject.review(budget, expected_post_head=head,
+            account_bindings=[binding])

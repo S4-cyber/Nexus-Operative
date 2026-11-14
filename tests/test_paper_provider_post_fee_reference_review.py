@@ -425,3 +425,18 @@ def test_fixture_is_public_aggregate_only():
     assert all(token not in encoded for token in (
         'nx_accept_fixture', '01234567', 'retained_fee_reference_sha256',
         'fee_amount', '2026-10-18'))
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_leaf_symlink_cannot_be_hidden_by_parent_pinning(tmp_path, field):
+    args = subject._fixture(tmp_path)
+    selected = Path(args[field])
+    link = tmp_path / (field + '-selected-leaf.sqlite3')
+    try:
+        link.symlink_to(selected)
+    except (OSError, NotImplementedError):
+        pytest.skip('symlink creation unavailable for this Windows profile')
+    assert subject._frozen_path(link, 'TEST_PATH_INVALID') == link
+    args[field] = link
+    with pytest.raises(ValueError, match='FILE_IDENTITY_UNAVAILABLE'):
+        subject.review(**args)

@@ -23,6 +23,20 @@ def test_windows_committed_fingerprint_schema_uses_portable_ctime():
             (*fingerprint[:5], 4, *fingerprint[6:]), host='nt')
 
 
+def test_windows_cold_fingerprint_ctime_normalizes_to_committed_schema(
+        monkeypatch):
+    expected = ('C:/requests.sqlite3', 1, 2, 4096, 3, None, 1,
+        'a' * 64)
+    observed = (*expected[:5], 4, *expected[6:])
+    monkeypatch.setattr(journal, 'capture_file_fingerprints',
+        lambda *_args, **_kwargs: (observed,))
+    journal._require_committed_fingerprint(
+        Path('requests.sqlite3'), expected, host='nt')
+    with pytest.raises(RuntimeError):
+        journal._require_committed_fingerprint(Path('requests.sqlite3'),
+            (*expected[:4], 5, *expected[5:]), host='nt')
+
+
 def _store(tmp_path):
     return BrokerRequestJournal(tmp_path / 'requests.sqlite3', ACCOUNT)
 

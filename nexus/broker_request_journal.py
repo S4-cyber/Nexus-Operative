@@ -153,6 +153,30 @@ def _committed_fingerprint_boundary(fingerprint, host=None):
         ctime if host != 'nt' else None, links, digest)
 
 
+def _captured_fingerprint_boundary(fingerprint, host=None):
+    """Normalize the generic cold-file sample to the committed schema."""
+    host = os.name if host is None else host
+    if type(fingerprint) is not tuple or len(fingerprint) != 8:
+        raise RuntimeError
+    path, device, inode, size, mtime, ctime, links, digest = fingerprint
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device, inode, size, mtime, ctime, links)) or
+            re.fullmatch(r'[0-9a-f]{64}', digest) is None):
+        raise RuntimeError
+    return (path, device, inode, size, mtime,
+        ctime if host != 'nt' else None, links, digest)
+
+
+def _require_committed_fingerprint(path, fingerprint, host=None):
+    """Require no sidecars and the exact portable committed main bytes."""
+    expected = _committed_fingerprint_boundary(fingerprint, host=host)
+    observed = capture_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+        'BROKER_JOURNAL_')
+    if (len(observed) != 1 or
+            _captured_fingerprint_boundary(observed[0], host=host) != expected):
+        raise RuntimeError
+
+
 def _descriptor_file_fingerprint(descriptor, resolved):
     """Hash bounded bytes through the exact writable committed descriptor."""
     before = os.fstat(descriptor)
@@ -220,8 +244,7 @@ def _sync_committed_store(path, identity, fingerprint, *, new):
             raise RuntimeError
         expected_descriptor = _committed_fingerprint_boundary(fingerprint)
         require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
-        require_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
-            (fingerprint,), 'BROKER_JOURNAL_')
+        _require_committed_fingerprint(path, fingerprint)
         flags = (os.O_RDWR | getattr(os, 'O_BINARY', 0) |
             getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
         descriptor = os.open(resolved, flags)
@@ -242,13 +265,11 @@ def _sync_committed_store(path, identity, fingerprint, *, new):
         finally:
             os.close(descriptor)
         require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
-        require_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
-            (fingerprint,), 'BROKER_JOURNAL_')
+        _require_committed_fingerprint(path, fingerprint)
         if new and os.name != 'nt':
             _sync_parent_directory(resolved)
             require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
-            require_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
-                (fingerprint,), 'BROKER_JOURNAL_')
+            _require_committed_fingerprint(path, fingerprint)
     except Exception:
         _fail('COMMIT_DURABILITY_UNCERTAIN')
 
@@ -435,9 +456,6 @@ class BrokerRequestJournal:
                 raise acknowledgement_error
             require_bound_path()
             if committed_fingerprint is not None:
-                require_file_fingerprints((bound_path,),
-                    (MAX_DATABASE_BYTES,), (committed_fingerprint,),
-                    'BROKER_JOURNAL_')
                 _sync_committed_store(bound_path, main_identity,
                     committed_fingerprint, new=new)
             if uncommitted:

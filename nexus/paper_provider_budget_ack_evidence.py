@@ -326,6 +326,12 @@ def fixture_report():
                 windows_fingerprint, host='nt') == windows_fingerprint and
             request_module._committed_fingerprint_boundary(
                 windows_fingerprint, host='nt') == windows_fingerprint and
+            pacing_module._captured_fingerprint_boundary(
+                invalid_windows_fingerprint, host='nt') ==
+                    windows_fingerprint and
+            request_module._captured_fingerprint_boundary(
+                invalid_windows_fingerprint, host='nt') ==
+                    windows_fingerprint and
             rejects_nonportable_ctime(pacing_module) and
             rejects_nonportable_ctime(request_module))
 

@@ -1,5 +1,39 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.335 bounded paper risk-screen input and JSON boundary
+
+The paper risk-screen admission boundary now requires an exact built-in request
+schema, key and field types, finite numeric evidence and explicit magnitude
+bounds before returning a paper-research candidate. Stringified or polymorphic
+quantities, Boolean quantities, type-confused tiers, mapping subclasses,
+missing/extra fields and excessive exponents fail closed. Cost output is finite
+or null; the formerly reproducible infinity serialization failure now returns a
+deterministic HTTP 200 rejection with all broker/live/funds authority false.
+Focused direct and loopback API checks passed 20 tests and the synchronized
+release/API scope passed 200, both with two dependency warnings. The complete
+exact candidate passed 6,319 tests with 2 platform skips and the same warnings
+in 852.42 seconds. All sixteen bounded profiles passed and saved-evidence
+verification matched 415 exact source files /
+`0389c0bfbddc00aad1f2530e86fdce85d0a73e57b8c0e0f8a80c49ff9af05178`;
+report SHA-256 is
+`9ec3d28e10751c8e6b7a074000b936846b5fc302331e5a48655c15dcb85d5dd3`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+JavaScript syntax, all fourteen Node controllers and the 19-case CI inventory
+passed. The 164-member wheel SHA-256 is
+`688bfb00b3e4ff96ad138d97abd73aa81cc63abbc1526c32d006a00cf2c7d522`.
+The current-tree public-artifact audit and 4,443-added-line high-confidence
+credential scan found zero findings. Local Gitleaks is unavailable; hosted
+exact-head pinned Gitleaks and the remaining CI/native gates remain required.
+
+This is local M3 risk-boundary evidence only. It does not authenticate quotes,
+market data, performance or profitability and does not accept broker-paper,
+genuine-feed trials, native Windows, funding/live/cloud or release gates. No UI
+control changed; engagement remains OFF by default, and limits, account checks,
+fail-closed exits, independent emergency stop, seven tabs and black/bright-purple
+bottom-right hover help are unchanged. The weighted 38% baseline (30–45%, low
+confidence), 0/9 acceptances, release/trading permissions and unset launch date
+remain unchanged.
+
 ## v0.340.334 Activity SSE checkpoint acknowledgement type binding
 
 The explicit one-attempt Activity SSE checkpoint now requires exact built-in schemas and

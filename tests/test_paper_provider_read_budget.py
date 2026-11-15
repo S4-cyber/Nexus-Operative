@@ -115,6 +115,61 @@ def test_active_ownership_retarget_rolls_back_exact_first_write(tmp_path):
     assert not path.exists() and not decoy.exists()
 
 
+def test_existing_write_context_rejects_uncommitted_return(tmp_path):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3');complete(budget)
+    before=budget.path.read_bytes()
+    with pytest.raises(ValueError,match='UNCOMMITTED_TRANSACTION'):
+        with budget._write_connection():
+            pass
+    assert budget.path.read_bytes()==before
+
+
+def test_committed_write_ack_rechecks_main_identity(tmp_path,monkeypatch):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3');complete(budget)
+    head=budget.inspect()['head_sha256'];armed=False
+    original=subject._require_file_identity
+    def require(path,identity):
+        original(path,identity)
+        if armed:subject._fail('FILE_CHANGED')
+    monkeypatch.setattr(subject,'_require_file_identity',require)
+    def admission():
+        nonlocal armed
+        armed=True
+        return 1061
+    with budget.ownership() as owner:
+        with pytest.raises(ValueError,match='FILE_CHANGED'):
+            budget.begin(account_id=ACCOUNT,
+                account_before_head_sha256='b'*64,
+                operation='ACCOUNT_INVENTORY',admission=admission,
+                ownership=owner,expected_head=head)
+    armed=False
+    state=budget.inspect()
+    assert state['sessions']==2 and state['pending_token'] is not None
+    assert state['ready_for_routing'] is False
+
+
+def test_main_replacement_during_transaction_cannot_acknowledge(
+        tmp_path):
+    path=tmp_path/'provider.sqlite3';replacement=tmp_path/'replacement.sqlite3'
+    budget=PaperProviderReadBudget(path);complete(budget)
+    head=budget.inspect()['head_sha256']
+    with sqlite3.connect(replacement) as db:
+        db.execute('CREATE TABLE decoy (value TEXT)')
+        db.execute('INSERT INTO decoy VALUES (\'retain\')')
+    replacement_bytes=replacement.read_bytes()
+    def admission():
+        try:os.replace(replacement,path)
+        except OSError:pytest.skip('open SQLite main replacement denied')
+        return 1061
+    with pytest.raises(ValueError,match='FILE_CHANGED'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,
+                account_before_head_sha256='b'*64,
+                operation='ACCOUNT_INVENTORY',admission=admission,
+                ownership=owner,expected_head=head)
+    assert path.read_bytes()==replacement_bytes
+
+
 @pytest.mark.parametrize('field',('provider_scope','provider_digest'))
 def test_active_ownership_rejects_provider_scope_mutation(tmp_path,field):
     path=tmp_path/'provider.sqlite3';budget=PaperProviderReadBudget(path)

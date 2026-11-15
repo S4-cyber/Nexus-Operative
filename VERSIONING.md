@@ -1,10 +1,16 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.321 provider transaction acknowledgement binding
+
+Provider POST and GET write contexts now retain the captured SQLite main-file identity through transaction finalization, exact-main pre-close validation and a post-close pathname sample. Existing and new stores reject uncommitted returns; during-transaction replacement or an injected post-commit identity fault fails closed without deleting the replacement or making the pending reservation retryable. Windows release trials now retain only a reviewed fixed paper-tool substage code instead of collapsing every safe failure to the coarse `HTTP_PAPER_TOOLS` boundary. This is sampled local acknowledgement integrity and privacy-safe diagnostics, not atomic directory exclusion, native durability, provider-wide coordination, account/source acceptance, routing permission or release acceptance.
+
+**Current development build: 0.340.321 (pre-release).**
+
 ## v0.340.320 provider-GET store binding and first-write recovery
 
 The shared local provider-GET budget now freezes its selected parent, binds its exact path/provider scope/digest through ownership and requires the captured regular single-link main-file identity plus exact SQLite main pathname throughout setup. An aborted first transaction removes only its exact captured empty sidecar-free file. Mutable aliases, replacement, foreign connections, provider-scope mutation and object retargeting fail closed without redirecting a write, deleting a decoy or poisoning an exact retry. This is local path/store integrity and retry hygiene, not a provider request, broker-wide pacing, account/source acceptance, routing permission, native durability or release acceptance.
 
-**Current development build: 0.340.320 (pre-release).**
+**Previous development build: 0.340.320 (pre-release).**
 
 ## v0.340.319 provider-POST store binding and Windows emergency child lease
 

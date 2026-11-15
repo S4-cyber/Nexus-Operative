@@ -86,6 +86,20 @@ def test_http_phase_rejects_unreviewed_diagnostic_label_before_operation():
     assert called == []
 
 
+def test_paper_tools_phase_preserves_only_reviewed_fixed_substage_code():
+    def reviewed():
+        raise ValueError('PACKAGED_PAPER_TOOLS_PROVIDER_BUDGET_RECOVERY')
+    with pytest.raises(trials.ReleaseTrialError, match=
+            '^RELEASE_TRIAL_HTTP_PACKAGED_PAPER_TOOLS_PROVIDER_BUDGET_RECOVERY$'):
+        trials._paper_tools_phase(reviewed)
+
+    private='PACKAGED_PAPER_TOOLS_PRIVATE_PATH_OR_SECRET'
+    def unreviewed():
+        raise ValueError(private)
+    with pytest.raises(ValueError,match=private):
+        trials._paper_tools_phase(unreviewed)
+
+
 def test_real_http_process_starts_stopped_without_data_credentials_or_external_io(tmp_path):
     env = {**os.environ, 'NEXUS_PORTABLE_DATA': str(tmp_path)}
     code = 'import json; from nexus.release_trials import _http_trial; print(json.dumps(_http_trial()))'

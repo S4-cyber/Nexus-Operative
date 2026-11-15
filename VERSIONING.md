@@ -1,5 +1,42 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.335 bounded paper risk-screen input and JSON boundary
+
+**Current development build: 0.340.335 (pre-release).** The public paper risk
+screen now admits only an exact built-in request schema with built-in string
+keys, exact Boolean/tier types, exact built-in numeric values and finite
+field-specific magnitude limits. Numeric strings, custom conversion/equality
+objects, Boolean quantities, mapping subclasses, missing or extra fields,
+non-finite values and excessive exponents reject deterministically. Public cost
+output is finite or null, preventing unbounded evidence from creating an
+infinite candidate result or a JSON serialization failure.
+
+Focused direct and loopback API validation passed 20 tests and the synchronized
+release/API scope passed 200, both with two dependency deprecation warnings.
+The complete exact candidate passed 6,319 tests with 2 platform skips and the
+same warnings in 852.42 seconds. All sixteen bounded profiles passed and saved
+evidence verified against 415 exact source files /
+`0389c0bfbddc00aad1f2530e86fdce85d0a73e57b8c0e0f8a80c49ff9af05178`;
+report SHA-256 is
+`9ec3d28e10751c8e6b7a074000b936846b5fc302331e5a48655c15dcb85d5dd3`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+syntax, all fourteen Node controllers and the 19-case CI inventory passed. The
+164-member wheel SHA-256 is
+`688bfb00b3e4ff96ad138d97abd73aa81cc63abbc1526c32d006a00cf2c7d522`.
+The current-tree public-artifact audit and 4,443-added-line high-confidence
+credential scan found zero findings. Local Gitleaks is unavailable. Fresh
+exact-head hosted pinned Gitleaks/security, browser, evidence, regression and
+native Windows installer execution remain mandatory.
+
+This is local M3 bounded-risk evidence, not market-data authentication,
+profitability, broker-paper acceptance, genuine-feed sustained trial realism,
+native Windows acceptance, funding/live/cloud readiness or release approval.
+No UI control changed. Engagement remains OFF by default; limits, account
+checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30–45%, low confidence), 0/9 stages independently
+accepted, with release/trading permission false and no launch date.
+
 ## v0.340.334 Activity SSE checkpoint acknowledgement type binding
 
 **Current development build: 0.340.334 (pre-release).** The one-attempt Activity SSE

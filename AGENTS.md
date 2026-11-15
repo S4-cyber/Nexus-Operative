@@ -3,6 +3,41 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.335 bounded paper risk-screen input and JSON boundary
+
+The public paper risk screen now requires one exact built-in request schema,
+built-in string keys, exact Boolean claims, exact tier text, exact built-in
+numeric values and finite field-specific magnitude bounds. Numeric strings,
+custom conversion/equality objects, Boolean quantities, mapping subclasses,
+missing or extra fields, non-finite values and excessive exponents fail closed.
+The public cost is finite or null, so hostile evidence can no longer produce a
+paper candidate with infinity or crash JSON serialization. Direct and loopback
+API boundary validation passed 20 tests and the synchronized release/API scope
+passed 200, both with two dependency deprecation warnings. The complete exact
+candidate passed 6,319 tests with 2 platform skips and the same warnings in
+852.42 seconds.
+
+All sixteen bounded profiles passed and saved-evidence verification matched 415
+source files / `0389c0bfbddc00aad1f2530e86fdce85d0a73e57b8c0e0f8a80c49ff9af05178`;
+report SHA-256 is
+`9ec3d28e10751c8e6b7a074000b936846b5fc302331e5a48655c15dcb85d5dd3`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+syntax, all fourteen Node controllers and the 19-case ordered CI inventory
+passed. The 164-member v0.340.335 wheel SHA-256 is
+`688bfb00b3e4ff96ad138d97abd73aa81cc63abbc1526c32d006a00cf2c7d522`.
+The current-tree public-artifact audit and 4,443-added-line high-confidence
+credential scan found zero findings. Local Gitleaks is unavailable; exact-head
+hosted pinned Gitleaks and the remaining CI/native gates remain mandatory.
+
+This is local M3 bounded-risk hardening, not market-data authentication,
+profitability evidence, broker-paper acceptance, genuine-feed sustained trial
+acceptance, native Windows acceptance, funding/live/cloud readiness or release
+approval. Engagement stays OFF by default; limits, account checks, fail-closed
+exits and emergency-stop independence are unchanged. No UI control changed:
+seven beginner tabs and black/bright-purple bottom-right hover help remain
+intact. Implementation remains weighted 38% (30–45%, low confidence) and 0/9
+stages independently accepted.
+
 ## v0.340.334 Activity SSE checkpoint acknowledgement type binding
 
 The explicit one-attempt Activity SSE checkpoint now treats its internal envelope,

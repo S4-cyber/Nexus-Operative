@@ -18,6 +18,7 @@ from nexus import alpaca_activity_normalizer as adapter
 from nexus.activity_collection_evidence import SCHEMA, page_observation, validate
 from nexus.alpaca_activity_collection import PAGE_SIZE, activity_url
 from nexus.alpaca_paper_inspection import URLS
+from nexus import broker_activity_store as activity_storage
 from nexus.broker_activity_store import BrokerActivityStore
 from nexus import paper_activity_acceptance_store as acceptance_storage
 from nexus.paper_activity_acceptance_probe import status
@@ -63,6 +64,8 @@ FIXTURE_CHECKS = (
     'acceptance_write_committed_content_pinned',
     'acceptance_commit_durability_replayed',
     'acceptance_commit_sync_preserves_process_control',
+    'activity_retention_commit_durability_replayed',
+    'activity_retention_commit_sync_preserves_process_control',
     'acceptance_read_finalization_preserves_process_control',
     'acceptance_write_finalization_preserves_process_control',
     'acceptance_write_close_requires_explicit_recovery',
@@ -809,6 +812,57 @@ def fixture_report():
         acceptance_rebind_boundary_pinned=(rebind_disagreement and
             cleanup_acceptance.path.read_bytes()==baseline_bytes and
             baseline_replayed['records']==0)
+        retention_row=dict(
+            id='20261017000000000::11234567-89ab-cdef-0123-000000000090',
+            activity_type='FEE',status='executed',net_amount='-0.01',
+            date='2026-10-16')
+        retention_durability_root=base/'activity-retention-durability'
+        retention_durability_root.mkdir()
+        retention_durability=BrokerActivityStore(
+            retention_durability_root/'activity.sqlite3',ACCOUNT)
+        original_activity_fsync=activity_storage.os.fsync
+        activity_retention_commit_durability_replayed=False
+        def fail_activity_fsync(_descriptor):raise OSError('injected')
+        activity_storage.os.fsync=fail_activity_fsync
+        try:
+            try:retention_durability.retain([retention_row],[],
+                after=AFTER,until=UNTIL)
+            except ValueError as error:
+                activity_retention_commit_durability_replayed=(str(error)==
+                    'BROKER_ACTIVITY_STORE_COMMIT_DURABILITY_UNCERTAIN')
+        finally:activity_storage.os.fsync=original_activity_fsync
+        retained_activity=retention_durability.inspect()
+        replayed_activity=retention_durability.retain([retention_row],[],
+            after=AFTER,until=UNTIL)
+        activity_retention_commit_durability_replayed=(
+            activity_retention_commit_durability_replayed and
+            retained_activity['retained_batches']==1 and
+            retained_activity['automatic_continuation'] is False and
+            replayed_activity['duplicate'] is True and
+            replayed_activity['head_sha256']==retained_activity['head_sha256'])
+        retention_signal_root=base/'activity-retention-process-control'
+        retention_signal_root.mkdir()
+        retention_signal=BrokerActivityStore(
+            retention_signal_root/'activity.sqlite3',ACCOUNT)
+        activity_retention_signal_raised=False
+        def interrupt_activity_fsync(_descriptor):raise KeyboardInterrupt
+        activity_storage.os.fsync=interrupt_activity_fsync
+        try:
+            try:retention_signal.retain([retention_row],[],
+                after=AFTER,until=UNTIL)
+            except KeyboardInterrupt:
+                activity_retention_signal_raised=True
+        finally:activity_storage.os.fsync=original_activity_fsync
+        retained_signal_activity=retention_signal.inspect()
+        replayed_signal_activity=retention_signal.retain([retention_row],[],
+            after=AFTER,until=UNTIL)
+        activity_retention_commit_sync_preserves_process_control=(
+            activity_retention_signal_raised and
+            retained_signal_activity['retained_batches']==1 and
+            retained_signal_activity['automatic_continuation'] is False and
+            replayed_signal_activity['duplicate'] is True and
+            replayed_signal_activity['head_sha256']==
+                retained_signal_activity['head_sha256'])
         silent=all(before[name]==after[name]==0 for name in ('external_connections','credential_operations'))
         unchanged=before['unchanged'] is after['unchanged'] is True
         rollback_observed=before['rollback_journal_observed'] is True
@@ -845,6 +899,8 @@ def fixture_report():
             acceptance_write_committed_content_pinned and
             acceptance_commit_durability_replayed and
             acceptance_commit_sync_preserves_process_control and
+            activity_retention_commit_durability_replayed and
+            activity_retention_commit_sync_preserves_process_control and
             acceptance_read_finalization_preserves_process_control and
             acceptance_write_finalization_preserves_process_control and
             acceptance_write_close_requires_explicit_recovery and
@@ -887,6 +943,10 @@ def fixture_report():
             acceptance_commit_durability_replayed=acceptance_commit_durability_replayed,
             acceptance_commit_sync_preserves_process_control=
                 acceptance_commit_sync_preserves_process_control,
+            activity_retention_commit_durability_replayed=
+                activity_retention_commit_durability_replayed,
+            activity_retention_commit_sync_preserves_process_control=
+                activity_retention_commit_sync_preserves_process_control,
             acceptance_read_finalization_preserves_process_control=
                 acceptance_read_finalization_preserves_process_control,
             acceptance_write_finalization_preserves_process_control=

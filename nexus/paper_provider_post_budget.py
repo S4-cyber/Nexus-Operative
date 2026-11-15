@@ -22,7 +22,8 @@ from nexus.local_owner_scope import (
     owner_entry_parent_identity, owner_entry_parent_matches,
     owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe,
     prepare_owner_file)
-from nexus.sqlite_journal_guard import check_existing
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints, check_existing, require_file_fingerprints)
 
 SCHEMA = 'nexus.paper-provider-post-budget.v1'
 RECOVERY_POLICY = 'nexus.paper-provider-post-budget-resolved-unknown.v1'
@@ -105,6 +106,40 @@ def _require_main_connection(db, path):
         raise
     except (AttributeError, OSError, RuntimeError, sqlite3.Error, TypeError):
         _fail('CONNECTION_BINDING_CHANGED')
+
+
+def _main_fingerprint(path):
+    """Return one exact bounded quiescent main-file fingerprint."""
+    return capture_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+        'PAPER_PROVIDER_POST_BUDGET_')[0]
+
+
+def _require_main_connection_content(db, path):
+    """Require serialized main bytes to match stable pathname bytes."""
+    expected = _main_fingerprint(path)
+    try:
+        serialized = db.serialize(name='main')
+        observed = _main_fingerprint(path)
+        if (observed != expected or type(serialized) is not bytes or
+                len(serialized) != expected[3] or
+                hashlib.sha256(serialized).hexdigest() != expected[7]):
+            _fail('CONNECTION_CONTENT_CHANGED')
+        return (observed,)
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        try:
+            db.execute('SELECT 1 FROM sqlite_schema LIMIT 1').fetchone()
+        except sqlite3.Error as probe:
+            if (isinstance(probe, sqlite3.OperationalError) and
+                    _database_busy(probe)):
+                _fail('DATABASE_BUSY')
+        _fail('CONNECTION_CONTENT_CHANGED')
+    except (MemoryError, OSError, OverflowError, RuntimeError,
+            sqlite3.Error, TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
 
 
 def _discard_uncommitted_new(path, identity):
@@ -287,14 +322,18 @@ class PaperProviderPostBudget:
             raise
         else:
             acknowledgement_error = None
+            committed_fingerprint = None
+            uncommitted = db.in_transaction
             try:
                 self._require_binding(binding)
                 _require_main_connection(db, bound_path)
                 _require_file_identity(bound_path, main_identity)
+                if not uncommitted:
+                    committed_fingerprint = _require_main_connection_content(
+                        db, bound_path)
                 self._require_binding(binding)
             except BaseException as error:
                 acknowledgement_error = error
-            uncommitted = db.in_transaction
             try:
                 db.close()
             except BaseException:
@@ -307,6 +346,10 @@ class PaperProviderPostBudget:
             self._require_binding(binding)
             if not (new and uncommitted):
                 _require_file_identity(bound_path, main_identity)
+            if committed_fingerprint is not None:
+                require_file_fingerprints((bound_path,),
+                    (MAX_DATABASE_BYTES,), committed_fingerprint,
+                    'PAPER_PROVIDER_POST_BUDGET_')
             if uncommitted:
                 _fail('UNCOMMITTED_TRANSACTION')
 

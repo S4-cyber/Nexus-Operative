@@ -35,7 +35,8 @@ PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
     'bounded_recovery_crash_drill',
     'bounded_recovery_step','submission_admission',
     'single_attempt_submission_transport','resolved_unknown_post_recovery',
-    'provider_read_budget_recovery','account_read_pacing_recovery',
+    'provider_read_budget_recovery','provider_budget_write_acknowledgement',
+    'account_read_pacing_recovery',
     'provider_read_history_review','account_read_history_review',
     'provider_post_history_review','provider_post_activity_review','passed',
     'source','completed_sessions','replayed_events','cooldown_enforced',
@@ -920,6 +921,8 @@ def _pacing_trial():
         account_read_review=account_read_review_fixture()
         from nexus.paper_provider_post_activity_review import fixture_report as post_activity_fixture
         post_activity=post_activity_fixture()
+        from nexus.paper_provider_budget_ack_evidence import fixture_report as budget_ack_fixture
+        budget_ack=budget_ack_fixture()
         from nexus.paper_recovery_step import fixture_report as recovery_step_fixture
         bounded_step=recovery_step_fixture()
         from nexus.paper_recovery_drill import fixture_report as crash_fixture
@@ -927,7 +930,7 @@ def _pacing_trial():
         from nexus.sqlite_journal_guard import path_fixture_report
         from nexus.alpaca_paper_contract import timestamp_fixture_report
         from nexus.paper_read_pacing import completion_fixture_report
-        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),owner_scope_durability=_owner_scope_durability_trial(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,account_read_history_review=account_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),owner_scope_durability=_owner_scope_durability_trial(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,provider_budget_write_acknowledgement=budget_ack,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,account_read_history_review=account_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -1999,6 +2002,16 @@ def _validate(profile, result):
             'ready_for_routing','live_orders_enabled','money_movement_enabled',
             'release_approved')),
             'PROVIDER_READ_RECOVERY_AUTHORITY')
+        budget_ack=result['provider_budget_write_acknowledgement']
+        from nexus.paper_provider_budget_ack_evidence import (
+            CHECKS as BUDGET_ACK_CHECKS, FLAGS as BUDGET_ACK_FLAGS)
+        _require(budget_ack['source']==
+            'TEMPORARY_PROVIDER_BUDGET_ACK_FIXTURE' and
+            budget_ack['passed'] is True and
+            all(budget_ack[k] is True for k in BUDGET_ACK_CHECKS),
+            'PROVIDER_BUDGET_ACK_FENCES')
+        _require(all(budget_ack[k] is False for k in BUDGET_ACK_FLAGS),
+            'PROVIDER_BUDGET_ACK_AUTHORITY')
         provider_read=result['provider_read_history_review']
         _require(provider_read['source']=='TEMPORARY_LOCAL_PROVIDER_READ_HISTORY_FIXTURE' and
             provider_read['passed'] is True and all(provider_read[k] is True for k in

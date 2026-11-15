@@ -275,10 +275,6 @@ class PaperReadPacing:
             require_bound_path()
             _require_main_connection(db, bound_path)
             require_bound_path()
-            if (write and not new and not recovery_pending and
-                    _main_has_content(bound_path)):
-                _require_main_connection_content(db, bound_path)
-                require_bound_path()
             def setup(statement):
                 require_bound_path()
                 result = db.execute(statement)
@@ -286,15 +282,24 @@ class PaperReadPacing:
                 return result
             setup(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
-                setup('PRAGMA journal_mode=DELETE'); setup('PRAGMA synchronous=FULL')
+                # Do not read/cache main-database pages before owning the
+                # write reservation. Otherwise a connection waiting behind a
+                # competing commit can later append from its stale page cache
+                # and admit two callers against the same prior head.
+                setup('PRAGMA synchronous=FULL')
+                setup('BEGIN IMMEDIATE')
+                mode = setup('PRAGMA journal_mode').fetchone()
+                if mode != ('delete',):
+                    _fail('JOURNAL_MODE_REVIEW_REQUIRED')
                 size = setup('PRAGMA page_size').fetchone()[0]
                 setup(f'PRAGMA max_page_count={MAX_DATABASE_BYTES // size}')
-                setup('BEGIN IMMEDIATE')
-                # BEGIN IMMEDIATE lets SQLite complete a retained hot-journal
-                # rollback.  Verify the recovered connection and pathname
-                # bytes before the first application-level append.
-                if (not new and recovery_pending and
-                        _main_has_content(bound_path)):
+                # Pin content only after owning SQLite's write lock.  A
+                # pre-lock serialization can be invalidated by a concurrent
+                # writer's commit and leave this connection reporting a raw
+                # disk-I/O failure. BEGIN IMMEDIATE also lets SQLite complete
+                # a retained hot-journal rollback. Verify the current locked
+                # connection and pathname bytes before the first append.
+                if not new and _main_has_content(bound_path):
                     _require_main_connection_content(db, bound_path)
                     require_bound_path()
                 if new:
@@ -557,13 +562,24 @@ class PaperReadPacing:
         """Local OS lease; runtime readers hold it through all IO and cleanup."""
         return _ReadOwnership(self)
 
+    @contextmanager
+    def _write_guard(self, ownership):
+        """Serialize legacy writers; typed readers retain their caller lease."""
+        if ownership is None:
+            with self.ownership() as internal:
+                yield internal
+            return
+        self._owned(ownership)
+        yield ownership
+
     def begin(self, *, admission, ownership=None, operation=None):
         """Internal callback samples permission/clock after lock and before commit."""
         if operation is not None:
             if type(operation) is not str or operation not in OPERATIONS:_fail('OPERATION_INVALID')
             if ownership is None:_fail('OPERATION_OWNER_REQUIRED')
             self._owned(ownership)
-        with closing(self._connect(write=True)) as db:
+        with self._write_guard(ownership), closing(
+                self._connect(write=True)) as db:
             with _transaction(db):
                 state = self._load(db)
                 if ownership is not None: self._owned(ownership)
@@ -593,8 +609,16 @@ class PaperReadPacing:
         """Retain fixed outcome/delay only; a lost return never erases the result."""
         self._path_check()
         if not self.path.exists(): _fail('BINDING_MISSING')
-        if ownership is not None:self._owned(ownership)
-        with closing(self._connect(write=True)) as db:
+        if ownership is not None:
+            self._owned(ownership)
+        elif self.inspect()['pending_operation'] not in (None,
+                LEGACY_OPERATION):
+            # Preserve the typed API contract before the internal legacy
+            # writer lease can collide with the caller's held-through-I/O
+            # owner. The locked transaction repeats all token/owner checks.
+            _fail('OPERATION_OWNER_REQUIRED')
+        with self._write_guard(ownership), closing(
+                self._connect(write=True)) as db:
             with _transaction(db):
                 state = self._load(db)
                 if state['pending_token'] is None or token != state['pending_token']: _fail('TOKEN_DISAGREEMENT')

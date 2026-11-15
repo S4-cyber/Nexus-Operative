@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.328'
+REVISION = '0.340.329'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -75,6 +75,19 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
         'the checkpoint or attempt for exact no-network replay while keeping '
         'provider-request, automatic-retry, routing, funds and release '
         'authority false' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Sustained-trial session and quote evidence must cross an explicit commit
+# boundary even though the injected profile remains non-authoritative.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every acknowledged forward-session or retained-quote '
+        'evidence commit now binds the exact SQLite main connection and '
+        'committed bytes to a bounded single-link main file, hashes the exact '
+        'writable descriptor before and after explicit fsync and flushes a '
+        'new exact POSIX parent entry; flush uncertainty stops the runner, '
+        'releases ownership and leaves the retained session requiring review '
+        'without granting sustained-market or release acceptance'
+        if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -1086,7 +1099,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.328 extends explicit post-commit durability to the retained request-bound paper quote journal used by offline quote/reconciliation review. Every acknowledged new or duplicate receipt now requires the committed SQLite connection bytes to match a stable bounded main-file fingerprint, reopens only the exact regular single-link main file, hashes the writable descriptor before and after `fsync`, and rechecks identity and bytes. A new POSIX main entry additionally flushes its exact validated parent directory; Windows retains the exact main-file flush because Python exposes no portable directory-fsync API. File-flush failure, parent-descriptor substitution and process-control interruption retain the committed quote receipt for explicit exact duplicate replay without another provider request. Mandatory offline quote-retention evidence injects durability uncertainty and `KeyboardInterrupt`, then proves retained exact replay with all authority flags false. This is local explicit flush observation for supplied/unattested quote evidence, not physical-power-loss proof, an atomic lease against non-cooperating replacement, native Windows acceptance, provider source or delivery attestation, sustained-market coverage, strategy realism, broker reconciliation, funding readiness, live trading or release approval. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.329 extends explicit post-commit durability to the retained forward-session and quote-evidence journal used by sustained-trial review. Each acknowledged session transition or quote observation now freezes a non-symlink data root, rejects unsafe inherited main files and WAL layouts, requires the exact SQLite main connection and committed bytes to match one bounded regular single-link file, hashes the exact writable descriptor before and after `fsync`, and rechecks identity and bytes. A new POSIX main entry additionally flushes its exact validated parent directory; Windows retains the exact main-file flush because Python exposes no portable directory-fsync API. File-flush failure, parent-descriptor substitution or process-control interruption stops the runner, releases local ownership and leaves the committed session visible as interrupted/review-required rather than acknowledging it. Mandatory bounded forward evidence injects durability uncertainty and `KeyboardInterrupt`, then proves the retained review state with every provider, broker, live, sustained-forward and release authority flag false. This is local injected evidence and explicit flush observation, not physical-power-loss proof, an atomic full-ancestor lease, native Windows acceptance, public-feed source or duration attestation, strategy realism, broker reconciliation, funding readiness, live trading or release approval. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

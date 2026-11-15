@@ -3,6 +3,26 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## Active M1-M9 execution discipline
+
+Before every development edit, recover the fresh development head, active stacked reviews,
+exact-head CI and current blockers, then read the read-only
+`snapshot()['milestone_execution_plan']` and `snapshot()['milestone_work_batches']` together
+with the D1-D9 acceptance stages. Select the largest coherent safe batch from the highest
+priority milestone that does not overlap an active write. External broker, genuine-feed,
+native-Windows or independent-review blockers do not justify stalling: continue separate
+offline candidates while preserving the blocker and required evidence exactly. Parallelize
+independent read-only inspection and tests, but serialize repository writes and publish only
+with an expected-head lease.
+
+Every M1-M9 task remains `REVIEW_REQUIRED` until its stated evidence is independently
+available; code, version numbers, test counts, synthetic scores and local hashes are not task
+acceptance. Do not raise the weighted 38% baseline merely for implementing or testing a task.
+Keep release approval, trading permission and launch-date prediction separate, preserve OFF
+defaults, limits, account checks, fail-closed exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help, and never publish private broker/account
+evidence or credentials.
+
 ## v0.340.321 provider transaction acknowledgement binding
 
 Provider POST and GET write contexts now retain their captured SQLite main-file identity through transaction finalization, require the exact main connection and file before close, and sample the same pathname identity again after close. Existing and new contexts both reject an uncommitted return. A during-transaction replacement or injected post-commit identity fault fails closed, preserves the replacement, and leaves any committed pending reservation unavailable for automatic retry or capacity reuse; exception unwinding also rechecks an existing main path. Hosted Windows regression exposed that the disposable provider-result fixture compared a long frozen journal path with the temporary root's 8.3 spelling; it now derives each private relative manifest name against either the caller's lexical root or that exact root's resolved spelling, rejecting paths outside both, with an alias-path regression. The release-trial wrapper also preserves only reviewed fixed paper-tool failure codes without exposing child output, paths or private inputs. This is a sampled local acknowledgement boundary and evidence-path correction, not an atomic directory lease against a non-cooperating change after the final sample, native Windows durability, provider-wide coordination, broker/account/source acceptance, routing, funds, live or release authority. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.

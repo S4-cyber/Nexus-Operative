@@ -69,6 +69,120 @@ Reassess after meaningful integration, acceptance or scope changes; no automatic
 
 Assessment basis: commit `b2a9bc6da241bb8c7f0e1dfe1b2ed6b251bf467c`; exact weighted index 38.0 before rounding. This is an assessment, not an independently measured completion percentage or permission.
 
+## Engineering milestone execution queue (read-only; not acceptance)
+
+Every task remains REVIEW_REQUIRED until separately evidenced and independently reviewed.
+Effort bands are rough engineering estimates; external wait and observation windows are separate.
+Suggested priority: M8 broker paper, M4 reconciliation, M3 risk, M7 sustained operation,
+M1 Windows, M2 data, M5 capacity, M6 research, M9 final acceptance.
+Do offline work in parallel when account/Windows/feed access blocks external gates;
+serialize shared branch writes, pin expected heads, and never bypass fail-closed controls.
+No percentage, acceptance or 1.0 approval is inferred from checklist size.
+
+### M1 — Windows packaging and recovery
+
+Priority: P0; external dependency: Windows/owner.
+
+- [ ] M1.1 Complete exact-source installer regression (EXTERNAL_OR_NATIVE_GATE; 2–3 engineering days). Acceptance evidence: Run full Windows EXE, upgrade, rollback, uninstall, checksum and distribution acceptance.
+- [ ] M1.2 Test ordinary-user installation and ACLs (EXTERNAL_OR_NATIVE_GATE; 3–5 engineering days). Acceptance evidence: Retain a sanitized non-elevated owner-profile probe and native window behavior report.
+- [ ] M1.3 Drill backup, restore and interruption (EXTERNAL_OR_NATIVE_GATE; 4–7 engineering days). Acceptance evidence: Independently compare cold SQLite/hash-chain/position recovery across power-loss-like faults.
+- [ ] M1.4 Reconcile stacked review releases (OFFLINE_CANDIDATE; 1–2 engineering days). Acceptance evidence: Verify PR ancestry, CI outcomes and correct package/evidence source identities.
+- [ ] M1.5 Audit versioned distributable (OFFLINE_CANDIDATE; 2–3 engineering days). Acceptance evidence: Check EXE/installer/wheel/version, artifact hash, private data exclusion and reproducible manifest.
+
+### M2 — Market data and provenance
+
+Priority: P1; external dependency: Source/independent.
+
+- [ ] M2.1 Specify source rights and timestamp policy (OFFLINE_CANDIDATE; 2–3 engineering days). Acceptance evidence: Document venues, revisions, allowed uses and event/arrival/receipt clock domains.
+- [ ] M2.2 Stress gaps, conflicts and revisions (OFFLINE_CANDIDATE; 3–5 engineering days). Acceptance evidence: Exercise out-of-order, duplicate, missing, stale and incompatible-feed fail-closed fixtures.
+- [ ] M2.3 Retain immutable public-feed provenance (OFFLINE_CANDIDATE; 3–5 engineering days). Acceptance evidence: Use bounded hash-verified receipts, deduplication and restart/outage coverage tests.
+- [ ] M2.4 Collect independently witnessed genuine feeds (EXTERNAL_OR_NATIVE_GATE; 3–7 engineering days; actual source-dependent). Acceptance evidence: Keep real source evidence and rate/clock/outage diagnostics private.
+- [ ] M2.5 Audit listing and survivorship effects (EXTERNAL_OR_NATIVE_GATE; 2–4 engineering days; independent review). Acceptance evidence: Independent review of delistings, revisions, licensing and source consistency.
+
+### M3 — Decision speed and risk authority
+
+Priority: P0; external dependency: Offline/Windows.
+
+- [ ] M3.1 Map all admission authorities (OFFLINE_CANDIDATE; 2–3 engineering days). Acceptance evidence: Prove OFF defaults, tier/account gates, no implicit resumption or learned-policy promotion.
+- [ ] M3.2 Stress queue, expiration and emergency reserve (OFFLINE_CANDIDATE; 3–5 engineering days). Acceptance evidence: Measure durable p50/p95/p99, overflow and command/ID bounds under bursts.
+- [ ] M3.3 Inject bad clocks, quotes and source loss (OFFLINE_CANDIDATE; 2–4 engineering days). Acceptance evidence: Prove stale, discontinuous, overloaded and missing feeds fail closed.
+- [ ] M3.4 Prove independent emergency stop under contention (EXTERNAL_OR_NATIVE_GATE; 3–6 engineering days; native Windows required). Acceptance evidence: Run separate-process stop against hung workers and locked journals, including native Windows.
+- [ ] M3.5 Review worst-case exposure after exits (EXTERNAL_OR_NATIVE_GATE; 2–4 engineering days; independent review). Acceptance evidence: Independent audit of risk limits, partial fills and unresolved exposure.
+
+### M4 — Order lifecycle and portfolio reconciliation
+
+Priority: P0; external dependency: Broker-paper/independent.
+
+- [ ] M4.1 Reproduce idempotent order state machine (OFFLINE_CANDIDATE; 3–5 engineering days). Acceptance evidence: Crash/lost-ack/unknown/duplicate requests, partial fills, cancel and expiry replay.
+- [ ] M4.2 Review fee, hold and balance conservation (OFFLINE_CANDIDATE; 3–5 engineering days). Acceptance evidence: Fixture-backed partial fills, reservations, fees, cash and positions.
+- [ ] M4.3 Capture authorized paper snapshots (EXTERNAL_OR_NATIVE_GATE; 3–7 engineering days; authorized broker required). Acceptance evidence: Privately preserve provider identity, source, account and bounded execution/fee receipts.
+- [ ] M4.4 Match broker activity with internal accounting (EXTERNAL_OR_NATIVE_GATE; 4–8 engineering days; broker evidence required). Acceptance evidence: Independently reconcile orders, timestamps, fees, holds, open terms and positions.
+- [ ] M4.5 Exercise disagreement and safe recovery (OFFLINE_CANDIDATE; 3–5 engineering days; independent review). Acceptance evidence: Fail closed without implicit retry, fund movement or trading authority.
+
+### M5 — Durable latency and capacity
+
+Priority: P1; external dependency: Offline/Windows.
+
+- [ ] M5.1 Calculate worst-case command and ID reserves (OFFLINE_CANDIDATE; 2–4 engineering days). Acceptance evidence: Keep emergency/cancel/expiry capacity when regular operations reach limits.
+- [ ] M5.2 Run multiepoch stress and checkpoint drills (OFFLINE_CANDIDATE; 4–8 engineering days). Acceptance evidence: Test interruptions, retention, archive and ID reuse over repeated generations.
+- [ ] M5.3 Restore archived state on real Windows (EXTERNAL_OR_NATIVE_GATE; 3–6 engineering days; native Windows required). Acceptance evidence: Verify native markers, backup, rollback, private volumes and interrupted rotation.
+- [ ] M5.4 Benchmark full durable operation latency (OFFLINE_CANDIDATE; 2–4 engineering days). Acceptance evidence: Record conservative p50/p95/p99 and overload/stall behavior.
+- [ ] M5.5 Review disk, corruption and retention policy (EXTERNAL_OR_NATIVE_GATE; 2–4 engineering days; independent review). Acceptance evidence: Independent fault/retention audit without silent history loss.
+
+### M6 — Scientific strategy evidence
+
+Priority: P1; external dependency: Research/source.
+
+- [ ] M6.1 Freeze causal features and chronological splits (EXTERNAL_OR_NATIVE_GATE; 3–5 engineering days). Acceptance evidence: No lookahead, purged windows or training/validation leakage.
+- [ ] M6.2 Compare baselines under execution costs (OFFLINE_CANDIDATE; 3–5 engineering days). Acceptance evidence: Model adverse fills, fees, spread, slippage and portfolio drawdowns.
+- [ ] M6.3 Audit calibration, regimes and survivorship (EXTERNAL_OR_NATIVE_GATE; 3–6 engineering days; independent review). Acceptance evidence: Independent walk-forward sensitivity and fold-level error assessment.
+- [ ] M6.4 Record precommitted genuine forward predictions (EXTERNAL_OR_NATIVE_GATE; 7–14 engineering days plus forward observation). Acceptance evidence: Time-stamped policy/quote/result evidence separated from synthetic scores.
+- [ ] M6.5 Govern model promotion and rollback (EXTERNAL_OR_NATIVE_GATE; 2–4 engineering days; independent review). Acceptance evidence: Independent approval before changing autonomous policy; never auto-promote trained models.
+
+### M7 — Unattended paper operation
+
+Priority: P0; external dependency: Genuine-feed/Windows.
+
+- [ ] M7.1 Finish cold-runner restart and stop fault matrix (EXTERNAL_OR_NATIVE_GATE; 3–5 engineering days). Acceptance evidence: Exercise independent stop, queue loss, stale state and orphaned tasks.
+- [ ] M7.2 Prove observational coverage semantics (OFFLINE_CANDIDATE; 2–4 engineering days). Acceptance evidence: Use exact session heads and eligible unioned intervals excluding gaps/injection.
+- [ ] M7.3 Conduct supervised 72-hour genuine-feed paper trial (EXTERNAL_OR_NATIVE_GATE; At least 72 calendar hours plus 2–4 analysis days). Acceptance evidence: Record actual source, interruptions and 95% coverage target as diagnostic only.
+- [ ] M7.4 Review incidents and actual cost/execution outcomes (EXTERNAL_OR_NATIVE_GATE; 3–6 engineering days; independent review). Acceptance evidence: Independent fee, loss, drawdown, outage and recovery assessment.
+- [ ] M7.5 Exercise owner native-profile sustained recovery (EXTERNAL_OR_NATIVE_GATE; 3–6 engineering days; owner Windows required). Acceptance evidence: Retain private restart/cold-replay and ordinary-user operating evidence.
+
+### M8 — Broker paper integration and operations
+
+Priority: P0; external dependency: Authorized paper account.
+
+- [ ] M8.1 Verify paper-only provider identity and entitlements (EXTERNAL_OR_NATIVE_GATE; 2–4 engineering days; broker access required). Acceptance evidence: Scoped credentials, hostname, account and quota policy; no live permissions.
+- [ ] M8.2 Finish single-attempt POST/GET/SSE uncertainty matrix (OFFLINE_CANDIDATE; 4–7 engineering days). Acceptance evidence: Lost acknowledgements, revoked permissions, stream gaps, pacing and fail-closed replays.
+- [ ] M8.3 Supervise bounded actual paper order lifecycle (EXTERNAL_OR_NATIVE_GATE; 3–7 engineering days; supervised paper account required). Acceptance evidence: Paper-only accepted/unknown order, fill and cancellation receipts.
+- [ ] M8.4 Validate provider quota, clock and reconnect semantics (EXTERNAL_OR_NATIVE_GATE; 3–6 engineering days; broker access required). Acceptance evidence: Real headers, activity delivery, ordering, provider-wide pacing and deduplication.
+- [ ] M8.5 Obtain independent broker-paper account reconciliation (EXTERNAL_OR_NATIVE_GATE; 3–6 engineering days; independent review). Acceptance evidence: Account, fees, holds, cash, positions, source and original events reviewed.
+
+### M9 — Release acceptance and authorization
+
+Priority: P0; external dependency: Independent/owner.
+
+- [ ] M9.1 Freeze threat model, release scope and privacy (OFFLINE_CANDIDATE; 3–5 engineering days). Acceptance evidence: Exact source manifest, secret audit, permissions and residual-risk register.
+- [ ] M9.2 Complete exact-head security/browser/Windows/package gates (EXTERNAL_OR_NATIVE_GATE; 2–5 engineering days; native Windows required). Acceptance evidence: All required terminal CI, installation, prior-upgrade and saved-evidence checks.
+- [ ] M9.3 Obtain separate reviews for all nine stages (EXTERNAL_OR_NATIVE_GATE; 4–10 engineering days; independent reviews). Acceptance evidence: Independently signed evidence, unresolved blockers and residual risk decisions.
+- [ ] M9.4 Validate funding/live/cloud readiness without activation (EXTERNAL_OR_NATIVE_GATE; 5–10 engineering days; external readiness only). Acceptance evidence: Secure account/keys, single execution owner, remote stop, billing and recovery dry-run.
+- [ ] M9.5 Collect explicit owner release decision (EXTERNAL_OR_NATIVE_GATE; Owner decision; no estimated release date). Acceptance evidence: No 1.0, fund movement or real trading before all gates and owner approval.
+
+### Per-run execution discipline
+
+1. Read current development head, active PR/sprint, source roadmap, AGENTS,
+   LAUNCH_DRIVE, VERSIONING and exact-head CI failures before selecting work.
+2. Choose the largest coherent safe batch from highest-priority unaccepted tasks;
+   group implementation, regression, saved evidence, packaging and documentation.
+3. Parallelize read-only inspections and independent tests; serialize shared writes
+   using isolated branches and expected-head leases; preserve remote-only changes.
+4. Execute exact-source offline profiles, saved-evidence verification, security
+   and platform/browser/installer checks that are actually available.
+5. Record verified commits, failed/pending gates, follow-on dependencies and
+   the next batch. Do not raise 38%/30–45%/0-of-9 without meaningful acceptance.
+6. Keep broker/funding/live/cloud permissions OFF; private evidence never goes to Git.
+
 ## Remaining milestone acceptance checklist
 
 This is a read-only work plan, not an executable workflow or trading permission. Steps remain REVIEW_REQUIRED until separately evidenced and reviewed. Dependencies describe acceptance sequencing; development can proceed in parallel. The next major operational gate is D4, alongside sustained D3 trials.

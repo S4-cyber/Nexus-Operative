@@ -18,6 +18,8 @@ import tempfile
 import time
 
 PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'activity_acceptance', 'reconciliation_acceptance', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
+DEFAULT_CHILD_TIMEOUT_SECONDS = 240
+WINDOWS_RECONCILIATION_ACCEPTANCE_TIMEOUT_SECONDS = 600
 PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
     'unconfirmed_read_denied', 'invalid_scope_denied', 'foreign_origin_denied',
     'precredential_denial_reset_scoped',
@@ -2870,6 +2872,13 @@ def source_digest(root):
     return dict(files=len(entries), sha256=hashlib.sha256(json.dumps(entries, separators=(',', ':')).encode()).hexdigest())
 
 
+def _profile_timeout_seconds(profile):
+    """Keep the slow native Windows reconciliation fixture bounded with measured headroom."""
+    if profile == 'reconciliation_acceptance' and platform.system() == 'Windows':
+        return WINDOWS_RECONCILIATION_ACCEPTANCE_TIMEOUT_SECONDS
+    return DEFAULT_CHILD_TIMEOUT_SECONDS
+
+
 def run():
     root = Path(__file__).resolve().parents[1]
     source = source_digest(root); results = {}; timings = {}
@@ -2881,7 +2890,8 @@ def run():
             started = time.perf_counter()
             try:
                 child = subprocess.run([sys.executable, '-c', expression], cwd=root, env=env,
-                                       capture_output=True, text=True, timeout=240)
+                                       capture_output=True, text=True,
+                                       timeout=_profile_timeout_seconds(profile))
             except subprocess.TimeoutExpired:
                 raise ReleaseTrialError('RELEASE_TRIAL_' + profile.upper() + '_CHILD_TIMEOUT') from None
             if child.returncode != 0:

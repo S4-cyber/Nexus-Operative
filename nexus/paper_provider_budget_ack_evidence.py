@@ -9,12 +9,15 @@ import sqlite3
 import stat
 import tempfile
 
+from nexus import alpaca_paper_contract as contract
+from nexus import broker_request_journal as request_module
 from nexus import paper_provider_post_budget as post_module
 from nexus import paper_provider_read_budget as read_module
 from nexus import paper_read_pacing as pacing_module
 from nexus.paper_provider_post_budget import PaperProviderPostBudget, ZERO
 from nexus.paper_provider_read_budget import PaperProviderReadBudget
 from nexus.paper_read_pacing import PaperReadPacing
+from nexus.broker_request_journal import BrokerRequestJournal
 
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 CHECKS = (
@@ -28,6 +31,9 @@ CHECKS = (
     'read_new_entry_flush_policy_pinned',
     'account_read_main_flush_required',
     'account_read_new_entry_flush_policy_pinned',
+    'request_journal_main_flush_required',
+    'request_journal_new_entry_flush_policy_pinned',
+    'portable_windows_ctime_policy_pinned',
     'committed_uncertainty_retained',
 )
 FLAGS = (
@@ -176,6 +182,53 @@ def _observe_new_entry_flush(subject, budget, invoke):
     return calls == (['file'] if os.name == 'nt' else ['file', 'directory'])
 
 
+def _request_plan():
+    asset = dict(symbol='BTC/USD', **{'class': 'crypto'}, status='active',
+        tradable=True, fractionable=True, min_order_size='.5',
+        min_trade_increment='.5', price_increment='.5')
+    return contract.preview('nx_request_flush_evidence', 'BTC-USD', 'BUY',
+        '2', '100', asset, metadata_at=1000, evaluated_at=1001)
+
+
+def _deny_request_main_flush(subject, invoke, code):
+    original = subject.os.fsync
+    attempts = []
+
+    def fsync(descriptor):
+        if stat.S_ISREG(os.fstat(descriptor).st_mode):
+            attempts.append('file')
+            raise OSError('injected private request-journal flush failure')
+        return original(descriptor)
+
+    subject.os.fsync = fsync
+    try:
+        invoke()
+    except ValueError as error:
+        denied = str(error) == code
+    else:
+        denied = False
+    finally:
+        subject.os.fsync = original
+    return denied and attempts == ['file']
+
+
+def _observe_request_new_entry_flush(subject, invoke):
+    original = subject.os.fsync
+    calls = []
+
+    def fsync(descriptor):
+        mode = os.fstat(descriptor).st_mode
+        calls.append('directory' if stat.S_ISDIR(mode) else 'file')
+        return original(descriptor)
+
+    subject.os.fsync = fsync
+    try:
+        invoke()
+    finally:
+        subject.os.fsync = original
+    return calls == (['file'] if os.name == 'nt' else ['file', 'directory'])
+
+
 def fixture_report():
     """Prove bounded content acknowledgement without external authority."""
     with tempfile.TemporaryDirectory(
@@ -242,6 +295,46 @@ def fixture_report():
                 pacing_module, account_entry,
                 lambda owner: _account_read_attempt(account_entry, owner)))
 
+        request_flush = BrokerRequestJournal(
+            root / 'request-flush.sqlite3', ACCOUNT)
+        request_flush.prepare(_request_plan())
+        request_journal_main_flush_required = _deny_request_main_flush(
+            request_module,
+            lambda: request_flush.mark_submission_uncertain(
+                'nx_request_flush_evidence'),
+            'BROKER_JOURNAL_COMMIT_DURABILITY_UNCERTAIN')
+
+        request_entry = BrokerRequestJournal(
+            root / 'request-entry.sqlite3', ACCOUNT)
+        request_journal_new_entry_flush_policy_pinned = (
+            _observe_request_new_entry_flush(request_module,
+                lambda: request_entry.prepare(_request_plan())))
+
+        windows_fingerprint = ('C:/nexus/private.sqlite3', 1, 2, 4096,
+            3, None, 1, 'a' * 64)
+        invalid_windows_fingerprint = (*windows_fingerprint[:5], 4,
+            *windows_fingerprint[6:])
+        def rejects_nonportable_ctime(subject):
+            try:
+                subject._committed_fingerprint_boundary(
+                    invalid_windows_fingerprint, host='nt')
+            except RuntimeError:
+                return True
+            return False
+        portable_windows_ctime_policy_pinned = (
+            pacing_module._committed_fingerprint_boundary(
+                windows_fingerprint, host='nt') == windows_fingerprint and
+            request_module._committed_fingerprint_boundary(
+                windows_fingerprint, host='nt') == windows_fingerprint and
+            pacing_module._captured_fingerprint_boundary(
+                invalid_windows_fingerprint, host='nt') ==
+                    windows_fingerprint and
+            request_module._captured_fingerprint_boundary(
+                invalid_windows_fingerprint, host='nt') ==
+                    windows_fingerprint and
+            rejects_nonportable_ctime(pacing_module) and
+            rejects_nonportable_ctime(request_module))
+
         states = (post_content.inspect(), post_close.inspect(),
             read_content.inspect(), read_close.inspect(), post_flush.inspect(),
             read_flush.inspect(), post_entry.inspect(), read_entry.inspect())
@@ -255,8 +348,14 @@ def fixture_report():
             state['pending_token'] is not None and
             state['ready_for_routing'] is False
             for state in account_states)
+        request_state = request_flush.recovery()['requests'][0]
+        request_uncertainty_retained = (
+            request_state['submission_attempt_marked'] is True and
+            request_state['automatic_retry'] is False and
+            request_state['sendable'] is False)
         committed_uncertainty_retained = (
-            provider_uncertainty_retained and account_uncertainty_retained)
+            provider_uncertainty_retained and account_uncertainty_retained and
+            request_uncertainty_retained)
 
     checks = dict(
         post_connection_content_pinned=post_connection_content_pinned,
@@ -272,12 +371,19 @@ def fixture_report():
         account_read_main_flush_required=account_read_main_flush_required,
         account_read_new_entry_flush_policy_pinned=
             account_read_new_entry_flush_policy_pinned,
+        request_journal_main_flush_required=
+            request_journal_main_flush_required,
+        request_journal_new_entry_flush_policy_pinned=
+            request_journal_new_entry_flush_policy_pinned,
+        portable_windows_ctime_policy_pinned=
+            portable_windows_ctime_policy_pinned,
         committed_uncertainty_retained=committed_uncertainty_retained,
     )
     return dict(source='TEMPORARY_PROVIDER_BUDGET_ACK_FIXTURE',
         passed=all(checks.values()), **checks,
         **{flag: False for flag in FLAGS},
         limitations=('Injected local SQLite content and metadata changes only; '
-            'explicit local flush observation is not physical-power-loss or '
-            'native Windows acceptance; no provider connection, account '
+            'explicit local budget/request flush observation is not '
+            'physical-power-loss or native Windows acceptance; no provider '
+            'connection, account '
             'acceptance, routing, funds, live trading or release approval.'))

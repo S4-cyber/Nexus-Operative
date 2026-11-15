@@ -12,6 +12,30 @@ ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 PREFIX = 'PAPER_READ_PACING_'
 
 
+def test_windows_committed_fingerprint_schema_uses_portable_ctime():
+    fingerprint = ('C:/pacing.sqlite3', 1, 2, 4096, 3, None, 1,
+        'a' * 64)
+    assert pacing._committed_fingerprint_boundary(
+        fingerprint, host='nt') == fingerprint
+    with pytest.raises(RuntimeError):
+        pacing._committed_fingerprint_boundary(
+            (*fingerprint[:5], 4, *fingerprint[6:]), host='nt')
+
+
+def test_windows_cold_fingerprint_ctime_normalizes_to_committed_schema(
+        monkeypatch):
+    expected = ('C:/pacing.sqlite3', 1, 2, 4096, 3, None, 1,
+        'a' * 64)
+    observed = (*expected[:5], 4, *expected[6:])
+    monkeypatch.setattr(pacing, 'capture_file_fingerprints',
+        lambda *_args, **_kwargs: (observed,))
+    pacing._require_committed_fingerprint(
+        Path('pacing.sqlite3'), expected, host='nt')
+    with pytest.raises(RuntimeError):
+        pacing._require_committed_fingerprint(Path('pacing.sqlite3'),
+            (*expected[:4], 5, *expected[5:]), host='nt')
+
+
 def _begin(gate, owner, at=1000):
     return gate.begin(admission=lambda: at, ownership=owner)
 

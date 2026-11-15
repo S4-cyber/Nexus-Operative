@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 import tempfile
 from uuid import UUID
 from nexus import alpaca_paper_contract as contract
@@ -38,6 +39,239 @@ def _database_busy(error):
     code = getattr(error, 'sqlite_errorcode', None)
     return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
         any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+def _main_fingerprint(path):
+    """Hash the exact bounded request-journal main file under write ownership."""
+    def fail():
+        _fail('CONNECTION_CONTENT_CHANGED')
+    path = Path(path)
+    try:
+        observed = path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink != 1 or
+                not 1 <= observed.st_size <= MAX_DATABASE_BYTES):
+            fail()
+        resolved = path.resolve()
+        flags = (os.O_RDONLY | getattr(os, 'O_BINARY', 0) |
+            getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+        digest = hashlib.sha256(); remaining = MAX_DATABASE_BYTES + 1
+        with os.fdopen(os.open(resolved, flags), 'rb', buffering=0) as stream:
+            before = os.fstat(stream.fileno())
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                    not 1 <= before.st_size <= MAX_DATABASE_BYTES or
+                    (before.st_dev, before.st_ino) !=
+                        (observed.st_dev, observed.st_ino)):
+                fail()
+            while remaining:
+                block = stream.read(min(1024 * 1024, remaining))
+                if not block:
+                    break
+                digest.update(block); remaining -= len(block)
+            after = os.fstat(stream.fileno())
+        final = path.lstat()
+        def boundary(value, *, pathname=False):
+            return (value.st_dev, value.st_ino, value.st_size,
+                value.st_mtime_ns,
+                value.st_ctime_ns if os.name != 'nt' or not pathname else None,
+                value.st_nlink)
+        if (remaining == 0 or boundary(observed, pathname=True) !=
+                boundary(before, pathname=True) or
+                boundary(before) != boundary(after) or
+                boundary(after, pathname=True) !=
+                    boundary(final, pathname=True) or
+                not stat.S_ISREG(final.st_mode)):
+            fail()
+        return (str(resolved), after.st_dev, after.st_ino, after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns if os.name != 'nt' else None,
+            after.st_nlink, digest.hexdigest())
+    except ValueError:
+        raise
+    except (OSError, RuntimeError, TypeError):
+        fail()
+
+
+def _require_main_connection(db, bound_path):
+    """Require SQLite to report exactly the selected request-journal main."""
+    try:
+        rows = db.execute('PRAGMA database_list').fetchall()
+        if (len(rows) != 1 or len(rows[0]) != 3 or
+                type(rows[0][0]) is not int or rows[0][1] != 'main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                Path(rows[0][2]).resolve() != bound_path):
+            _fail('CONNECTION_BINDING_CHANGED')
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        _fail('CONNECTION_BINDING_CHANGED')
+    except (OSError, RuntimeError, sqlite3.Error, TypeError):
+        _fail('CONNECTION_BINDING_CHANGED')
+
+
+def _require_main_connection_content(db, bound_path):
+    """Bind committed connection bytes to one stable pathname fingerprint."""
+    try:
+        serialized = db.serialize(name='main')
+        observed = _main_fingerprint(bound_path)
+        if (type(serialized) is not bytes or
+                len(serialized) != observed[3] or
+                hashlib.sha256(serialized).hexdigest() != observed[7]):
+            _fail('CONNECTION_CONTENT_CHANGED')
+        return observed
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        _fail('CONNECTION_CONTENT_CHANGED')
+    except (MemoryError, OSError, OverflowError, RuntimeError,
+            sqlite3.Error, TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
+
+
+def _active_fingerprint_boundary(item, host=None):
+    host = os.name if host is None else host
+    return (item.st_dev, item.st_ino, item.st_size, item.st_mtime_ns,
+        item.st_ctime_ns if host != 'nt' else None, item.st_nlink)
+
+
+def _committed_fingerprint_boundary(fingerprint, host=None):
+    host = os.name if host is None else host
+    if type(fingerprint) is not tuple or len(fingerprint) != 8:
+        raise RuntimeError
+    path, device, inode, size, mtime, ctime, links, digest = fingerprint
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device, inode, size, mtime, links)) or
+            (type(ctime) is not int if host != 'nt' else ctime is not None) or
+            re.fullmatch(r'[0-9a-f]{64}', digest) is None):
+        raise RuntimeError
+    return (path, device, inode, size, mtime,
+        ctime if host != 'nt' else None, links, digest)
+
+
+def _captured_fingerprint_boundary(fingerprint, host=None):
+    """Normalize the generic cold-file sample to the committed schema."""
+    host = os.name if host is None else host
+    if type(fingerprint) is not tuple or len(fingerprint) != 8:
+        raise RuntimeError
+    path, device, inode, size, mtime, ctime, links, digest = fingerprint
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device, inode, size, mtime, ctime, links)) or
+            re.fullmatch(r'[0-9a-f]{64}', digest) is None):
+        raise RuntimeError
+    return (path, device, inode, size, mtime,
+        ctime if host != 'nt' else None, links, digest)
+
+
+def _require_committed_fingerprint(path, fingerprint, host=None):
+    """Require no sidecars and the exact portable committed main bytes."""
+    expected = _committed_fingerprint_boundary(fingerprint, host=host)
+    observed = capture_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+        'BROKER_JOURNAL_')
+    if (len(observed) != 1 or
+            _captured_fingerprint_boundary(observed[0], host=host) != expected):
+        raise RuntimeError
+
+
+def _descriptor_file_fingerprint(descriptor, resolved):
+    """Hash bounded bytes through the exact writable committed descriptor."""
+    before = os.fstat(descriptor)
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+            not 1 <= before.st_size <= MAX_DATABASE_BYTES):
+        raise RuntimeError
+    original_offset = os.lseek(descriptor, 0, os.SEEK_CUR)
+    digest = hashlib.sha256(); remaining = MAX_DATABASE_BYTES + 1
+    try:
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        while remaining:
+            block = os.read(descriptor, min(1024 * 1024, remaining))
+            if not block:
+                break
+            digest.update(block); remaining -= len(block)
+    finally:
+        os.lseek(descriptor, original_offset, os.SEEK_SET)
+    after = os.fstat(descriptor)
+    if (remaining == 0 or
+            _active_fingerprint_boundary(before) !=
+                _active_fingerprint_boundary(after) or
+            before.st_ctime_ns != after.st_ctime_ns):
+        raise RuntimeError
+    return (str(resolved), after.st_dev, after.st_ino, after.st_size,
+        after.st_mtime_ns, after.st_ctime_ns if os.name != 'nt' else None,
+        after.st_nlink, digest.hexdigest())
+
+
+def _sync_parent_directory(resolved):
+    """Flush only the exact POSIX request-journal parent identity."""
+    parent = resolved.parent
+    before = parent.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise RuntimeError
+    expected = (before.st_dev, before.st_ino)
+    flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
+        getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0))
+    descriptor = os.open(parent, flags)
+    try:
+        opened = os.fstat(descriptor)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != expected):
+            raise RuntimeError
+        os.fsync(descriptor)
+        final = os.fstat(descriptor); observed = parent.lstat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (final.st_dev, final.st_ino) != expected or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISDIR(observed.st_mode) or
+                (observed.st_dev, observed.st_ino) != expected):
+            raise RuntimeError
+    finally:
+        os.close(descriptor)
+
+
+def _sync_committed_store(path, identity, fingerprint, *, new):
+    """Flush the exact request main and a newly published POSIX entry."""
+    try:
+        if (type(new) is not bool or type(identity) is not tuple or
+                len(identity) != 3 or type(identity[0]) is not str):
+            raise RuntimeError
+        path = Path(path); resolved = path.resolve()
+        expected_path, expected_device, expected_inode = identity
+        if str(resolved) != expected_path:
+            raise RuntimeError
+        expected_descriptor = _committed_fingerprint_boundary(fingerprint)
+        require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
+        _require_committed_fingerprint(path, fingerprint)
+        flags = (os.O_RDWR | getattr(os, 'O_BINARY', 0) |
+            getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+        descriptor = os.open(resolved, flags)
+        try:
+            before = os.fstat(descriptor)
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                    not 1 <= before.st_size <= MAX_DATABASE_BYTES or
+                    (before.st_dev, before.st_ino) !=
+                        (expected_device, expected_inode)):
+                raise RuntimeError
+            if (_descriptor_file_fingerprint(descriptor, resolved) !=
+                    expected_descriptor):
+                raise RuntimeError
+            os.fsync(descriptor)
+            if (_descriptor_file_fingerprint(descriptor, resolved) !=
+                    expected_descriptor):
+                raise RuntimeError
+        finally:
+            os.close(descriptor)
+        require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
+        _require_committed_fingerprint(path, fingerprint)
+        if new and os.name != 'nt':
+            _sync_parent_directory(resolved)
+            require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
+            _require_committed_fingerprint(path, fingerprint)
+    except Exception:
+        _fail('COMMIT_DURABILITY_UNCERTAIN')
 
 
 @contextmanager
@@ -98,24 +332,55 @@ class BrokerRequestJournal:
         try:account = str(UUID(paper_account_id))
         except (ValueError,TypeError,AttributeError):raise ValueError('INVALID_PAPER_ACCOUNT_SCOPE')
         self.account_digest = hashlib.sha256(account.encode()).hexdigest()
+        self._connection_contexts = {}
 
     def _check_path(self):
         check_existing(self.path, MAX_DATABASE_BYTES, 'BROKER_JOURNAL_',
             cap_code='BYTE_CAP', symlink_code='SYMLINK_NOT_ALLOWED')
 
     def _connect(self, write=False):
-        self._check_path()
-        new = False
+        try:
+            bound_path = self.path.resolve()
+        except (OSError, RuntimeError, TypeError):
+            _fail('CONNECTION_BINDING_CHANGED')
+        self._check_path(); new = False; bound_identity = None
+        if self.path.exists():
+            bound_identity = capture_file_identities((self.path,),
+                'BROKER_JOURNAL_')
         if write and not self.path.exists():
             self.path.parent.mkdir(parents=True, exist_ok=True)
             try:
                 fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-                os.close(fd); new = True
+                try:
+                    opened = os.fstat(fd)
+                    bound_identity = ((str(bound_path), opened.st_dev,
+                        opened.st_ino),)
+                finally:
+                    os.close(fd)
+                new = True
             except FileExistsError:pass
             self._check_path()
-        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
+        if bound_identity is None and self.path.exists():
+            bound_identity = capture_file_identities((self.path,),
+                'BROKER_JOURNAL_')
+        def require_bound_path():
+            try:
+                if self.path.resolve() != bound_path:
+                    _fail('CONNECTION_BINDING_CHANGED')
+                if bound_identity is not None:
+                    require_file_identities((self.path,), bound_identity,
+                        'BROKER_JOURNAL_')
+            except ValueError:
+                raise
+            except (OSError, RuntimeError, TypeError):
+                _fail('CONNECTION_BINDING_CHANGED')
+        require_bound_path()
+        db = sqlite3.connect(bound_path.as_uri() + ('?mode=rw' if write else '?mode=ro'),
             uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            require_bound_path()
+            _require_main_connection(db, bound_path)
+            require_bound_path()
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE')
@@ -126,6 +391,9 @@ class BrokerRequestJournal:
                 if new:
                     db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._insert(db, 1, 'BIND', dict(schema=SCHEMA, account_sha256=self.account_digest), ZERO)
+                require_bound_path()
+                self._connection_contexts[id(db)] = (new,
+                    bound_identity[0], bound_path, require_bound_path)
             return db
         except sqlite3.OperationalError as error:
             db.close()
@@ -135,6 +403,63 @@ class BrokerRequestJournal:
         except BaseException:
             db.close()
             raise
+
+    def _connection_context(self, db):
+        """Find write context through the small test/runtime proxy surface."""
+        candidate = db; seen = set()
+        while candidate is not None and id(candidate) not in seen:
+            seen.add(id(candidate))
+            context = self._connection_contexts.get(id(candidate))
+            if context is not None:
+                return id(candidate), context
+            try:
+                candidate = getattr(candidate, 'db')
+            except (AttributeError, TypeError):
+                candidate = None
+        _fail('CONNECTION_BINDING_CHANGED')
+
+    @contextmanager
+    def _write_connection(self):
+        """Require exact committed request-journal bytes through explicit flush."""
+        db = self._connect(write=True)
+        raw_id, (new, main_identity, bound_path,
+            require_bound_path) = self._connection_context(db)
+        try:
+            yield db
+        except BaseException:
+            try:
+                db.close()
+            finally:
+                self._connection_contexts.pop(raw_id, None)
+            raise
+        else:
+            acknowledgement_error = None
+            committed_fingerprint = None
+            uncommitted = db.in_transaction
+            try:
+                require_bound_path()
+                _require_main_connection(db, bound_path)
+                if not uncommitted:
+                    committed_fingerprint = (
+                        _require_main_connection_content(db, bound_path))
+                require_bound_path()
+            except BaseException as error:
+                acknowledgement_error = error
+            try:
+                db.close()
+            except BaseException as error:
+                if acknowledgement_error is None:
+                    acknowledgement_error = error
+            finally:
+                self._connection_contexts.pop(raw_id, None)
+            if acknowledgement_error is not None:
+                raise acknowledgement_error
+            require_bound_path()
+            if committed_fingerprint is not None:
+                _sync_committed_store(bound_path, main_identity,
+                    committed_fingerprint, new=new)
+            if uncommitted:
+                _fail('UNCOMMITTED_TRANSACTION')
 
     def _insert(self, db, seq, kind, body, previous):
         encoded = contract.canonical(body)
@@ -305,7 +630,7 @@ class BrokerRequestJournal:
                return_head=False):
         if kind!='PREPARE' and not self.path.exists():
             raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 identity=body['payload']['client_order_id'] if kind=='PREPARE' else body['client_order_id']
@@ -503,7 +828,7 @@ class BrokerRequestJournal:
     def _lookup_write(self, identity, now, result=None, admission=None, expected_head=None):
         self._identity(identity);lookup.clock(now)
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 if expected_head is not None and previous!=expected_head:raise ValueError('BROKER_LOOKUP_HEAD_CHANGED')
@@ -572,7 +897,7 @@ class BrokerRequestJournal:
             'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
         fingerprint = capture_file_fingerprints((self.path,),
             (MAX_DATABASE_BYTES,), 'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _explicit_transaction(db):
                 def require_unchanged():
                     require_file_identities((self.path,), identity,
@@ -723,7 +1048,7 @@ class BrokerRequestJournal:
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         body=dict(client_order_id=client_order_id,token=token,expected_head=expected_head,
                   evaluated_at=evaluated_at,confirm_interrupted=True)
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 if client_order_id not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')

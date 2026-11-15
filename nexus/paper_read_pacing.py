@@ -201,7 +201,8 @@ def _committed_fingerprint_boundary(fingerprint, host=None):
         raise RuntimeError
     path, device, inode, size, mtime, ctime, links, digest = fingerprint
     if (type(path) is not str or any(type(value) is not int for value in
-            (device, inode, size, mtime, ctime, links)) or
+            (device, inode, size, mtime, links)) or
+            (type(ctime) is not int if host != 'nt' else ctime is not None) or
             re.fullmatch(r'[0-9a-f]{64}', digest) is None):
         raise RuntimeError
     return (path, device, inode, size, mtime,

@@ -1,10 +1,18 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.325 broker request journal explicit commit flush
+
+Every acknowledged broker request/recovery write now crosses an explicit post-commit durability boundary. PREPARE, submission markers, observations, lookup begin/results and reviewed interruption records prove the committed SQLite connection bytes against a stable bounded pathname fingerprint, reopen only the exact captured regular single-link main file, hash that writable descriptor before and after `fsync`, and recheck the exact path and bytes. A newly created entry also fsyncs its validated parent directory on POSIX; Windows retains the portable main-file flush because Python exposes no portable directory-fsync API. Flush failure, wrong-directory substitution and descriptor-byte mutation fail closed after commit. Retained request or pending-lookup uncertainty remains reviewable and keeps retry, submission, routing and all trading/release authority false. Exact PR #37 Windows evidence exposed that account-read pacing correctly omitted pathname ctime but its fingerprint schema still required an integer; pacing and request journals now explicitly require the portable omitted-ctime Windows representation. The mandatory bounded provider-budget evidence profile covers that native schema contract and this request journal. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
+
+**Current development build: 0.340.325 (pre-release).**
+
+The finalized exact-source Linux regression passed 6,160 tests with 2 skipped and one existing dependency warning. The broker/reconciliation durability slice passed 666 tests with one existing dependency warning, all 14 browser-controller smoke scripts passed, PORTAL JavaScript parsed successfully, dependency integrity reported no broken requirements and deterministic roadmap regeneration matched the committed document. Sixteen bounded release profiles and saved evidence verify against 407 source files / `1e01e7f2f58d6bddb3294dabbdda8e4a7dd9b261d6c8fecbb2458625a5663b1b`; evidence SHA256 is `380b370069f124b6f4cd4d9661a860659fd316766d0e930636e8c13710156974`. The 163-member wheel reports v0.340.325 and has SHA256 `14b857f28db69173c4b9cb36f7e87509b4354a1f0470dc9a37f2d167894bc254`. `gitleaks` was unavailable locally, so hosted security scanning and fresh exact-source Windows/browser/installer checks remain mandatory. Implementation remains a rough weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; release approval and trading permission remain false. Historical and synthetic results are not future profit predictions.
+
 ## v0.340.324 account-read pacing explicit commit flush
 
 Every committed shared account-read pacing write now crosses the same explicit acknowledgement boundary as the provider budgets. The writer proves its SQLite connection bytes against a stable bounded pathname fingerprint, reopens only the exact captured regular single-link main file, hashes that writable descriptor before and after `fsync`, and rechecks the exact path and bytes. A newly created entry also fsyncs its validated parent directory on POSIX; Windows retains the portable main-file flush because Python exposes no portable directory-fsync API. Flush failure, wrong-directory substitution and descriptor-byte mutation fail closed after commit, retain the pending reservation and keep request-capacity reuse and all trading/release authority false. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
 
-**Current development build: 0.340.324 (pre-release).**
+**Previous development build: 0.340.324 (pre-release).**
 
 ## v0.340.323 provider budget explicit commit flush
 

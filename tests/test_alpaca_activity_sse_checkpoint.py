@@ -353,6 +353,80 @@ def test_malformed_checkpoint_acknowledgement_retains_exact_recovery(
     assert cold['initialized'] and cold['retained_checkpoints'] == 1
 
 
+@pytest.mark.parametrize(('field','value'), [
+    ('unexpected_private_extension', False),
+    ('mode', 'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING'),
+    ('status', 'COMMITTED'),
+    ('account_sha256', 'f' * 64),
+    ('head_sha256', 'bad'),
+    ('receipt_sha256', 'f' * 64),
+    ('cursor_sha256', 'f' * 64),
+    ('duplicate', 1),
+    ('reconnect_reservation_bound', True),
+    ('transport_input_bound', False),
+    ('complete_review_counts_bound', False),
+    ('local_cursor_checkpoint_committed', False),
+    ('process_restart_recoverable', False),
+    ('ready_for_routing', True),
+])
+def test_cursor_receipt_boundary_requires_exact_bound_acknowledgement(
+        tmp_path, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    original_checkpoint = store.checkpoint
+
+    def commit_with_mutated_acknowledgement(*args, **kwargs):
+        saved = original_checkpoint(*args, **kwargs)
+        return {**saved, field: value}
+
+    store.checkpoint = commit_with_mutated_acknowledgement
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN'):
+        run(tmp_path, cursor_store=store)
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['initialized'] and cold['retained_checkpoints'] == 1
+
+
+@pytest.mark.parametrize(('field','value'), [
+    ('unexpected_private_extension', False),
+    ('mode', 'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_CHECKPOINT'),
+    ('status', 'COMMITTED'),
+    ('account_sha256', 'f' * 64),
+    ('head_sha256', 'f' * 64),
+    ('expected_head_sha256', 'f' * 64),
+    ('checkpoint_receipt_sha256', 'f' * 64),
+    ('cursor_sha256', 'f' * 64),
+    ('transport_input_sha256', 'f' * 64),
+    ('review_input_sha256', 'f' * 64),
+    ('initial_events_reviewed', True),
+    ('replay_events_reviewed', 1),
+    ('redelivered_events_deduplicated', 2),
+    ('new_events_processed', 2),
+    ('reconnect_reservation_sha256', 'f' * 64),
+    ('reconnect_reservation_bound', True),
+    ('transport_input_bound', False),
+    ('complete_review_counts_bound', False),
+    ('read_only', False),
+    ('release_approved', True),
+])
+def test_cursor_receipt_requires_exact_cold_retained_binding(
+        tmp_path, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    original_binding = store.latest_checkpoint_binding
+
+    def mutated_binding():
+        retained = original_binding()
+        return {**retained, field: value}
+
+    store.latest_checkpoint_binding = mutated_binding
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN'):
+        run(tmp_path, cursor_store=store)
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['initialized'] and cold['retained_checkpoints'] == 1
+
+
 def test_cursor_store_binding_change_during_io_never_checkpoints(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     moved = tmp_path / 'moved.sqlite3'

@@ -1941,7 +1941,9 @@ def test_checkpoint_binding_must_remain_stable_across_result_commit(tmp_path,
     def changed_binding():
         samples.append(True)
         retained = original()
-        if len(samples) == 2:
+        # The checkpoint coordinator now performs its own cold receipt replay;
+        # mutate the later budget-finalization sample exercised by this test.
+        if len(samples) == 3:
             return {**retained, 'head_sha256': 'f' * 64}
         return retained
 
@@ -1950,7 +1952,7 @@ def test_checkpoint_binding_must_remain_stable_across_result_commit(tmp_path,
         call(tmp_path, opener, stores=(cursor, budget))
     assert str(raised.value) == \
         'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_RESULT_RECORD_UNCERTAIN'
-    assert samples == [True, True] and len(opener.requests) == 1
+    assert samples == [True, True, True] and len(opener.requests) == 1
     state = budget.inspect()
     binding = original()
     assert state['completed'] and state['pending_token'] is None
@@ -2017,14 +2019,14 @@ def test_post_result_binding_rejects_custom_equality_mapping(tmp_path,
     def forged_stability_view():
         samples.append(True)
         retained = original()
-        return retained if len(samples) == 1 else EqualMapping(retained)
+        return retained if len(samples) < 3 else EqualMapping(retained)
 
     monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
         forged_stability_view)
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
             match='RESULT_RECORD_UNCERTAIN'):
         call(tmp_path, opener, stores=(cursor, budget))
-    assert samples == [True, True] and len(opener.requests) == 1
+    assert samples == [True, True, True] and len(opener.requests) == 1
     state = budget.inspect()
     assert state['completed'] and state['pending_token'] is None
 
@@ -4397,16 +4399,29 @@ def committed_pending_checkpoint(tmp_path,
             return original_checkpoint(*args, **kwargs)
 
         cursor.checkpoint = legacy_checkpoint
-    checkpoint = subject.checkpoint.collect_and_checkpoint_once(
-        KEY, SECRET, expected_account_id=ACCOUNT, initial_events=initial,
-        reconnect_reason='CONNECTION_DROPPED', cursor_store=cursor,
-        expected_cursor_head=ZERO, confirm_read_only_paper=True,
-        confirm_cursor_checkpoint=True, opener=opener,
-        wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
-        permission_check=lambda: True,
-        emergency_stop_check=lambda: False,
-        credential_check=lambda: True,
-        reconnect_reservation_token=token)
+    try:
+        checkpoint = subject.checkpoint.collect_and_checkpoint_once(
+            KEY, SECRET, expected_account_id=ACCOUNT, initial_events=initial,
+            reconnect_reason='CONNECTION_DROPPED', cursor_store=cursor,
+            expected_cursor_head=ZERO, confirm_read_only_paper=True,
+            confirm_cursor_checkpoint=True, opener=opener,
+            wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+            permission_check=lambda: True,
+            emergency_stop_check=lambda: False,
+            credential_check=lambda: True,
+            reconnect_reservation_token=token)
+    except subject.checkpoint.ActivitySSECheckpointError as error:
+        if (transport_bound or str(error) !=
+                'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
+                'CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN'):
+            raise
+        # The exact coordinator correctly refuses the legacy receipt, while
+        # the deliberately committed legacy row remains available to prove
+        # that later recovery and reconciliation also reject it.
+        binding = cursor.latest_checkpoint_binding()
+        checkpoint = dict(
+            checkpoint_head_sha256=binding['head_sha256'],
+            transport_input_bound=binding['transport_input_bound'])
     return cursor, budget, reserved, checkpoint, opener
 
 

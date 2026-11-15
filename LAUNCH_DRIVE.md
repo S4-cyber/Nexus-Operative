@@ -1,5 +1,15 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.332 Activity SSE cursor acknowledgement binding
+
+After committing an explicit Activity SSE cursor advance, the coordinator now requires the complete exact cursor receipt and independently cold-replays the retained binding before reporting success. Receipt/cold-state extensions, altered heads or digests, count disagreement, type-confused booleans and promoted source/routing/funds/live/release authority fail with one fixed diagnostic while the conservative checkpoint remains retained for review. Legacy transport-unbound rows stay blocked by both the coordinator and later recovery. This narrows a durable reconciliation boundary; it does not attest provider source, entitlement, complete delivery, paper-account acceptance, sustained market realism, fee/hold/funds reconciliation, native Windows behavior or broker acceptance.
+
+Exact local validation passed 6,270 tests with 2 platform skips and one existing warning in 842.27 seconds. The Activity SSE and installed-tool surface passed 1,006 tests, the checkpoint/release-trial focus passed 244 and the final release/package/reconnect concentration passed 716. All 16 bounded profiles and saved-evidence verification passed against 413 files / `abf5482ed8e25378823bf1bb506eb3a005da2689a6b2ff270151d431bee6ed90`; evidence SHA-256 is `f273898114e4abbec4b77d69d0f61884e031fdbc65c0052d5aea92004b60f0a9`. The 163-member v0.340.332 wheel SHA-256 is `ea23735ac9b75c143ffcb4ca21b03a3c4c856709998f06bcf0306ea46f2fa46f`.
+
+PR #44 exact parent `28e731dbe7726ad19989bdf37334010c9c4cc097` passed hosted security/Gitleaks, real-browser help and saved offline release evidence; its complete Windows regression remained in progress with no failed step. Parent results do not validate this increment. The native installer lane is push/manual only and has not run for this source.
+
+No Portal button or editable parameter changed. Preserve seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains weighted 38% / displayed about 40% (30–45%, low confidence), with 0/9 accepted stages. Release approval and trading permission remain false; no launch date is established. Synthetic and historical results are not future profit predictions.
+
 ## v0.340.331 Activity SSE transport-boundary coherence
 
 The explicit Activity SSE reconnect checkpoint now treats its private transport return as untrusted input. Before a cursor write it requires the complete exact schema, policy, limitations, source mode, account/event/cursor bindings, bounded count arithmetic, interruption state and denied authority. Malformed, extended or promoted returns fail with one fixed diagnostic and cannot create a fresh cursor store. The mandatory reconciliation profile now exercises an injected provider-source promotion denial. This narrows a durable reconciliation boundary; it does not attest provider source, entitlement, complete delivery, paper-account acceptance, sustained market realism, fee/hold/funds reconciliation, native Windows behavior or broker acceptance.

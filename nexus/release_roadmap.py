@@ -4,6 +4,7 @@ Change through reviewed source commits. There is no runtime update operation.
 ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementation history.
 """
 from dataclasses import dataclass, asdict
+from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
 REVISION = '0.340.333'
 BRANCH = 'development/windows-portal-foundation'
@@ -1101,7 +1102,7 @@ def snapshot():
                     automatic_policy_promotion=False,order_routing_enabled=False),
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
                 production_scope='Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.',
-                settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], next_steps=list(NEXT),
+                settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], milestone_execution_plan=execution_plan(), milestone_work_batches=next_work_batches(), next_steps=list(NEXT),
                 supporting_track='Global market expansion and secure computer-off cloud continuity are explicit staged goals; venue/data/risk and hosting acceptance remain required.',
                 strategic_goals=[dict(id='G1',title='Global opportunity expansion',status='PLANNED',goal='Broaden assets, markets and providers through the existing 12-avenue expansion initiative; validate source rights, eligibility, liquidity, costs and reproducible paper evidence before enabling each route.'),
                                  dict(id='G2',title='Computer-off cloud operation',status='PLANNED_NOT_DEPLOYED',goal='Run the headless paper engine independently of the desktop, with authenticated remote observation, durable reconciliation, one execution owner, encrypted transport/storage/backups, credential isolation and tested shutdown/recovery.',cost_preference='Free-tier only; avoid a separate dedicated account where a supported existing account can be reused. No verified anonymous always-on option selected; never silently enable billing.',acceptance='Prove durable storage, quota/outage behavior, remote halt, desktop/cloud fencing, key recovery and multi-day computer-off paper operation. See CLOUD_OPERATION.md.'),
@@ -1130,6 +1131,7 @@ def markdown():
         '| Stage | Relative scope weight | Rough implementation | Acceptance |','| --- | --- | --- | --- |']
     lines += [f"| {row['id']}: {row['title']} | {row['weight_percent']}% | {row['implementation_estimate_percent']}% | {row['acceptance_status']} |" for row in estimate['stages']]
     lines += ['',estimate['update_policy'],'',f"Assessment basis: commit `{estimate['basis_commit']}`; exact weighted index {estimate['weighted_index_percent']} before rounding. This is an assessment, not an independently measured completion percentage or permission."]
+    lines += ['', *milestone_task_markdown_lines()]
     lines += ['', '## Remaining milestone acceptance checklist', '',
         'This is a read-only work plan, not an executable workflow or trading permission. Steps remain REVIEW_REQUIRED until separately evidenced and reviewed. Dependencies describe acceptance sequencing; development can proceed in parallel. The next major operational gate is D4, alongside sustained D3 trials.']
     stages_by_id = {stage['id']: stage for stage in d['delivery_stages']}

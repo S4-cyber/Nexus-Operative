@@ -8,6 +8,7 @@ import json
 import math
 import os
 import sqlite3
+import stat
 import threading
 import time
 import uuid
@@ -24,6 +25,9 @@ from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
 from nexus import emergency_intent,forward_evidence,forward_sessions
 from nexus.forward_ownership import ForwardOwnership
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_existing, committed_main_fingerprint,
+    require_main_connection, sync_committed_main)
 
 INTERVAL=POLICY['interval_seconds']
 RANKING_INTERVAL=POLICY['ranking_seconds']
@@ -31,7 +35,13 @@ PRODUCT=POLICY['product']
 CLOCK_DISCONTINUITY_TOLERANCE_SECONDS=2
 MAX_WALL_CLOCK_SECONDS=253402300799
 SESSION_LIMIT=1000
+MAX_DATABASE_BYTES=256*1024*1024
 DB_BUSY_TIMEOUT_MS=10_000
+COMMIT_DURABILITY_CHECKS=('commit_durability_failure_retained_for_review',
+    'commit_sync_preserves_process_control')
+COMMIT_DURABILITY_PUBLIC_KEYS=frozenset(('source','passed',
+    *COMMIT_DURABILITY_CHECKS,'actual_provider_access','broker_connected',
+    'live_orders_enabled','sustained_forward_accepted','release_approved'))
 
 
 def _database_busy(error):
@@ -85,20 +95,53 @@ class PaperForwardRunner:
         if not valid or (wall and not 0<=value<MAX_WALL_CLOCK_SECONDS):return None
         return value
 
-    def _db(self):
-        root=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
-        root.mkdir(parents=True,exist_ok=True)
+    @staticmethod
+    def _write_path():
+        """Freeze one exact non-symlink data root for this write attempt."""
+        root=Path(os.environ.get('NEXUS_PORTABLE_DATA',
+            str(Path.home()/'.nexus-operative'))).expanduser()
+        try:root.mkdir(parents=True,exist_ok=True)
+        except OSError:raise ValueError('PAPER_FORWARD_STORAGE_ROOT_UNAVAILABLE') from None
+        try:
+            before=root.lstat()
+            if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+                raise ValueError('PAPER_FORWARD_STORAGE_ROOT_UNAVAILABLE')
+            resolved=root.resolve(strict=True);after=root.lstat()
+            if (stat.S_ISLNK(after.st_mode) or not stat.S_ISDIR(after.st_mode) or
+                    not os.path.samestat(before,after)):
+                raise ValueError('PAPER_FORWARD_STORAGE_ROOT_CHANGED')
+            return resolved/'paper_forward.sqlite3'
+        except ValueError:raise
+        except (OSError,RuntimeError,TypeError):
+            raise ValueError('PAPER_FORWARD_STORAGE_ROOT_CHANGED') from None
+
+    def _db(self,*,_details=False):
+        bound_path=self._write_path();new=False
+        if not check_existing(bound_path,MAX_DATABASE_BYTES,'PAPER_FORWARD_'):
+            try:
+                descriptor=os.open(bound_path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+                try:os.close(descriptor)
+                except BaseException:
+                    raise
+                new=True
+            except FileExistsError:pass
+            check_existing(bound_path,MAX_DATABASE_BYTES,'PAPER_FORWARD_')
         db=None
         try:
-            db=sqlite3.connect(root/'paper_forward.sqlite3',timeout=DB_BUSY_TIMEOUT_MS/1000)
+            db=sqlite3.connect(bound_path.as_uri()+'?mode=rw',uri=True,
+                timeout=DB_BUSY_TIMEOUT_MS/1000)
+            require_main_connection(db,bound_path,'PAPER_FORWARD_')
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            db.execute('PRAGMA journal_mode=DELETE')
             db.execute('PRAGMA synchronous=FULL')
+            page_size=db.execute('PRAGMA page_size').fetchone()[0]
+            db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES//page_size}')
             db.execute('CREATE TABLE IF NOT EXISTS cycles(id INTEGER PRIMARY KEY,at REAL NOT NULL,detail TEXT NOT NULL)')
             db.execute("""CREATE TABLE IF NOT EXISTS sessions(
                 id TEXT PRIMARY KEY,started_at REAL NOT NULL,updated_at REAL NOT NULL,
                 state TEXT NOT NULL,policy_json TEXT NOT NULL,counts_json TEXT NOT NULL,last_json TEXT NOT NULL)""")
             forward_evidence.schema(db)
-            return db
+            return (db,new,bound_path) if _details else db
         except sqlite3.OperationalError as error:
             if db is not None:db.close()
             if _database_busy(error):_busy()
@@ -108,14 +151,46 @@ class PaperForwardRunner:
             raise
 
     @contextmanager
+    def _write_db(self):
+        """Acknowledge only one exact committed and explicitly flushed main."""
+        db,new,bound_path=self._db(_details=True)
+        try:
+            identity=capture_file_identities((bound_path,),'PAPER_FORWARD_')[0]
+        except BaseException:
+            db.close();raise
+        try:yield db
+        except BaseException:
+            db.close();raise
+        else:
+            error=None;fingerprint=None;uncommitted=db.in_transaction
+            try:
+                require_main_connection(db,bound_path,'PAPER_FORWARD_')
+                if not uncommitted:
+                    fingerprint=committed_main_fingerprint(db,bound_path,
+                        MAX_DATABASE_BYTES,'PAPER_FORWARD_')
+            except BaseException as caught:error=caught
+            try:db.close()
+            except BaseException as caught:
+                if error is None:error=caught
+            if error is not None:raise error
+            if fingerprint is not None:
+                sync_committed_main(bound_path,identity,fingerprint,
+                    MAX_DATABASE_BYTES,'PAPER_FORWARD_',new=new)
+            if uncommitted:
+                raise ValueError('PAPER_FORWARD_UNCOMMITTED_TRANSACTION') from None
+
+    @contextmanager
     def _read_db(self):
         """Observe existing evidence without creating storage or migrating it."""
         path=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))/'paper_forward.sqlite3'
-        if path.is_symlink():raise ValueError('FORWARD_HISTORY_SYMLINK')
-        try:path.stat()
+        try:observed=path.lstat()
         except FileNotFoundError:
             yield None
             return
+        if stat.S_ISLNK(observed.st_mode):raise ValueError('FORWARD_HISTORY_SYMLINK')
+        if not stat.S_ISREG(observed.st_mode):
+            raise ValueError('FORWARD_HISTORY_REGULAR_FILE_REQUIRED')
+        if observed.st_nlink!=1:raise ValueError('FORWARD_HISTORY_HARDLINK')
         db=None
         try:
             db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
@@ -140,7 +215,7 @@ class PaperForwardRunner:
         row=dict(at=recorded,clock_sample_valid=valid,session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
         row['policy_id']=self._policy['id'];row['policy_sha256']=self._policy['policy_sha256']
-        with closing(self._db()) as db:
+        with self._write_db() as db:
             with _transaction(db):
                 db.execute('BEGIN IMMEDIATE')
                 old=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
@@ -173,7 +248,7 @@ class PaperForwardRunner:
     def _record_quote(self,quote,eligible,error=None):
         self._require_ownership()
         if self._clock_anchor is None:raise ValueError('INVALID_RUNTIME_CLOCK')
-        with closing(self._db()) as db:
+        with self._write_db() as db:
             with _transaction(db):
                 db.execute('BEGIN IMMEDIATE')
                 candidate=forward_evidence.append(db,self._session,self._cycles,self._clock_anchor[0],quote,eligible,
@@ -365,7 +440,8 @@ class PaperForwardRunner:
             self._require_ownership()
             self._cycles+=1
             self._observation_hash=None
-            with closing(self._db()) as db:
+            with self._read_db() as db:
+                if db is None:raise ValueError('FORWARD_SESSION_MISSING')
                 metadata=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
                 if metadata is None:raise ValueError('FORWARD_SESSION_MISSING')
                 stored_policy,_,_=forward_sessions.parse(*metadata)
@@ -608,6 +684,74 @@ class PaperForwardRunner:
             capacity=self._capacity_snapshot(db)
             history=self._history_snapshot(db)
         return dict(history=history,storage_capacity=capacity)
+
+
+def commit_durability_fixture_report():
+    """Disposable retained-session proof; no public feed or broker access."""
+    import tempfile
+    from nexus import sqlite_journal_guard as durability
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.tier_permissions import configure
+
+    previous=os.environ.get('NEXUS_PORTABLE_DATA');original=durability.os.fsync
+
+    def exercise(root,interruption=False):
+        root=Path(root);os.environ['NEXUS_PORTABLE_DATA']=str(root)
+        configure('terrestrial',True)
+        store=root/'paper_forward.sqlite3';observed=False
+
+        def fsync(descriptor):
+            nonlocal observed
+            if store.exists():
+                try:opened=os.fstat(descriptor);current=store.stat()
+                except OSError:pass
+                else:
+                    if ((opened.st_dev,opened.st_ino)==
+                            (current.st_dev,current.st_ino)):
+                        observed=True
+                        if interruption:raise KeyboardInterrupt
+                        raise OSError('injected private forward flush failure')
+            return original(descriptor)
+
+        candidate=PaperForwardRunner(DurableOrderGateway(root/'orders.sqlite3'),
+            fetcher=lambda product:None,clock=lambda:1000)
+        durability.os.fsync=fsync;failure=None
+        try:candidate.prepare('terrestrial')
+        except BaseException as error:failure=error
+        finally:durability.os.fsync=original
+        cold=PaperForwardRunner(DurableOrderGateway(root/'orders.sqlite3'),
+            fetcher=lambda product:None,clock=lambda:1000)
+        sessions=cold.sessions()['sessions']
+        retained=(len(sessions)==1 and sessions[0]['stored_state']=='RUNNING' and
+            sessions[0]['effective_state']=='INTERRUPTED_OR_PRIOR_SESSION' and
+            sessions[0]['requires_review'] is True)
+        return dict(observed=observed,failure=failure,retained=retained,
+            disabled=candidate.status()['enabled'] is False,
+            ownership_released=candidate.status()['ownership_held'] is False)
+
+    try:
+        with tempfile.TemporaryDirectory(
+                prefix='nexus-forward-commit-durability-') as temporary:
+            failed=exercise(Path(temporary)/'failure')
+            interrupted=exercise(Path(temporary)/'interrupt',True)
+    finally:
+        durability.os.fsync=original
+        if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
+        else:os.environ['NEXUS_PORTABLE_DATA']=previous
+    checks=dict(
+        commit_durability_failure_retained_for_review=failed['observed'] and
+            type(failed['failure']) is ValueError and
+            str(failed['failure'])=='PAPER_FORWARD_COMMIT_DURABILITY_UNCERTAIN' and
+            failed['retained'] and failed['disabled'] and
+            failed['ownership_released'],
+        commit_sync_preserves_process_control=interrupted['observed'] and
+            type(interrupted['failure']) is KeyboardInterrupt and
+            interrupted['retained'] and interrupted['disabled'] and
+            interrupted['ownership_released'])
+    return dict(source='TEMPORARY_INJECTED_FORWARD_COMMIT_DURABILITY_FIXTURE',
+        passed=all(checks.values()),**checks,actual_provider_access=False,
+        broker_connected=False,live_orders_enabled=False,
+        sustained_forward_accepted=False,release_approved=False)
 
 
 runner=PaperForwardRunner()

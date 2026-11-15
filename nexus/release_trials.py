@@ -2698,11 +2698,24 @@ def _validate(profile, result):
         from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
             LATENCY_PUBLIC_KEYS, LIMITATIONS, PUBLIC_KEYS,
             RECOVERED_PUBLIC_KEYS, SESSION_PUBLIC_KEYS)
+        from nexus.paper_forward import (COMMIT_DURABILITY_CHECKS,
+            COMMIT_DURABILITY_PUBLIC_KEYS)
         from nexus.forward_trial_review import (FLAGS as COVERAGE_FLAGS,
             LIMITATIONS as COVERAGE_LIMITATIONS, PUBLIC_KEYS as COVERAGE_PUBLIC_KEYS)
         _require(type(result) is dict and frozenset(result)==PUBLIC_KEYS,
             'FORWARD_PROFILE_SCHEMA')
         recovered=result['recovered']
+        durability=result['commit_durability']
+        _require(type(durability) is dict and
+            frozenset(durability)==COMMIT_DURABILITY_PUBLIC_KEYS and
+            durability['source']==
+                'TEMPORARY_INJECTED_FORWARD_COMMIT_DURABILITY_FIXTURE' and
+            durability['passed'] is True and
+            all(durability[key] is True for key in COMMIT_DURABILITY_CHECKS) and
+            all(durability[key] is False for key in ('actual_provider_access',
+                'broker_connected','live_orders_enabled',
+                'sustained_forward_accepted','release_approved')),
+            'FORWARD_COMMIT_DURABILITY')
         _require(type(recovered) is dict and frozenset(recovered)==RECOVERED_PUBLIC_KEYS,
             'FORWARD_RECOVERY_SCHEMA')
         sessions=recovered['sessions'];latency=result['cycle_latency'];coverage=recovered['coverage_review']

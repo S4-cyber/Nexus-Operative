@@ -12,7 +12,7 @@ from nexus.recovery_drill import fingerprint
 LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include runner, evidence and durable linked ledger. '
     'No actual feed, worker scheduling, process-kill, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
-    'isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
+    'commit_durability','isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
     'ownership_released','halted','flat','portfolio_reconciled'))
 SESSION_PUBLIC_KEYS=frozenset(('session','orders_sha256','evidence_sha256','quote_observations','modeled_buy_orders',
@@ -121,8 +121,12 @@ def run(rounds=3):
         sessions=[item['session'] for item in baseline['recovered']['sessions']]
         recovered=_child(root,rounds,sessions)
         _require(baseline['recovered']==recovered,'FRESH_PROCESS_DISAGREEMENT')
+        from nexus.paper_forward import commit_durability_fixture_report
+        durability=commit_durability_fixture_report()
+        _require(durability['passed'] is True,'COMMIT_DURABILITY')
     return dict(mode='DISPOSABLE_FORWARD_RUNNER_DRILL',passed=True,rounds=rounds,cycles=baseline['cycles'],
-                cycle_latency=baseline['cycle_latency'],recovered=recovered,application_accounts_changed=False,
+                cycle_latency=baseline['cycle_latency'],recovered=recovered,commit_durability=durability,
+                application_accounts_changed=False,
                 isolated_temporary_storage=True,broker_connected=False,live_orders_enabled=False,release_approved=False,
                 target_validated=False,limitations=LIMITATIONS)
 

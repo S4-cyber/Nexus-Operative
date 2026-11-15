@@ -1,10 +1,16 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.324 account-read pacing explicit commit flush
+
+Every committed shared account-read pacing write now crosses the same explicit acknowledgement boundary as the provider budgets. The writer proves its SQLite connection bytes against a stable bounded pathname fingerprint, reopens only the exact captured regular single-link main file, hashes that writable descriptor before and after `fsync`, and rechecks the exact path and bytes. A newly created entry also fsyncs its validated parent directory on POSIX; Windows retains the portable main-file flush because Python exposes no portable directory-fsync API. Flush failure, wrong-directory substitution and descriptor-byte mutation fail closed after commit, retain the pending reservation and keep request-capacity reuse and all trading/release authority false. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
+
+**Current development build: 0.340.324 (pre-release).**
+
 ## v0.340.323 provider budget explicit commit flush
 
 Provider POST and GET budget acknowledgements now reopen only the captured regular single-link SQLite main file, hash that exact writable descriptor before and after explicit `fsync`, and recheck the bounded pathname fingerprint after connection close. A newly created entry also fsyncs its exact validated parent directory on POSIX; Windows retains the portable main-file flush because Python exposes no portable directory-fsync API. Flush failure, parent-descriptor substitution and descriptor-byte mutation fail closed after commit, retain the pending reservation and keep automatic retry, capacity reuse and all trading/release authority false. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
 
-**Current development build: 0.340.323 (pre-release).**
+**Previous development build: 0.340.323 (pre-release).**
 
 ## v0.340.322 provider budget content acknowledgement binding
 

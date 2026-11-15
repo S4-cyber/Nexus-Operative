@@ -11,8 +11,10 @@ import tempfile
 
 from nexus import paper_provider_post_budget as post_module
 from nexus import paper_provider_read_budget as read_module
+from nexus import paper_read_pacing as pacing_module
 from nexus.paper_provider_post_budget import PaperProviderPostBudget, ZERO
 from nexus.paper_provider_read_budget import PaperProviderReadBudget
+from nexus.paper_read_pacing import PaperReadPacing
 
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 CHECKS = (
@@ -24,6 +26,8 @@ CHECKS = (
     'read_main_flush_required',
     'post_new_entry_flush_policy_pinned',
     'read_new_entry_flush_policy_pinned',
+    'account_read_main_flush_required',
+    'account_read_new_entry_flush_policy_pinned',
     'committed_uncertainty_retained',
 )
 FLAGS = (
@@ -124,6 +128,13 @@ def _read_attempt(budget, ownership=None):
         ownership=owner)
 
 
+def _account_read_attempt(budget, ownership=None):
+    if ownership is None:
+        with budget.ownership() as owner:
+            return _account_read_attempt(budget, owner)
+    return budget.begin(admission=lambda: 1000, ownership=ownership)
+
+
 def _deny_main_flush(subject, budget, invoke, code):
     original = subject.os.fsync
     attempts = []
@@ -217,14 +228,35 @@ def fixture_report():
             read_module, read_entry,
             lambda owner: _read_attempt(read_entry, owner))
 
+        account_flush = PaperReadPacing(
+            root / 'account-read-flush.sqlite3', ACCOUNT)
+        account_read_main_flush_required = _deny_main_flush(
+            pacing_module, account_flush,
+            lambda owner: _account_read_attempt(account_flush, owner),
+            'PAPER_READ_PACING_COMMIT_DURABILITY_UNCERTAIN')
+
+        account_entry = PaperReadPacing(
+            root / 'account-read-entry.sqlite3', ACCOUNT)
+        account_read_new_entry_flush_policy_pinned = (
+            _observe_new_entry_flush(
+                pacing_module, account_entry,
+                lambda owner: _account_read_attempt(account_entry, owner)))
+
         states = (post_content.inspect(), post_close.inspect(),
             read_content.inspect(), read_close.inspect(), post_flush.inspect(),
             read_flush.inspect(), post_entry.inspect(), read_entry.inspect())
-        committed_uncertainty_retained = all(
+        provider_uncertainty_retained = all(
             state['pending_token'] is not None and
             state['ready_for_routing'] is False and
             state['release_approved'] is False
             for state in states)
+        account_states = (account_flush.inspect(), account_entry.inspect())
+        account_uncertainty_retained = all(
+            state['pending_token'] is not None and
+            state['ready_for_routing'] is False
+            for state in account_states)
+        committed_uncertainty_retained = (
+            provider_uncertainty_retained and account_uncertainty_retained)
 
     checks = dict(
         post_connection_content_pinned=post_connection_content_pinned,
@@ -237,6 +269,9 @@ def fixture_report():
             post_new_entry_flush_policy_pinned,
         read_new_entry_flush_policy_pinned=
             read_new_entry_flush_policy_pinned,
+        account_read_main_flush_required=account_read_main_flush_required,
+        account_read_new_entry_flush_policy_pinned=
+            account_read_new_entry_flush_policy_pinned,
         committed_uncertainty_retained=committed_uncertainty_retained,
     )
     return dict(source='TEMPORARY_PROVIDER_BUDGET_ACK_FIXTURE',

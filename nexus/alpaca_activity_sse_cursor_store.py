@@ -29,7 +29,9 @@ from nexus.local_owner_scope import (
     prepare_owner_file)
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_existing,
-    require_file_fingerprints, require_file_identities)
+    committed_main_fingerprint, require_file_fingerprints,
+    require_file_identities, require_main_connection,
+    sync_committed_main)
 
 
 SCHEMA = 'nexus.private-alpaca-activity-sse-cursor-store.v1'
@@ -257,6 +259,10 @@ class ActivitySSECursorStore:
 
     def _connect(self, write=False):
         self._check()
+        try:
+            bound_path = self.path.resolve()
+        except (OSError, RuntimeError, TypeError):
+            _fail('CONNECTION_BINDING_CHANGED')
         new = False
         if write and not self.path.exists():
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -268,10 +274,12 @@ class ActivitySSECursorStore:
             except FileExistsError:
                 pass
             self._check()
-        db = sqlite3.connect(self.path.resolve().as_uri() +
+        db = sqlite3.connect(bound_path.as_uri() +
             ('?mode=rw' if write else '?mode=ro'), uri=True,
             timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            require_main_connection(db, bound_path,
+                'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE')
@@ -285,7 +293,7 @@ class ActivitySSECursorStore:
                         account_sha256=self.account_sha256), ZERO)
             else:
                 db.execute('BEGIN')
-            return db, new
+            return db, new, bound_path
         except sqlite3.OperationalError as error:
             db.close()
             if _database_busy(error):
@@ -294,6 +302,48 @@ class ActivitySSECursorStore:
         except BaseException:
             db.close()
             raise
+
+    @contextmanager
+    def _write_connection(self):
+        """Acknowledge only an exact committed and explicitly flushed main."""
+        db, new, bound_path = self._connect(write=True)
+        try:
+            main_identity = capture_file_identities((bound_path,),
+                'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')[0]
+        except BaseException:
+            db.close()
+            raise
+        try:
+            yield db, new
+        except BaseException:
+            db.close()
+            raise
+        else:
+            acknowledgement_error = None
+            committed_fingerprint = None
+            uncommitted = db.in_transaction
+            try:
+                require_main_connection(db, bound_path,
+                    'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+                if not uncommitted:
+                    committed_fingerprint = committed_main_fingerprint(db,
+                        bound_path, MAX_DATABASE_BYTES,
+                        'ALPACA_ACTIVITY_SSE_CURSOR_STORE_')
+            except BaseException as error:
+                acknowledgement_error = error
+            try:
+                db.close()
+            except BaseException as error:
+                if acknowledgement_error is None:
+                    acknowledgement_error = error
+            if acknowledgement_error is not None:
+                raise acknowledgement_error
+            if committed_fingerprint is not None:
+                sync_committed_main(bound_path, main_identity,
+                    committed_fingerprint, MAX_DATABASE_BYTES,
+                    'ALPACA_ACTIVITY_SSE_CURSOR_STORE_', new=new)
+            if uncommitted:
+                _fail('UNCOMMITTED_TRANSACTION')
 
     @staticmethod
     def _insert(db, seq, body, previous):
@@ -712,6 +762,13 @@ class ActivitySSECursorStore:
                 committed_identity, committed_fingerprint = \
                     require_committed_checkpoint(
                         last['after_head_sha256'], 'INPUT_REVOKED')
+                # Exact replay is the only recovery from a lost post-commit
+                # acknowledgement, so repeat the explicit main-file flush
+                # before returning the retained receipt.
+                sync_committed_main(cursor_binding[0],
+                    committed_identity[0], committed_fingerprint[0],
+                    MAX_DATABASE_BYTES,
+                    'ALPACA_ACTIVITY_SSE_CURSOR_STORE_', new=False)
                 receipt = self._receipt(
                     last['after_head_sha256'], body, True)
                 require_file_identities((cursor_binding[0],),
@@ -727,8 +784,7 @@ class ActivitySSECursorStore:
                 current['current_event_id'] != previous_cursor):
             _fail('CURSOR_CHANGED')
 
-        db, new = self._connect(write=True)
-        with closing(db):
+        with self._write_connection() as (db, new):
             with _transaction(db):
                 db.execute('SAVEPOINT cursor_checkpoint_scope')
 
@@ -797,6 +853,7 @@ class ActivitySSECursorStore:
 def fixture_report():
     """Disposable aggregate-only checkpoint/restart/lost-ack evidence."""
     import tempfile
+    from nexus import sqlite_journal_guard as durability
     from nexus.alpaca_activity_sse_reconnect_review import fixture_report as reconnect_fixture
     from nexus.alpaca_activity_sse_reconnect_review import review
     from nexus.alpaca_activity_sse_review import _event
@@ -832,12 +889,75 @@ def fixture_report():
         duplicate = store.checkpoint(checked,
             previous_cursor=first[-1]['event_id'],
             next_cursor=fee['event_id'], expected_head=ZERO)
+        durability_store = ActivitySSECursorStore(
+            Path(directory) / 'durability-cursor.sqlite3', account)
+        original_fsync = durability.os.fsync
+        flush_failed = False
+        def fail_exact_main(descriptor):
+            nonlocal flush_failed
+            if durability_store.path.exists():
+                opened = os.fstat(descriptor)
+                observed = durability_store.path.stat()
+                if ((opened.st_dev, opened.st_ino) ==
+                        (observed.st_dev, observed.st_ino)):
+                    flush_failed = True
+                    raise OSError('injected private cursor flush failure')
+            return original_fsync(descriptor)
+        durability.os.fsync = fail_exact_main
+        durability_code = None
+        try:
+            durability_store.checkpoint(checked,
+                previous_cursor=first[-1]['event_id'],
+                next_cursor=fee['event_id'], expected_head=ZERO)
+        except ValueError as error:
+            durability_code = str(error)
+        finally:
+            durability.os.fsync = original_fsync
+        durability_retained = durability_store.inspect()
+        durability_replay = durability_store.checkpoint(checked,
+            previous_cursor=first[-1]['event_id'],
+            next_cursor=fee['event_id'], expected_head=ZERO)
+        signal_store = ActivitySSECursorStore(
+            Path(directory) / 'signal-cursor.sqlite3', account)
+        def interrupt_exact_main(descriptor):
+            if signal_store.path.exists():
+                opened = os.fstat(descriptor)
+                observed = signal_store.path.stat()
+                if ((opened.st_dev, opened.st_ino) ==
+                        (observed.st_dev, observed.st_ino)):
+                    raise KeyboardInterrupt
+            return original_fsync(descriptor)
+        durability.os.fsync = interrupt_exact_main
+        signal_observed = False
+        try:
+            signal_store.checkpoint(checked,
+                previous_cursor=first[-1]['event_id'],
+                next_cursor=fee['event_id'], expected_head=ZERO)
+        except KeyboardInterrupt:
+            signal_observed = True
+        finally:
+            durability.os.fsync = original_fsync
+        signal_retained = signal_store.inspect()
+        signal_replay = signal_store.checkpoint(checked,
+            previous_cursor=first[-1]['event_id'],
+            next_cursor=fee['event_id'], expected_head=ZERO)
         checks = dict(review_fixture_passed=reconnect_fixture()['passed'],
             checkpoint_committed=first_receipt['local_cursor_checkpoint_committed'],
             cold_restart_recovers_cursor=cold['process_restart_recoverable'] and
                 cold['current_cursor_sha256'] == first_receipt['cursor_sha256'],
             exact_stale_head_replay_idempotent=duplicate['duplicate'] and
                 duplicate['head_sha256'] == first_receipt['head_sha256'],
+            commit_durability_failure_replays_exactly=flush_failed and
+                durability_code ==
+                    'ALPACA_ACTIVITY_SSE_CURSOR_STORE_'
+                    'COMMIT_DURABILITY_UNCERTAIN' and
+                durability_replay['duplicate'] and
+                durability_replay['head_sha256'] ==
+                    durability_retained['head_sha256'],
+            commit_sync_preserves_process_control=signal_observed and
+                signal_replay['duplicate'] and
+                signal_replay['head_sha256'] ==
+                    signal_retained['head_sha256'],
             output_never_authoritative=all(first_receipt[flag] is False
                 for flag in FLAGS))
     return dict(source='TEMPORARY_PRIVATE_ACTIVITY_SSE_CURSOR_STORE_FIXTURE',

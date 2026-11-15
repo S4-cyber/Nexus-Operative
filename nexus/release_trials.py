@@ -2286,6 +2286,8 @@ def _validate(profile, result):
                 'review_fixture_passed','checkpoint_committed',
                 'cold_restart_recovers_cursor',
                 'exact_stale_head_replay_idempotent',
+                'commit_durability_failure_replays_exactly',
+                'commit_sync_preserves_process_control',
                 'output_never_authoritative')) and
             cursor['actual_storage_retained'] is False,
             'PRIVATE_ACTIVITY_SSE_CURSOR_STORE')
@@ -2346,6 +2348,8 @@ def _validate(profile, result):
                 'first_failure_retained_without_retry',
                 'lost_reservation_ack_replays_without_provider_request',
                 'lost_retry_result_ack_replays_without_new_attempt',
+                'reservation_commit_durability_replays_exactly',
+                'commit_sync_preserves_process_control',
                 'emergency_stop_blocks_before_reconnect_storage',
                 'control_callback_mutation_blocks_before_provider_request',
                 'control_callback_cursor_advance_blocks_before_provider_request',

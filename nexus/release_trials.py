@@ -2335,6 +2335,7 @@ def _validate(profile, result):
                 'checkpoint_exception_scope_pinned',
                 'semantic_review_exception_scope_pinned',
                 'malformed_checkpoint_acknowledgement_retained',
+                'cold_checkpoint_binding_disagreement_retained',
                 'transport_boundary_rejects_promoted_acknowledgement',
                 'no_private_identifier_or_credential_echo',
                 'no_automatic_or_financial_authority')) and

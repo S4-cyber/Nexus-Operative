@@ -23,6 +23,15 @@ TOTAL_SECONDS = 20
 READ_SIZE = 64 * 1024
 MIN_DATA_FRAMES = 2
 _CREDENTIAL = re.compile(r'[A-Za-z0-9_-]{16,256}')
+LIMITATIONS = ('Supplied finite response bytes and metadata only. No socket, '
+    'TLS, DNS, authentication, credential, provider, heartbeat clock, stream '
+    'entitlement, reconnect, backoff, cursor write, source attestation, '
+    'complete delivery, fee coverage, holds, settlement, spendable funds, '
+    'ledger, routing, live trading or release approval. A slow-consumer or '
+    'internal-error comment requires separate reconnect review and can never '
+    'authorize a cursor checkpoint. The transport performed one explicitly '
+    'authorized bounded GET; it did not retry, reconnect, back off, write a '
+    'cursor or grant trading, funding, routing or release authority.')
 
 
 class ActivitySSETransportError(ValueError):
@@ -359,10 +368,7 @@ def _collect_once(api_key, api_secret, *, expected_account_id, since_id,
         ledger_applied=False, ready_for_routing=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations=reviewed['limitations'] +
-            ' The transport performed one explicitly authorized bounded GET; '
-            'it did not retry, reconnect, back off, write a cursor or grant '
-            'trading, funding, routing or release authority.')
+        limitations=LIMITATIONS)
     return (result, events) if private_events else result
 
 

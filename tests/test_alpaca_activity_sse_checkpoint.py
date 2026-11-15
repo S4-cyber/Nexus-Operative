@@ -243,6 +243,85 @@ def test_malformed_transport_result_is_fixed_and_storage_silent(
     assert not path.exists()
 
 
+@pytest.mark.parametrize(('field','value'), [
+    ('unexpected_private_extension', False),
+    ('mode', 'SUPPLIED_ALPACA_ACTIVITY_SSE_WIRE_SESSION_REVIEW'),
+    ('status', 'RECONNECT_REVIEW_REQUIRED'),
+    ('read_only', 1),
+    ('account_sha256', 'f' * 64),
+    ('sources', []),
+    ('request_target_exact', False),
+    ('all_admitted_fees_parent_linked', False),
+    ('provider_source_attested', True),
+    ('actual_provider_access', True),
+    ('actual_stream_connection', True),
+    ('automatic_retry', True),
+    ('cursor_written', True),
+    ('ledger_applied', True),
+    ('transport_policy', 'foreign-policy'),
+    ('limitations', 'weaker limitations'),
+    ('source', 'PAPER_HTTPS_READS'),
+    ('input_sha256', 'bad'),
+    ('first_event_id_sha256', 'f' * 64),
+    ('last_event_id_sha256', 'f' * 64),
+    ('since_id_sha256', 'f' * 64),
+    ('chunk_count', True),
+    ('bytes_reviewed', 0),
+    ('events_reviewed', 3),
+    ('trades_reviewed', 2),
+    ('comments_reviewed', 1),
+    ('gap_or_server_error_observed', True),
+    ('reconnect_review_required', True),
+])
+def test_transport_boundary_rejects_mutated_or_promoted_acknowledgement(
+        tmp_path, monkeypatch, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    original = subject.transport._collect_once_private
+
+    def mutated(*args, **kwargs):
+        review, replay = original(*args, **kwargs)
+        return ({**review, field: value}, replay)
+
+    monkeypatch.setattr(subject.transport, '_collect_once_private', mutated)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='TRANSPORT_RESULT_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT))
+    assert not path.exists()
+
+
+def test_transport_boundary_requires_exact_comment_and_interruption_counts(
+        tmp_path, monkeypatch):
+    path = tmp_path / 'cursor.sqlite3'
+    original = subject.transport._collect_once_private
+
+    def malformed(*args, **kwargs):
+        review, replay = original(*args, **kwargs)
+        return ({**review, 'heartbeat_comments': 1,
+            'comments_reviewed': 0}, replay)
+
+    monkeypatch.setattr(subject.transport, '_collect_once_private', malformed)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='TRANSPORT_RESULT_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT))
+    assert not path.exists()
+
+
+def test_transport_boundary_accepts_provider_mode_schema_without_attestation():
+    initial, _, raw = segments()
+    review, replay = subject.transport._collect_once_private(
+        KEY, SECRET, expected_account_id=ACCOUNT,
+        since_id=initial[-1]['event_id'], confirm_read_only_paper=True,
+        opener=Opener(raw), wall_clock=lambda: 1000,
+        elapsed_clock=lambda: 50, permission_check=lambda: True,
+        emergency_stop_check=lambda: False,
+        credential_check=lambda: True)
+    review = {**review, 'source': 'PAPER_HTTPS_READS',
+        'actual_provider_access': True, 'actual_stream_connection': True}
+    assert subject._transport_review_result(review, replay,
+        account_sha256=subject.sha(ACCOUNT),
+        persisted_event_id=initial[-1]['event_id'], injected=False) is review
+
+
 def test_malformed_reconnect_review_is_fixed_and_never_checkpoints(
         tmp_path, monkeypatch):
     path = tmp_path / 'cursor.sqlite3'

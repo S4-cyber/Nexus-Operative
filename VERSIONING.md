@@ -1,5 +1,11 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.323 provider budget explicit commit flush
+
+Provider POST and GET budget acknowledgements now reopen only the captured regular single-link SQLite main file, hash that exact writable descriptor before and after explicit `fsync`, and recheck the bounded pathname fingerprint after connection close. A newly created entry also fsyncs its exact validated parent directory on POSIX; Windows retains the portable main-file flush because Python exposes no portable directory-fsync API. Flush failure, parent-descriptor substitution and descriptor-byte mutation fail closed after commit, retain the pending reservation and keep automatic retry, capacity reuse and all trading/release authority false. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
+
+**Current development build: 0.340.323 (pre-release).**
+
 ## v0.340.322 provider budget content acknowledgement binding
 
 Committed provider POST and GET budget writes now require the writable SQLite connection's serialized main bytes to equal two stable bounded sidecar-free pathname fingerprints before acknowledgement, and the same fingerprint must remain after connection close. Uncommitted returns are rejected before serialization. Injected connection-content mismatch and post-close metadata drift retain the committed pending reservation and keep automatic retry, capacity reuse and all trading/release authority false. This is local bounded content continuity, not explicit fsync durability, physical-power-loss proof, atomic directory exclusion, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
@@ -8,7 +14,7 @@ PR #34's complete Windows regression finished with 6,073 passes and one determin
 
 Every legacy account-read pacing write now acquires the existing cross-platform one-byte owner lease before opening SQLite, while typed broker reads retain that lease across provider I/O. Content attestation runs only after the writer owns `BEGIN IMMEDIATE`. A 100-iteration two-process regression produced exactly one admission per head and only fixed fail-closed contender errors. This is cooperating local-process exclusion, not a distributed or provider-wide budget.
 
-**Current development build: 0.340.322 (pre-release).**
+**Previous development build: 0.340.322 (pre-release).**
 
 ## v0.340.321 provider transaction acknowledgement binding
 

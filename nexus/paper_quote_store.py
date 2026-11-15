@@ -15,7 +15,9 @@ from nexus.alpaca_paper_contract import canonical,sha
 from nexus.broker_lookup_policy import clock
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_activity_acceptance_probe import _private_path
-from nexus.sqlite_journal_guard import check_existing
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_existing, committed_main_fingerprint,
+    require_main_connection, sync_committed_main)
 
 PROFILE='nexus.paper-request-quote-retention.v1'
 CAPTURE_PROFILE='nexus.paper-request-quote-retention.v2'
@@ -26,7 +28,9 @@ MAX_RECORD_BYTES=8192
 MAX_DATABASE_BYTES=4*1024*1024
 DB_BUSY_TIMEOUT_MS=10_000
 CHECKS=('original_prefix_bound','exact_nanoseconds_retained','duplicate_reused',
-    'restart_replay','request_bytes_unchanged','authority_withheld')
+    'restart_replay','request_bytes_unchanged',
+    'commit_durability_failure_replays_exactly',
+    'commit_sync_preserves_process_control','authority_withheld')
 PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,'actual_provider_access',
     'actual_vault_access',*observation.FLAGS))
 SCOPE_KEYS=('profile','account_sha256','quote','source','account_fields_sha256','read_timing')
@@ -138,15 +142,18 @@ class PaperQuoteStore:
 
     def _connect(self,write=False):
         self._check();new=False
+        try:bound_path=self.path.resolve()
+        except (OSError,RuntimeError,TypeError):_fail('CONNECTION_BINDING_CHANGED')
         if write and not self.path.exists():
             self.path.parent.mkdir(parents=True,exist_ok=True)
             try:
                 fd=os.open(self.path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600);os.close(fd);new=True
             except FileExistsError:pass
             self._check()
-        db=sqlite3.connect(self.path.resolve().as_uri()+('?mode=rw' if write else '?mode=ro'),
+        db=sqlite3.connect(bound_path.as_uri()+('?mode=rw' if write else '?mode=ro'),
             uri=True,timeout=DB_BUSY_TIMEOUT_MS/1000)
         try:
+            require_main_connection(db,bound_path,'PAPER_QUOTE_STORE_')
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE');db.execute('PRAGMA synchronous=FULL')
@@ -156,12 +163,41 @@ class PaperQuoteStore:
                 if new:
                     self._insert(db,0,dict(profile=PROFILE,account_sha256=self.account),ZERO)
             else:db.execute('BEGIN')
-            return db,new
+            return db,new,bound_path
         except sqlite3.OperationalError as error:
             db.close()
             if _database_busy(error):_fail('DATABASE_BUSY')
             raise
         except BaseException:db.close();raise
+
+    @contextmanager
+    def _write_connection(self):
+        """Acknowledge only one exact committed and explicitly flushed main."""
+        db,new,bound_path=self._connect(write=True)
+        try:
+            identity=capture_file_identities((bound_path,),
+                'PAPER_QUOTE_STORE_')[0]
+        except BaseException:
+            db.close();raise
+        try:yield db,new
+        except BaseException:
+            db.close();raise
+        else:
+            error=None;fingerprint=None;uncommitted=db.in_transaction
+            try:
+                require_main_connection(db,bound_path,'PAPER_QUOTE_STORE_')
+                if not uncommitted:
+                    fingerprint=committed_main_fingerprint(db,bound_path,
+                        MAX_DATABASE_BYTES,'PAPER_QUOTE_STORE_')
+            except BaseException as caught:error=caught
+            try:db.close()
+            except BaseException as caught:
+                if error is None:error=caught
+            if error is not None:raise error
+            if fingerprint is not None:
+                sync_committed_main(bound_path,identity,fingerprint,
+                    MAX_DATABASE_BYTES,'PAPER_QUOTE_STORE_',new=new)
+            if uncommitted:_fail('UNCOMMITTED_TRANSACTION')
 
     @staticmethod
     def _insert(db,seq,body,previous):
@@ -217,8 +253,7 @@ class PaperQuoteStore:
         current=self.inspect(expected_request_head=expected_request_head)
         if current['head_sha256']!=expected_quote_head:_fail('QUOTE_HEAD_CHANGED')
         if precommit_check() is not True:_fail('INPUT_REVOKED')
-        db,new=self._connect(write=True)
-        with closing(db):
+        with self._write_connection() as (db,new):
             with _transaction(db):
                 head,records=self._load(db,requests)
                 if new and expected_quote_head==ZERO:pass  # First binding row is created in this transaction.
@@ -241,6 +276,7 @@ class PaperQuoteStore:
 def fixture_report():
     """Aggregate-only disposable supplied evidence; no provider or credential IO."""
     import tempfile
+    from nexus import sqlite_journal_guard as durability
     from nexus.alpaca_paper_contract import preview
     account='01234567-89ab-cdef-0123-456789abcdef'
     with tempfile.TemporaryDirectory(prefix='nexus-paper-quotes-') as directory:
@@ -261,10 +297,59 @@ def fixture_report():
         unchanged=store.request_path.read_bytes()==before
         store.journal.mark_submission_uncertain('nx_quote_fixture')
         later=store.inspect(expected_request_head=store.journal.recovery()['head_sha256'])
+        durability_store=PaperQuoteStore(root/'durability-quotes.sqlite3',
+            account,store.request_path)
+        durability_args=dict(client_order_id='nx_quote_fixture',
+            expected_request_head=store.journal.recovery()['head_sha256'],
+            expected_quote_head=ZERO)
+        original_fsync=durability.os.fsync;flush_failed=False
+        def fail_exact_main(descriptor):
+            nonlocal flush_failed
+            if durability_store.path.exists():
+                opened=os.fstat(descriptor);observed=durability_store.path.stat()
+                if (opened.st_dev,opened.st_ino)==(observed.st_dev,observed.st_ino):
+                    flush_failed=True;raise OSError('injected private quote flush failure')
+            return original_fsync(descriptor)
+        durability.os.fsync=fail_exact_main;durability_code=None
+        try:durability_store.retain(value,**durability_args)
+        except ValueError as error:durability_code=str(error)
+        finally:durability.os.fsync=original_fsync
+        durability_retained=durability_store.inspect(
+            expected_request_head=durability_args['expected_request_head'])
+        durability_args['expected_quote_head']=durability_retained['head_sha256']
+        durability_replay=durability_store.retain(value,**durability_args)
+        signal_store=PaperQuoteStore(root/'signal-quotes.sqlite3',account,
+            store.request_path)
+        signal_args=dict(client_order_id='nx_quote_fixture',
+            expected_request_head=durability_args['expected_request_head'],
+            expected_quote_head=ZERO)
+        def interrupt_exact_main(descriptor):
+            if signal_store.path.exists():
+                opened=os.fstat(descriptor);observed=signal_store.path.stat()
+                if (opened.st_dev,opened.st_ino)==(observed.st_dev,observed.st_ino):
+                    raise KeyboardInterrupt
+            return original_fsync(descriptor)
+        durability.os.fsync=interrupt_exact_main;signal_observed=False
+        try:signal_store.retain(value,**signal_args)
+        except KeyboardInterrupt:signal_observed=True
+        finally:durability.os.fsync=original_fsync
+        signal_retained=signal_store.inspect(
+            expected_request_head=signal_args['expected_request_head'])
+        signal_args['expected_quote_head']=signal_retained['head_sha256']
+        signal_replay=signal_store.retain(value,**signal_args)
         checks=dict(original_prefix_bound=later['records'][0]['request_head_sha256']==head and later['records'][0]['payload_sha256']==plan['payload_sha256'],
             exact_nanoseconds_retained=review['records'][0]['observation']['quote']['exchange_time_ns']=='1792195200123456789',
             duplicate_reused=duplicate['duplicate'] is True and store.path.read_bytes()==saved,
             restart_replay=review['retained_records']==1 and review['head_sha256']==receipt['head_sha256'],
+            commit_durability_failure_replays_exactly=flush_failed and
+                durability_code=='PAPER_QUOTE_STORE_COMMIT_DURABILITY_UNCERTAIN' and
+                durability_retained['retained_records']==1 and
+                durability_replay['duplicate'] is True and
+                durability_replay['head_sha256']==durability_retained['head_sha256'],
+            commit_sync_preserves_process_control=signal_observed and
+                signal_retained['retained_records']==1 and
+                signal_replay['duplicate'] is True and
+                signal_replay['head_sha256']==signal_retained['head_sha256'],
             request_bytes_unchanged=unchanged,authority_withheld=all(review[k] is False and receipt[k] is False for k in observation.FLAGS))
         return dict(source='SYNTHETIC_ORIGINAL_REQUEST_QUOTE_RETENTION_FIXTURE',passed=all(checks.values()),**checks,
             actual_provider_access=False,actual_vault_access=False,**{k:False for k in observation.FLAGS})

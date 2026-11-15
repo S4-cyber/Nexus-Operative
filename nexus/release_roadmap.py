@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.327'
+REVISION = '0.340.328'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -49,6 +49,18 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; a no-network supplied Activity SSE schema review now fail-closes to BTC/USD TRD fills and one-to-one USD fees, requires strict ULID cursor order and unique stable ref IDs, binds each admitted fee parent_id to a supplied fill, and rejects corrections, busts, bulk fees, FX and unsupported financial activities without claiming stream entitlement, delivery, replay coverage or provider source' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Retained request-bound quote evidence now crosses the same explicit commit
+# boundary as the broker activity journals that later reconcile against it.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every acknowledged request-bound paper quote receipt '
+        'now binds committed SQLite connection bytes to one stable bounded '
+        'main-file fingerprint, hashes the exact writable descriptor before '
+        'and after explicit fsync and flushes a newly created exact POSIX '
+        'parent entry; flush uncertainty retains one exact receipt for '
+        'no-provider duplicate replay without source, coverage, routing or '
+        'release authority' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
 # Require durable Activity SSE checkpoint and reconnect acknowledgements to
@@ -1074,7 +1086,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.327 extends explicit post-commit durability to the private Activity SSE cursor and reconnect-budget journals. Every acknowledged checkpoint, reconnect reservation and reconnect result now requires the committed SQLite connection bytes to match a stable bounded pathname fingerprint, reopens only the exact regular single-link main file, hashes that writable descriptor before and after `fsync`, and rechecks identity and bytes. A new POSIX main entry additionally flushes its exact validated parent directory; Windows retains the exact main-file flush because Python exposes no portable directory-fsync API. File-flush failure, parent-descriptor substitution and process-control interruption retain the committed checkpoint or attempt for explicit exact replay. Duplicate cursor, reservation and result acknowledgement repeats the explicit main-file flush without another provider request, attempt, cursor advance or automatic retry. Mandatory offline Activity SSE evidence injects durability uncertainty and `KeyboardInterrupt`, then proves retained exact replay with all authority flags false. This is local explicit flush observation, not physical-power-loss proof, an atomic lease against non-cooperating replacement, native Windows acceptance, provider or stream delivery attestation, historical replay completeness, complete fee reconciliation, broker-wide coordination, funding readiness, live trading or release approval. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.328 extends explicit post-commit durability to the retained request-bound paper quote journal used by offline quote/reconciliation review. Every acknowledged new or duplicate receipt now requires the committed SQLite connection bytes to match a stable bounded main-file fingerprint, reopens only the exact regular single-link main file, hashes the writable descriptor before and after `fsync`, and rechecks identity and bytes. A new POSIX main entry additionally flushes its exact validated parent directory; Windows retains the exact main-file flush because Python exposes no portable directory-fsync API. File-flush failure, parent-descriptor substitution and process-control interruption retain the committed quote receipt for explicit exact duplicate replay without another provider request. Mandatory offline quote-retention evidence injects durability uncertainty and `KeyboardInterrupt`, then proves retained exact replay with all authority flags false. This is local explicit flush observation for supplied/unattested quote evidence, not physical-power-loss proof, an atomic lease against non-cooperating replacement, native Windows acceptance, provider source or delivery attestation, sustained-market coverage, strategy realism, broker reconciliation, funding readiness, live trading or release approval. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

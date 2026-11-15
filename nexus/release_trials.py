@@ -2369,6 +2369,7 @@ def _validate(profile, result):
                 'pending_checkpoint_exception_rechecks_settled_files',
                 'reconciliation_exception_rechecks_settled_files',
                 'checkpoint_reconciliation_replay_is_byte_stable',
+                'type_confused_replays_rejected',
                 'emergency_stop_retires_pending_without_external_access',
                 'emergency_stop_closes_retry_wait_without_new_attempt',
                 'emergency_stop_blocks_retry_schedule_during_result',

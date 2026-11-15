@@ -1754,6 +1754,35 @@ def test_checkpoint_ack_requires_exact_safety_shape(tmp_path, monkeypatch,
     assert state['last_outcome'] is None and not state['completed']
 
 
+@pytest.mark.parametrize('field', (
+    'mode', 'status', 'policy', 'source', 'account_sha256', 'limitations'))
+def test_checkpoint_ack_rejects_type_confused_text(tmp_path, monkeypatch,
+        field):
+    class EqualText:
+        def __init__(self, expected): self.expected = expected
+        def __eq__(self, other): return other == self.expected
+        def __ne__(self, other): return other != self.expected
+
+    _, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+    original = subject.checkpoint.collect_and_checkpoint_once
+
+    def type_confused_ack(*args, **kwargs):
+        result = original(*args, **kwargs)
+        return {**result, field: EqualText(result[field])}
+
+    monkeypatch.setattr(subject.checkpoint, 'collect_and_checkpoint_once',
+        type_confused_ack)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CHECKPOINT_STATE_UNCERTAIN'):
+        call(tmp_path, opener, stores=(cursor, budget))
+    assert len(opener.requests) == 1
+    state = budget.inspect()
+    assert state['pending_token'] == state['head_sha256']
+    assert state['last_outcome'] is None and not state['completed']
+
+
 def test_fresh_reservation_rejects_duplicate_checkpoint_acknowledgement(
         tmp_path, monkeypatch):
     _, raw = segments()
@@ -4985,6 +5014,46 @@ def test_reconciliation_budget_view_cannot_promote_authority(tmp_path,
     assert original()['pending_token'] == reserved['token']
 
 
+@pytest.mark.parametrize('field', (
+    'mode', 'status', 'account_sha256', 'max_attempts',
+    'backoff_seconds', 'last_reconnect_reason'))
+def test_reconciliation_budget_view_rejects_type_confusion(tmp_path,
+        monkeypatch, field):
+    class EqualText(str):
+        pass
+
+    class EqualInt(int):
+        pass
+
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    original = budget.inspect
+
+    def type_confused_view():
+        retained = original()
+        value = retained[field]
+        if field == 'max_attempts':
+            value = EqualInt(value)
+        elif field == 'backoff_seconds':
+            value = tuple(EqualInt(item) for item in value)
+        else:
+            value = EqualText(value)
+        return {**retained, field: value}
+
+    monkeypatch.setattr(budget, 'inspect', type_confused_view)
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECOVERY_STATE_UNCERTAIN'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+    assert original()['pending_token'] == reserved['token']
+
+
 @pytest.mark.parametrize('kind', ('mapping_subclass', 'extra_field',
     'promoted_authority'))
 def test_reconciliation_recovers_noncanonical_budget_result_acknowledgement(
@@ -5162,6 +5231,34 @@ def test_reconciliation_binding_cannot_promote_authority(tmp_path,
     original = cursor.latest_checkpoint_binding
     monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
         lambda: {**original(), field: True})
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='CURSOR_BINDING_REVIEW_FAILED'):
+        subject.reconcile_pending_checkpoint(cursor_store=cursor,
+            reconnect_budget=budget,
+            expected_budget_head=reserved['head_sha256'],
+            expected_checkpoint_head=checkpoint['checkpoint_head_sha256'],
+            evaluated_at=1001, confirm_checkpoint_reconciliation=True)
+    assert len(opener.requests) == 1
+    assert budget.path.read_bytes() == saved
+
+
+@pytest.mark.parametrize('field', ('mode', 'status', 'account_sha256'))
+def test_reconciliation_binding_rejects_type_confused_text(tmp_path,
+        monkeypatch, field):
+    class EqualText(str):
+        pass
+
+    cursor, budget, reserved, checkpoint, opener = \
+        committed_pending_checkpoint(tmp_path)
+    saved = budget.path.read_bytes()
+    original = cursor.latest_checkpoint_binding
+
+    def type_confused_binding():
+        retained = original()
+        return {**retained, field: EqualText(retained[field])}
+
+    monkeypatch.setattr(cursor, 'latest_checkpoint_binding',
+        type_confused_binding)
     with pytest.raises(subject.ActivitySSEReconnectBudgetError,
             match='CURSOR_BINDING_REVIEW_FAILED'):
         subject.reconcile_pending_checkpoint(cursor_store=cursor,

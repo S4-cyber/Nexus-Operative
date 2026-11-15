@@ -294,14 +294,21 @@ def _validated_budget_view(reconnect_budget, value, code, *,
     try:
         keys = BUDGET_VIEW_KEYS | ({'duplicate_result'}
             if result_acknowledgement else set())
-        if type(value) is not dict or set(value) != keys:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != keys):
             raise TypeError
-        if (value['mode'] !=
+        if (type(value['mode']) is not str or value['mode'] !=
                 'PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET' or
+                type(value['status']) is not str or
                 value['status'] != 'REVIEW_REQUIRED' or
-                value['account_sha256'] != reconnect_budget.account_sha256 or
+                _digest(value['account_sha256'], code) !=
+                    reconnect_budget.account_sha256 or
+                type(value['max_attempts']) is not int or
                 value['max_attempts'] != MAX_ATTEMPTS or
                 type(value['backoff_seconds']) is not tuple or
+                any(type(item) is not int
+                    for item in value['backoff_seconds']) or
                 value['backoff_seconds'] != BACKOFF_SECONDS or
                 value['automatic_retry'] is not False or
                 value['automatic_sleep'] is not False or
@@ -325,7 +332,9 @@ def _validated_budget_view(reconnect_budget, value, code, *,
             if type(value[field]) is not bool:
                 raise TypeError
         for field in ('last_outcome', 'last_requested_outcome'):
-            if value[field] is not None and value[field] not in OUTCOMES:
+            if (value[field] is not None and
+                    (type(value[field]) is not str or
+                        value[field] not in OUTCOMES)):
                 raise ValueError
         for field in ('last_detail_code', 'last_requested_detail_code'):
             if value[field] is not None and type(value[field]) is not str:
@@ -337,7 +346,8 @@ def _validated_budget_view(reconnect_budget, value, code, *,
                     not 0 <= delay <= MAX_PROVIDER_RETRY_AFTER):
                 raise TypeError
         reason = value['last_reconnect_reason']
-        if reason is not None and reason not in REASONS:
+        if (reason is not None and
+                (type(reason) is not str or reason not in REASONS)):
             raise ValueError
         if (result_acknowledgement and
                 type(value['duplicate_result']) is not bool):
@@ -366,7 +376,9 @@ def _validated_checkpoint_binding(cursor_store, value, code):
     custom equality therefore cannot stand in for a replayed journal view.
     """
     try:
-        if type(value) is not dict or set(value) != CHECKPOINT_BINDING_KEYS:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != CHECKPOINT_BINDING_KEYS):
             raise TypeError
         _digest(value['head_sha256'])
         _digest(value['expected_head_sha256'])
@@ -394,10 +406,12 @@ def _validated_checkpoint_binding(cursor_store, value, code):
             _digest(reservation)
         elif reservation is not None:
             raise ValueError
-        if (value['mode'] !=
+        if (type(value['mode']) is not str or value['mode'] !=
                     'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING' or
+                type(value['status']) is not str or
                 value['status'] != 'REVIEW_REQUIRED' or
-                value['account_sha256'] != cursor_store.account_sha256 or
+                _digest(value['account_sha256'], code) !=
+                    cursor_store.account_sha256 or
                 value['read_only'] is not True or
                 any(value[flag] is not False
                     for flag in CHECKPOINT_BINDING_FALSE)):
@@ -436,9 +450,15 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
     authorize closing the reconnect budget.
     """
     try:
-        if (type(result) is not dict or set(result) != CHECKPOINT_ACK_KEYS or
+        if (type(result) is not dict or
+                any(type(key) is not str for key in result) or
+                set(result) != CHECKPOINT_ACK_KEYS or
                 type(expected_actual_provider_access) is not bool):
             raise TypeError
+        for field in ('mode', 'status', 'policy', 'source', 'limitations'):
+            if type(result[field]) is not str:
+                raise TypeError
+        _digest(result['account_sha256'])
         _digest(result['transport_input_sha256'])
         _digest(result['reconnect_input_sha256'])
         acknowledged_head = _digest(result['checkpoint_head_sha256'])
@@ -3177,6 +3197,23 @@ def fixture_report():
         cold_budget = ActivitySSEReconnectBudget(
             budget.path, account).inspect()
         cold_cursor = ActivitySSECursorStore(cursor.path, account).inspect()
+        class TypeConfusedText(str):
+            pass
+        type_confused_budget_code = None
+        try:
+            _validated_budget_view(budget, {**cold_budget,
+                'mode': TypeConfusedText(cold_budget['mode'])},
+                'FIXTURE_TYPE_CONFUSED_BUDGET')
+        except ActivitySSEReconnectBudgetError as error:
+            type_confused_budget_code = str(error)
+        cold_binding = cursor.latest_checkpoint_binding()
+        type_confused_binding_code = None
+        try:
+            _validated_checkpoint_binding(cursor, {**cold_binding,
+                'status': TypeConfusedText(cold_binding['status'])},
+                'FIXTURE_TYPE_CONFUSED_CHECKPOINT_BINDING')
+        except ActivitySSEReconnectBudgetError as error:
+            type_confused_binding_code = str(error)
         settled_success_cursor = ActivitySSECursorStore(
             root / 'settled-success-cursor.sqlite3', account)
         settled_success_budget = ActivitySSEReconnectBudget(
@@ -3770,6 +3807,13 @@ def fixture_report():
                 cold_budget['completed'] and cold_cursor['initialized'] and
                 cold_budget['checkpoint_head_sha256'] ==
                     cold_cursor['head_sha256'],
+            type_confused_replays_rejected=
+                type_confused_budget_code is not None and
+                type_confused_budget_code.endswith(
+                    'FIXTURE_TYPE_CONFUSED_BUDGET') and
+                type_confused_binding_code is not None and
+                type_confused_binding_code.endswith(
+                    'FIXTURE_TYPE_CONFUSED_CHECKPOINT_BINDING'),
             success_exception_rechecks_settled_files=
                 settled_success_code is not None and
                 settled_success_code.endswith('FILE_SET_CHANGED') and

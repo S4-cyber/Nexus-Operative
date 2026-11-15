@@ -7,6 +7,8 @@ from contextlib import contextmanager
 import hashlib
 import os
 from pathlib import Path
+import re
+import sqlite3
 import stat
 
 
@@ -161,6 +163,159 @@ def require_file_fingerprints(paths, maximum_bytes, expected, prefix):
         raise ValueError(prefix + 'FILE_SET_CHANGED') from None
     if current != expected:
         raise ValueError(prefix + 'FILE_SET_CHANGED') from None
+
+
+def require_main_connection(db, bound_path, prefix):
+    """Require one SQLite connection to expose only the selected main file."""
+    def fail(): raise ValueError(prefix + 'CONNECTION_BINDING_CHANGED') from None
+    try:
+        rows = db.execute('PRAGMA database_list').fetchall()
+        if (len(rows) != 1 or len(rows[0]) != 3 or
+                type(rows[0][0]) is not int or rows[0][1] != 'main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                Path(rows[0][2]).resolve() != Path(bound_path)):
+            fail()
+    except ValueError:
+        raise
+    except (OSError, RuntimeError, sqlite3.Error, TypeError):
+        fail()
+
+
+def committed_main_fingerprint(db, bound_path, maximum_bytes, prefix):
+    """Bind committed connection bytes to one stable sidecar-free main file."""
+    def fail(): raise ValueError(prefix + 'CONNECTION_CONTENT_CHANGED') from None
+    try:
+        require_main_connection(db, bound_path, prefix)
+        serialized = db.serialize(name='main')
+        observed = capture_file_fingerprints((bound_path,),
+            (maximum_bytes,), prefix)
+        if (len(observed) != 1 or type(serialized) is not bytes or
+                len(serialized) != observed[0][3] or
+                hashlib.sha256(serialized).hexdigest() != observed[0][7]):
+            fail()
+        return observed[0]
+    except ValueError:
+        raise
+    except (MemoryError, OSError, OverflowError, RuntimeError,
+            sqlite3.Error, TypeError):
+        fail()
+
+
+def _descriptor_fingerprint(descriptor, resolved, maximum_bytes):
+    """Hash bounded bytes through one exact writable regular descriptor."""
+    before = os.fstat(descriptor)
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+            not 1 <= before.st_size <= maximum_bytes):
+        raise RuntimeError
+    original_offset = os.lseek(descriptor, 0, os.SEEK_CUR)
+    digest = hashlib.sha256(); remaining = maximum_bytes + 1
+    try:
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        while remaining:
+            block = os.read(descriptor, min(1024 * 1024, remaining))
+            if not block:
+                break
+            digest.update(block); remaining -= len(block)
+    finally:
+        os.lseek(descriptor, original_offset, os.SEEK_SET)
+    after = os.fstat(descriptor)
+    if (remaining == 0 or _fingerprint_boundary(before) !=
+            _fingerprint_boundary(after) or
+            before.st_ctime_ns != after.st_ctime_ns):
+        raise RuntimeError
+    return (str(resolved), after.st_dev, after.st_ino, after.st_size,
+        after.st_mtime_ns, after.st_ctime_ns if os.name != 'nt' else None,
+        after.st_nlink, digest.hexdigest())
+
+
+def _committed_fingerprint_boundary(fingerprint):
+    if type(fingerprint) is not tuple or len(fingerprint) != 8:
+        raise RuntimeError
+    path, device, inode, size, mtime, ctime, links, digest = fingerprint
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device, inode, size, mtime, ctime, links)) or
+            re.fullmatch(r'[0-9a-f]{64}', digest) is None):
+        raise RuntimeError
+    return (path, device, inode, size, mtime,
+        ctime if os.name != 'nt' else None, links, digest)
+
+
+def _sync_parent_directory(resolved):
+    """Flush only one exact POSIX parent-directory identity."""
+    parent = resolved.parent
+    before = parent.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise RuntimeError
+    expected = (before.st_dev, before.st_ino)
+    flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
+        getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0))
+    descriptor = os.open(parent, flags)
+    try:
+        opened = os.fstat(descriptor)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != expected):
+            raise RuntimeError
+        os.fsync(descriptor)
+        final = os.fstat(descriptor); observed = parent.lstat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (final.st_dev, final.st_ino) != expected or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISDIR(observed.st_mode) or
+                (observed.st_dev, observed.st_ino) != expected):
+            raise RuntimeError
+    finally:
+        os.close(descriptor)
+
+
+def sync_committed_main(path, identity, fingerprint, maximum_bytes, prefix,
+        *, new):
+    """Explicitly flush the exact committed main and a new POSIX entry.
+
+    This is sampled local durability evidence, not physical-power-loss proof or
+    an atomic lease against a non-cooperating pathname replacement.
+    """
+    try:
+        if (type(new) is not bool or type(identity) is not tuple or
+                len(identity) != 3 or type(identity[0]) is not str or
+                type(maximum_bytes) is not int or maximum_bytes <= 0 or
+                type(prefix) is not str):
+            raise RuntimeError
+        path = Path(path); resolved = path.resolve()
+        expected_path, expected_device, expected_inode = identity
+        if str(resolved) != expected_path:
+            raise RuntimeError
+        expected = _committed_fingerprint_boundary(fingerprint)
+        require_file_identities((path,), (identity,), prefix)
+        require_file_fingerprints((path,), (maximum_bytes,),
+            (fingerprint,), prefix)
+        flags = (os.O_RDWR | getattr(os, 'O_BINARY', 0) |
+            getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+        descriptor = os.open(resolved, flags)
+        try:
+            opened = os.fstat(descriptor)
+            if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1 or
+                    not 1 <= opened.st_size <= maximum_bytes or
+                    (opened.st_dev, opened.st_ino) !=
+                        (expected_device, expected_inode) or
+                    _descriptor_fingerprint(descriptor, resolved,
+                        maximum_bytes) != expected):
+                raise RuntimeError
+            os.fsync(descriptor)
+            if (_descriptor_fingerprint(descriptor, resolved,
+                    maximum_bytes) != expected):
+                raise RuntimeError
+        finally:
+            os.close(descriptor)
+        require_file_identities((path,), (identity,), prefix)
+        require_file_fingerprints((path,), (maximum_bytes,),
+            (fingerprint,), prefix)
+        if new and os.name != 'nt':
+            _sync_parent_directory(resolved)
+            require_file_identities((path,), (identity,), prefix)
+            require_file_fingerprints((path,), (maximum_bytes,),
+                (fingerprint,), prefix)
+    except Exception:
+        raise ValueError(prefix + 'COMMIT_DURABILITY_UNCERTAIN') from None
 
 
 @contextmanager

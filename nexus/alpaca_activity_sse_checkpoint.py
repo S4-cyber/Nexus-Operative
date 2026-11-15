@@ -140,17 +140,100 @@ def _initial_review_result(value):
 def _transport_result(value):
     if type(value) is not tuple or len(value) != 2:
         _fail('TRANSPORT_RESULT_INVALID')
-    review, replay = value
-    if (type(review) is not dict or
-            not _digest(review.get('input_sha256')) or
-            type(review.get('source')) is not str or
-            not 0 < len(review['source']) <= 64 or
-            type(review.get('gap_or_server_error_observed')) is not bool or
-            type(review.get('reconnect_review_required')) is not bool or
-            type(review.get('actual_provider_access')) is not bool or
-            type(review.get('actual_stream_connection')) is not bool):
+    return value
+
+
+def _transport_review_result(value, replay, *, account_sha256,
+        persisted_event_id, injected):
+    """Validate the complete private transport boundary before mutation."""
+    denied_flags = tuple(flag for flag in transport.wire.FLAGS if flag not in
+        ('actual_provider_access', 'actual_stream_connection'))
+    keys = frozenset((
+        'mode', 'status', 'read_only', 'input_sha256', 'account_sha256',
+        'sources', 'request_target_exact', 'response_metadata_valid',
+        'utf8_and_sse_framing_valid', 'chunk_count', 'bytes_reviewed',
+        'events_reviewed', 'trades_reviewed', 'fees_reviewed',
+        'heartbeat_comments', 'comments_reviewed',
+        'dropped_messages_reported', 'internal_error_comments',
+        'gap_or_server_error_observed', 'reconnect_review_required',
+        'first_event_id_sha256', 'last_event_id_sha256',
+        'since_id_sha256', 'cursor_window_forward',
+        'all_admitted_fees_parent_linked', *transport.wire.FLAGS,
+        'limitations', 'transport_policy', 'source',
+        'explicit_authorization', 'single_get_attempt',
+        'bounded_segment_complete', 'stream_opened', 'automatic_retry',
+        'cursor_written', 'ledger_applied'))
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != keys or
+                value['mode'] != 'EXPLICIT_ALPACA_ACTIVITY_SSE_TRANSPORT' or
+                value['read_only'] is not True or
+                value['account_sha256'] != account_sha256 or
+                value['sources'] != transport.wire.SOURCES or
+                value['transport_policy'] != transport.POLICY or
+                value['limitations'] != transport.LIMITATIONS or
+                value['source'] != ('INJECTED_UNATTESTED' if injected else
+                    'PAPER_HTTPS_READS') or
+                any(value[field] is not True for field in (
+                    'request_target_exact', 'response_metadata_valid',
+                    'utf8_and_sse_framing_valid', 'cursor_window_forward',
+                    'all_admitted_fees_parent_linked',
+                    'explicit_authorization', 'single_get_attempt',
+                    'bounded_segment_complete', 'stream_opened')) or
+                any(value[field] is not False for field in (
+                    *denied_flags, 'automatic_retry',
+                    'cursor_written', 'ledger_applied'))):
+            raise ValueError
+        if not _digest(value['input_sha256']) or any(not _digest(value[key])
+                for key in ('first_event_id_sha256',
+                    'last_event_id_sha256', 'since_id_sha256')):
+            raise ValueError
+        if type(replay) is not list or not replay:
+            raise TypeError
+        if (value['first_event_id_sha256'] != sha(replay[0]['event_id']) or
+                value['last_event_id_sha256'] != sha(
+                    replay[-1]['event_id']) or
+                value['since_id_sha256'] != sha(persisted_event_id)):
+            raise ValueError
+        counts = ('chunk_count', 'bytes_reviewed', 'events_reviewed',
+            'trades_reviewed', 'fees_reviewed', 'heartbeat_comments',
+            'comments_reviewed', 'dropped_messages_reported',
+            'internal_error_comments')
+        if any(type(value[key]) is not int or value[key] < 0
+                for key in counts):
+            raise TypeError
+        if (not 1 <= value['chunk_count'] <= transport.wire.MAX_CHUNKS or
+                not 1 <= value['bytes_reviewed'] <= transport.wire.MAX_BYTES or
+                value['events_reviewed'] != len(replay) or
+                not 1 <= value['events_reviewed'] <=
+                    transport.wire.MAX_EVENTS or
+                value['trades_reviewed'] + value['fees_reviewed'] !=
+                    value['events_reviewed'] or
+                value['comments_reviewed'] > value['bytes_reviewed'] // 2 or
+                value['dropped_messages_reported'] >
+                    999_999_999_999 * value['comments_reviewed'] or
+                value['comments_reviewed'] <
+                    value['heartbeat_comments'] +
+                    value['internal_error_comments'] +
+                    (1 if value['dropped_messages_reported'] else 0) or
+                (value['dropped_messages_reported'] == 0 and
+                    value['comments_reviewed'] !=
+                        value['heartbeat_comments'] +
+                        value['internal_error_comments'])):
+            raise ValueError
+        interrupted = (value['dropped_messages_reported'] > 0 or
+            value['internal_error_comments'] > 0)
+        if (value['gap_or_server_error_observed'] is not interrupted or
+                value['reconnect_review_required'] is not interrupted or
+                value['status'] != ('RECONNECT_REVIEW_REQUIRED'
+                    if interrupted else 'REVIEW_REQUIRED') or
+                value['actual_provider_access'] is not (not injected) or
+                value['actual_stream_connection'] is not (not injected)):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
         _fail('TRANSPORT_RESULT_INVALID')
-    return review, replay
+    return value
 
 
 def _reconnect_review_result(value):
@@ -266,6 +349,11 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             api_key, api_secret, **options)), cursor_store, store_binding)
     replay = _checked_store_call(
         lambda: _frozen_events(replay, 'REPLAY_EVENTS_INVALID'),
+        cursor_store, store_binding)
+    transport_review = _checked_store_call(
+        lambda: _transport_review_result(transport_review, replay,
+            account_sha256=initial_review['account_sha256'],
+            persisted_event_id=persisted, injected=opener is not None),
         cursor_store, store_binding)
     if (transport_review['gap_or_server_error_observed'] or
             transport_review['reconnect_review_required']):
@@ -513,6 +601,22 @@ def fixture_report():
             acknowledgement_error = str(error)
         acknowledgement_recovery = ActivitySSECursorStore(
             acknowledgement_path, account).inspect()
+        boundary_review, boundary_replay = transport._collect_once_private(
+            'fixture_key_only_123', 'fixture_secret_only_123',
+            expected_account_id=account, since_id=first[-1]['event_id'],
+            confirm_read_only_paper=True, opener=Opener(),
+            wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+            permission_check=lambda: True,
+            emergency_stop_check=lambda: False,
+            credential_check=lambda: True)
+        boundary_error = None
+        try:
+            _transport_review_result(
+                {**boundary_review, 'provider_source_attested': True},
+                boundary_replay, account_sha256=sha(account),
+                persisted_event_id=first[-1]['event_id'], injected=True)
+        except ActivitySSECheckpointError as error:
+            boundary_error = str(error)
         encoded = json.dumps(result, sort_keys=True)
         checks = dict(single_injected_get=len(opener.requests) == 1,
             duplicate_redelivery_and_advance=
@@ -540,6 +644,10 @@ def fixture_report():
                     'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
                     'CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN' and
                 acknowledgement_recovery['retained_checkpoints'] == 1,
+            transport_boundary_rejects_promoted_acknowledgement=
+                boundary_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
+                    'TRANSPORT_RESULT_INVALID',
             no_private_identifier_or_credential_echo=all(token not in encoded
                 for token in (account, '01K0000', '11111111',
                     'fixture_key_only_123', 'fixture_secret_only_123')),

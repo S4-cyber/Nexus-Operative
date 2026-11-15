@@ -174,6 +174,85 @@ def test_committed_write_ack_rechecks_main_identity(tmp_path,monkeypatch):
     assert state['ready_for_routing'] is False
 
 
+def _continuity_connection(counter, path=None):
+    class ContinuityConnection(sqlite3.Connection):
+        def serialize(self,*args,**kwargs):
+            result=super().serialize(*args,**kwargs)
+            counter.append(len(result));return result
+
+        def close(self):
+            super().close()
+            if path is not None:
+                observed=path.stat()
+                os.utime(path,ns=(observed.st_atime_ns,
+                    observed.st_mtime_ns+1_000_000_000))
+    return ContinuityConnection
+
+
+def test_committed_write_ack_rechecks_main_content(tmp_path,monkeypatch):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    budget.ensure_initialized(expected_head=ZERO);counter=[]
+    original_connect=subject.sqlite3.connect
+    original_fingerprint=subject._main_fingerprint
+    def connect(database,*args,**kwargs):
+        if '?mode=rw' in str(database):
+            kwargs['factory']=_continuity_connection(counter)
+        return original_connect(database,*args,**kwargs)
+    def changed(path):
+        result=original_fingerprint(path)
+        if counter:
+            altered=list(result);altered[7]='f'*64;return tuple(altered)
+        return result
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    monkeypatch.setattr(subject,'_main_fingerprint',changed)
+    with budget.ownership() as owner:
+        with pytest.raises(ValueError,match='CONNECTION_CONTENT_CHANGED'):
+            budget.begin(account_id=ACCOUNT,
+                request_before_head_sha256=DIGEST,payload_sha256='b'*64,
+                client_order_id='nx_ack_content',admission=lambda:1000,
+                ownership=owner,expected_head=ZERO)
+    assert len(counter)==1
+    monkeypatch.setattr(subject,'_main_fingerprint',original_fingerprint)
+    state=budget.inspect()
+    assert state['attempts']==1 and state['pending_token'] is not None
+    assert state['ready_for_routing'] is False
+
+
+def test_committed_write_ack_rechecks_content_after_close(tmp_path,monkeypatch):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    budget.ensure_initialized(expected_head=ZERO);counter=[]
+    original=subject.sqlite3.connect
+    def connect(database,*args,**kwargs):
+        if '?mode=rw' in str(database):
+            kwargs['factory']=_continuity_connection(counter,budget.path)
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    with budget.ownership() as owner:
+        with pytest.raises(ValueError,match='FILE_SET_CHANGED'):
+            budget.begin(account_id=ACCOUNT,
+                request_before_head_sha256=DIGEST,payload_sha256='b'*64,
+                client_order_id='nx_ack_postclose',admission=lambda:1000,
+                ownership=owner,expected_head=ZERO)
+    state=budget.inspect()
+    assert len(counter)==1 and state['attempts']==1
+    assert state['pending_token'] is not None and not state['ready_for_routing']
+
+
+def test_uncommitted_write_never_serializes_for_acknowledgement(
+        tmp_path,monkeypatch):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    budget.ensure_initialized(expected_head=ZERO);original=subject.sqlite3.connect
+    class NoSerialize(sqlite3.Connection):
+        def serialize(self,*_args,**_kwargs):
+            raise AssertionError('uncommitted bytes must not be acknowledged')
+    def connect(database,*args,**kwargs):
+        if '?mode=rw' in str(database):kwargs['factory']=NoSerialize
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    with pytest.raises(ValueError,match='UNCOMMITTED_TRANSACTION'):
+        with budget._write_connection():pass
+
+
 def test_main_replacement_during_transaction_cannot_acknowledge(
         tmp_path):
     path=tmp_path/'post.sqlite3';replacement=tmp_path/'replacement.sqlite3'

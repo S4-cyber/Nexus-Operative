@@ -1,10 +1,20 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.322 provider budget content acknowledgement binding
+
+Committed provider POST and GET budget writes now require the writable SQLite connection's serialized main bytes to equal two stable bounded sidecar-free pathname fingerprints before acknowledgement, and the same fingerprint must remain after connection close. Uncommitted returns are rejected before serialization. Injected connection-content mismatch and post-close metadata drift retain the committed pending reservation and keep automatic retry, capacity reuse and all trading/release authority false. This is local bounded content continuity, not explicit fsync durability, physical-power-loss proof, atomic directory exclusion, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
+
+PR #34's complete Windows regression finished with 6,073 passes and one deterministic portable-separator assertion failure. The provider-result fixture now emits its already-contained relative manifest paths with POSIX separators on every host; fresh exact-source Windows execution remains mandatory.
+
+Every legacy account-read pacing write now acquires the existing cross-platform one-byte owner lease before opening SQLite, while typed broker reads retain that lease across provider I/O. Content attestation runs only after the writer owns `BEGIN IMMEDIATE`. A 100-iteration two-process regression produced exactly one admission per head and only fixed fail-closed contender errors. This is cooperating local-process exclusion, not a distributed or provider-wide budget.
+
+**Current development build: 0.340.322 (pre-release).**
+
 ## v0.340.321 provider transaction acknowledgement binding
 
 Provider POST and GET write contexts now retain the captured SQLite main-file identity through transaction finalization, exact-main pre-close validation and a post-close pathname sample. Existing and new stores reject uncommitted returns; during-transaction replacement or an injected post-commit identity fault fails closed without deleting the replacement or making the pending reservation retryable. Windows release trials now retain only reviewed fixed paper-tool failure codes, and the disposable provider-result fixture derives relative manifest paths against the caller's lexical root or that exact root's resolved spelling so long and 8.3 temporary paths cannot disagree or escape their scope. This is sampled local acknowledgement integrity and privacy-safe evidence correction, not atomic directory exclusion, native durability, provider-wide coordination, account/source acceptance, routing permission or release acceptance.
 
-**Current development build: 0.340.321 (pre-release).**
+**Previous development build: 0.340.321 (pre-release).**
 
 ## v0.340.320 provider-GET store binding and first-write recovery
 

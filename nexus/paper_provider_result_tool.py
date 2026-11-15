@@ -147,9 +147,9 @@ def _fixture(root):
             try:return path.relative_to(base)
             except ValueError:continue
         _fail()
-    value=dict(profile=PROFILE,provider_budget=str(relative(budget.path)),
+    value=dict(profile=PROFILE,provider_budget=relative(budget.path).as_posix(),
         expected_provider_head=budget.inspect()['head_sha256'],accounts=[dict(account_id=gate.account,
-            pacing=str(relative(gate.path)),expected_head=gate.inspect()['head_sha256'],
+            pacing=relative(gate.path).as_posix(),expected_head=gate.inspect()['head_sha256'],
             bindings=bindings[gate.account_digest]) for gate in gates])
     path.write_text(canonical(value),encoding='utf-8')
     return path

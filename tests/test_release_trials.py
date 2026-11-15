@@ -531,6 +531,21 @@ def test_pacing_profile_requires_provider_read_recovery_fences():
             trials._validate('pacing',changed)
 
 
+def test_pacing_profile_requires_provider_budget_acknowledgement_fences():
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    from nexus.paper_provider_budget_ack_evidence import CHECKS,FLAGS
+    for field in CHECKS:
+        changed=copy.deepcopy(result)
+        changed['provider_budget_write_acknowledgement'][field]=False
+        with pytest.raises(ValueError,match='PROVIDER_BUDGET_ACK_FENCES'):
+            trials._validate('pacing',changed)
+    for field in FLAGS:
+        changed=copy.deepcopy(result)
+        changed['provider_budget_write_acknowledgement'][field]=True
+        with pytest.raises(ValueError,match='PROVIDER_BUDGET_ACK_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
 def test_pacing_profile_requires_account_read_recovery_fences():
     result=trials._pacing_trial();trials._validate('pacing',result)
     from nexus.paper_read_pacing_recovery import RECOVERY_CHECKS,RECOVERY_FLAGS

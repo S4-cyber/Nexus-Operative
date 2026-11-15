@@ -1,5 +1,41 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.334 Activity SSE checkpoint acknowledgement type binding
+
+**Current development build: 0.340.334 (pre-release).** The one-attempt Activity SSE
+checkpoint now validates exact built-in envelope, transport and reconnect-review
+acknowledgement schemas before network admission or cursor mutation. Hostile equality
+subclasses, Boolean-as-count values, missing fields and authority promotion fail closed.
+This advances the offline M8.2 uncertainty matrix but does not accept M8.2 or any release
+stage; actual provider/account/source evidence remains external and private.
+
+Focused checkpoint validation passed 124 tests and the broader Activity SSE surface passed
+1,024 tests, both with two dependency deprecation warnings. Final release profiles,
+saved-evidence verification, complete regression, package checks, secret scans and hosted
+exact-head gates remain mandatory before promotion.
+
+All sixteen bounded offline profiles subsequently passed and the saved report independently
+verified against 415 exact source files / `41151b2c064fba6842f953ac09ed2739214d2fa713789af548c7c67d6815801b`;
+`validation/release_trials_0_340_334.json` SHA-256 is
+`f0d6b6c306bec4250600de41a3a5add1dd53a6c3d9c0baf5251139541a838e04`.
+Every authority flag remained false. These hashes prove current-source/report consistency
+only, not execution authenticity or any external acceptance.
+
+The final exact candidate passed 6,310 tests with 2 platform skips and two dependency
+warnings in 849.21 seconds. Compilation, dependency integrity, deterministic roadmap
+equality, Portal syntax, all fourteen Node controllers and the 19-case ordered CI inventory
+suite passed. The 164-member wheel SHA-256 is
+`9840cf0e461da554af42cc80a93ce61b75262097c26e68e053fed4a61bd209ff`.
+The 1,070-path public-artifact audit and changed-line high-confidence scan found zero
+findings; hosted checksum-pinned Gitleaks and native Windows/installer execution remain
+required.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits,
+account checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help are unchanged. Weighted implementation remains
+38% (30–45%, low confidence), with 0/9 independently accepted stages; release approval,
+trading permission and launch date remain separate and false/unset.
+
 ## v0.340.333 evidence-first milestone execution map
 
 The read-only roadmap now exposes nine M1-M9 engineering milestones as 45 explicit evidence-required tasks plus a prioritized per-cycle batch queue. Each task records its coarse engineering effort band, offline-versus-external/native mode and required proof. Development cycles must recover current heads and CI, select the largest coherent non-overlapping batch, continue independent offline work when an external gate is blocked and use expected-head leases for publication. Every task remains `REVIEW_REQUIRED`; this planning structure adds no runtime scheduler, write endpoint, broker/account authority, order permission, funding, live trading, cloud deployment or release approval.

@@ -3,6 +3,34 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.334 Activity SSE checkpoint acknowledgement type binding
+
+The explicit one-attempt Activity SSE checkpoint now treats its internal envelope,
+transport and reconnect-review returns as untrusted acknowledgements. Exact built-in
+schemas, text and sequence types, Boolean states, bounded integer counts and count/digest
+relationships are required before any provider read or cursor write can be acknowledged.
+Custom-equality text/tuple subclasses, Boolean-as-count values, missing fields and authority
+promotion fail closed; a malformed initial acknowledgement remains network/storage silent
+and a malformed downstream acknowledgement never checkpoints. This is local injected
+M8.2 hardening, not provider identity, entitlement, delivery completeness, broker-paper
+acceptance, sustained market evidence, native Windows acceptance, funding/live/cloud
+readiness or release approval. OFF defaults, limits, account checks, fail-closed exits and
+emergency-stop independence remain unchanged. No UI control changed: seven beginner tabs
+and black/bright-purple bottom-right hover help remain intact. Implementation remains
+weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+The exact v0.340.334 candidate passed 6,310 tests with 2 platform skips and two
+dependency warnings in 849.21 seconds; the synchronized release/evidence/SSE scope passed
+739 and the complete Activity SSE scope passed 1,024. All sixteen bounded profiles and
+saved-evidence verification matched 415 source files /
+`41151b2c064fba6842f953ac09ed2739214d2fa713789af548c7c67d6815801b`; report SHA-256 is
+`f0d6b6c306bec4250600de41a3a5add1dd53a6c3d9c0baf5251139541a838e04`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal syntax, all
+fourteen Node controllers and the 19-case CI inventory suite passed. The 164-member wheel
+SHA-256 is `9840cf0e461da554af42cc80a93ce61b75262097c26e68e053fed4a61bd209ff`.
+The 1,070-path artifact audit and changed-line high-confidence scan found zero findings;
+hosted pinned Gitleaks, exact-head CI and native Windows/installer gates remain required.
+
 ## Active M1-M9 execution discipline
 
 Before every development edit, recover the fresh development head, active stacked reviews,

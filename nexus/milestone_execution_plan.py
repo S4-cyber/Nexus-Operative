@@ -19,7 +19,7 @@ _PLAN = json.loads(r'''[
         "title": "Complete exact-source installer regression",
         "required_evidence": "Run full Windows EXE, upgrade, rollback, uninstall, checksum and distribution acceptance",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–3 engineering days",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -27,7 +27,7 @@ _PLAN = json.loads(r'''[
         "title": "Test ordinary-user installation and ACLs",
         "required_evidence": "Retain a sanitized non-elevated owner-profile probe and native window behavior report",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -35,7 +35,7 @@ _PLAN = json.loads(r'''[
         "title": "Drill backup, restore and interruption",
         "required_evidence": "Independently compare cold SQLite/hash-chain/position recovery across power-loss-like faults",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "4–7 engineering days",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -43,7 +43,7 @@ _PLAN = json.loads(r'''[
         "title": "Reconcile stacked review releases",
         "required_evidence": "Verify PR ancestry, CI outcomes and correct package/evidence source identities",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "1–2 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -51,7 +51,7 @@ _PLAN = json.loads(r'''[
         "title": "Audit versioned distributable",
         "required_evidence": "Check EXE/installer/wheel/version, artifact hash, private data exclusion and reproducible manifest",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–3 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       }
     ]
@@ -68,7 +68,7 @@ _PLAN = json.loads(r'''[
         "title": "Specify source rights and timestamp policy",
         "required_evidence": "Document venues, revisions, allowed uses and event/arrival/receipt clock domains",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–3 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -76,7 +76,7 @@ _PLAN = json.loads(r'''[
         "title": "Stress gaps, conflicts and revisions",
         "required_evidence": "Exercise out-of-order, duplicate, missing, stale and incompatible-feed fail-closed fixtures",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -84,7 +84,7 @@ _PLAN = json.loads(r'''[
         "title": "Retain immutable public-feed provenance",
         "required_evidence": "Use bounded hash-verified receipts, deduplication and restart/outage coverage tests",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -92,7 +92,7 @@ _PLAN = json.loads(r'''[
         "title": "Collect independently witnessed genuine feeds",
         "required_evidence": "Keep real source evidence and rate/clock/outage diagnostics private",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–7 engineering days; actual source-dependent",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -100,7 +100,7 @@ _PLAN = json.loads(r'''[
         "title": "Audit listing and survivorship effects",
         "required_evidence": "Independent review of delistings, revisions, licensing and source consistency",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days; independent review",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       }
     ]
@@ -117,7 +117,7 @@ _PLAN = json.loads(r'''[
         "title": "Map all admission authorities",
         "required_evidence": "Prove OFF defaults, tier/account gates, no implicit resumption or learned-policy promotion",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–3 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -125,7 +125,7 @@ _PLAN = json.loads(r'''[
         "title": "Stress queue, expiration and emergency reserve",
         "required_evidence": "Measure durable p50/p95/p99, overflow and command/ID bounds under bursts",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -133,7 +133,7 @@ _PLAN = json.loads(r'''[
         "title": "Inject bad clocks, quotes and source loss",
         "required_evidence": "Prove stale, discontinuous, overloaded and missing feeds fail closed",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -141,7 +141,7 @@ _PLAN = json.loads(r'''[
         "title": "Prove independent emergency stop under contention",
         "required_evidence": "Run separate-process stop against hung workers and locked journals, including native Windows",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–6 engineering days; native Windows required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -149,7 +149,7 @@ _PLAN = json.loads(r'''[
         "title": "Review worst-case exposure after exits",
         "required_evidence": "Independent audit of risk limits, partial fills and unresolved exposure",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days; independent review",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       }
     ]
@@ -166,7 +166,7 @@ _PLAN = json.loads(r'''[
         "title": "Reproduce idempotent order state machine",
         "required_evidence": "Crash/lost-ack/unknown/duplicate requests, partial fills, cancel and expiry replay",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -174,7 +174,7 @@ _PLAN = json.loads(r'''[
         "title": "Review fee, hold and balance conservation",
         "required_evidence": "Fixture-backed partial fills, reservations, fees, cash and positions",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -182,7 +182,7 @@ _PLAN = json.loads(r'''[
         "title": "Capture authorized paper snapshots",
         "required_evidence": "Privately preserve provider identity, source, account and bounded execution/fee receipts",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–7 engineering days; authorized broker required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -190,7 +190,7 @@ _PLAN = json.loads(r'''[
         "title": "Match broker activity with internal accounting",
         "required_evidence": "Independently reconcile orders, timestamps, fees, holds, open terms and positions",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "4–8 engineering days; broker evidence required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -198,7 +198,7 @@ _PLAN = json.loads(r'''[
         "title": "Exercise disagreement and safe recovery",
         "required_evidence": "Fail closed without implicit retry, fund movement or trading authority",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days; independent review",
         "mode": "OFFLINE_CANDIDATE"
       }
     ]
@@ -215,7 +215,7 @@ _PLAN = json.loads(r'''[
         "title": "Calculate worst-case command and ID reserves",
         "required_evidence": "Keep emergency/cancel/expiry capacity when regular operations reach limits",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -223,7 +223,7 @@ _PLAN = json.loads(r'''[
         "title": "Run multiepoch stress and checkpoint drills",
         "required_evidence": "Test interruptions, retention, archive and ID reuse over repeated generations",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "4–8 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -231,7 +231,7 @@ _PLAN = json.loads(r'''[
         "title": "Restore archived state on real Windows",
         "required_evidence": "Verify native markers, backup, rollback, private volumes and interrupted rotation",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–6 engineering days; native Windows required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -239,7 +239,7 @@ _PLAN = json.loads(r'''[
         "title": "Benchmark full durable operation latency",
         "required_evidence": "Record conservative p50/p95/p99 and overload/stall behavior",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -247,7 +247,7 @@ _PLAN = json.loads(r'''[
         "title": "Review disk, corruption and retention policy",
         "required_evidence": "Independent fault/retention audit without silent history loss",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days; independent review",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       }
     ]
@@ -264,7 +264,7 @@ _PLAN = json.loads(r'''[
         "title": "Freeze causal features and chronological splits",
         "required_evidence": "No lookahead, purged windows or training/validation leakage",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -272,7 +272,7 @@ _PLAN = json.loads(r'''[
         "title": "Compare baselines under execution costs",
         "required_evidence": "Model adverse fills, fees, spread, slippage and portfolio drawdowns",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -280,7 +280,7 @@ _PLAN = json.loads(r'''[
         "title": "Audit calibration, regimes and survivorship",
         "required_evidence": "Independent walk-forward sensitivity and fold-level error assessment",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–6 engineering days; independent review",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -288,7 +288,7 @@ _PLAN = json.loads(r'''[
         "title": "Record precommitted genuine forward predictions",
         "required_evidence": "Time-stamped policy/quote/result evidence separated from synthetic scores",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "7–14 engineering days plus forward observation",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -296,7 +296,7 @@ _PLAN = json.loads(r'''[
         "title": "Govern model promotion and rollback",
         "required_evidence": "Independent approval before changing autonomous policy; never auto-promote trained models",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days; independent review",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       }
     ]
@@ -313,7 +313,7 @@ _PLAN = json.loads(r'''[
         "title": "Finish cold-runner restart and stop fault matrix",
         "required_evidence": "Exercise independent stop, queue loss, stale state and orphaned tasks",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -321,7 +321,7 @@ _PLAN = json.loads(r'''[
         "title": "Prove observational coverage semantics",
         "required_evidence": "Use exact session heads and eligible unioned intervals excluding gaps/injection",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -329,7 +329,7 @@ _PLAN = json.loads(r'''[
         "title": "Conduct supervised 72-hour genuine-feed paper trial",
         "required_evidence": "Record actual source, interruptions and 95% coverage target as diagnostic only",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "At least 72 calendar hours plus 2–4 analysis days",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -337,7 +337,7 @@ _PLAN = json.loads(r'''[
         "title": "Review incidents and actual cost/execution outcomes",
         "required_evidence": "Independent fee, loss, drawdown, outage and recovery assessment",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–6 engineering days; independent review",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -345,7 +345,7 @@ _PLAN = json.loads(r'''[
         "title": "Exercise owner native-profile sustained recovery",
         "required_evidence": "Retain private restart/cold-replay and ordinary-user operating evidence",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–6 engineering days; owner Windows required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       }
     ]
@@ -362,7 +362,7 @@ _PLAN = json.loads(r'''[
         "title": "Verify paper-only provider identity and entitlements",
         "required_evidence": "Scoped credentials, hostname, account and quota policy; no live permissions",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–4 engineering days; broker access required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -370,7 +370,7 @@ _PLAN = json.loads(r'''[
         "title": "Finish single-attempt POST/GET/SSE uncertainty matrix",
         "required_evidence": "Lost acknowledgements, revoked permissions, stream gaps, pacing and fail-closed replays",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "4–7 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -378,7 +378,7 @@ _PLAN = json.loads(r'''[
         "title": "Supervise bounded actual paper order lifecycle",
         "required_evidence": "Paper-only accepted/unknown order, fill and cancellation receipts",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–7 engineering days; supervised paper account required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -386,7 +386,7 @@ _PLAN = json.loads(r'''[
         "title": "Validate provider quota, clock and reconnect semantics",
         "required_evidence": "Real headers, activity delivery, ordering, provider-wide pacing and deduplication",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–6 engineering days; broker access required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -394,7 +394,7 @@ _PLAN = json.loads(r'''[
         "title": "Obtain independent broker-paper account reconciliation",
         "required_evidence": "Account, fees, holds, cash, positions, source and original events reviewed",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–6 engineering days; independent review",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       }
     ]
@@ -411,7 +411,7 @@ _PLAN = json.loads(r'''[
         "title": "Freeze threat model, release scope and privacy",
         "required_evidence": "Exact source manifest, secret audit, permissions and residual-risk register",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "3–5 engineering days",
         "mode": "OFFLINE_CANDIDATE"
       },
       {
@@ -419,7 +419,7 @@ _PLAN = json.loads(r'''[
         "title": "Complete exact-head security/browser/Windows/package gates",
         "required_evidence": "All required terminal CI, installation, prior-upgrade and saved-evidence checks",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "2–5 engineering days; native Windows required",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -427,7 +427,7 @@ _PLAN = json.loads(r'''[
         "title": "Obtain separate reviews for all nine stages",
         "required_evidence": "Independently signed evidence, unresolved blockers and residual risk decisions",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "4–10 engineering days; independent reviews",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -435,7 +435,7 @@ _PLAN = json.loads(r'''[
         "title": "Validate funding/live/cloud readiness without activation",
         "required_evidence": "Secure account/keys, single execution owner, remote stop, billing and recovery dry-run",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "5–10 engineering days; external readiness only",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       },
       {
@@ -443,7 +443,7 @@ _PLAN = json.loads(r'''[
         "title": "Collect explicit owner release decision",
         "required_evidence": "No 1.0, fund movement or real trading before all gates and owner approval",
         "state": "REVIEW_REQUIRED",
-        "effort_estimate": "1-8 engineering days, re-estimate after scope inspection",
+        "effort_estimate": "Owner decision; no estimated release date",
         "mode": "EXTERNAL_OR_NATIVE_GATE"
       }
     ]
@@ -481,7 +481,7 @@ def markdown_lines():
         "## Engineering milestone execution queue (read-only; not acceptance)",
         "",
         "Every task remains REVIEW_REQUIRED until separately evidenced and independently reviewed.",
-        "Effort is a rough 1–8 engineering-day task-size band, not a calendar commitment.",
+        "Effort bands are rough engineering estimates; external wait and observation windows are separate.",
         "Suggested priority: M8 broker paper, M4 reconciliation, M3 risk, M7 sustained operation,",
         "M1 Windows, M2 data, M5 capacity, M6 research, M9 final acceptance.",
         "Do offline work in parallel when account/Windows/feed access blocks external gates;",

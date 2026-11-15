@@ -1,8 +1,8 @@
-# Offline exact-head CI inventory reviewer (experimental)
+# Offline exact-checkout CI inventory reviewer
 
 Run from a trusted local checkout: `python ops/exact_head_ci_gate.py /path/to/sanitized-ci-bundle.json`.
 
-The input is a manually constructed, UTF-8 JSON file no larger than 512 KiB:
+The input is a manually constructed, UTF-8 JSON file no larger than 512 KiB. It must be a regular single-link file and is read through a stable no-follow descriptor. Each run uses this exact schema:
 
 ```json
 {
@@ -10,27 +10,40 @@ The input is a manually constructed, UTF-8 JSON file no larger than 512 KiB:
   "runs": [
     {
       "run": {
+        "id": 1001,
         "name": "Public repository security",
+        "workflow_path": ".github/workflows/public-repo-security.yml",
+        "event": "pull_request",
         "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "checked_out_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "status": "completed",
-        "conclusion": "success"
+        "conclusion": "success",
+        "run_attempt": 1
       },
       "jobs": [
-        {"name": "reachable-history-and-secrets", "status": "completed", "conclusion": "success"}
+        {
+          "id": 2001,
+          "run_id": 1001,
+          "run_attempt": 1,
+          "name": "reachable-history-and-secrets",
+          "status": "completed",
+          "conclusion": "success"
+        }
       ]
     }
   ]
 }
 ```
 
-Add the remaining two required workflows with the same exact `head_sha`:
-- `Nexus research safety regression` must have green `offline-regression`, `offline-release-evidence` and `portal-browser-help` jobs.
-- `Windows simulated-research build` must have a green `test-and-build` job.
+Add the remaining two required workflows with their exact workflow paths, run/job identities, attempts and checked-out SHA:
 
-The example above is intentionally **incomplete** and must return `CI_GATE_REVIEW_REQUIRED` (exit 2). A complete, internally consistent inventory returns an allowlisted `EXACT_HEAD_CI_INVENTORY_ONLY` JSON response with all approval/acceptance flags false. This helper does not fetch GitHub data, read credentials, operate a broker, approve software or authorize trading. Use only sanitized run/job status fields, never upload market/account records.
+- `Nexus research safety regression` must contain exactly green `offline-regression`, `offline-release-evidence` and `portal-browser-help` jobs.
+- `Windows simulated-research build` must contain exactly one green `test-and-build` job.
 
-For a `workflow_dispatch` targeting a commit different from the event `head_sha`, this conservative reviewer cannot establish the checked-out commit and will refuse; separately inspect the immutable checkout-binding step and retained source manifest. Even a green inventory is **not** full step-level CI validation or independent release acceptance.
+The example above is intentionally incomplete and returns `CI_GATE_REVIEW_REQUIRED` (exit 2). A complete internally consistent inventory returns an allowlisted `EXACT_CHECKOUT_CI_INVENTORY_ONLY` response with all approval and acceptance flags false. Unknown fields, workflows, jobs, paths, events, duplicated identifiers, cross-run jobs, changed input files and non-green state fail closed.
+
+Ordinary push and pull-request inventories require both the event head and verified checkout to equal `expected_commit`. An exact-review `workflow_dispatch` of the Windows distribution lane may have a different event head only when its retained checkout-binding step proves `checked_out_sha` equals the expected immutable commit. The reviewer does not establish that proof itself: the exported JSON remains untrusted, and the checkout step, ancestry, source manifest and retained artifacts still require separate inspection.
+
+This helper does not fetch GitHub data, read credentials, operate a broker, approve software or authorize trading. Use only sanitized run/job status fields; never place market/account records, credentials or private artifacts in the bundle.
 
 Local scope test: `cd ops && python -m unittest -v test_exact_head_ci_gate`.
-
-The existing source-fingerprinted v0.340.314 release trial is unaffected by these standalone operator-side files, but this draft still requires review and must not be merged on a stale stack or treated as an accepted release gate.

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.329'
+REVISION = '0.340.330'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1076,6 +1076,14 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.remaining) for item in MILESTONES)
 
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; pull-request security and Windows research jobs now explicitly check out and verify the immutable pull-request head before testing, while an offline exact-CI inventory reviewer binds one requested source to exact workflow paths/events, checked-out SHA values, unique run/job identifiers and attempts, and exact required job sets from a bounded stable single-link input; this records source and inventory consistency only and grants no CI, installer, Windows, broker, live or release authority' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
+    if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
+
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
@@ -1099,7 +1107,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.329 extends explicit post-commit durability to the retained forward-session and quote-evidence journal used by sustained-trial review. Each acknowledged session transition or quote observation now freezes a non-symlink data root, rejects unsafe inherited main files and WAL layouts, requires the exact SQLite main connection and committed bytes to match one bounded regular single-link file, hashes the exact writable descriptor before and after `fsync`, and rechecks identity and bytes. A new POSIX main entry additionally flushes its exact validated parent directory; Windows retains the exact main-file flush because Python exposes no portable directory-fsync API. File-flush failure, parent-descriptor substitution or process-control interruption stops the runner, releases local ownership and leaves the committed session visible as interrupted/review-required rather than acknowledging it. Mandatory bounded forward evidence injects durability uncertainty and `KeyboardInterrupt`, then proves the retained review state with every provider, broker, live, sustained-forward and release authority flag false. This is local injected evidence and explicit flush observation, not physical-power-loss proof, an atomic full-ancestor lease, native Windows acceptance, public-feed source or duration attestation, strategy realism, broker reconciliation, funding readiness, live trading or release approval. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.330 removes pull-request merge-ref ambiguity from the hosted release gates. Every public-security and Windows research job explicitly checks out the immutable pull-request head (or the event SHA outside pull requests), compares the resulting repository HEAD with that expected source commit and fails before testing on any mismatch. The offline CI inventory reviewer now accepts one bounded regular single-link JSON file only, requires exact run/job schemas, unique positive identifiers, run-attempt binding, workflow path and event binding, exact required job sets and an explicit checked-out SHA equal to the requested source. Only the separately triggered native Windows workflow may report a different dispatch event head, and even then its checked-out SHA must equal the requested source. Saved release source fingerprints now include the offline operations reviewers. These controls prove source/inventory consistency only; they do not attest GitHub-hosted metadata, job-step integrity, produced installer bytes, native Windows acceptance or independent release approval. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

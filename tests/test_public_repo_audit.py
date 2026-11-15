@@ -102,6 +102,10 @@ def test_current_workflows_have_immutable_actions_and_no_privileged_secret_conte
 def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanner():
     text=(ROOT/'.github/workflows/public-repo-security.yml').read_text()
     assert 'fetch-depth: 0' in text and 'github.event.pull_request.base.sha || github.sha' in text
+    assert 'ref: ${{ github.event.pull_request.head.sha || github.sha }}' in text
+    assert 'name: Bind scan to exact source commit' in text
+    assert 'EXPECTED_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}' in text
+    assert 'git -C scan rev-parse HEAD' in text
     assert 'python3 policy/tools/public_repo_audit.py --repository scan --history' in text
     assert 'sha256sum --check --strict' in text and "--log-opts='--all'" in text
     assert '--redact=100' in text and '--log-level fatal' in text

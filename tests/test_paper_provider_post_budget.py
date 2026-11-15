@@ -140,6 +140,62 @@ def test_active_ownership_retarget_rolls_back_exact_first_write(tmp_path):
     assert not path.exists() and not decoy.exists()
 
 
+def test_existing_write_context_rejects_uncommitted_return(tmp_path):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    budget.ensure_initialized(expected_head=ZERO);before=budget.path.read_bytes()
+    with pytest.raises(ValueError,match='UNCOMMITTED_TRANSACTION'):
+        with budget._write_connection():
+            pass
+    assert budget.path.read_bytes()==before
+
+
+def test_committed_write_ack_rechecks_main_identity(tmp_path,monkeypatch):
+    budget=PaperProviderPostBudget(tmp_path/'post.sqlite3')
+    budget.ensure_initialized(expected_head=ZERO)
+    armed=False
+    original=subject._require_file_identity
+    def require(path,identity):
+        original(path,identity)
+        if armed:subject._fail('FILE_CHANGED')
+    monkeypatch.setattr(subject,'_require_file_identity',require)
+    def admission():
+        nonlocal armed
+        armed=True
+        return 1000
+    with budget.ownership() as owner:
+        with pytest.raises(ValueError,match='FILE_CHANGED'):
+            budget.begin(account_id=ACCOUNT,
+                request_before_head_sha256=DIGEST,payload_sha256='b'*64,
+                client_order_id='nx_ack_identity',admission=admission,
+                ownership=owner,expected_head=ZERO)
+    armed=False
+    state=budget.inspect()
+    assert state['attempts']==1 and state['pending_token'] is not None
+    assert state['ready_for_routing'] is False
+
+
+def test_main_replacement_during_transaction_cannot_acknowledge(
+        tmp_path):
+    path=tmp_path/'post.sqlite3';replacement=tmp_path/'replacement.sqlite3'
+    budget=PaperProviderPostBudget(path)
+    budget.ensure_initialized(expected_head=ZERO)
+    with sqlite3.connect(replacement) as db:
+        db.execute('CREATE TABLE decoy (value TEXT)')
+        db.execute('INSERT INTO decoy VALUES (\'retain\')')
+    replacement_bytes=replacement.read_bytes()
+    def admission():
+        try:os.replace(replacement,path)
+        except OSError:pytest.skip('open SQLite main replacement denied')
+        return 1000
+    with pytest.raises(ValueError,match='FILE_CHANGED'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,
+                request_before_head_sha256=DIGEST,payload_sha256='b'*64,
+                client_order_id='nx_replace_during_write',admission=admission,
+                ownership=owner,expected_head=ZERO)
+    assert path.read_bytes()==replacement_bytes
+
+
 def test_fresh_connection_failure_restores_absence_and_exact_retry(
         tmp_path,monkeypatch):
     path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)

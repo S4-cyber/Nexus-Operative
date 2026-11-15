@@ -146,6 +146,18 @@ def _http_phase(phase, operation, *args, **kwargs):
         raise ReleaseTrialError('RELEASE_TRIAL_HTTP_' + phase + '_FAILED') from None
 
 
+def _paper_tools_phase(operation, *args, **kwargs):
+    """Retain only a reviewed fixed paper-tool substage failure code."""
+    from tools.packaged_paper_tools_smoke import FAILURE_CODES
+    try:
+        return operation(*args, **kwargs)
+    except ValueError as error:
+        code = str(error)
+        if type(error) is ValueError and code in FAILURE_CODES:
+            raise ReleaseTrialError('RELEASE_TRIAL_HTTP_' + code) from None
+        raise
+
+
 def _http_trial_response_body(response, *, tolerate_precredential_denial_reset=False):
     """Bounded trial-only read; a rejected pre-credential request may close early.
 
@@ -555,7 +567,8 @@ def _http_trial():
     result['lifecycle_stop_scope'] = 'DEDICATED_APPLICATION_LIFECYCLE_WORKER'
     result['shutdown_fence_order'] = lifecycle_stop_order
     from tools.packaged_paper_tools_smoke import run as paper_tools_trial
-    result['paper_tools_source']=_http_phase('PAPER_TOOLS', paper_tools_trial,
+    result['paper_tools_source']=_http_phase('PAPER_TOOLS', _paper_tools_phase,
+        paper_tools_trial,
         [sys.executable,str(Path(__file__).resolve().parents[1]/'portable'/'desktop.py')])
     return result
 

@@ -239,7 +239,7 @@ class PaperProviderPostBudget:
                     setup('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._append(db, 0, dict(schema=SCHEMA, provider_sha256=self.provider_digest), ZERO)
                     self._require_binding(binding)
-            return db, new, created_identity, binding
+            return db, new, created_identity, binding, main_identity
         except sqlite3.OperationalError as error:
             if db is not None:
                 try:
@@ -264,13 +264,13 @@ class PaperProviderPostBudget:
             raise
 
     def _connect(self):
-        db, _new, _identity, _binding = self._open()
+        db, _new, _created, _binding, _main = self._open()
         return db
 
     @contextmanager
     def _write_connection(self):
-        """Close one write connection and safely undo only a fresh rollback."""
-        db, new, created_identity, binding = self._open(write=True)
+        """Require the captured main file through write acknowledgement."""
+        db, new, created_identity, binding, main_identity = self._open(write=True)
         bound_path = binding[0]
         try:
             yield db
@@ -282,13 +282,18 @@ class PaperProviderPostBudget:
                 raise
             if new: _discard_uncommitted_new(bound_path, created_identity)
             self._require_binding(binding)
+            if not new:
+                _require_file_identity(bound_path, main_identity)
             raise
         else:
-            binding_error = None
+            acknowledgement_error = None
             try:
                 self._require_binding(binding)
+                _require_main_connection(db, bound_path)
+                _require_file_identity(bound_path, main_identity)
+                self._require_binding(binding)
             except BaseException as error:
-                binding_error = error
+                acknowledgement_error = error
             uncommitted = db.in_transaction
             try:
                 db.close()
@@ -297,10 +302,12 @@ class PaperProviderPostBudget:
                 raise
             if new and uncommitted:
                 _discard_uncommitted_new(bound_path, created_identity)
-            if binding_error is not None:
-                raise binding_error
+            if acknowledgement_error is not None:
+                raise acknowledgement_error
             self._require_binding(binding)
-            if new and uncommitted:
+            if not (new and uncommitted):
+                _require_file_identity(bound_path, main_identity)
+            if uncommitted:
                 _fail('UNCOMMITTED_TRANSACTION')
 
     @staticmethod

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.320'
+REVISION = '0.340.321'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -997,6 +997,12 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the shared local provider-GET budget now freezes its selected parent while retaining final-leaf checks, binds path plus provider scope/digest through active ownership, requires the captured regular single-link main-file identity and exact SQLite main path throughout setup, and removes only its captured empty sidecar-free file after an aborted first transaction so aliases, inode replacement, foreign connections or object retargeting cannot redirect a write or poison an exact operator retry' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+# Carry the captured provider POST/GET main-file identity through transaction
+# finalization, connection close and the final local acknowledgement sample.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider POST and GET write contexts now retain the captured SQLite main-file identity through transaction finalization, require the exact main connection and file before close, recheck the pathname identity after close, reject uncommitted returns for both existing and new stores, and fail closed on an injected or actual during-transaction replacement without deleting the replacement or reclaiming uncertain capacity' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -1021,7 +1027,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.320 binds the shared local provider-GET budget to one selected physical parent and immutable provider scope before ownership or SQLite work. The final leaf remains separately inspectable, active ownership rechecks the exact path, scope and digest, and connection setup requires the captured regular single-link main-file identity plus the exact SQLite main pathname before and after setup statements. An aborted first transaction removes only its captured empty regular single-link main file when no rollback, WAL or shared-memory sidecar exists. Mutable aliases, inode replacement, foreign SQLite connections, provider-scope mutation and object retargeting therefore fail closed without deleting a decoy or leaving a schema-less path that poisons an exact retry. This does not perform or retry a provider GET, reclaim session capacity, attest broker-wide pacing, accept an account or grant routing, funds, live or release authority. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.321 carries the captured provider POST and GET SQLite main-file identity beyond setup through transaction finalization and local acknowledgement. Each successful body must still name the exact main connection and captured regular single-link file before close, and the pathname identity is sampled again after close. An existing or new write context that returns while its transaction remains open now fails closed; a replacement or injected identity fault after commit produces uncertainty while the retained pending reservation prevents automatic retry or capacity reuse. Exception unwinding also rechecks an existing main path so a storage substitution cannot hide behind a lower-level failure. Hosted Windows regression exposed a long-path versus 8.3 temporary-root mismatch in the disposable provider-result fixture; each private relative manifest name is now derived against either the caller\'s lexical root or that exact root\'s resolved spelling and paths outside both are rejected, with an alias-path regression. Windows release trials also preserve only reviewed fixed paper-tool failure codes without exposing child output, paths or private inputs. This closes a local acknowledgement gap and corrects evidence portability but is not an atomic directory lease against a non-cooperating replacement after the final sample, native Windows durability, provider-wide coordination, a broker request, account acceptance or routing authority. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

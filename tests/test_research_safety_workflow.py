@@ -42,3 +42,9 @@ def test_each_safety_job_uses_pinned_actions_and_nonpersistent_checkout_auth():
     assert text.count("actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065") == 3
     assert text.count("persist-credentials: false") == 3
     assert text.count("cache-dependency-path: pyproject.toml") == 3
+    assert text.count("ref: ${{ github.event.pull_request.head.sha || github.sha }}") == 3
+    assert text.count("name: Bind job to exact source commit") == 3
+    assert text.count("EXPECTED_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}") == 3
+    assert text.count("$actual = (git rev-parse HEAD).Trim()") == 3
+    assert text.count("$actual -cne $env:EXPECTED_SOURCE_COMMIT") == 3
+    assert "python -m compileall -q nexus tests ops" in text

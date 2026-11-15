@@ -132,7 +132,49 @@ def _digest(value):
 
 
 def _initial_review_result(value):
-    if type(value) is not dict or not _digest(value.get('account_sha256')):
+    keys = frozenset((
+        'mode', 'status', 'read_only', 'input_sha256', 'account_sha256',
+        'events_reviewed', 'trades_reviewed', 'fees_reviewed',
+        'linked_parent_trades', 'linked_orders', 'event_ids_unique',
+        'ref_ids_unique', 'event_cursor_order_strict',
+        'all_admitted_fees_parent_linked',
+        'corrections_and_busts_admitted',
+        'bulk_or_unlinked_fees_admitted', 'schema_scope',
+        *envelope.FLAGS, 'limitations'))
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != keys or
+                type(value['mode']) is not str or
+                value['mode'] !=
+                    'SUPPLIED_ALPACA_ACTIVITY_SSE_LINK_REVIEW' or
+                type(value['status']) is not str or
+                value['status'] != 'REVIEW_REQUIRED' or
+                type(value['schema_scope']) is not str or
+                value['schema_scope'] !=
+                    'BTC_USD_TRD_FILL_AND_ONE_TO_ONE_USD_FEE_ONLY' or
+                type(value['limitations']) is not str or
+                value['read_only'] is not True or
+                not _digest(value['input_sha256']) or
+                not _digest(value['account_sha256']) or
+                any(value[field] is not True for field in (
+                    'event_ids_unique', 'ref_ids_unique',
+                    'event_cursor_order_strict',
+                    'all_admitted_fees_parent_linked')) or
+                value['corrections_and_busts_admitted'] is not False or
+                value['bulk_or_unlinked_fees_admitted'] is not False or
+                any(value[flag] is not False for flag in envelope.FLAGS)):
+            raise ValueError
+        counts = ('events_reviewed', 'trades_reviewed', 'fees_reviewed',
+            'linked_parent_trades', 'linked_orders')
+        if (any(type(value[field]) is not int or value[field] < 1
+                for field in counts) or
+                value['events_reviewed'] !=
+                    value['trades_reviewed'] + value['fees_reviewed'] or
+                value['linked_parent_trades'] > value['trades_reviewed'] or
+                value['linked_orders'] > value['trades_reviewed']):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
         _fail('INITIAL_REVIEW_INVALID')
     return value
 
@@ -167,6 +209,13 @@ def _transport_review_result(value, replay, *, account_sha256,
         if (type(value) is not dict or
                 any(type(key) is not str for key in value) or
                 set(value) != keys or
+                any(type(value[field]) is not str for field in (
+                    'mode', 'status', 'account_sha256', 'input_sha256',
+                    'first_event_id_sha256', 'last_event_id_sha256',
+                    'since_id_sha256', 'transport_policy', 'source',
+                    'limitations')) or
+                type(value['sources']) is not tuple or
+                any(type(source) is not str for source in value['sources']) or
                 value['mode'] != 'EXPLICIT_ALPACA_ACTIVITY_SSE_TRANSPORT' or
                 value['read_only'] is not True or
                 value['account_sha256'] != account_sha256 or
@@ -236,12 +285,58 @@ def _transport_review_result(value, replay, *, account_sha256,
     return value
 
 
-def _reconnect_review_result(value):
+def _reconnect_review_result(value, *, account_sha256, reconnect_reason,
+        persisted_event_id, next_cursor, initial_count, replay_count):
     counts = ('initial_events_reviewed', 'replay_events_reviewed',
-        'redelivered_events_deduplicated', 'new_events_processed')
-    if (type(value) is not dict or not _digest(value.get('input_sha256')) or
-            any(type(value.get(key)) is not int or
-                not 0 < value[key] <= 2000 for key in counts)):
+        'redelivered_events_deduplicated', 'new_events_processed',
+        'unique_events_reviewed', 'unique_trades_reviewed',
+        'unique_fees_reviewed', 'linked_orders')
+    true_fields = ('exact_since_id_reused',
+        'duplicate_ref_ids_idempotent', 'duplicate_payloads_immutable',
+        'cursor_advanced', 'all_unique_fees_parent_linked')
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != reconnect.RESULT_KEYS or
+                any(type(value[field]) is not str for field in (
+                    'mode', 'status', 'input_sha256', 'account_sha256',
+                    'reconnect_reason', 'persisted_cursor_sha256',
+                    'reconnect_since_id_sha256', 'next_cursor_sha256',
+                    'limitations')) or
+                type(value['sources']) is not tuple or
+                any(type(source) is not str for source in value['sources']) or
+                value['mode'] !=
+                    'SUPPLIED_ALPACA_ACTIVITY_SSE_RECONNECT_REVIEW' or
+                value['status'] != 'REVIEW_REQUIRED' or
+                value['read_only'] is not True or
+                not _digest(value['input_sha256']) or
+                value['account_sha256'] != account_sha256 or
+                value['reconnect_reason'] != reconnect_reason or
+                value['sources'] != reconnect.SOURCES or
+                value['limitations'] != reconnect.LIMITATIONS or
+                value['persisted_cursor_sha256'] !=
+                    sha(persisted_event_id) or
+                value['reconnect_since_id_sha256'] !=
+                    sha(persisted_event_id) or
+                value['next_cursor_sha256'] != sha(next_cursor) or
+                any(value[field] is not True for field in true_fields) or
+                any(value[flag] is not False for flag in reconnect.FLAGS) or
+                any(type(value[field]) is not int or
+                    not 0 < value[field] <= envelope.MAX_EVENTS * 2
+                    for field in counts)):
+            raise ValueError
+        if (value['initial_events_reviewed'] != initial_count or
+                value['replay_events_reviewed'] != replay_count or
+                value['redelivered_events_deduplicated'] +
+                    value['new_events_processed'] != replay_count or
+                value['unique_events_reviewed'] !=
+                    initial_count + value['new_events_processed'] or
+                value['unique_trades_reviewed'] +
+                    value['unique_fees_reviewed'] !=
+                    value['unique_events_reviewed'] or
+                value['linked_orders'] > value['unique_trades_reviewed']):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
         _fail('RECONNECT_REVIEW_INVALID')
     return value
 
@@ -445,7 +540,12 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
                 expected_account_id=expected_account_id,
                 persisted_event_id=persisted,
                 reconnect_since_id=persisted,
-                reconnect_reason=reconnect_reason)),
+                reconnect_reason=reconnect_reason),
+                account_sha256=store_binding[3],
+                reconnect_reason=reconnect_reason,
+                persisted_event_id=persisted,
+                next_cursor=replay[-1]['event_id'],
+                initial_count=len(initial), replay_count=len(replay)),
             cursor_store, store_binding)
     except ActivitySSECheckpointError:
         raise

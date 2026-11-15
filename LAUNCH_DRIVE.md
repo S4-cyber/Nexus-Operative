@@ -1,5 +1,39 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.334 Activity SSE checkpoint acknowledgement type binding
+
+The explicit one-attempt Activity SSE checkpoint now requires exact built-in schemas and
+field types for its initial envelope, transport and reconnect-review acknowledgements before
+network admission or cursor mutation. Custom-equality text/tuple subclasses,
+Boolean-as-count values, incomplete schemas and authority promotion fail closed. Focused
+checkpoint validation passed 124 tests and the broader Activity SSE surface passed 1,024,
+both with two dependency deprecation warnings. Final profiles/evidence, complete regression,
+package/version checks, secret scans and fresh hosted exact-head gates remain required.
+
+All sixteen bounded offline profiles passed and saved-evidence verification matched 415
+exact source files / `41151b2c064fba6842f953ac09ed2739214d2fa713789af548c7c67d6815801b`.
+The v0.340.334 report SHA-256 is
+`f0d6b6c306bec4250600de41a3a5add1dd53a6c3d9c0baf5251139541a838e04`;
+all broker, market-realism, sustained-forward, native-Windows, live, money-movement and
+release authority flags remained false.
+
+The final exact candidate passed 6,310 tests with 2 platform skips and two dependency
+warnings in 849.21 seconds. Compilation, dependency integrity, deterministic roadmap
+equality, Portal JavaScript syntax, all fourteen Node controllers and the 19-case ordered CI
+inventory suite passed. The 164-member wheel SHA-256 is
+`9840cf0e461da554af42cc80a93ce61b75262097c26e68e053fed4a61bd209ff`.
+The 1,070-path public-artifact audit and changed-line high-confidence scan found zero
+findings. Hosted pinned Gitleaks, fresh exact-head regression/evidence/browser checks and the
+native Windows installer/distribution lane remain mandatory.
+
+This is local injected M8.2 uncertainty hardening, not actual broker/source/entitlement
+acceptance, complete stream delivery, genuine-feed trial evidence, native Windows acceptance,
+funding/live/cloud readiness, performance or profitability. No UI control changed; OFF
+defaults, limits, account checks, fail-closed exits, independent emergency stop, seven tabs
+and black/bright-purple bottom-right hover help are unchanged. The weighted 38% baseline
+(30–45%, low confidence), 0/9 independent acceptances, release/trading permissions and unset
+launch date remain unchanged.
+
 
 ## Evidence-first M1–M9 execution map and exact-source evidence refresh
 

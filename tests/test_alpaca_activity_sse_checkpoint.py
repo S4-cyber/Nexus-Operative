@@ -17,6 +17,26 @@ KEY = 'fixture_key_only_123'
 SECRET = 'fixture_secret_only_123'
 
 
+class EqualText(str):
+    """Hostile acknowledgement scalar that compares equal to everything."""
+
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
+class EqualTuple(tuple):
+    """Hostile acknowledgement sequence with forged equality."""
+
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
 def segments(suffix=''):
     first_trade = _event('01K00000000000000000000001',
         '11111111-1111-1111-1111-111111111111', 'TRD')
@@ -231,6 +251,28 @@ def test_malformed_initial_review_is_fixed_and_network_silent(
     assert not opener.requests and not path.exists()
 
 
+@pytest.mark.parametrize(('field','value'), [
+    ('mode', EqualText('foreign-mode')),
+    ('status', EqualText('accepted')),
+    ('schema_scope', EqualText('all-products')),
+    ('limitations', EqualText('none')),
+    ('events_reviewed', True),
+])
+def test_initial_review_rejects_type_confused_acknowledgement_before_io(
+        tmp_path, monkeypatch, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    initial = segments()[0]
+    valid = subject.envelope.review(initial, expected_account_id=ACCOUNT)
+    monkeypatch.setattr(subject.envelope, 'review',
+        lambda *args, **kwargs: {**valid, field: value})
+    opener = Opener(segments()[2])
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='INITIAL_REVIEW_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT),
+            opener=opener)
+    assert not opener.requests and not path.exists()
+
+
 @pytest.mark.parametrize('result', (None, {}, (object(), []), ({}, [])))
 def test_malformed_transport_result_is_fixed_and_storage_silent(
         tmp_path, monkeypatch, result):
@@ -322,11 +364,62 @@ def test_transport_boundary_accepts_provider_mode_schema_without_attestation():
         persisted_event_id=initial[-1]['event_id'], injected=False) is review
 
 
+@pytest.mark.parametrize(('field','value'), [
+    ('mode', EqualText('foreign-mode')),
+    ('status', EqualText('accepted')),
+    ('account_sha256', EqualText('f' * 64)),
+    ('sources', EqualTuple(('foreign-source',))),
+    ('transport_policy', EqualText('foreign-policy')),
+    ('source', EqualText('PAPER_HTTPS_READS')),
+    ('limitations', EqualText('none')),
+])
+def test_transport_boundary_rejects_type_confused_text_and_sources(
+        tmp_path, monkeypatch, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    original = subject.transport._collect_once_private
+
+    def mutated(*args, **kwargs):
+        review, replay = original(*args, **kwargs)
+        return ({**review, field: value}, replay)
+
+    monkeypatch.setattr(subject.transport, '_collect_once_private', mutated)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='TRANSPORT_RESULT_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT))
+    assert not path.exists()
+
+
 def test_malformed_reconnect_review_is_fixed_and_never_checkpoints(
         tmp_path, monkeypatch):
     path = tmp_path / 'cursor.sqlite3'
     monkeypatch.setattr(subject.reconnect, 'review',
         lambda *args, **kwargs: {})
+    opener = Opener(segments()[2])
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='RECONNECT_REVIEW_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT),
+            opener=opener)
+    assert len(opener.requests) == 1 and not path.exists()
+
+
+@pytest.mark.parametrize(('field','value'), [
+    ('mode', EqualText('foreign-mode')),
+    ('status', EqualText('accepted')),
+    ('account_sha256', EqualText('f' * 64)),
+    ('reconnect_reason', EqualText('UNKNOWN')),
+    ('sources', EqualTuple(('foreign-source',))),
+    ('limitations', EqualText('none')),
+    ('initial_events_reviewed', True),
+])
+def test_reconnect_review_rejects_type_confused_acknowledgement(
+        tmp_path, monkeypatch, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    original = subject.reconnect.review
+
+    def mutated(*args, **kwargs):
+        return {**original(*args, **kwargs), field: value}
+
+    monkeypatch.setattr(subject.reconnect, 'review', mutated)
     opener = Opener(segments()[2])
     with pytest.raises(subject.ActivitySSECheckpointError,
             match='RECONNECT_REVIEW_INVALID'):

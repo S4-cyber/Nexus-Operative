@@ -25,7 +25,8 @@ from nexus.local_owner_scope import (
     owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe,
     prepare_owner_file)
 from nexus.sqlite_journal_guard import (
-    capture_file_identities, require_file_identities, check_existing)
+    capture_file_fingerprints, capture_file_identities,
+    require_file_fingerprints, require_file_identities, check_existing)
 
 SCHEMA = 'nexus.paper-read-pacing.v1'
 RECOVERY_POLICY = 'nexus.paper-read-pacing-recovery.v1'
@@ -174,6 +175,7 @@ def _require_main_connection_content(db, bound_path):
                 len(serialized) != observed[3] or
                 hashlib.sha256(serialized).hexdigest() != observed[7]):
             _fail('CONNECTION_CONTENT_CHANGED')
+        return observed
     except ValueError:
         raise
     except sqlite3.OperationalError as error:
@@ -183,6 +185,132 @@ def _require_main_connection_content(db, bound_path):
     except (MemoryError, OSError, OverflowError, RuntimeError,
             sqlite3.Error, TypeError):
         _fail('CONNECTION_CONTENT_CHANGED')
+
+
+def _active_fingerprint_boundary(item, host=None):
+    """Use fields shared by pathname and open-handle APIs on this host."""
+    host = os.name if host is None else host
+    return (item.st_dev, item.st_ino, item.st_size, item.st_mtime_ns,
+        item.st_ctime_ns if host != 'nt' else None, item.st_nlink)
+
+
+def _committed_fingerprint_boundary(fingerprint, host=None):
+    """Normalize one pacing pathname fingerprint for descriptor comparison."""
+    host = os.name if host is None else host
+    if (type(fingerprint) is not tuple or len(fingerprint) != 8):
+        raise RuntimeError
+    path, device, inode, size, mtime, ctime, links, digest = fingerprint
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device, inode, size, mtime, ctime, links)) or
+            re.fullmatch(r'[0-9a-f]{64}', digest) is None):
+        raise RuntimeError
+    return (path, device, inode, size, mtime,
+        ctime if host != 'nt' else None, links, digest)
+
+
+def _descriptor_file_fingerprint(descriptor, resolved):
+    """Hash bounded bytes through the exact writable committed descriptor."""
+    before = os.fstat(descriptor)
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+            not 1 <= before.st_size <= MAX_DATABASE_BYTES):
+        raise RuntimeError
+    original_offset = os.lseek(descriptor, 0, os.SEEK_CUR)
+    digest = hashlib.sha256()
+    remaining = MAX_DATABASE_BYTES + 1
+    try:
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        while remaining:
+            block = os.read(descriptor, min(1024 * 1024, remaining))
+            if not block:
+                break
+            digest.update(block)
+            remaining -= len(block)
+    finally:
+        os.lseek(descriptor, original_offset, os.SEEK_SET)
+    after = os.fstat(descriptor)
+    if (remaining == 0 or
+            _active_fingerprint_boundary(before) !=
+                _active_fingerprint_boundary(after) or
+            before.st_ctime_ns != after.st_ctime_ns):
+        raise RuntimeError
+    return (str(resolved), after.st_dev, after.st_ino, after.st_size,
+        after.st_mtime_ns, after.st_ctime_ns if os.name != 'nt' else None,
+        after.st_nlink, digest.hexdigest())
+
+
+def _sync_parent_directory(resolved):
+    """Flush only the exact POSIX pacing parent directory identity."""
+    parent = resolved.parent
+    before = parent.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise RuntimeError
+    expected = (before.st_dev, before.st_ino)
+    flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
+        getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0))
+    descriptor = os.open(parent, flags)
+    try:
+        opened = os.fstat(descriptor)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != expected):
+            raise RuntimeError
+        os.fsync(descriptor)
+        final = os.fstat(descriptor)
+        observed = parent.lstat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (final.st_dev, final.st_ino) != expected or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISDIR(observed.st_mode) or
+                (observed.st_dev, observed.st_ino) != expected):
+            raise RuntimeError
+    finally:
+        os.close(descriptor)
+
+
+def _sync_committed_store(path, identity, fingerprint, *, new):
+    """Flush the exact pacing main file and a new POSIX directory entry."""
+    try:
+        if (type(new) is not bool or type(identity) is not tuple or
+                len(identity) != 3 or type(identity[0]) is not str):
+            raise RuntimeError
+        path = Path(path)
+        resolved = path.resolve()
+        expected_path, expected_device, expected_inode = identity
+        if str(resolved) != expected_path:
+            raise RuntimeError
+        expected_descriptor = _committed_fingerprint_boundary(fingerprint)
+        require_file_identities((path,), (identity,), 'PAPER_READ_PACING_')
+        require_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+            (fingerprint,), 'PAPER_READ_PACING_')
+        flags = (os.O_RDWR | getattr(os, 'O_BINARY', 0) |
+            getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+        descriptor = os.open(resolved, flags)
+        try:
+            before = os.fstat(descriptor)
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                    not 1 <= before.st_size <= MAX_DATABASE_BYTES or
+                    (before.st_dev, before.st_ino) !=
+                        (expected_device, expected_inode)):
+                raise RuntimeError
+            if (_descriptor_file_fingerprint(descriptor, resolved) !=
+                    expected_descriptor):
+                raise RuntimeError
+            os.fsync(descriptor)
+            if (_descriptor_file_fingerprint(descriptor, resolved) !=
+                    expected_descriptor):
+                raise RuntimeError
+        finally:
+            os.close(descriptor)
+        require_file_identities((path,), (identity,), 'PAPER_READ_PACING_')
+        require_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+            (fingerprint,), 'PAPER_READ_PACING_')
+        if new and os.name != 'nt':
+            _sync_parent_directory(resolved)
+            require_file_identities((path,), (identity,),
+                'PAPER_READ_PACING_')
+            require_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+                (fingerprint,), 'PAPER_READ_PACING_')
+    except Exception:
+        _fail('COMMIT_DURABILITY_UNCERTAIN')
 
 
 def _main_has_content(bound_path):
@@ -223,7 +351,7 @@ class PaperReadPacing:
     def _path_check(self):
         check_existing(self.path, MAX_DATABASE_BYTES, 'PAPER_READ_PACING_')
 
-    def _connect(self, write=False):
+    def _connect(self, write=False, _return_context=False):
         try:
             bound_path = self.path.resolve()
         except (OSError, RuntimeError, TypeError):
@@ -256,6 +384,9 @@ class PaperReadPacing:
                 new = True
             except FileExistsError: pass
             self._path_check()
+        if bound_identity is None and self.path.exists():
+            bound_identity = capture_file_identities((self.path,),
+                'PAPER_READ_PACING_')
         def require_bound_path():
             try:
                 if self.path.resolve() != bound_path:
@@ -305,6 +436,9 @@ class PaperReadPacing:
                 if new:
                     setup('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._append(db, 0, dict(schema=SCHEMA, account_sha256=self.account_digest), ZERO)
+            if _return_context:
+                return (db, new, bound_identity[0], bound_path,
+                    require_bound_path)
             return db
         except sqlite3.OperationalError as error:
             db.close()
@@ -313,6 +447,43 @@ class PaperReadPacing:
             raise
         except BaseException:
             db.close(); raise
+
+    @contextmanager
+    def _write_connection(self):
+        """Require exact committed pacing bytes through explicit flush."""
+        (db, new, main_identity, bound_path,
+            require_bound_path) = self._connect(
+                write=True, _return_context=True)
+        try:
+            yield db
+        except BaseException:
+            db.close()
+            raise
+        else:
+            acknowledgement_error = None
+            committed_fingerprint = None
+            uncommitted = db.in_transaction
+            try:
+                require_bound_path()
+                _require_main_connection(db, bound_path)
+                if not uncommitted:
+                    committed_fingerprint = (
+                        _require_main_connection_content(db, bound_path))
+                require_bound_path()
+            except BaseException as error:
+                acknowledgement_error = error
+            db.close()
+            if acknowledgement_error is not None:
+                raise acknowledgement_error
+            require_bound_path()
+            if committed_fingerprint is not None:
+                require_file_fingerprints((bound_path,),
+                    (MAX_DATABASE_BYTES,), (committed_fingerprint,),
+                    'PAPER_READ_PACING_')
+                _sync_committed_store(bound_path, main_identity,
+                    committed_fingerprint, new=new)
+            if uncommitted:
+                _fail('UNCOMMITTED_TRANSACTION')
 
     @staticmethod
     def _append(db, seq, body, previous):
@@ -578,8 +749,7 @@ class PaperReadPacing:
             if type(operation) is not str or operation not in OPERATIONS:_fail('OPERATION_INVALID')
             if ownership is None:_fail('OPERATION_OWNER_REQUIRED')
             self._owned(ownership)
-        with self._write_guard(ownership), closing(
-                self._connect(write=True)) as db:
+        with self._write_guard(ownership), self._write_connection() as db:
             with _transaction(db):
                 state = self._load(db)
                 if ownership is not None: self._owned(ownership)
@@ -617,8 +787,7 @@ class PaperReadPacing:
             # writer lease can collide with the caller's held-through-I/O
             # owner. The locked transaction repeats all token/owner checks.
             _fail('OPERATION_OWNER_REQUIRED')
-        with self._write_guard(ownership), closing(
-                self._connect(write=True)) as db:
+        with self._write_guard(ownership), self._write_connection() as db:
             with _transaction(db):
                 state = self._load(db)
                 if state['pending_token'] is None or token != state['pending_token']: _fail('TOKEN_DISAGREEMENT')
@@ -689,7 +858,7 @@ class PaperReadPacing:
         self._path_check()
         if not self.path.exists(): _fail('BINDING_MISSING')
         with self.ownership() as owner:
-            with closing(self._connect(write=True)) as db:
+            with self._write_connection() as db:
                 with _transaction(db):
                     state = self._load(db)
                     self._owned(owner)
@@ -727,7 +896,7 @@ class PaperReadPacing:
         if confirm_block_reviewed is not True or confirm_uncertainty_preserved is not True:
             _fail('CONFIRMATION_REQUIRED')
         self._owned(ownership)
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _transaction(db):
                 state=self._load(db);self._owned(ownership);now=clock(admission())
                 if state['head_sha256'] != expected_head:_fail('HEAD_DISAGREEMENT')

@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.323'
+REVISION = '0.340.324'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1010,6 +1010,18 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; provider POST and GET committed writes now hash the exact captured writable main-file descriptor around explicit fsync, recheck its bounded pathname fingerprint, and flush a newly created exact parent entry on POSIX; any file or parent flush uncertainty retains the committed pending reservation and blocks automatic retry or capacity reuse' if item.id == 'M8' else ''),
     item.remaining) for item in MILESTONES)
 
+# Match the shared account-read admission/result journal to the provider
+# budgets' explicit commit boundary. A committed but unflushed reservation is
+# retained for review and cannot silently become reusable request capacity.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every committed shared account-read pacing write now '
+        'matches its exact writable SQLite main descriptor and bounded '
+        'pathname bytes around explicit file fsync, plus an identity-bound '
+        'parent-directory fsync for a newly created POSIX entry; flush '
+        'uncertainty retains the committed reservation and blocks reuse' if
+        item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -1034,7 +1046,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.323 adds an explicit post-commit durability boundary to both shared provider POST and GET budgets. After the writable SQLite connection's exact serialized main bytes and post-close pathname fingerprint agree, the code reopens only the captured regular single-link main file without following links, hashes that exact writable descriptor before and after `fsync`, and rechecks the pathname identity and bounded fingerprint. A newly created entry also fsyncs its exact validated parent directory on POSIX; Windows retains the exact main-file flush because Python exposes no portable directory-fsync API. File-flush failure, parent-descriptor substitution and descriptor-byte mutation fail closed after commit, retain the pending reservation and prohibit retry or capacity reuse; these controls are mandatory bounded offline evidence. This narrows local acknowledgement uncertainty but is not physical-power-loss proof, an atomic lease against non-cooperating replacement, native Windows acceptance, provider/account/source acceptance, broker-wide coordination, routing authority, funds, live trading or release approval. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.324 extends the explicit post-commit durability boundary from the provider POST/GET budgets to the shared account-read pacing journal. After every committed reservation, result, interruption or reviewed recovery, the writer requires its SQLite connection bytes to equal a stable bounded pathname fingerprint, reopens only that exact regular single-link main file without following links, hashes the writable descriptor before and after `fsync`, and rechecks the pathname identity and bytes. A newly created entry also fsyncs its exact validated parent directory on POSIX; Windows retains the exact main-file flush because Python exposes no portable directory-fsync API. File-flush failure, parent-descriptor substitution and descriptor-byte mutation fail closed after commit, retain the pending reservation and prohibit request-capacity reuse; the pacing/provider flush policies are mandatory bounded offline evidence. This narrows local acknowledgement uncertainty but is not physical-power-loss proof, an atomic lease against non-cooperating replacement, native Windows acceptance, provider/account/source acceptance, broker-wide coordination, routing authority, funds, live trading or release approval. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

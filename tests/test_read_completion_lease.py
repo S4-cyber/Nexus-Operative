@@ -101,7 +101,15 @@ def test_lost_result_return_retains_committed_outcome_and_never_rearms(gate,monk
             def __exit__(self,*args):
                 self.db.__exit__(*args)
                 if args[0] is None:raise OSError('lost commit acknowledgment')
-        monkeypatch.setattr(gate,'_connect',lambda write=False:LostReturn(connect(write)) if write else connect())
+        def lose_return(write=False, **kwargs):
+            value = connect(write, **kwargs)
+            if not write:
+                return value
+            if kwargs.get('_return_context'):
+                db, *context = value
+                return (LostReturn(db), *context)
+            return LostReturn(value)
+        monkeypatch.setattr(gate,'_connect',lose_return)
         with pytest.raises(OSError):gate.finish(token,admission=lambda:1001,status_code=200,ownership=owner,receipt=receipt())
         monkeypatch.setattr(gate,'_connect',connect)
         before=gate.path.read_bytes()

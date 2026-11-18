@@ -121,12 +121,27 @@ def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanne
     'SUPPLIED_EXECUTION_QUALITY_REVIEW','PAPER_EXECUTION_QUALITY_REVIEW','READ_ONLY_PAPER_BTC_QUOTE_OBSERVATION','PAPER_REQUEST_QUOTE_HISTORY','PAPER_REQUEST_QUOTE_RECEIPT','PAPER_QUOTE_CAPTURE_STATUS','EXPLICIT_PAPER_QUOTE_CAPTURE','PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW',
     'PAPER_PROVIDER_READ_BUDGET_REVIEWED_RECOVERY','PAPER_READ_PACING_REVIEWED_RECOVERY',
     'PAPER_ACCOUNT_RESPONSE_NORMALIZATION_REVIEW','PAPER_ACTIVITY_RESPONSE_NORMALIZATION_REVIEW',
-    'PAPER_EXACT_RESPONSE_BUNDLE_REVIEW'])
+    'PAPER_EXACT_RESPONSE_BUNDLE_REVIEW','READ_ONLY_BROKER_SUBMISSION_REVIEW'])
 def test_standalone_operational_trial_report_is_private_even_when_renamed(tmp_path,mode):
     root=repository(tmp_path)
     commit(root,'ordinary.txt',json.dumps({'mode':mode,'fixture':True}).encode())
     result=audit.audit(root,history=True)
     assert not result['passed'] and any(f['rule']=='PRIVATE_FINANCIAL_REPORT' for f in result['findings'])
+
+
+def test_real_broker_submission_review_is_private_in_history(tmp_path):
+    from nexus.broker_request_journal import BrokerRequestJournal
+
+    report=BrokerRequestJournal(
+        tmp_path/'private.sqlite3',
+        '01234567-89ab-cdef-0123-456789abcdef',
+    ).submission_review('nx_private_order_001',evaluated_at=1000)
+    root=tmp_path/'repo';root.mkdir()
+    repository(root);commit(root,'ordinary.json',json.dumps(report).encode())
+    result=audit.audit(root,history=True)
+    assert not result['passed']
+    assert any(f['rule']=='PRIVATE_FINANCIAL_REPORT' for f in result['findings'])
+    assert 'nx_private_order_001' not in json.dumps(result)
 
 
 def test_quote_evidence_ciphertext_and_plaintext_profile_are_private_when_renamed(tmp_path):

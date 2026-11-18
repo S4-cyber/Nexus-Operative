@@ -3,7 +3,7 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
-import os
+import re
 import time
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 ROOT=Path(__file__).resolve().parents[1]
 ORIGIN='http://nexus-ui.invalid'
 ORDER='pf_0123456789abcdef_7_BUY'
+SOURCE_COMMIT=re.compile(r'[0-9a-f]{40}')
 
 
 def fixtures(path,pending=True,missing_history=False):
@@ -115,8 +116,15 @@ def validate_geometry(data):
         raise ValueError('HELP_BROWSER_TEXT_CLIPPED')
 
 
-def run(output,channel=None,executable_path=None):
+def require_source_commit(value):
+    if type(value) is not str or SOURCE_COMMIT.fullmatch(value) is None:
+        raise ValueError('BROWSER_SOURCE_COMMIT_INVALID')
+    return value
+
+
+def run(output,channel=None,executable_path=None,source_commit=None):
     from playwright.sync_api import sync_playwright,expect
+    source_commit=require_source_commit(source_commit)
     if channel and executable_path:raise ValueError('BROWSER_SELECTION_CONFLICT')
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
     html=(ROOT/'dashboard/portal_preview.html').read_text(encoding='utf-8')
@@ -413,7 +421,7 @@ def run(output,channel=None,executable_path=None):
         finally:browser.close()
     report=dict(mode='INTERCEPTED_FIXTURE_BROWSER_ACCEPTANCE',passed=True,viewports=reports,
                 playwright_version=importlib.metadata.version('playwright'),
-                html_sha256=hashlib.sha256(html.encode()).hexdigest(),source_commit=os.environ.get('GITHUB_SHA'),
+                html_sha256=hashlib.sha256(html.encode()).hexdigest(),source_commit=source_commit,
                 broker_connected=False,live_orders_enabled=False,
                 limitations='Headless browser and intercepted fixtures only; no real-feed session, native desktop window, clean-machine profile or release approval.')
     (output/'browser-report.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
@@ -424,7 +432,8 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--channel',help='Optional installed Chromium channel, for example msedge')
     parser.add_argument('--executable-path',type=Path,help='Optional explicit local Chromium executable; mutually exclusive with --channel')
-    args=parser.parse_args();print(json.dumps(run(args.output,args.channel,args.executable_path),indent=2))
+    parser.add_argument('--source-commit',required=True,help='Exact lowercase 40-hex commit tested by this acceptance run')
+    args=parser.parse_args();print(json.dumps(run(args.output,args.channel,args.executable_path,args.source_commit),indent=2))
 
 
 if __name__=='__main__':main()

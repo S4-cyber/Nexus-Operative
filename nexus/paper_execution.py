@@ -61,12 +61,13 @@ class PaperEngine:
             equity+=p.reserved + p.quantity*(px-p.reference_entry)*direction
         return equity
 
-    def _risk(self,prices):
+    def _risk(self,prices,*,commit_peak=True):
         eq=self.equity(prices)
-        self.peak=max(self.peak,eq)
-        if eq<=self.peak*(D(1)-MAX_DRAWDOWN):
+        candidate_peak=max(self.peak,eq)
+        if eq<=candidate_peak*(D(1)-MAX_DRAWDOWN):
             self.halted=True
             raise ValueError("Max drawdown: engine halted")
+        if commit_peak:self.peak=candidate_peak
         return eq
 
     def open(self,tier,symbol,direction,notional,market_price,timestamp,marks):
@@ -76,7 +77,9 @@ class PaperEngine:
         if not quote_age_ok(timestamp):raise ValueError("Quote too old")
         if symbol in self.positions:raise ValueError("Position already open")
         px=positive(market_price);amount=positive(notional)
-        eq=self._risk(marks)
+        # Rejected admission must not raise the durable risk high-water mark.
+        # A genuine drawdown still independently commits the emergency halt.
+        eq=self._risk(marks,commit_peak=False)
         exposure=sum((p.reserved for p in self.positions.values()),D(0))
         if amount>eq*TIERS[tier] or amount+exposure>eq*MAX_TOTAL_EXPOSURE:
             raise ValueError("Per-tier or aggregate risk cap exceeded")
@@ -84,6 +87,7 @@ class PaperEngine:
         # Entry worse than mid on both directions.
         adjusted=px*(D(1)+self.cost_bps/D(10000) if direction=="UP" else D(1)-self.cost_bps/D(10000))
         qty=amount/px
+        self.peak=max(self.peak,eq)
         self.cash-=amount+self.fee
         p=PaperPosition(tier,symbol,direction,qty,adjusted,amount,amount)
         self.positions[symbol]=p

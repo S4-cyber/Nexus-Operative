@@ -1,5 +1,47 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.342 rejected-risk, browser-attribution and private-report boundaries
+
+PaperEngine now keeps a higher candidate peak provisional until exposure and
+cash admission succeed. A rejected open therefore cannot poison the next
+drawdown check or cause a false emergency halt, while a real drawdown still
+halts independently. Browser/help evidence now requires the exact lowercase
+40-hex commit selected by the pull-request checkout and retains that identity
+in its report. The public full-history audit now blocks raw broker submission
+reviews, including renamed JSON containing private order/account/journal
+digests, without echoing those values.
+
+The exact candidate passed 6,423 tests with 2 platform skips and two dependency
+warnings in 917.12 seconds. Focused validation passed 106 tests, the broader
+downstream journal/acceptance/release scope passed 157 and the synchronized
+affected/version scope passed 149. All sixteen bounded profiles passed. Saved
+evidence matched 415 source files /
+`0012dfa1e356dbf4b9d295bd02ab7f4a7521621bb315ac60455319d9be087d46`;
+`validation/release_trials_0_340_342.json` SHA-256 is
+`f3cf7c041d35d18293dd5536733e18bd29de3507bba722a9ddf0d6917e80b12a`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+fourteen controller smokes and the 19-case CI inventory passed. The 164-member
+wheel SHA-256 is
+`328470e259f5a6cbe80eaa5d0c65a6455f7e12b864bdf6afd9adf4f3b072c1ef`.
+The staged-tree artifact and introduced-line high-confidence credential scans
+found zero findings. Local Gitleaks was unavailable, so fresh hosted
+checksum-pinned Gitleaks remains mandatory.
+
+PR #58 exact parent `d32b36fca76d4909ef287c05ac2dae978b52b74f`
+has passed hosted security/Gitleaks; its complete research-safety regression
+remains active and unclaimed. Fresh exact-head hosted gates are mandatory for
+this candidate, and the push/manual native installer/distribution lane remains
+undispatched.
+
+This is local injected M3/M8/M9 boundary hardening, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30-45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.341 direct-input mutation and disclosure boundaries
 
 PaperEngine now rejects extreme finite direct values outside `1e-18` through

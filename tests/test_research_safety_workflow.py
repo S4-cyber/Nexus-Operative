@@ -32,6 +32,7 @@ def test_long_running_safety_gates_have_independent_windows_job_budgets():
     assert "timeout-minutes: 15" in browser
     assert "python -m playwright install chromium --only-shell" in browser
     assert "python tools/portal_browser_smoke.py" in browser
+    assert '--source-commit "${{ github.event.pull_request.head.sha || github.sha }}"' in browser
     assert "if: always()" in browser
     assert "python -m pytest -q" not in browser
 
@@ -48,3 +49,17 @@ def test_each_safety_job_uses_pinned_actions_and_nonpersistent_checkout_auth():
     assert text.count("$actual = (git rev-parse HEAD).Trim()") == 3
     assert text.count("$actual -cne $env:EXPECTED_SOURCE_COMMIT") == 3
     assert "python -m compileall -q nexus tests ops" in text
+
+
+def test_browser_source_commit_validation_is_exact_and_fail_closed():
+    from tools.portal_browser_smoke import require_source_commit
+
+    source = "a" * 40
+    assert require_source_commit(source) == source
+    for invalid in (None, "", "A" * 40, "a" * 39, "a" * 41, "g" * 40):
+        try:
+            require_source_commit(invalid)
+        except ValueError as error:
+            assert str(error) == "BROWSER_SOURCE_COMMIT_INVALID"
+        else:
+            raise AssertionError("invalid browser evidence source was accepted")

@@ -3,6 +3,49 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.342 rejected-risk, browser-attribution and private-report boundaries
+
+Three independent M3/M8/M9 release seams now fail closed. PaperEngine computes
+a candidate equity high-water mark without committing it until exposure and
+cash admission succeed, so a rejected open cannot poison later drawdown checks;
+a genuine drawdown still commits the independent emergency halt. Browser/help
+acceptance requires an explicit exact lowercase 40-hex source commit and the
+Windows pull-request job supplies the same head expression used for checkout.
+The public full-history audit rejects raw `READ_ONLY_BROKER_SUBMISSION_REVIEW`
+reports even when renamed, without echoing private client order IDs.
+
+The exact candidate passed 6,423 tests with 2 platform skips and two dependency
+warnings in 917.12 seconds. Focused validation passed 106 tests, the broader
+downstream journal/acceptance/release scope passed 157, and the synchronized
+affected/version scope passed 149. All sixteen bounded profiles passed.
+Saved-evidence verification matched 415 source files /
+`0012dfa1e356dbf4b9d295bd02ab7f4a7521621bb315ac60455319d9be087d46`;
+report SHA-256 is
+`f3cf7c041d35d18293dd5536733e18bd29de3507bba722a9ddf0d6917e80b12a`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.342 wheel SHA-256 is
+`328470e259f5a6cbe80eaa5d0c65a6455f7e12b864bdf6afd9adf4f3b072c1ef`.
+The final staged-tree audit and introduced-line credential scan found no
+private artifact or high-confidence credential. Local Gitleaks was unavailable,
+so fresh hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #58 exact parent `d32b36fca76d4909ef287c05ac2dae978b52b74f`
+has passed hosted public security/Gitleaks. Its complete research-safety
+regression remains running and is not claimed as passed. Fresh exact-head hosted
+security/Gitleaks, browser/help, saved-evidence and complete Windows regression
+remain mandatory after publication; the push/manual Windows
+EXE/installer/distribution workflow remains undispatched.
+
+This is injected local boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.341 direct-input mutation and disclosure boundaries
 
 Four compatible M3/M4/M7/M8 seams now fail closed before simulated account

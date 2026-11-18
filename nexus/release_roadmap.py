@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.341'
+REVISION = '0.340.342'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1160,7 +1160,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.341 closes four compatible direct-input boundaries before simulated risk mutation, public-path construction, public diagnostic output and Activity SSE checkpoint copying. PaperEngine values use a finite 1e-18 through 1e12 envelope before cash, position, history, peak or halt mutation. Public ticker products require exact built-in allowlisted text before cache, transport or URL construction. Public quote-bundle summaries validate one exact mapping/schema and capture exact text/count values once. Activity SSE checkpoint events pass exact envelope validation into a detached snapshot before any caller-controlled copy protocol. This is injected local M3/M4/M7/M8 boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.342 closes three independent release-gate boundaries. A cap- or cash-rejected PaperEngine open can no longer raise the durable risk high-water mark and cause a later false emergency halt; genuine drawdown still commits the independent halt. Retained browser/help evidence now requires and records the exact lowercase 40-hex source commit selected by the pull-request workflow. The full-history public audit now rejects raw READ_ONLY_BROKER_SUBMISSION_REVIEW reports, including renamed JSON containing private order/account/journal digests. This is injected local M3/M8/M9 boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

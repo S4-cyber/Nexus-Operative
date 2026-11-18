@@ -40,6 +40,23 @@ def test_risk_cap_and_halt():
     with pytest.raises(ValueError):e._risk({"SPY":"1"})
     assert e.halted
 
+def test_cap_rejected_open_is_state_invariant():
+    e=PaperEngine(capital="10000")
+    e.open("terrestrial","SPY","UP","100","100",now(),{})
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError,match="Per-tier or aggregate risk cap exceeded"):
+        e.open("terrestrial","QQQ","UP","200","100",now(),{"SPY":"1000"})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+def test_cap_rejection_cannot_poison_peak_or_trigger_false_halt():
+    e=PaperEngine(capital="10000")
+    e.open("terrestrial","SPY","UP","100","100",now(),{})
+    with pytest.raises(ValueError,match="Per-tier or aggregate risk cap exceeded"):
+        e.open("terrestrial","QQQ","UP","200","100",now(),{"SPY":"1000"})
+    assert e.peak==Decimal("10000")
+    event=e.open("terrestrial","IWM","UP","10","100",now(),{"SPY":"100"})
+    assert event["action"]=="OPEN" and e.halted is False
+
 def test_symbol_allowlist():
     e=PaperEngine()
     with pytest.raises(ValueError):e.open("solar","UNKNOWN","UP","1","500",now(),{})

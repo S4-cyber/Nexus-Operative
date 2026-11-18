@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+import pytest
 from nexus.app import app
 import nexus.credential_vault as vault
 import nexus.provider_research as provider
@@ -33,6 +34,35 @@ def test_reject_bad_vault_keys(monkeypatch):
         try:vault.install(invalid)
         except ValueError:pass
         else:assert False,"Invalid key accepted"
+
+def test_polymorphic_secret_is_rejected_before_vault_access(monkeypatch):
+    class ForgedSecret(str):
+        def __len__(self):return 40
+        def startswith(self,prefix):return prefix=='sk-'
+        def __iter__(self):return iter('x'*40)
+
+    monkeypatch.setattr(vault,"_vault",lambda:pytest.fail('vault accessed'))
+    monkeypatch.setattr(vault,"_observation",None)
+    with pytest.raises(ValueError,match='INVALID_KEY_FORMAT'):
+        vault.install(ForgedSecret('NOT_AN_OPENAI_KEY'))
+    assert vault.local_status()['state']=='NOT_CHECKED'
+
+@pytest.mark.parametrize('subclassed',[False,True],ids=['substituted','subclassed'])
+@pytest.mark.parametrize('prior_observation',[None,True],ids=['unchecked-before','confirmed-before'])
+def test_vault_readback_must_be_exact_and_equal_before_save_is_confirmed(
+        monkeypatch,subclassed,prior_observation):
+    secret='sk-' + 'explicit-test-only-placeholder-12345'
+    different='sk-' + 'different-valid-placeholder-value-67890'
+    class ReadbackVault(DummyVault):
+        def get_password(self,service,account):
+            value=different
+            return type('StoredSecret',(str,),{})(value) if subclassed else value
+    monkeypatch.setattr(vault,"_vault",lambda:ReadbackVault())
+    monkeypatch.setattr(vault,"_observation",prior_observation)
+    with pytest.raises(ValueError,match='VAULT_SAVE_FAILED') as caught:
+        vault.install(secret)
+    assert secret not in str(caught.value) and different not in str(caught.value)
+    assert vault.local_status()['state']=='NOT_CHECKED'
 
 def test_cross_origin_and_untrusted_browser_requests_rejected(monkeypatch):
     monkeypatch.setattr(vault,"_vault",lambda:DummyVault())

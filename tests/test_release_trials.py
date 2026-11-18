@@ -288,15 +288,17 @@ def test_capacity_trial_consumes_exact_bounded_scope():
 
 
 def test_source_fingerprint_tracks_source_test_and_workflow_changes(tmp_path):
-    for name in ('nexus','tests','tools','.github/workflows','dashboard','installer'):
+    for name in ('nexus','tests','tools','ops','.github/workflows','dashboard','installer'):
         (tmp_path/name).mkdir(parents=True)
     for name in ('pyproject.toml','dashboard/portal_preview.html','installer/NexusOperative.iss','nexus/core.py',
-                 'tests/test_core.py','tools/installer.ps1','.github/workflows/test.yml'):
+                 'tests/test_core.py','tools/installer.ps1','ops/inventory.mjs',
+                 '.github/workflows/test.yml','.github/workflows/authority.yaml'):
         (tmp_path/name).write_text('original')
     original = trials.source_digest(tmp_path)
     (tmp_path/'report.json').write_text('generated output')
     assert trials.source_digest(tmp_path) == original
-    for name in ('nexus/core.py','tests/test_core.py','tools/installer.ps1','.github/workflows/test.yml'):
+    for name in ('nexus/core.py','tests/test_core.py','tools/installer.ps1','ops/inventory.mjs',
+                 '.github/workflows/test.yml','.github/workflows/authority.yaml'):
         (tmp_path/name).write_text('changed')
         assert trials.source_digest(tmp_path) != original
         (tmp_path/name).write_text('original')
@@ -305,11 +307,11 @@ def test_source_fingerprint_tracks_source_test_and_workflow_changes(tmp_path):
 def test_source_fingerprint_is_stable_across_git_checkout_line_endings(tmp_path):
     lf=tmp_path/'lf';crlf=tmp_path/'crlf'
     for root in (lf,crlf):
-        for name in ('nexus','tests','tools','.github/workflows','dashboard','installer'):
+        for name in ('nexus','tests','tools','ops','.github/workflows','dashboard','installer'):
             (root/name).mkdir(parents=True)
     names=('pyproject.toml','dashboard/portal_preview.html','installer/NexusOperative.iss',
-        'nexus/core.py','tests/test_core.py','tools/installer.ps1',
-        '.github/workflows/test.yml')
+        'nexus/core.py','tests/test_core.py','tools/installer.ps1','ops/inventory.mjs',
+        '.github/workflows/test.yml','.github/workflows/authority.yaml')
     for name in names:
         (lf/name).write_bytes(b'first\nsecond\n')
         (crlf/name).write_bytes(b'first\r\nsecond\r\n')

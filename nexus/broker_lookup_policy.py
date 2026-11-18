@@ -11,7 +11,7 @@ OUTCOMES = frozenset(('FOUND','NOT_FOUND','TIMEOUT','NETWORK_ERROR','RATE_LIMITE
 
 
 def clock(value):
-    if isinstance(value,bool) or not isinstance(value,(int,float)) or not 0<=value<=1e12 or not math.isfinite(value):
+    if type(value) not in (int,float) or not 0<=value<=1e12 or not math.isfinite(value):
         raise ValueError('INVALID_BROKER_LOOKUP_CLOCK')
     return value
 
@@ -23,7 +23,7 @@ def retry_after_seconds(value, *, evaluated_at):
     which exact HTTP statuses may carry a provider-directed delay.
     """
     now=clock(evaluated_at)
-    if (not isinstance(value,str) or len(value)>128 or not value.isascii() or
+    if (type(value) is not str or len(value)>128 or not value.isascii() or
             '\r' in value or '\n' in value):
         raise ValueError('INVALID_RETRY_AFTER')
     if re.fullmatch(r'[0-9]{1,6}',value):delay=int(value)
@@ -39,7 +39,8 @@ def retry_after_seconds(value, *, evaluated_at):
 def classify(*, status_code=None, transport_error=None, retry_after=None, evaluated_at):
     now=clock(evaluated_at)
     if transport_error is not None:
-        if status_code is not None or transport_error not in ('TIMEOUT','NETWORK_ERROR'):
+        if (status_code is not None or type(transport_error) is not str or
+                transport_error not in ('TIMEOUT','NETWORK_ERROR')):
             raise ValueError('INVALID_BROKER_LOOKUP_RESULT')
         return dict(outcome=transport_error,retry_after_seconds=0)
     if type(status_code) is not int or not 100<=status_code<=599:

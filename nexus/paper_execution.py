@@ -47,6 +47,7 @@ class PaperEngine:
         self.cash=self.initial
         self.fee=positive(fee)
         self.cost_bps=positive(cost_bps)
+        if self.cost_bps>=D(10000):raise ValueError("Execution cost must remain below 10000 bps")
         self.positions={}
         self.history=[]
         self.halted=False
@@ -72,6 +73,8 @@ class PaperEngine:
 
     def open(self,tier,symbol,direction,notional,market_price,timestamp,marks):
         if self.halted:raise ValueError("Engine halted")
+        if any(type(value) is not str for value in (tier,symbol,direction)):
+            raise ValueError("Unknown tier/symbol/direction")
         if tier not in TIERS or symbol not in SUPPORTED:raise ValueError("Unknown tier/symbol")
         if direction not in ("UP","DOWN"):raise ValueError("Unknown directional hypothesis")
         if not quote_age_ok(timestamp):raise ValueError("Quote too old")
@@ -99,6 +102,7 @@ class PaperEngine:
     def close(self,symbol,market_price,timestamp,marks):
         # A latched halt blocks new exposure but must not strand an existing
         # simulated position. Exit validation and the halt both remain active.
+        if type(symbol) is not str:raise ValueError("Position not open")
         if symbol not in self.positions:raise ValueError("Position not open")
         if not quote_age_ok(timestamp):raise ValueError("Quote too old")
         px=positive(market_price)

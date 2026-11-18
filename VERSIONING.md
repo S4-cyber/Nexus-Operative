@@ -1,5 +1,45 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.347 recovery-identity, bounded-fill and evidence-authority boundaries
+
+**Current development build: 0.340.347 (pre-release).** Broker lookup identity,
+timing and outcome scalars are exact-type at write and replay boundaries. Paper
+identity keys are immutable built-in strings and modeled execution costs cannot
+produce zero or negative fills. Vault configuration requires exact equal
+readback, release fingerprints cover MJS/YAML authority inputs, and Windows
+review binds the executing reviewer bytes to the shipped manifest.
+
+The exact candidate passed 6,462 tests with 2 platform skips and two dependency
+warnings in 906.36 seconds. All sixteen bounded offline profiles passed. Saved
+evidence matched 417 source files /
+`882e98887107d969b4d47069ad99da72036150edc2c3065b5424560449deeccc`;
+report SHA-256 is
+`512065ba010f5acb7ad4b76d604251c00c4cbc1d5d77bddba40d136ef2bb25e4`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The synchronized 164-member
+wheel reports 0.340.347 and has SHA-256
+`a36de79f7dff7174cea2301e3c56f1a9173e81094b0aca52d1a584d980d19085`.
+Public artifact and introduced-line high-confidence credential scans found no
+findings. Local Gitleaks is unavailable, so hosted checksum-pinned Gitleaks is
+still required.
+
+PR #62 is fully green at exact head
+`ace4fc00138ad7703f62e0a4d1823d5f58a9fd81`. PR #63 exact head
+`d7f706c81686d224ddfb587b8e46721db30bc4f8` has green hosted
+security/Gitleaks, saved evidence and browser/help; complete regression remains
+active and unclaimed. Fresh exact-head workflows remain mandatory for this
+candidate, and the push/manual native Windows installer lane is undispatched.
+
+This is local injected M1/M3/M5/M7/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation remains weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted; trading/funding/release permissions remain false and no
+launch date is established.
+
 ## v0.340.346 reset-audit, broker-wire and owner-envelope boundaries
 
 **Current development build: 0.340.346 (pre-release).** A reset is not

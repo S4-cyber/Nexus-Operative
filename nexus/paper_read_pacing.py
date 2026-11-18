@@ -561,7 +561,9 @@ class PaperReadPacing:
                     if state['pending_token'] is None or body['token'] != state['pending_token']: _fail('TOKEN_DISAGREEMENT')
                     if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
                     outcome, delay = body['outcome'], body['delay']
-                    if outcome not in ('SUCCESS', 'NOT_FOUND', 'TIMEOUT', 'NETWORK_ERROR', 'RATE_LIMITED', 'SERVER_ERROR', 'AUTH_DENIED', 'REVIEW_REQUIRED'): _fail('OUTCOME_INVALID')
+                    if (type(outcome) is not str or outcome not in
+                            ('SUCCESS', 'NOT_FOUND', 'TIMEOUT', 'NETWORK_ERROR', 'RATE_LIMITED',
+                             'SERVER_ERROR', 'AUTH_DENIED', 'REVIEW_REQUIRED')): _fail('OUTCOME_INVALID')
                     if type(delay) is not int or (outcome == 'RATE_LIMITED' and not 1 <= delay <= 86400) or (outcome != 'RATE_LIMITED' and delay != 0): _fail('DELAY_INVALID')
                     receipt=set(body)!={'kind','evaluated_at','token','outcome','delay'}
                     if receipt:

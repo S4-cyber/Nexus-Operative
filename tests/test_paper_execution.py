@@ -75,6 +75,40 @@ def test_symbol_allowlist():
     e=PaperEngine()
     with pytest.raises(ValueError):e.open("solar","UNKNOWN","UP","1","500",now(),{})
 
+
+def test_polymorphic_open_identities_are_rejected_before_state_mutation():
+    class ForgedText(str):
+        def __new__(cls,literal,target):
+            value=super().__new__(cls,literal);value.target=target;return value
+        def __hash__(self): return hash(self.target)
+        def __eq__(self,other): return other==self.target
+
+    e=PaperEngine(capital='10000')
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError,match='Unknown tier/symbol/direction'):
+        e.open(ForgedText('FORGED-TIER','terrestrial'),
+            ForgedText('UNLISTED-ASSET','SPY'),ForgedText('FORGED-DIRECTION','UP'),
+            '100','500',now(),{})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+
+def test_polymorphic_close_symbol_cannot_select_or_remove_retained_position():
+    class ForgedSymbol(str):
+        def __hash__(self): return hash('SPY')
+        def __eq__(self,other): return other=='SPY'
+
+    e=PaperEngine(capital='10000');e.open('terrestrial','SPY','UP','100','500',now(),{})
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError,match='Position not open'):
+        e.close(ForgedSymbol('UNLISTED-ASSET'),'500',now(),{})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+
+@pytest.mark.parametrize('cost_bps',('10000','10001','1000000000000'))
+def test_execution_cost_cannot_make_modeled_fill_price_zero_or_negative(cost_bps):
+    with pytest.raises(ValueError,match='below 10000 bps'):
+        PaperEngine(cost_bps=cost_bps)
+
 def test_no_automatic_live_placement():
     from nexus import paper_execution
     assert not hasattr(paper_execution.PaperEngine,"submit_live_order")

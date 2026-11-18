@@ -29,6 +29,14 @@ class Vault:
         del self.data[(service, account)]
 
 
+class EqualText(str):
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
 @pytest.fixture
 def vault(monkeypatch):
     store = Vault()
@@ -92,6 +100,26 @@ def test_activity_sse_admission_refuses_before_vault(
             confirm_cursor_checkpoint=True,
             permission_check=lambda:permission,
             emergency_stop_check=lambda:emergency)
+    assert vault.reads == vault.writes == vault.deletes == 0
+
+
+@pytest.mark.parametrize('reason', (
+    'UNKNOWN', None, EqualText('CONNECTION_DROPPED')))
+def test_activity_sse_invalid_reason_refuses_before_callbacks_or_vault(
+        vault, reason):
+    def callback():
+        pytest.fail('admission callback invoked')
+
+    with pytest.raises(credentials.PaperVaultError,
+            match='^PAPER_VAULT_READ_RECONNECT_REASON_INVALID$'):
+        credentials.collect_activity_sse_saved(
+            expected_account_id=BROKER_ACCOUNT, initial_events=[],
+            reconnect_reason=reason, cursor_store=None,
+            expected_cursor_head='0' * 64, reconnect_budget=None,
+            expected_budget_head='0' * 64, evaluated_at=1000,
+            confirm_reconnect_attempt=True, confirm_read_only_paper=True,
+            confirm_cursor_checkpoint=True, permission_check=callback,
+            emergency_stop_check=callback)
     assert vault.reads == vault.writes == vault.deletes == 0
 
 

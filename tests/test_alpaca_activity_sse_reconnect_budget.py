@@ -23,6 +23,14 @@ USE_RESERVED_TOKEN = object()
 STOP_CLEAR = lambda: False
 
 
+class EqualText(str):
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
 def segments():
     first_trade = _event('01K00000000000000000000001',
         '11111111-1111-1111-1111-111111111111', 'TRD')
@@ -76,6 +84,49 @@ class Opener:
 def stores(tmp_path):
     return (ActivitySSECursorStore(tmp_path / 'cursor.sqlite3', ACCOUNT),
         subject.ActivitySSEReconnectBudget(tmp_path / 'budget.sqlite3', ACCOUNT))
+
+
+@pytest.mark.parametrize('reason', (
+    'UNKNOWN', None, EqualText('CONNECTION_DROPPED')))
+def test_begin_invalid_reason_is_callback_and_storage_silent(tmp_path, reason):
+    _, budget = stores(tmp_path)
+
+    def callback():
+        pytest.fail('emergency callback invoked')
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECONNECT_REASON_INVALID'):
+        budget.begin(evaluated_at=1000, expected_cursor_head=ZERO,
+            expected_head=ZERO, reconnect_reason=reason,
+            confirm_reconnect_attempt=True, emergency_stop_check=callback)
+    assert not budget.path.exists()
+
+
+@pytest.mark.parametrize('reason', (
+    'UNKNOWN', None, EqualText('CONNECTION_DROPPED')))
+def test_coordinator_invalid_reason_is_network_callback_and_storage_silent(
+        tmp_path, reason):
+    initial, raw = segments()
+    cursor, budget = stores(tmp_path)
+    opener = Opener([raw])
+
+    def callback():
+        pytest.fail('admission callback invoked')
+
+    with pytest.raises(subject.ActivitySSEReconnectBudgetError,
+            match='RECONNECT_REASON_INVALID'):
+        subject.collect_and_checkpoint_due(KEY, SECRET,
+            expected_account_id=ACCOUNT, initial_events=initial,
+            reconnect_reason=reason, cursor_store=cursor,
+            expected_cursor_head=ZERO, reconnect_budget=budget,
+            expected_budget_head=ZERO, evaluated_at=1000,
+            confirm_reconnect_attempt=True, confirm_read_only_paper=True,
+            confirm_cursor_checkpoint=True, opener=opener,
+            wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+            outcome_clock=lambda: 1000, permission_check=callback,
+            emergency_stop_check=callback, credential_check=callback)
+    assert not opener.requests
+    assert not cursor.path.exists() and not budget.path.exists()
 
 
 def test_begin_lock_contention_fails_closed_then_recovers(

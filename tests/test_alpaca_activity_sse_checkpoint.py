@@ -226,16 +226,19 @@ def test_interrupted_wire_segment_never_checkpoints(tmp_path):
     assert not path.exists()
 
 
-def test_reconnect_reason_disagreement_never_checkpoints(tmp_path):
+@pytest.mark.parametrize('reason', (
+    'UNKNOWN', None, EqualText('CONNECTION_DROPPED')))
+def test_invalid_reconnect_reason_is_network_and_storage_silent(
+        tmp_path, reason):
     path = tmp_path / 'cursor.sqlite3'
     initial, _, raw = segments()
     opener = Opener(raw)
     with pytest.raises(subject.ActivitySSECheckpointError,
-            match='RECONNECT_REVIEW_FAILED'):
+            match='RECONNECT_REASON_INVALID'):
         run(tmp_path, initial_events=initial,
-            reconnect_reason='UNKNOWN',
+            reconnect_reason=reason,
             cursor_store=ActivitySSECursorStore(path, ACCOUNT), opener=opener)
-    assert len(opener.requests) == 1 and not path.exists()
+    assert not opener.requests and not path.exists()
 
 
 def test_malformed_initial_review_is_fixed_and_network_silent(

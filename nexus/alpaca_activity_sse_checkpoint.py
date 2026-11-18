@@ -464,6 +464,9 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         _fail('READ_AUTHORIZATION_REQUIRED')
     if confirm_cursor_checkpoint is not True:
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
+    if (type(reconnect_reason) is not str or
+            reconnect_reason not in reconnect.REASONS):
+        _fail('RECONNECT_REASON_INVALID')
     if type(cursor_store) is not ActivitySSECursorStore:
         _fail('CURSOR_STORE_INVALID')
     store_binding = _capture_store_binding(cursor_store)

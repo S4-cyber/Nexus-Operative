@@ -3,6 +3,40 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.336 Activity SSE reconnect-reason preflight
+
+The installed Activity SSE path now requires one exact built-in allowlisted
+reconnect reason before any caller callback, journal inspection or creation,
+credential-vault access, durable retry reservation or provider GET. Unknown,
+null and equality-forging string-subclass values fail closed without consuming
+the one bounded request or creating cursor/budget state. Focused reconnect,
+credential and acceptance validation passed 905 tests; the synchronized final
+scope passed 914, both with two dependency warnings. The dependency-complete
+exact candidate passed 6,334 tests with 2 platform skips and the same warnings
+in 931.22 seconds.
+
+All sixteen bounded offline profiles passed. Saved-evidence verification
+matched 415 source files /
+`4c5e9ffd1746b7a5711eb55edf95a1db1424ce5961d0256af1328acb0cb4bbdf`;
+report SHA-256 is
+`e005e3ef4f7474af8722d99f4fb78153fd9b0351083b213ca453100b09b0e8ca`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case ordered CI inventory passed.
+The 164-member v0.340.336 wheel SHA-256 is
+`c1bdaf9876a6076c83111f3885cd3e91ec6c848c4a95347739e7ce8ea045ec31`.
+The 1,073-path / 108,337,061-byte current-tree public-artifact audit found zero
+findings; the introduced-line credential scan and fresh exact-head hosted
+security/Gitleaks remain mandatory for this commit.
+
+This is injected local M8.2 uncertainty-boundary evidence, not provider identity,
+stream entitlement or delivery completeness, broker-paper acceptance,
+genuine-feed sustained-trial evidence, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed. Engagement remains OFF by default; limits, account
+checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation stays
+weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted.
+
 ## v0.340.335 bounded paper risk-screen input and JSON boundary
 
 The public paper risk screen now requires one exact built-in request schema,

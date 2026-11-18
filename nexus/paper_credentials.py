@@ -325,14 +325,17 @@ def collect_activity_sse_saved(*, expected_account_id, initial_events,
         elapsed_clock=time.monotonic, outcome_clock=time.time,
         permission_check=lambda: True, emergency_stop_check=None):
     """One explicit saved-pair Activity SSE attempt; no loop or retry."""
+    from nexus.alpaca_activity_sse_reconnect_budget import (
+        REASONS, collect_and_checkpoint_due)
     if (confirm_reconnect_attempt is not True or
             confirm_read_only_paper is not True or
             confirm_cursor_checkpoint is not True):
         _fail('READ_CONFIRMATION_REQUIRED')
+    if (type(reconnect_reason) is not str or
+            reconnect_reason not in REASONS):
+        _fail('READ_RECONNECT_REASON_INVALID')
     if not callable(permission_check) or not callable(emergency_stop_check):
         _fail('READ_REVOKED')
-    from nexus.alpaca_activity_sse_reconnect_budget import (
-        collect_and_checkpoint_due)
     try:
         permission_admitted = permission_check()
         emergency_stopped = emergency_stop_check()

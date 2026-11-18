@@ -8,6 +8,13 @@ ASSET=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,f
            min_order_size='0.5',min_trade_increment='0.5',price_increment='0.5')
 
 
+class ForgedText(str):
+    def __new__(cls, literal, target):
+        value=super().__new__(cls,literal);value.target=target;return value
+    def __hash__(self):return hash(self.target)
+    def __eq__(self,other):return other==self.target
+
+
 def plan(side='BUY',**kwargs):
     data=dict(client_order_id='nx_fixture',product='BTC-USD',side=side,quantity='2',limit_price='100',
               asset=ASSET,metadata_at=1000,evaluated_at=1001)
@@ -43,6 +50,23 @@ def test_invalid_or_unverified_request_fails_without_mutation(changes):
     before=copy.deepcopy(ASSET)
     with pytest.raises(ValueError):plan(**changes)
     assert ASSET==before
+
+
+@pytest.mark.parametrize(('field','target'),(
+    ('client_order_id','nx_fixture'),('product','BTC-USD'),('side','BUY')))
+def test_preview_rejects_equality_forging_identity_text(field,target):
+    with pytest.raises(ValueError):plan(**{field:ForgedText('forged',target)})
+
+
+def test_tracker_rejects_forged_plan_and_observation_text_without_mutation():
+    forged=plan();forged['payload']['side']=ForgedText('forged_side','buy')
+    forged['payload_sha256']=contract.sha(forged['payload'])
+    with pytest.raises(ValueError,match='INVALID_BROKER_PREVIEW'):
+        contract.SnapshotTracker(forged)
+    tracker=contract.SnapshotTracker(plan());before=tracker.status()
+    with pytest.raises(ValueError,match='INVALID_BROKER_ORDER_SNAPSHOT'):
+        tracker.observe(response(status=ForgedText('forged_status','new')))
+    assert tracker.status()==before
 
 
 def test_partial_pending_cancel_then_cancelled_never_infers_zero_holdings_or_fees():

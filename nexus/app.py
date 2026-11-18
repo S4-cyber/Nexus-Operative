@@ -95,7 +95,7 @@ async def application_lifespan(application):
             if lifecycle_executor is not None:
                 lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.345",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.346",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -377,7 +377,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.345", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.346", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -1049,7 +1049,7 @@ class HaltResetConfirmation(BaseModel):
     confirm_reset: bool
 
 def _complete_halt_reset(epoch):
-    global _halted,_cut_confirmed
+    global _halted,_cut_confirmed,_cut_epoch
     with _trading_control_lock:
         with _cut_lock:
             if _cut_pending or epoch!=_cut_epoch:
@@ -1086,7 +1086,22 @@ def _complete_halt_reset(epoch):
             except (ValueError,OSError,sqlite3.Error):
                 raise HTTPException(status_code=503,detail="HALTED_LOCALLY_ORDER_STORAGE_UNAVAILABLE")
             raise HTTPException(status_code=409,detail="RESET_INTERRUPTED_BY_EMERGENCY_CUT")
-        audit("emergency_halt_reset_disengaged")
+        try:audit("emergency_halt_reset_disengaged")
+        except (ValueError,OSError,sqlite3.Error):
+            # A reset is not acknowledged unless its audit boundary commits.
+            # Restore the independent process veto first, then attempt both
+            # durable barriers even if either restoration fails.
+            with _cut_lock:
+                _halted=True
+                _cut_confirmed=False
+                _cut_epoch+=1
+                paper_forward_runner.request_cut()
+            try:
+                try:emergency_intent.persist(research_order_gateway._path())
+                finally:research_order_gateway.emergency_halt()
+            except (ValueError,OSError,sqlite3.Error,RuntimeError):
+                pass
+            raise HTTPException(status_code=503,detail="HALT_RESET_AUDIT_UNAVAILABLE")
         return status()
 
 @app.post("/api/simulate/halt/reset")

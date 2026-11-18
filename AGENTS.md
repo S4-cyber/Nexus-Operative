@@ -3,6 +3,44 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.346 reset-audit, broker-wire and owner-envelope boundaries
+
+A halt reset whose final audit write fails now immediately re-latches the
+process cut and attempts to restore both durable stop barriers before returning
+a fixed 503, so a failed reset cannot leave execution ambiguously unhalted.
+Broker plans, observations, projections and open-order links require exact
+built-in text before journal mutation or reconciliation. Paper reader,
+submission and saved-vault credentials require exact built-in strings before
+header construction, network, vault or journal access. Windows ordinary-user
+review now verifies the outer distribution envelope against the exact raw inner
+manifest and binding-review bytes before claiming exact distribution binding.
+
+The exact candidate passed 6,447 tests with 2 platform skips and two dependency
+warnings in 963.43 seconds. Focused validation passed 442 tests. All sixteen
+bounded profiles passed. Saved-evidence verification matched 415 source files /
+`cc3d0a8ebe8307adc24929f29aae89e30a801842be01d58542b82d40950dd8fc`;
+report SHA-256 is
+`cf8724a518862bc6fd43343e1e1beb6c98fd354f0256e0daa6c5ca6b31af381e`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.346 wheel
+SHA-256 is
+`311669f30cccad709b9fd7b2bbdd61a446cdc32b3de190a0a66af30430d37db6`.
+
+PR #62 exact parent `ace4fc00138ad7703f62e0a4d1823d5f58a9fd81` has passed
+hosted security/Gitleaks, saved evidence and browser/help; its complete
+regression remains active and unclaimed. Fresh exact-head hosted gates remain
+mandatory for this candidate, and the push/manual native Windows lane remains
+undispatched.
+
+This is injected local M1/M3/M4/M9 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.345 request-identity, balance-head and distribution-envelope boundaries
 
 Broker request client IDs now require exact built-in strings both at public

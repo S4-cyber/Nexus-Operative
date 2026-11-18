@@ -174,6 +174,14 @@ def test_bad_keys_never_touch_vault(vault, bad):
     assert vault.reads == vault.writes == 0
 
 
+def test_equality_forging_key_never_touches_vault(vault):
+    class ForgedCredential(str):
+        def encode(self,*_args,**_kwargs):return b'FORGED_WIRE_VALUE'
+    with pytest.raises(credentials.PaperVaultError,match='FORMAT_INVALID'):
+        credentials.install(ForgedCredential(KEY),SECRET,confirm_store=True)
+    assert vault.reads==vault.writes==0
+
+
 def test_missing_or_invalid_record_never_inspects(vault):
     with pytest.raises(credentials.PaperVaultError, match='NOT_CONFIGURED'):
         inspect()

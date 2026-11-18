@@ -1,5 +1,33 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.346 reset-audit, broker-wire and owner-envelope boundaries
+
+Failed final reset audits re-latch the independent process cut and attempt to
+restore both durable emergency barriers before returning a fixed failure.
+Broker journal and reconciliation identities reject polymorphic text before
+mutation or linkage. Paper credentials reject text subclasses before any wire,
+vault or journal boundary. Windows owner-profile review verifies the shipped
+outer envelope against the exact raw inner manifest and binding-review bytes.
+
+The exact candidate passed 6,447 tests with 2 platform skips and two dependency
+warnings in 963.43 seconds; focused validation passed 442. All sixteen bounded
+profiles passed. Saved evidence matched 415 source files /
+`cc3d0a8ebe8307adc24929f29aae89e30a801842be01d58542b82d40950dd8fc`;
+`validation/release_trials_0_340_346.json` SHA-256 is
+`cf8724a518862bc6fd43343e1e1beb6c98fd354f0256e0daa6c5ca6b31af381e`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and fourteen controller smokes passed. The 164-member wheel SHA-256 is
+`311669f30cccad709b9fd7b2bbdd61a446cdc32b3de190a0a66af30430d37db6`.
+
+Fresh exact-head hosted gates remain mandatory, and the push/manual native
+installer/distribution lane remains undispatched. This increment accepts no
+broker, sustained-market, native Windows, funding/live/cloud or release gate.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30-45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.345 request-identity, balance-head and distribution-envelope boundaries
 
 Durable broker requests reject client-ID string subclasses before lookup or

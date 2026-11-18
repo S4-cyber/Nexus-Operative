@@ -29,6 +29,8 @@ ARCHITECTURES = {"X64", "Arm64", "X86"}
 PROBE_PROFILE = "nexus.windows-owner-profile-probe.v1"
 PROBE_NAME = "windows-owner-profile-probe.ps1"
 REVIEWER_NAME = "windows-owner-profile-review.py"
+ARTIFACT_MANIFEST_NAME = "artifact-manifest.json"
+DISTRIBUTION_BINDING_NAME = "distribution-binding-review.json"
 PROBE_LIMITATIONS = (
     "Owner-operated single-profile effective-access probe only; no usernames, SIDs, paths, account data or "
     "credentials retained. Self-reported machine evidence is not independent attestation, native-window, "
@@ -93,16 +95,21 @@ def _read_bytes(path, limit):
     return raw
 
 
-def _load_json(path):
+def _load_json_raw(path):
     try:
         raw = _read_bytes(path, MAX_JSON_BYTES)
-        return json.loads(
+        value = json.loads(
             raw.decode("utf-8-sig"), object_pairs_hook=_pairs,
             parse_float=lambda _: (_ for _ in ()).throw(OwnerProfileReviewError("number")),
             parse_constant=lambda _: (_ for _ in ()).throw(OwnerProfileReviewError("number")),
         )
+        return value, raw
     except (UnicodeError, json.JSONDecodeError, OwnerProfileReviewError, RecursionError):
         raise OwnerProfileReviewError("json") from None
+
+
+def _load_json(path):
+    return _load_json_raw(path)[0]
 
 
 def _tool(path, expected_name):
@@ -154,7 +161,22 @@ def _manifest_entries(manifest, *, version, source_commit):
     return result
 
 
-def verify(probe, binding, manifest, *, expected_version, expected_source_commit,
+def _distribution_envelope(envelope, *, version, source_commit,
+                           artifact_manifest_raw, distribution_binding_raw):
+    entries = _manifest_entries(envelope, version=version, source_commit=source_commit)
+    expected = {
+        ARTIFACT_MANIFEST_NAME: (
+            len(artifact_manifest_raw), hashlib.sha256(artifact_manifest_raw).hexdigest()),
+        DISTRIBUTION_BINDING_NAME: (
+            len(distribution_binding_raw), hashlib.sha256(distribution_binding_raw).hexdigest()),
+    }
+    if entries != expected:
+        raise OwnerProfileReviewError("distribution envelope")
+    return entries
+
+
+def verify(probe, binding, manifest, envelope, *, artifact_manifest_raw,
+           distribution_binding_raw, expected_version, expected_source_commit,
            probe_tool, reviewer_tool):
     if type(expected_version) is not str or VERSION.fullmatch(expected_version) is None:
         raise OwnerProfileReviewError("expected version")
@@ -168,6 +190,8 @@ def verify(probe, binding, manifest, *, expected_version, expected_source_commit
         raise OwnerProfileReviewError("probe shape")
     if type(binding) is not dict or set(binding) != BINDING_KEYS:
         raise OwnerProfileReviewError("binding shape")
+    if type(artifact_manifest_raw) is not bytes or type(distribution_binding_raw) is not bytes:
+        raise OwnerProfileReviewError("distribution bytes")
     if (binding["mode"] != "VERIFIED_INSTALLER_DISTRIBUTION_BINDING" or binding["passed"] is not True
             or binding["version"] != expected_version or binding["source_commit"] != expected_source_commit
             or binding["installer_name"] != f"NexusOperative-Setup-{expected_version}.exe"
@@ -180,6 +204,10 @@ def verify(probe, binding, manifest, *, expected_version, expected_source_commit
                 "money_movement_enabled", "release_approved"))
             or type(binding["limitations"]) is not str or not binding["limitations"]):
         raise OwnerProfileReviewError("binding")
+    _distribution_envelope(envelope, version=expected_version,
+        source_commit=expected_source_commit,
+        artifact_manifest_raw=artifact_manifest_raw,
+        distribution_binding_raw=distribution_binding_raw)
     entries = _manifest_entries(manifest, version=expected_version, source_commit=expected_source_commit)
     required_entries = {
         binding["installer_name"]: (binding["installer_bytes"], binding["installer_sha256"]),
@@ -219,6 +247,9 @@ def verify(probe, binding, manifest, *, expected_version, expected_source_commit
         "windows_version": probe["windows_version"],
         "architecture": probe["architecture"],
         "exact_distribution_bound": True,
+        "distribution_envelope_bound": True,
+        "artifact_manifest_file_bound": True,
+        "distribution_binding_file_bound": True,
         "installed_executable_bound": True,
         "probe_tool_manifest_bound": True,
         "review_tool_manifest_bound": True,
@@ -271,6 +302,7 @@ def main():
     parser.add_argument("--probe", required=True)
     parser.add_argument("--distribution-binding", required=True)
     parser.add_argument("--artifact-manifest", required=True)
+    parser.add_argument("--distribution-envelope", required=True)
     parser.add_argument("--probe-tool", required=True)
     parser.add_argument("--review-tool", required=True)
     parser.add_argument("--expected-version", required=True)
@@ -280,9 +312,13 @@ def main():
     try:
         probe_tool = _tool(args.probe_tool, PROBE_NAME)
         reviewer_tool = _tool(args.review_tool, REVIEWER_NAME)
+        binding, binding_raw = _load_json_raw(args.distribution_binding)
+        artifact_manifest, artifact_manifest_raw = _load_json_raw(args.artifact_manifest)
         result = verify(
-            _load_json(args.probe), _load_json(args.distribution_binding),
-            _load_json(args.artifact_manifest), expected_version=args.expected_version,
+            _load_json(args.probe), binding, artifact_manifest,
+            _load_json(args.distribution_envelope),
+            artifact_manifest_raw=artifact_manifest_raw,
+            distribution_binding_raw=binding_raw, expected_version=args.expected_version,
             expected_source_commit=args.expected_source_commit, probe_tool=probe_tool,
             reviewer_tool=reviewer_tool,
         )

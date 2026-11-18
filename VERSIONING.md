@@ -1,5 +1,37 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.337 public account-evidence summary type boundary
+
+**Current development build: 0.340.337 (pre-release).** The public
+account-evidence summary now rejects non-built-in result keys, mode, policy,
+status and gross-currency keys before equality checks or public copying. Hostile
+string subclasses can no longer forge equality and pass private policy/status
+text through the allowlisted output.
+
+The exact candidate passed 6,339 tests with 2 platform skips and two dependency
+warnings in 926.21 seconds. Direct privacy/reconciliation validation passed 409
+and the synchronized component/version/roadmap scope passed 420. All 16 bounded
+offline profiles passed and saved evidence verified against 415 source files /
+`5a2b2dc716ebea4bd23ba130a53560acc36dbeaf82a0ab73c16633c41696dcf3`.
+The report SHA-256 is
+`2102999857c8c1fcdbd1cc5ad22708fab405dc44116c47874b67722bde1b0bad`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax and fourteen controller smokes passed. The
+164-member wheel SHA-256 is
+`f7aa5a0185b7478160dce69790a22cd36c6d2a265825f3c0174bb6e4e5c3caad`.
+The final 1,074-path / 108,535,028-byte staged-tree public-artifact audit and
+4,286-added-line high-confidence credential scan found zero findings. Fresh
+hosted exact-head security/Gitleaks, browser, evidence and regression gates
+remain required.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30–45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
 ## v0.340.336 Activity SSE reconnect-reason preflight
 
 **Current development build: 0.340.336 (pre-release).** Activity SSE reconnect

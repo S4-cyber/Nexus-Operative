@@ -62,10 +62,15 @@ def configure(tier,enabled):
             note='This tier is OFF. Saved paper settings need review; no other tier limits are inferred.')
 
 def require_entry(tier,notional):
-    if tier not in TIERS:raise ValueError("UNKNOWN_RISK_TIER")
+    if type(tier) is not str or tier not in TIERS:
+        raise ValueError("UNKNOWN_RISK_TIER")
+    if type(notional) not in (int,float,Decimal):
+        raise ValueError("RISK_TIER_INTENT_INVALID")
+    amount=Decimal(str(notional))
+    if not amount.is_finite() or amount<=0:
+        raise ValueError("RISK_TIER_INTENT_INVALID")
     policy=next(x for x in current()["tiers"] if x["tier"]==tier)
     if not policy["enabled"]:raise ValueError("RISK_TIER_DISENGAGED")
-    amount=Decimal(str(notional))
     # Compare against unrounded limit (avoid cent rounding permitting excess).
     config=load_settings()
     budget=Decimal(str(config["paper_budget"]))

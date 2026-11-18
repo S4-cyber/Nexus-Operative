@@ -12,6 +12,7 @@ import os
 import sqlite3
 import stat
 from contextlib import closing, contextmanager
+from decimal import Decimal
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
 from nexus.order_accounting import (AccountingOrderGateway, MAX_ARCHIVED_INTENTS, MAX_ARCHIVE_BATCHES,
@@ -271,7 +272,7 @@ class DurableOrderGateway:
                 order=gateway.intents[oid]
                 if order['side']=='BUY':
                     from nexus.tier_permissions import require_entry
-                    require_entry(order['tier'],order['notional'])
+                    require_entry(order['tier'],Decimal(order['notional']))
                 execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
             # Halt/cancel/reset must remain possible when normal intake is full.
             if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill','bind_replacement_epoch'):

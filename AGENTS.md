@@ -3,6 +3,41 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.338 tier-entry admission boundary
+
+Simulated tier-entry permission now requires one exact built-in tier plus a
+finite, strictly positive exact built-in integer, float or Decimal notional
+before any settings or permission-state read. Boolean, stringified, non-finite,
+zero, negative and equality-forging inputs fail with fixed diagnostics and
+create no settings state. Durable-order and paper-forward callers convert their
+already validated stored values to Decimal before admission. The direct
+tier/forward/durable/preflight/portfolio scope passed 96 tests and the
+synchronized release/version/roadmap scope passed 107, both with two dependency
+warnings. The exact candidate passed 6,349 tests with 2 platform skips and the
+same warnings in 915.45 seconds.
+
+All sixteen bounded profiles passed. Saved-evidence verification matched 415
+source files / `2a25dcc8d1ad3114ba1ac5066752f15625a760fa0a64a48c97597f66c0c01452`;
+report SHA-256 is
+`8dfe22369592a0bd4161856a011336ff781569eec4d9767e224095fae1751d1f`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.338 wheel SHA-256 is
+`883ec0d843c4755be42e8f0d6cd64340e7fe997fddc22c7698e3a7f1c7e1eb09`.
+The final 1,075-path / 108,733,285-byte staged-tree public-artifact audit and
+4,289-line introduced high-confidence credential scan found zero findings.
+Fresh exact-head hosted
+security/Gitleaks, browser, saved-evidence and full Windows regression remain
+mandatory after publication.
+
+This is injected local M3 risk-boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed. Engagement remains OFF by default; limits, account
+checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation stays
+weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted.
+
 ## v0.340.337 public account-evidence summary type boundary
 
 The allowlisted public account-evidence summary now requires exact built-in

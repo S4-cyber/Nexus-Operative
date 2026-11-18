@@ -1,5 +1,39 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.338 tier-entry admission boundary
+
+**Current development build: 0.340.338 (pre-release).** Tier-entry permission
+now rejects every non-built-in tier and every Boolean, stringified, non-finite,
+zero or negative notional before reading settings or permission state. Accepted
+notionals are exact built-in integers, floats or Decimals and must be finite and
+strictly positive. Durable and forward callers pass their already validated
+values as Decimal.
+
+The exact candidate passed 6,349 tests with 2 platform skips and two dependency
+warnings in 915.45 seconds. Direct tier/forward/durable/preflight/portfolio
+validation passed 96 and the synchronized release/version/roadmap scope passed
+107. All 16 bounded offline profiles passed and saved evidence verified against
+415 source files /
+`2a25dcc8d1ad3114ba1ac5066752f15625a760fa0a64a48c97597f66c0c01452`.
+The report SHA-256 is
+`8dfe22369592a0bd4161856a011336ff781569eec4d9767e224095fae1751d1f`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`883ec0d843c4755be42e8f0d6cd64340e7fe997fddc22c7698e3a7f1c7e1eb09`.
+The final 1,075-path / 108,733,285-byte staged-tree artifact audit and
+4,289-line introduced credential scan found zero findings. Fresh hosted
+exact-head security/Gitleaks, browser,
+evidence and regression gates remain required.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30–45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
 ## v0.340.337 public account-evidence summary type boundary
 
 **Current development build: 0.340.337 (pre-release).** The public

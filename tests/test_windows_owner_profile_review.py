@@ -75,7 +75,8 @@ def verify(parts):
     return review.verify(probe, binding, artifact, envelope,
         artifact_manifest_raw=artifact_raw, distribution_binding_raw=binding_raw,
         expected_version=VERSION, expected_source_commit=SOURCE,
-        probe_tool=probe_info, reviewer_tool=reviewer_info)
+        probe_tool=probe_info, reviewer_tool=reviewer_info,
+        executing_reviewer_tool=reviewer_info)
 
 
 def test_exact_owner_profile_probe_is_bound_without_promoting_authority(tmp_path):
@@ -85,7 +86,8 @@ def test_exact_owner_profile_probe_is_bound_without_promoting_authority(tmp_path
     assert result["distribution_envelope_bound"] and result["artifact_manifest_file_bound"]
     assert result["distribution_binding_file_bound"]
     assert result["installed_executable_bound"] and result["probe_tool_manifest_bound"]
-    assert result["review_tool_manifest_bound"] and result["private_paths_retained"] is False
+    assert result["review_tool_manifest_bound"] and result["executing_reviewer_bound"]
+    assert result["private_paths_retained"] is False
     assert all(result[key] is False for key in (
         "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
         "money_movement_enabled", "release_approved"))
@@ -128,7 +130,19 @@ def test_missing_or_changed_manifest_tools_are_rejected(tmp_path):
         review.verify(parts[0], parts[1], parts[2], parts[7],
             artifact_manifest_raw=parts[8], distribution_binding_raw=parts[9],
             expected_version=VERSION, expected_source_commit=SOURCE,
-            probe_tool=tuple(changed), reviewer_tool=parts[4])
+            probe_tool=tuple(changed), reviewer_tool=parts[4],
+            executing_reviewer_tool=parts[4])
+
+
+def test_executing_reviewer_must_match_manifest_bound_shipped_reviewer(tmp_path):
+    parts=fixture(tmp_path)
+    changed=(parts[4][0]+1,'b'*64)
+    with pytest.raises(review.OwnerProfileReviewError,match='executing reviewer binding'):
+        review.verify(parts[0],parts[1],parts[2],parts[7],
+            artifact_manifest_raw=parts[8],distribution_binding_raw=parts[9],
+            expected_version=VERSION,expected_source_commit=SOURCE,
+            probe_tool=parts[3],reviewer_tool=parts[4],
+            executing_reviewer_tool=changed)
 
 
 @pytest.mark.parametrize("target", ["binding", "manifest"])
@@ -181,6 +195,27 @@ def test_cli_refuses_duplicate_json_and_output_overwrite(tmp_path, monkeypatch, 
     output.unlink()
     probe_path.write_bytes(b'{"profile":1,"profile":2}')
     assert review.main() == 1
+
+
+def test_cli_rejects_different_executing_reviewer_copy(tmp_path,monkeypatch,capsys):
+    parts=fixture(tmp_path)
+    probe,binding,artifact,_,_,probe_tool,reviewer_tool,envelope,artifact_raw,binding_raw=parts
+    probe_path=tmp_path/'probe.json';probe_path.write_text(json.dumps(probe),encoding='utf-8')
+    binding_path=tmp_path/'binding.json';binding_path.write_bytes(binding_raw)
+    manifest_path=tmp_path/'manifest.json';manifest_path.write_bytes(artifact_raw)
+    envelope_path=tmp_path/'distribution-envelope.json';envelope_path.write_text(json.dumps(envelope),encoding='utf-8')
+    modified_dir=tmp_path/'executing';modified_dir.mkdir()
+    modified=modified_dir/review.REVIEWER_NAME
+    modified.write_bytes(reviewer_tool.read_bytes()+b'\n# different executing reviewer\n')
+    output=tmp_path/'review.json'
+    monkeypatch.setattr(review,'__file__',str(modified))
+    monkeypatch.setattr('sys.argv',['owner-review','--probe',str(probe_path),
+        '--distribution-binding',str(binding_path),'--artifact-manifest',str(manifest_path),
+        '--distribution-envelope',str(envelope_path),'--probe-tool',str(probe_tool),
+        '--review-tool',str(reviewer_tool),'--expected-version',VERSION,
+        '--expected-source-commit',SOURCE,'--output',str(output)])
+    assert review.main()==1 and not output.exists()
+    assert 'OWNER_WINDOWS_PROFILE_REVIEW_FAILED' in capsys.readouterr().out
 
 
 def test_powershell_probe_retains_no_identity_or_path_fields():

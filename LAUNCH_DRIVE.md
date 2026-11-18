@@ -1,5 +1,40 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.347 recovery-identity, bounded-fill and evidence-authority boundaries
+
+Broker recovery now rejects forged clock, completion-token and outcome scalar
+types before commit and on replay. Paper execution rejects caller-mutable
+identity keys and prevents zero or negative modeled fills by bounding execution
+cost below 10,000 bps. Credential confirmation is exact-type, exact-value and
+fail-closed across replacement attempts. Release evidence covers MJS inventory
+and YAML workflows, and Windows review binds the actually executing reviewer to
+the shipped manifest entry.
+
+The exact candidate passed 6,462 tests with 2 platform skips and two dependency
+warnings in 906.36 seconds. All sixteen bounded profiles passed. Saved evidence
+matched 417 source files /
+`882e98887107d969b4d47069ad99da72036150edc2c3065b5424560449deeccc`;
+`validation/release_trials_0_340_347.json` SHA-256 is
+`512065ba010f5acb7ad4b76d604251c00c4cbc1d5d77bddba40d136ef2bb25e4`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and fourteen controller smokes passed. The synchronized 164-member wheel
+SHA-256 is
+`a36de79f7dff7174cea2301e3c56f1a9173e81094b0aca52d1a584d980d19085`.
+Public artifact and introduced-line credential scans found zero findings; local
+Gitleaks is unavailable and fresh hosted security remains required.
+
+PR #62 is fully green at its exact head. PR #63 has green hosted security,
+saved-evidence and browser/help jobs at exact head
+`d7f706c81686d224ddfb587b8e46721db30bc4f8`; its complete regression remains
+active and unclaimed. Fresh exact-head hosted gates and the undispatched
+push/manual native installer lane remain mandatory. This increment accepts no
+broker, sustained-market, native Windows, funding/live/cloud or release gate.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30-45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.346 reset-audit, broker-wire and owner-envelope boundaries
 
 Failed final reset audits re-latch the independent process cut and attempt to

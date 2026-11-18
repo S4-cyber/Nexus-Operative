@@ -3,6 +3,50 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.347 recovery-identity, bounded-fill and evidence-authority boundaries
+
+Broker lookup clocks, completion tokens and transport outcomes now require
+exact built-in scalar types before mutation and during recovery, preventing a
+warm write from becoming unreplayable after restart. Paper execution rejects
+polymorphic tier, symbol and direction identities and caps each modeled
+execution cost below 10,000 bps, preserving positive fills and reliable exits.
+Optional AI credential saves require exact input and exact equal vault readback
+before configuration is reported, including after an earlier confirmed save.
+Release fingerprints now cover executable `ops/*.mjs` inventory and valid YAML
+workflow files. Windows ordinary-user review independently hashes the actually
+executing reviewer and requires it to equal the manifest-bound shipped tool.
+
+The exact candidate passed 6,462 tests with 2 platform skips and two dependency
+warnings in 906.36 seconds. All sixteen bounded profiles passed. Saved-evidence
+verification matched 417 source files /
+`882e98887107d969b4d47069ad99da72036150edc2c3065b5424560449deeccc`;
+report SHA-256 is
+`512065ba010f5acb7ad4b76d604251c00c4cbc1d5d77bddba40d136ef2bb25e4`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.347 wheel
+reports the synchronized version and has SHA-256
+`a36de79f7dff7174cea2301e3c56f1a9173e81094b0aca52d1a584d980d19085`.
+The public artifact audit found no findings in 1,083 reachable files and the
+introduced-line high-confidence credential scan found zero findings. Local
+Gitleaks remains unavailable, so the checksum-pinned hosted scan is mandatory.
+
+PR #62 exact head `ace4fc00138ad7703f62e0a4d1823d5f58a9fd81` passed
+hosted security/Gitleaks, saved evidence, browser/help and complete regression.
+PR #63 exact head `d7f706c81686d224ddfb587b8e46721db30bc4f8`
+has passed hosted security/Gitleaks, saved evidence and browser/help; its
+complete regression remains active and unclaimed. Fresh exact-head hosted gates
+remain mandatory for this candidate. The push/manual native Windows lane
+remains undispatched.
+
+This is injected local M1/M3/M5/M7/M9 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.346 reset-audit, broker-wire and owner-envelope boundaries
 
 A halt reset whose final audit write fails now immediately re-latches the

@@ -2883,8 +2883,8 @@ def source_digest(root):
     """
     root = Path(root); entries = []
     paths = set(root.glob('nexus/*.py')) | set(root.glob('tests/*.py')) | set(root.glob('tools/*.py')) | set(root.glob('tools/*.cjs')) | set(root.glob('tools/*.ps1'))
-    paths |= set(root.glob('ops/*.py'))
-    paths |= set(root.glob('.github/workflows/*.yml')) | set(root.glob('portable/*.py'))
+    paths |= set(root.glob('ops/*.py')) | set(root.glob('ops/*.mjs'))
+    paths |= set(root.glob('.github/workflows/*.yml')) | set(root.glob('.github/workflows/*.yaml')) | set(root.glob('portable/*.py'))
     paths |= {root/'pyproject.toml', root/'dashboard/portal_preview.html', root/'installer/NexusOperative.iss'}
     paths |= {root/name for name in ('.gitignore','.gitleaks.toml','.github/CODEOWNERS','.github/dependabot.yml') if (root/name).is_file()}
     for path in sorted(paths):

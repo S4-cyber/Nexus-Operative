@@ -112,9 +112,9 @@ def _load_json(path):
     return _load_json_raw(path)[0]
 
 
-def _tool(path, expected_name):
+def _tool(path, expected_name=None):
     path = Path(path)
-    if path.name != expected_name:
+    if expected_name is not None and path.name != expected_name:
         raise OwnerProfileReviewError("tool name")
     raw = _read_bytes(path, MAX_TOOL_BYTES)
     return len(raw), hashlib.sha256(raw).hexdigest()
@@ -177,15 +177,17 @@ def _distribution_envelope(envelope, *, version, source_commit,
 
 def verify(probe, binding, manifest, envelope, *, artifact_manifest_raw,
            distribution_binding_raw, expected_version, expected_source_commit,
-           probe_tool, reviewer_tool):
+           probe_tool, reviewer_tool, executing_reviewer_tool):
     if type(expected_version) is not str or VERSION.fullmatch(expected_version) is None:
         raise OwnerProfileReviewError("expected version")
     if type(expected_source_commit) is not str or SOURCE.fullmatch(expected_source_commit) is None:
         raise OwnerProfileReviewError("expected source")
-    for value in (probe_tool, reviewer_tool):
+    for value in (probe_tool, reviewer_tool, executing_reviewer_tool):
         if (type(value) is not tuple or len(value) != 2 or type(value[0]) is not int or value[0] < 1
                 or type(value[1]) is not str or SHA256.fullmatch(value[1]) is None):
             raise OwnerProfileReviewError("tool binding")
+    if executing_reviewer_tool != reviewer_tool:
+        raise OwnerProfileReviewError("executing reviewer binding")
     if type(probe) is not dict or set(probe) != PROBE_KEYS:
         raise OwnerProfileReviewError("probe shape")
     if type(binding) is not dict or set(binding) != BINDING_KEYS:
@@ -253,6 +255,7 @@ def verify(probe, binding, manifest, envelope, *, artifact_manifest_raw,
         "installed_executable_bound": True,
         "probe_tool_manifest_bound": True,
         "review_tool_manifest_bound": True,
+        "executing_reviewer_bound": True,
         "ordinary_user_profile_checked": True,
         "effective_acl_operations_checked": True,
         "private_paths_retained": False,
@@ -312,6 +315,10 @@ def main():
     try:
         probe_tool = _tool(args.probe_tool, PROBE_NAME)
         reviewer_tool = _tool(args.review_tool, REVIEWER_NAME)
+        # The source module uses underscores while the shipped copy uses the
+        # public hyphenated artifact name. Bind executing bytes independently
+        # of that packaging rename; --review-tool still enforces artifact name.
+        executing_reviewer_tool = _tool(Path(__file__).resolve())
         binding, binding_raw = _load_json_raw(args.distribution_binding)
         artifact_manifest, artifact_manifest_raw = _load_json_raw(args.artifact_manifest)
         result = verify(
@@ -320,7 +327,7 @@ def main():
             artifact_manifest_raw=artifact_manifest_raw,
             distribution_binding_raw=binding_raw, expected_version=args.expected_version,
             expected_source_commit=args.expected_source_commit, probe_tool=probe_tool,
-            reviewer_tool=reviewer_tool,
+            reviewer_tool=reviewer_tool, executing_reviewer_tool=executing_reviewer_tool,
         )
         _write(args.output, result)
     except (OSError, OwnerProfileReviewError, MemoryError, RecursionError):

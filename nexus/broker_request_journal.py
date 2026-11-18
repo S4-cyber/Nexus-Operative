@@ -35,6 +35,12 @@ def _fail(code):
     raise ValueError('BROKER_JOURNAL_' + code) from None
 
 
+def _lookup_token(value):
+    if type(value) is not str or re.fullmatch(r'[0-9a-f]{64}',value) is None:
+        raise ValueError('BROKER_LOOKUP_TOKEN_INVALID')
+    return value
+
+
 def _database_busy(error):
     code = getattr(error, 'sqlite_errorcode', None)
     return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
@@ -546,6 +552,7 @@ class BrokerRequestJournal:
     def _apply_lookup(self, requests, broker_ids, kind, body):
         identity=body.get('client_order_id')
         if type(identity) is not str or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        _lookup_token(body.get('token'))
         request=requests[identity]; state=request['lookup']; now=lookup.clock(body.get('evaluated_at'))
         if now<self._clock_floor(requests):raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
         if kind=='LOOKUP_INTERRUPTED':
@@ -574,7 +581,7 @@ class BrokerRequestJournal:
             raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
         if not state['pending'] or body['token']!=state['pending']:raise ValueError('BROKER_LOOKUP_PENDING_TOKEN_REQUIRED')
         outcome=body['outcome'];delay=body['retry_after_seconds']
-        if not isinstance(outcome,str) or outcome not in lookup.OUTCOMES or type(delay) is not int or not 0<=delay<=lookup.MAX_RETRY_AFTER:
+        if type(outcome) is not str or outcome not in lookup.OUTCOMES or type(delay) is not int or not 0<=delay<=lookup.MAX_RETRY_AFTER:
             raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
         if (outcome=='RATE_LIMITED' and delay<1) or (outcome!='RATE_LIMITED' and delay!=0):raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
         if outcome=='FOUND':
@@ -864,6 +871,7 @@ class BrokerRequestJournal:
         return self._lookup_write(client_order_id,evaluated_at)
 
     def finish_lookup(self, client_order_id, token, *, evaluated_at, status_code=None, transport_error=None, retry_after=None, response=None):
+        _lookup_token(token)
         outcome=lookup.classify(status_code=status_code,transport_error=transport_error,retry_after=retry_after,evaluated_at=evaluated_at)
         return self._lookup_write(client_order_id,evaluated_at,dict(token=token,**outcome,response=response if outcome['outcome']=='FOUND' else None))
 
@@ -949,6 +957,7 @@ class BrokerRequestJournal:
 
     def finish_lookup_checked(self, client_order_id, token, *, admission, status_code=None,
                               transport_error=None, retry_after=None, response=None):
+        _lookup_token(token)
         def result(now):
             outcome=lookup.classify(status_code=status_code,transport_error=transport_error,
                                     retry_after=retry_after,evaluated_at=now)

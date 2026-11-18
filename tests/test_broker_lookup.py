@@ -141,6 +141,46 @@ def test_clock_regression_and_invalid_clock_cannot_bypass_account_cooldown(journ
     with pytest.raises(ValueError,match='CLOCK_REGRESSION'):journal.begin_lookup('second',evaluated_at=999)
 
 
+def test_polymorphic_lookup_clock_is_rejected_before_journal_mutation(journal):
+    class ForgedClock(float):
+        def __new__(cls): return super().__new__(cls,-1)
+        def __ge__(self,other): return True
+        def __le__(self,other): return True
+
+    before=journal.path.read_bytes();state=journal.recovery()
+    with pytest.raises(ValueError,match='INVALID_BROKER_LOOKUP_CLOCK'):
+        journal.begin_lookup('nx_fixture',evaluated_at=ForgedClock())
+    assert journal.path.read_bytes()==before
+    assert module.BrokerRequestJournal(journal.path,ACCOUNT).recovery()==state
+
+
+def test_polymorphic_completion_token_cannot_clear_pending_lookup(journal):
+    token=journal.begin_lookup('nx_fixture',evaluated_at=1000)['lookup_token']
+    class ForgedToken(str):
+        def __eq__(self,other): return other==token
+        def __hash__(self): return hash(token)
+
+    before=journal.path.read_bytes();state=journal.recovery()
+    with pytest.raises(ValueError,match='BROKER_LOOKUP_TOKEN_INVALID'):
+        journal.finish_lookup('nx_fixture',ForgedToken('0'*64),evaluated_at=1001,status_code=404)
+    assert journal.path.read_bytes()==before
+    assert module.BrokerRequestJournal(journal.path,ACCOUNT).recovery()==state
+
+
+def test_polymorphic_transport_outcome_cannot_commit_unreplayable_literal(journal):
+    token=journal.begin_lookup('nx_fixture',evaluated_at=1000)['lookup_token']
+    class ForgedOutcome(str):
+        def __eq__(self,other): return other=='TIMEOUT'
+        def __hash__(self): return hash('TIMEOUT')
+
+    before=journal.path.read_bytes();state=journal.recovery()
+    with pytest.raises(ValueError,match='INVALID_BROKER_LOOKUP_RESULT'):
+        journal.finish_lookup('nx_fixture',token,evaluated_at=1001,
+            transport_error=ForgedOutcome('FORGED_LITERAL'))
+    assert journal.path.read_bytes()==before
+    assert module.BrokerRequestJournal(journal.path,ACCOUNT).recovery()==state
+
+
 def test_concurrent_lookup_admission_charges_only_one_attempt(journal):
     def begin(_):
         try:return journal.begin_lookup('nx_fixture',evaluated_at=1000)

@@ -39,6 +39,18 @@ def test_clean_full_history_and_no_content_echo(tmp_path):
     assert report['paths_checked']==1
 
 
+@pytest.mark.parametrize('history',[False,True])
+def test_tracked_symlink_is_rejected_in_current_and_history_modes(tmp_path,history):
+    root=repository(tmp_path);target=root/'target.txt';target.write_text('public')
+    link=root/'linked.txt'
+    try:link.symlink_to('target.txt')
+    except OSError:pytest.skip('file symlink unavailable')
+    git(root,'add','--','target.txt','linked.txt');git(root,'commit','-m','symlink fixture')
+    result=audit.audit(root,history=history)
+    assert not result['passed']
+    assert any(item['rule']=='NON_REGULAR_GIT_ENTRY' for item in result['findings'])
+
+
 def test_removed_private_path_is_still_blocked(tmp_path):
     root=repository(tmp_path);path=commit(root,'.env.local',b'not-a-real-secret')
     path.unlink();git(root,'add','-u');git(root,'commit','-m','removed fixture')

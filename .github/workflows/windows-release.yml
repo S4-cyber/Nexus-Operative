@@ -186,6 +186,16 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Distribution envelope creation failed' }
           python -m nexus.artifact_manifest verify release/distribution-envelope.json release
           if ($LASTEXITCODE -ne 0) { throw 'Distribution envelope verification failed' }
+      - name: Validate exact installer upload set
+        timeout-minutes: 1
+        shell: pwsh
+        run: |
+          $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          $expected = (Resolve-Path "release/NexusOperative-Setup-$version.exe").Path
+          $installers = @(Get-ChildItem release -File -Filter 'NexusOperative-Setup-*.exe')
+          if ($installers.Count -ne 1 -or $installers[0].FullName -cne $expected) {
+            throw 'Distribution contains an unreviewed or ambiguous installer set'
+          }
       - name: Upload distribution with source and checksum manifest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

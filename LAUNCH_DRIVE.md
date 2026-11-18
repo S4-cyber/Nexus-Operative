@@ -1,5 +1,43 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.349 — cut ordering, exact consent and release-tree boundaries
+
+This increment closes five compatible fail-open seams. Durable order intake
+rechecks the independent emergency latch after SQLite contention. Optional
+paid-provider preview consent rejects oversized, duplicate, extra and malformed
+JSON before provider authorization. RUNNING trial sessions cannot age out of
+incident accounting. Source evidence and public history auditing reject
+symlinked/non-regular inputs, and the Windows distribution step rejects an
+extra or ambiguously named installer before upload.
+
+Local exact-source verification: 6,486 passed, 2 skipped and two known
+dependency warnings in 882.03 seconds; the synchronized affected/release scope
+passed 519 with one platform skip and the same warnings; all 16 bounded profiles passed; saved
+evidence matched 418 files /
+`81b0467e97718e5750e45b8777e93b2d17ba0c264d8d67d01cc0d6289e662be5`
+with report SHA-256
+`b7d040715e55ef4c00343e4757923edf0b6f7ec21cf7da7c4c5e0cc9adede1b8`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+syntax and all 14 Node controller smokes passed. The synchronized 164-member
+wheel SHA-256 is
+`41cdb14963030baebc6f4fc0c4b341cf4944fac1754cd3bf51938e9eb8c24adf`.
+The staged 1,087-path/blob artifact audit and the 1,216-commit reachable-history
+audit found zero findings; the introduced high-confidence credential scan
+found zero signatures. Local Gitleaks is unavailable, so fresh hosted security
+remains mandatory.
+
+Parent PR #65 is fully green at exact head
+`d9dd5ebe3bcbc1d89ebdacc07b96f1b8486d26bd`. Fresh exact-head hosted gates and
+the undispatched push/manual native Windows installer lane remain required.
+
+No real broker/account/feed, native ordinary-user Windows host, funding system
+or cloud deployment was accessed. No UI control changed. Engagement and every
+financial permission remain OFF by default; limits, checks, fail-closed exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Weighted implementation remains 38%
+(30-45%, low confidence), with 0/9 stages independently accepted. Release,
+trading and funding approval remain false and no launch date is predicted.
+
 ## v0.340.348 — canonical durability, trial-session and installer-file boundaries
 
 This increment makes warm execution and cold replay consume one bounded exact

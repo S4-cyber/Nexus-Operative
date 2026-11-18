@@ -320,6 +320,19 @@ def test_source_fingerprint_is_stable_across_git_checkout_line_endings(tmp_path)
     assert trials.source_digest(lf)!=trials.source_digest(crlf)
 
 
+def test_source_fingerprint_rejects_symlinked_input(tmp_path):
+    for name in ('nexus','tests','tools','ops','.github/workflows','dashboard','installer'):
+        (tmp_path/name).mkdir(parents=True)
+    for name in ('pyproject.toml','dashboard/portal_preview.html','installer/NexusOperative.iss',
+                 'tests/test_core.py','tools/installer.ps1','ops/inventory.mjs','.github/workflows/test.yml'):
+        (tmp_path/name).write_text('reviewed')
+    external=tmp_path.parent/'external-source.py';external.write_text('outside reviewed tree')
+    try:(tmp_path/'nexus/core.py').symlink_to(external)
+    except OSError:pytest.skip('file symlink unavailable')
+    with pytest.raises(ValueError,match='RELEASE_SOURCE_FILE_INVALID'):
+        trials.source_digest(tmp_path)
+
+
 def test_nonzero_child_failure_is_sanitized_and_never_reported_as_passed(monkeypatch):
     monkeypatch.setattr(trials.subprocess,'run',lambda *a,**k: subprocess.CompletedProcess(a,1,'','SECRET_MUST_NOT_ESCAPE'))
     with pytest.raises(ValueError,match='FORWARD_CHILD_FAILED') as error: trials.run()

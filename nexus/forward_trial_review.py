@@ -219,7 +219,9 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             evidence=forward_evidence.review(db,sid)
             if not evidence['integrity_ok']:_fail()
             points=evidence['points'];seen+=len(points);previous=None
-            lifecycle_in_window=session_start<=end and session_end>=start
+            # RUNNING has no terminal lifecycle end. Its last retained update
+            # cannot make an unresolved session disappear from a later review.
+            lifecycle_in_window=session_start<=end and (state=='RUNNING' or session_end>=start)
             terminal_reasons=forward_sessions.binding_reasons(last,state,sid,policy,
                 evidence['head_sha256'],len(points),points[-1]['cycle'] if points else 0,
                 evidence['parent_head_sha256'])

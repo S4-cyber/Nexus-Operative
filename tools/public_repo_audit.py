@@ -66,6 +66,17 @@ def _git(repo,*args):
     return result.stdout
 
 
+def _tree_modes(raw, oid_bytes):
+    modes=[];cursor=0
+    while cursor<len(raw):
+        space=raw.find(b' ',cursor);nul=raw.find(b'\0',space+1)
+        if space<0 or nul<0 or nul+1+oid_bytes>len(raw):raise ValueError('INVALID_GIT_OBJECT')
+        mode=raw[cursor:space]
+        if re.fullmatch(rb'[0-7]{5,6}',mode) is None:raise ValueError('INVALID_GIT_OBJECT')
+        modes.append(mode);cursor=nul+1+oid_bytes
+    return modes
+
+
 def audit(repo, *, history=False, required_refs=()):
     repo = Path(repo); findings = []; total = 0; blobs = 0
     if history and _git(repo,'rev-parse','--is-shallow-repository').strip() != b'false': raise ValueError('FULL_HISTORY_REQUIRED')
@@ -80,7 +91,12 @@ def audit(repo, *, history=False, required_refs=()):
     objects = _git(repo,'rev-list','--objects','--all') if history else _git(repo,'ls-files','-s')
     ids = set()
     for line in objects.splitlines():
-        oid = line.split(b' ',1)[0] if history else line.split()[1]
+        fields=line.split()
+        if not history:
+            if len(fields)<4 or fields[0] not in (b'100644',b'100755'):
+                findings.append(dict(rule='NON_REGULAR_GIT_ENTRY',entry_sha256=hashlib.sha256(line).hexdigest()))
+            oid=fields[1] if len(fields)>=2 else b''
+        else:oid = line.split(b' ',1)[0]
         if re.fullmatch(rb'[0-9a-f]{40,64}',oid) is None: raise ValueError('INVALID_GIT_OBJECT')
         ids.add(oid)
     if len(ids)>MAX_OBJECTS: raise ValueError('OBJECT_AUDIT_CAP')
@@ -93,14 +109,19 @@ def audit(repo, *, history=False, required_refs=()):
             size=int(header[2]);total+=size
             if size<0:raise ValueError('INVALID_OBJECT_SIZE')
             if total>MAX_BYTES: raise ValueError('HISTORY_BYTE_CAP')
-            remaining=size;prefix=b'';json_blocks=[];is_json=None
+            remaining=size;prefix=b'';json_blocks=[];tree_blocks=[];is_json=None
             while remaining:
                 block=child.stdout.read(min(65536,remaining))
                 if not block: raise ValueError('OBJECT_AUDIT_INCOMPLETE')
+                if header[1]==b'tree':tree_blocks.append(block)
                 if is_json is None:is_json=block.lstrip().startswith(b'{')
                 if is_json and size<=8*1024*1024:json_blocks.append(block)
                 prefix=(prefix+block[:128])[:128];remaining-=len(block)
             if child.stdout.read(1)!=b'\n': raise ValueError('OBJECT_AUDIT_INCOMPLETE')
+            if header[1]==b'tree':
+                for mode in _tree_modes(b''.join(tree_blocks),len(oid)//2):
+                    if mode not in (b'100644',b'100755',b'40000',b'040000'):
+                        findings.append(dict(rule='NON_REGULAR_GIT_ENTRY',tree_sha=oid.decode()))
             if header[1]!=b'blob':continue
             blobs+=1;rule=content_rule(prefix)
             if not rule and is_json:rule=json_rule(b''.join(json_blocks)) if size<=8*1024*1024 else 'OVERSIZED_JSON_REQUIRES_REVIEW'

@@ -74,7 +74,12 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert workflow.index('python tools/windows_distribution_binding_review.py') < workflow.index('Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json')
     assert workflow.index('Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json') < workflow.index(envelope_create)
     assert workflow.index(envelope_create) < workflow.index(envelope_verify)
-    assert workflow.index(envelope_verify) < workflow.index('name: Upload distribution with source and checksum manifest')
+    exact_set='name: Validate exact installer upload set'
+    assert exact_set in workflow
+    assert "Get-ChildItem release -File -Filter 'NexusOperative-Setup-*.exe'" in workflow
+    assert '$installers.Count -ne 1 -or $installers[0].FullName -cne $expected' in workflow
+    assert workflow.index(envelope_verify) < workflow.index(exact_set)
+    assert workflow.index(exact_set) < workflow.index('name: Upload distribution with source and checksum manifest')
     assert 'NexusOperative-Standalone-Windows' not in workflow
     assert 'name: Upload standalone EXE' not in workflow
     assert 'NexusOperative-Windows-Installer' not in workflow

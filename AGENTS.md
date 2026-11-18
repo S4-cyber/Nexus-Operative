@@ -3,6 +3,49 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.340 provider-envelope snapshot and price bounds
+
+Public ticker parsing and paper-forward quote admission now share a finite
+inclusive `1e-18` through `1e12` price envelope before float publication,
+cache sharing, retained evidence or modeled entry arithmetic. Extreme finite
+provider values therefore fail closed instead of underflowing, overflowing or
+reaching order arithmetic. Supplied Activity SSE link review now preflights the
+exact account before event access and accepts only exact built-in containers,
+keys and scalar fields into one detached validated snapshot. Polymorphic or
+changing inputs cannot present different budget and normalization views, and
+the installed checkpoint rejects them before provider I/O or cursor storage.
+
+The exact candidate passed 6,398 tests with 2 platform skips and two dependency
+warnings in 922.38 seconds. The formerly stale-evidence failure scope passed
+400 tests after fresh evidence generation. All sixteen bounded profiles passed;
+saved-evidence verification matched 415 source files /
+`df56c9a9f6b2861abe0f07c72d4256b4adeca7989541e40576a347d2ec5debc3`,
+with report SHA-256
+`4ef56553c26d6f40f15fe665ef79b4edbc3afe015ad81a766285df9b2531ae6d`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.340 wheel SHA-256 is
+`a2a45176980e22ecf068c7175eb7f6f26f7a2312ba6c2d3af01d67da1c5faba8`.
+The final public-artifact audit covered 1,077 paths / 109,144,946 bytes with
+zero findings; the 4,414-line introduced high-confidence credential scan also
+found none. Local Gitleaks was unavailable, so fresh hosted checksum-pinned
+Gitleaks remains mandatory.
+
+PR #56 exact parent `41eba7a3607ca52798d3ae00b8e448af195ff1a7`
+has passed hosted public security/Gitleaks, browser-help and saved-evidence
+jobs. Its complete Windows regression is still running and is not claimed as
+passed. Fresh exact-head hosted jobs remain mandatory for this increment; the
+push/manual Windows EXE/installer/distribution workflow remains undispatched.
+
+This is injected local M7/M8 boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.339 paper protocol exact-type admission
 
 Three compatible paper-path admission seams now fail closed before comparison,

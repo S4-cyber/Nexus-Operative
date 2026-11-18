@@ -19,7 +19,7 @@ from decimal import Decimal, ROUND_DOWN
 from pathlib import Path
 from nexus.durable_orders import gateway
 from nexus.feed_guard import FeedGuard
-from nexus.public_data import read_ticker
+from nexus.public_data import PUBLIC_PRICE_MAX, PUBLIC_PRICE_MIN, read_ticker
 from nexus.tier_permissions import require_entry, TIERS
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
@@ -62,7 +62,10 @@ def _require_quote(quote):
     for field in ('bid','ask','last'):
         value=quote[field]
         if (type(value) not in (int,float) or
-                (type(value) is float and not math.isfinite(value)) or value<=0):
+                (type(value) is float and not math.isfinite(value))):
+            raise ValueError('INVALID_FORWARD_QUOTE')
+        numeric=Decimal(value) if type(value) is int else Decimal(str(value))
+        if not PUBLIC_PRICE_MIN <= numeric <= PUBLIC_PRICE_MAX:
             raise ValueError('INVALID_FORWARD_QUOTE')
     received=quote['received_at']
     if (type(received) not in (int,float) or

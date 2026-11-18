@@ -19,6 +19,18 @@ def test_stale_crossed_and_future_quotes_rejected():
     with pytest.raises(ValueError):parse_ticker("BTC-USD",payload(bid="110",ask="100"),received=NOW)
     with pytest.raises(ValueError):parse_ticker("BTC-USD",payload(seconds=10),received=NOW)
 
+
+@pytest.mark.parametrize(('field','value'),[
+    ('bid','1e10000'),('ask','1e10000'),('price','1e10000'),
+    ('bid','1e-10000'),('ask','1e-10000'),('price','1e-10000'),
+])
+def test_price_envelope_rejects_float_overflow_and_underflow(field,value):
+    response=payload();response[field]=value
+    with pytest.raises(ValueError,match='Incomplete or invalid public quote'):
+        parse_ticker('BTC-USD',response,received=NOW)
+    with pytest.raises(ValueError,match='Public market quote unavailable or invalid'):
+        read_ticker('BTC-USD',fetch=lambda _:response,now=NOW)
+
 def test_product_allowlist_prevents_ssrf():
     called=[]
     def fetch(url):

@@ -23,6 +23,8 @@ _flights={}
 WAIT_SECONDS=5
 CLOCK_TOLERANCE_SECONDS=1
 _ERROR='Public market quote unavailable or invalid'
+PUBLIC_PRICE_MIN=Decimal('1e-18')
+PUBLIC_PRICE_MAX=Decimal('1e12')
 
 def _new_stats():
     return dict(requests=0,cache_hits=0,shared_waits=0,shared_returns=0,
@@ -88,8 +90,9 @@ def _value(raw):
         value=Decimal(str(raw))
     except (TypeError,ValueError,InvalidOperation) as exc:
         raise ValueError("Market response contains invalid price") from exc
-    if not value.is_finite() or value<=0:
-        raise ValueError("Market response contains nonpositive price")
+    if (not value.is_finite() or
+            not PUBLIC_PRICE_MIN <= value <= PUBLIC_PRICE_MAX):
+        raise ValueError("Market response contains out-of-range price")
     return value
 
 def parse_ticker(product,payload,received=None):

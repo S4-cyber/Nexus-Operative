@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.339'
+REVISION = '0.340.340'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1109,6 +1109,14 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; supplied Activity SSE reconnect review now requires exact built-in persisted and since cursors before transcript normalization, preventing equality-forging cursor subclasses from reporting exact reuse or forward advancement with mismatched cursor digests' if item.id=='M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; public ticker parsing and paper-forward admission now share a finite 1e-18 through 1e12 price envelope before float publication, cache sharing, retained quote evidence or modeled execution, so extreme finite provider values cannot underflow, overflow or reach entry arithmetic' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; supplied Activity SSE link review now preflights the exact account before inspecting events and validates exact built-in list/mapping/key/scalar types into a detached immutable-use snapshot, preventing polymorphic or concurrently changed envelopes from presenting different budget and normalization views; the installed checkpoint rejects such initial evidence before provider IO or cursor storage' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
@@ -1136,7 +1144,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.339 closes three compatible paper-protocol type-confusion seams before durable replay, modeled execution and reconnect evidence. Simulated order identifiers and protocol fields, forward quote mappings/provenance/permission fields and Activity SSE persisted/since cursors now require exact built-in types before comparison, normalization or mutation. Equality-forging order/cursor text and coercible quote strings can no longer poison a durable journal, create a modeled fill or claim exact cursor reuse; rejected quote mappings retain only a fixed invalid-evidence marker. This is injected local M4/M7/M8 boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.340 closes two provider-input admission gaps before public quote publication and supplied Activity SSE normalization. Coinbase public ticker values and paper-forward bid/ask/last fields now share the bounded finite 1e-18 through 1e12 price envelope before float conversion, caching, retained evidence or entry arithmetic. Supplied Activity SSE review preflights the exact account before event inspection and copies exact built-in list/mapping/key/scalar inputs into one validated detached snapshot; polymorphic or changed envelopes cannot present different budget and normalization views, and the installed checkpoint rejects them before provider IO or cursor storage. This is injected local M7/M8 boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

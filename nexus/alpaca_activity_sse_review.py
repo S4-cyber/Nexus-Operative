@@ -43,9 +43,8 @@ def _fail(code):
 
 
 def _signed(value, *, zero=True):
-    if (isinstance(value, bool) or
-            not isinstance(value, (str, int, float, Decimal)) or
-            isinstance(value, str) and len(value) > 64):
+    if (type(value) not in (str, int, float, Decimal) or
+            type(value) is str and len(value) > 64):
         _fail('NUMBER_INVALID')
     try:
         result = Decimal(str(value))
@@ -60,7 +59,7 @@ def _signed(value, *, zero=True):
 
 
 def _day(value):
-    if not isinstance(value, str) or not re.fullmatch(r'\d{4}-\d\d-\d\d', value):
+    if type(value) is not str or not re.fullmatch(r'\d{4}-\d\d-\d\d', value):
         _fail('DATE_INVALID')
     try:
         parsed = date.fromisoformat(value)
@@ -72,7 +71,7 @@ def _day(value):
 
 
 def _uuid_value(value, code='UUID_INVALID'):
-    if not isinstance(value, str) or len(value) > 64:
+    if type(value) is not str or len(value) > 64:
         _fail(code)
     try:
         return _uuid(value)
@@ -81,45 +80,75 @@ def _uuid_value(value, code='UUID_INVALID'):
 
 
 def _budget(events):
-    if not isinstance(events, list) or not 1 <= len(events) <= MAX_EVENTS:
+    if type(events) is not list or not 1 <= len(events) <= MAX_EVENTS:
+        _fail('EVENT_CAP')
+    count=len(events)
+    supplied=tuple(events)
+    if len(supplied)!=count or len(events)!=count:
         _fail('EVENT_CAP')
     total = 0
-    for event in events:
-        if not isinstance(event, dict) or len(event) > MAX_FIELDS:
+    snapshot=[]
+
+    def scalar(key, value):
+        nonlocal total
+        if (type(key) is not str or len(key) > 64 or
+                value is not None and type(value) not in
+                (str, int, float, bool, Decimal)):
+            _fail('FIELD_INVALID')
+        if type(value) is int and value.bit_length() > 256:
+            _fail('FIELD_INVALID')
+        if type(value) in (int, float, Decimal):
+            try:
+                numeric = Decimal(str(value))
+            except (InvalidOperation, ValueError, TypeError):
+                _fail('FIELD_INVALID')
+            if not numeric.is_finite() or numeric.copy_abs() > Decimal('1e12'):
+                _fail('FIELD_INVALID')
+        rendered = '' if value is None else str(value)
+        try:
+            size = len(rendered.encode('utf-8'))
+        except UnicodeEncodeError:
+            _fail('FIELD_INVALID')
+        if size > MAX_FIELD_BYTES:
+            _fail('FIELD_CAP')
+        total += len(key.encode('utf-8')) + size + 8
+        if total > MAX_INPUT_BYTES:
+            _fail('INPUT_BYTE_CAP')
+
+    for event in supplied:
+        if type(event) is not dict or len(event) > MAX_FIELDS:
             _fail('EVENT_SHAPE')
-        for key, value in event.items():
-            if not isinstance(key, str) or len(key) > 64:
+        try:
+            fields=tuple(event.items())
+        except RuntimeError:
+            _fail('EVENT_SHAPE')
+        if len(fields)!=len(event):
+            _fail('EVENT_SHAPE')
+        copied={}
+        for key, value in fields:
+            if type(key) is not str or len(key) > 64:
                 _fail('EVENT_SHAPE')
             if key == 'details':
-                if not isinstance(value, dict) or len(value) > MAX_DETAILS_FIELDS:
+                if type(value) is not dict or len(value) > MAX_DETAILS_FIELDS:
                     _fail('DETAILS_SHAPE')
-                values = value.items()
-            else:
-                values = ((key, value),)
-            for nested_key, nested_value in values:
-                if (not isinstance(nested_key, str) or len(nested_key) > 64 or
-                        nested_value is not None and type(nested_value) not in
-                        (str, int, float, bool, Decimal)):
-                    _fail('FIELD_INVALID')
-                if type(nested_value) is int and nested_value.bit_length() > 256:
-                    _fail('FIELD_INVALID')
-                if type(nested_value) in (int, float, Decimal):
-                    try:
-                        numeric = Decimal(str(nested_value))
-                    except (InvalidOperation, ValueError, TypeError):
-                        _fail('FIELD_INVALID')
-                    if not numeric.is_finite() or numeric.copy_abs() > Decimal('1e12'):
-                        _fail('FIELD_INVALID')
-                rendered = '' if nested_value is None else str(nested_value)
                 try:
-                    size = len(rendered.encode('utf-8'))
-                except UnicodeEncodeError:
-                    _fail('FIELD_INVALID')
-                if size > MAX_FIELD_BYTES:
-                    _fail('FIELD_CAP')
-                total += len(nested_key.encode('utf-8')) + size + 8
-                if total > MAX_INPUT_BYTES:
-                    _fail('INPUT_BYTE_CAP')
+                    values=tuple(value.items())
+                except RuntimeError:
+                    _fail('DETAILS_SHAPE')
+                if len(values)!=len(value):
+                    _fail('DETAILS_SHAPE')
+                details={}
+                for nested_key,nested_value in values:
+                    scalar(nested_key,nested_value)
+                    details[nested_key]=nested_value
+                copied[key]=details
+            else:
+                scalar(key,value)
+                copied[key]=value
+        snapshot.append(copied)
+    if events!=snapshot:
+        _fail('EVENT_SHAPE')
+    return snapshot
 
 
 def _common(event, account):
@@ -131,7 +160,7 @@ def _common(event, account):
     if _uuid_value(event['account_id']) != account:
         _fail('ACCOUNT_DISAGREEMENT')
     event_id = event['event_id']
-    if not isinstance(event_id, str) or ULID.fullmatch(event_id) is None:
+    if type(event_id) is not str or ULID.fullmatch(event_id) is None:
         _fail('EVENT_ID_INVALID')
     if event.get('previous_id') is not None:
         _fail('CORRECTION_OR_BUST_REQUIRES_REVIEW')
@@ -164,7 +193,7 @@ def _trade(event, common):
             details['order_status'] not in ('filled', 'partially_filled'):
         _fail('TRADE_PRODUCT_OR_STATE_SCOPE')
     client = details['client_order_id']
-    if not isinstance(client, str) or CLIENT_ID.fullmatch(client) is None:
+    if type(client) is not str or CLIENT_ID.fullmatch(client) is None:
         _fail('CLIENT_ID_INVALID')
     qty = _signed(event['qty'], zero=False)
     price = _signed(event['price'], zero=False)
@@ -201,11 +230,11 @@ def _fee(event, common):
 
 def _normalize(events, *, expected_account_id):
     """Return private canonical rows after bounded envelope validation."""
-    _budget(events)
     try:
         account = _uuid_value(expected_account_id, 'ACCOUNT_INVALID')
     except (ValueError, TypeError, AttributeError):
         _fail('ACCOUNT_INVALID')
+    events=_budget(events)
     normalized = []
     event_ids = set()
     ref_ids = set()

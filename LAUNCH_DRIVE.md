@@ -1,5 +1,34 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.344 interruption-token and Windows distribution boundaries
+
+Broker lookup, paper-read pacing and retained activity acceptance now reject
+non-exact-string interruption tokens and heads before database or filesystem
+access. Equality-forging string subclasses cannot persist forged continuity
+state or corrupt cold replay. Windows packaging now has exactly one
+executable-bearing artifact, and that artifact binds both executables to the
+checksum manifest and distribution-binding review.
+
+The exact candidate passed 6,431 tests with 2 platform skips and two dependency
+warnings in 964.66 seconds. Focused validation passed 162 tests and the
+synchronized affected/version/roadmap scope passed 173. All sixteen bounded
+profiles passed. Saved evidence matched 415 source files /
+`3ee944a6f5a706d3fd549886fc4414fd7a8cbdf081d8b11df70fa2f73d02a893`;
+`validation/release_trials_0_340_344.json` SHA-256 is
+`15fbefb00c8d1dbf8aa6143e404f2bc85c9cc973a516929fbfcba8e97947c0b4`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and fourteen controller smokes passed. The 164-member wheel SHA-256 is
+`9bbd3b5e389e7e80dacc066c374d05140fd1fb978f951ce6f62403f2c8cdf193`.
+
+Fresh exact-head hosted gates remain mandatory, and the push/manual native
+installer/distribution lane remains undispatched. This increment accepts no
+broker, sustained-market, native Windows, funding/live/cloud or release gate.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30-45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.343 halt-exit, reconciliation-head and Windows artifact boundaries
 
 PaperEngine drawdown halts now preserve validated risk-reducing closes while

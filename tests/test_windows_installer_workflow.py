@@ -70,9 +70,22 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert workflow.index('python tools/windows_distribution_binding_review.py') < workflow.index('name: Upload distribution with source and checksum manifest')
     assert 'NexusOperative-Standalone-Windows' not in workflow
     assert 'name: Upload standalone EXE' not in workflow
-    distribution_upload=workflow[workflow.index('name: Upload distribution with source and checksum manifest'):]
+    assert 'NexusOperative-Windows-Installer' not in workflow
+    upload_blocks=re.findall(
+        r'(?ms)^      - (?:name: [^\n]+\n        )?uses: actions/upload-artifact@[^\n]+\n.*?(?=^      - |\Z)',
+        workflow,
+    )
+    executable_uploads=[
+        block for block in upload_blocks
+        if 'release/NexusOperative.exe' in block
+        or 'release/NexusOperative-Setup-*.exe' in block
+    ]
+    assert len(executable_uploads)==1
+    distribution_upload=executable_uploads[0]
     assert 'release/NexusOperative.exe' in distribution_upload
+    assert 'release/NexusOperative-Setup-*.exe' in distribution_upload
     assert 'release/artifact-manifest.json' in distribution_upload
+    assert 'release/distribution-binding-review.json' in distribution_upload
     assert 'name: Preserve installer acceptance evidence\n        if: always()' in workflow
     assert '${{ runner.temp }}/nexus-installer-evidence' in workflow
     assert workflow.count(PRIOR_RECOVERY_FIXTURE_COMMIT)==2

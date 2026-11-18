@@ -234,7 +234,7 @@ def _transaction(db):
 
 
 def _head(value):
-    if not isinstance(value,str) or re.fullmatch(r'[0-9a-f]{64}',value) is None:_fail('HEAD_INVALID')
+    if type(value) is not str or re.fullmatch(r'[0-9a-f]{64}',value) is None:_fail('HEAD_INVALID')
     return value
 
 
@@ -483,10 +483,10 @@ class PaperActivityAcceptanceStore:
         return tuple(dict(scope) for scope in state['record_scopes'])
 
     def bind(self,*,pacing_head,retention_head,pacing_sessions,retained_batches):
-        binding=self._capture_binding();bound_path=binding[0]
-        bound_account=binding[2]
         pacing_head=_head(pacing_head);retention_head=_head(retention_head)
         if any(type(v) is not int or v<0 for v in (pacing_sessions,retained_batches)):_fail('BASELINE_INVALID')
+        binding=self._capture_binding();bound_path=binding[0]
+        bound_account=binding[2]
         self._require_binding(binding)
         baseline=dict(schema=SCHEMA,account_sha256=bound_account,
             baseline_pacing_head_sha256=pacing_head,baseline_retention_head_sha256=retention_head,
@@ -560,8 +560,9 @@ class PaperActivityAcceptanceStore:
         return second
 
     def append(self,scope,*,admission,precommit_check=lambda:True):
+        scope=self._scope(scope)
         binding=self._capture_binding();bound_path=binding[0]
-        scope=self._scope(scope);self._require_binding(binding)
+        self._require_binding(binding)
         record_sha=sha(scope)
         def require_binding():self._require_binding(binding)
         self._check();require_binding()

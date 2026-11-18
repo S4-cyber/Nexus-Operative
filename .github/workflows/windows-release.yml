@@ -204,10 +204,4 @@ jobs:
           path: ${{ runner.temp }}/nexus-installer-evidence
           if-no-files-found: warn
           retention-days: 30
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: NexusOperative-Windows-Installer
-          path: release/NexusOperative-Setup-*.exe
-          if-no-files-found: error
-          retention-days: 7
 

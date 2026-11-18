@@ -49,6 +49,21 @@ def test_unreviewed_stale_or_mismatched_resolution_cannot_change_state(journal,c
     assert journal.recovery()==before
 
 
+@pytest.mark.parametrize('field',['token','expected_head'])
+def test_equality_forging_review_references_fail_before_storage_access(
+        journal,monkeypatch,field):
+    class ForgedReference(str):
+        def __eq__(self,other):return True
+        def __ne__(self,other):return False
+    review=pending(journal);before=journal.recovery();raw=journal.path.read_bytes()
+    with monkeypatch.context() as patch:
+        patch.setattr(journal,'_connect',lambda *args,**kwargs:(_ for _ in ()).throw(AssertionError('storage accessed')))
+        with pytest.raises(ValueError,match='INVALID_BROKER_LOOKUP_REVIEW_REFERENCE'):
+            interrupt(journal,review,**{field:ForgedReference('f'*64)})
+    assert journal.path.read_bytes()==raw
+    assert module.BrokerRequestJournal(journal.path,ACCOUNT).recovery()==before
+
+
 def test_interruption_preserves_original_uncertainty_and_consumed_attempt_and_adds_cooldown(journal):
     review=pending(journal);result=interrupt(journal,review)
     assert result['interruption_recorded'] and not result['lookup']['pending']

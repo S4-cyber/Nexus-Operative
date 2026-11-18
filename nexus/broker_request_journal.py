@@ -1043,7 +1043,7 @@ class BrokerRequestJournal:
         self._identity(client_order_id);lookup.clock(evaluated_at)
         if confirm_interrupted is not True:raise ValueError('BROKER_LOOKUP_INTERRUPTION_CONFIRMATION_REQUIRED')
         for value in (token,expected_head):
-            if not isinstance(value,str) or not re.fullmatch(r'[0-9a-f]{64}',value):
+            if type(value) is not str or not re.fullmatch(r'[0-9a-f]{64}',value):
                 raise ValueError('INVALID_BROKER_LOOKUP_REVIEW_REFERENCE')
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         body=dict(client_order_id=client_order_id,token=token,expected_head=expected_head,

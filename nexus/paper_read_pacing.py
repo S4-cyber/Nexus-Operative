@@ -872,7 +872,7 @@ class PaperReadPacing:
         """
         if confirm_interrupted is not True: _fail('CONFIRMATION_REQUIRED')
         if _uuid(expected_account_id) != self.account: _fail('ACCOUNT_DISAGREEMENT')
-        if any(not isinstance(v, str) or re.fullmatch(r'[0-9a-f]{64}', v) is None for v in (token, expected_head)):
+        if any(type(v) is not str or re.fullmatch(r'[0-9a-f]{64}', v) is None for v in (token, expected_head)):
             _fail('REVIEW_REFERENCE_INVALID')
         self._path_check()
         if not self.path.exists(): _fail('BINDING_MISSING')

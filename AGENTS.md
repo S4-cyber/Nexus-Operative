@@ -3,6 +3,40 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.344 interruption-token and Windows distribution boundaries
+
+Broker lookup interruption tokens and expected heads, paper-read pacing tokens,
+and retained paper-activity heads now require exact built-in lowercase 64-hex
+strings before storage access. Equality-forging string subclasses therefore
+cannot commit forged interruption state, bypass stale-head fences, create a
+retained store, or make a valid journal unreplayable. The Windows release
+workflow no longer publishes a second installer-only artifact: its single
+executable-bearing upload contains both executables together with the checksum
+manifest and distribution-binding review.
+
+The exact candidate passed 6,431 tests with 2 platform skips and two dependency
+warnings in 964.66 seconds. Focused validation passed 162 tests and the
+synchronized affected/version/roadmap scope passed 173. All sixteen bounded
+profiles passed. Saved-evidence verification matched 415 source files /
+`3ee944a6f5a706d3fd549886fc4414fd7a8cbdf081d8b11df70fa2f73d02a893`;
+report SHA-256 is
+`15fbefb00c8d1dbf8aa6143e404f2bc85c9cc973a516929fbfcba8e97947c0b4`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.344 wheel
+SHA-256 is
+`9bbd3b5e389e7e80dacc066c374d05140fd1fb978f951ce6f62403f2c8cdf193`.
+
+Fresh exact-head hosted security, saved-evidence, browser/help and complete
+regression gates remain mandatory after publication. The push/manual native
+Windows installer lane remains undispatched. This is injected local
+M3/M8/M9 boundary evidence, not broker-paper acceptance, genuine-feed
+sustained-trial realism, native Windows acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. No UI control or
+editable parameter changed. Engagement remains OFF by default; limits, account
+checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation stays
+weighted 38% (30-45%, low confidence), with 0/9 stages independently accepted.
+
 ## v0.340.343 halt-exit, reconciliation-head and Windows artifact boundaries
 
 Three compatible M1/M3/M4/M8/M9 seams now fail closed. A genuine drawdown halt

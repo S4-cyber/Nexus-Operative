@@ -64,6 +64,24 @@ def test_scope_and_reference_fences_preserve_original_history(gate, field, value
     assert gate.inspect() == before
 
 
+@pytest.mark.parametrize('field',['token','expected_head'])
+def test_equality_forging_references_fail_before_storage_access(
+        gate,monkeypatch,field):
+    class ForgedReference(str):
+        def __eq__(self,other):return True
+        def __ne__(self,other):return False
+    pending(gate);state=gate.inspect();raw=gate.path.read_bytes()
+    args=dict(token=state['pending_token'],expected_head=state['head_sha256'],
+        expected_account_id=ACCOUNT,confirm_interrupted=True,admission=lambda:1001)
+    args[field]=ForgedReference('f'*64)
+    with monkeypatch.context() as patch:
+        patch.setattr(gate,'_connect',lambda *args,**kwargs:(_ for _ in ()).throw(AssertionError('storage accessed')))
+        with pytest.raises(ValueError,match='REVIEW_REFERENCE_INVALID'):
+            gate.interrupt(**args)
+    assert gate.path.read_bytes()==raw
+    assert policy.PaperReadPacing(gate.path,ACCOUNT).inspect()==state
+
+
 def test_missing_history_not_initialized(gate):
     with pytest.raises(ValueError, match='BINDING_MISSING'):
         interrupt(gate, token='1'*64)

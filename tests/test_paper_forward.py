@@ -4,6 +4,27 @@ import pytest
 from nexus.paper_forward import PaperForwardRunner
 from nexus.durable_orders import DurableOrderGateway
 from nexus.tier_permissions import configure
+from nexus import forward_evidence
+
+
+class EqualText(str):
+    __hash__=str.__hash__
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
+class HostileQuote(dict):
+    def get(self,*args,**kwargs):
+        raise AssertionError('hostile mapping inspected')
+
+
+@pytest.mark.parametrize('quote_factory',[
+    lambda:HostileQuote(product='BTC-USD'),
+    lambda:{EqualText('product'):'BTC-USD'},
+])
+def test_quote_evidence_sanitizer_rejects_polymorphic_mappings(quote_factory):
+    assert forward_evidence.sanitize(quote_factory())=={
+        'missing_or_invalid_quote':True}
 
 
 class Clock:
@@ -30,6 +51,41 @@ def warmup(r,c):
         c.now=1000+i*5;c.price=100+i*.1
         outcome=r.single_cycle()
     return outcome
+
+
+def latest_quote(r):
+    with r._read_db() as db:
+        return forward_evidence.review(db,r._session)['points'][-1]['quote']
+
+
+@pytest.mark.parametrize(('field','value'),[
+    ('bid','100'),('ask',True),('last',float('nan')),
+    ('received_at','1000'),('received_at',10**1000),
+    ('provider',EqualText('coinbase_exchange_public')),
+    ('product',EqualText('BTC-USD')),
+    ('exchange_time',EqualText('1970-01-01T00:16:40+00:00')),
+    ('read_only',1),('orders_allowed',0),
+])
+def test_noncanonical_quote_types_are_storage_silent_and_orderless(
+        tmp_path,monkeypatch,field,value):
+    r,g,c=setup(tmp_path,monkeypatch);quote=c.quote('BTC-USD');quote[field]=value
+    r.fetcher=lambda product:quote
+    assert r.single_cycle()['reason']=='QUOTE_UNAVAILABLE_OR_INVALID'
+    assert g.recovery_report()['orders']==[]
+    assert latest_quote(r)=={'missing_or_invalid_quote':True}
+
+
+@pytest.mark.parametrize('quote_factory',[
+    lambda quote:HostileQuote(quote),
+    lambda quote:{**quote,EqualText('private_key'):'PRIVATE_VALUE'},
+])
+def test_noncanonical_quote_mappings_fail_without_polymorphic_access(
+        tmp_path,monkeypatch,quote_factory):
+    r,g,c=setup(tmp_path,monkeypatch);quote=quote_factory(c.quote('BTC-USD'))
+    r.fetcher=lambda product:quote
+    assert r.single_cycle()['reason']=='QUOTE_UNAVAILABLE_OR_INVALID'
+    assert g.recovery_report()['orders']==[]
+    assert latest_quote(r)=={'missing_or_invalid_quote':True}
 
 
 def test_quote_driven_buy_hold_exit_and_recovery(tmp_path,monkeypatch):

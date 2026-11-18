@@ -1,7 +1,54 @@
+import copy
 import pytest
 from fastapi.testclient import TestClient
 from nexus.app import app
 from nexus.order_gateway import OrderGateway
+
+
+class EqualText(str):
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
+@pytest.mark.parametrize(('field','code'),[
+    ('client_order_id','INVALID_ORDER_ID'),
+    ('product','PRODUCT_NOT_ELIGIBLE_FOR_SIMULATION'),
+    ('side','INVALID_SIDE'),
+    ('provider','UNKNOWN_PROVIDER'),
+    ('tier','UNKNOWN_RISK_TIER'),
+])
+def test_submit_rejects_equality_forging_protocol_text(field,code):
+    gateway=OrderGateway()
+    values=dict(client_order_id='order',product='BTC-USD',side='BUY',
+                notional=10,provider='nexus_local_paper',tier='terrestrial')
+    values[field]=EqualText(values[field])
+    with pytest.raises(ValueError,match='^'+code+'$'):
+        gateway.submit(**values)
+    assert gateway.intents=={}
+
+
+@pytest.mark.parametrize(('field','code'),[
+    ('client_order_id','INVALID_ORDER_ID'),
+    ('event_id','INVALID_EVENT_ID'),
+    ('kind','INVALID_EVENT_KIND'),
+])
+def test_lifecycle_rejects_equality_forging_text_without_mutation(field,code):
+    gateway=OrderGateway();gateway.submit('order','BTC-USD','BUY',10)
+    before=copy.deepcopy(gateway.intents)
+    values=dict(client_order_id='order',event_id='event',sequence=1,
+                kind='FILL',fill_notional=10)
+    values[field]=EqualText(values[field])
+    with pytest.raises(ValueError,match='^'+code+'$'):
+        gateway.simulate_event(**values)
+    assert gateway.intents==before
+
+
+def test_cancel_rejects_equality_forging_order_id_without_mutation():
+    gateway=OrderGateway();gateway.submit('order','BTC-USD','BUY',10)
+    before=copy.deepcopy(gateway.intents)
+    with pytest.raises(ValueError,match='^INVALID_ORDER_ID$'):
+        gateway.cancel(EqualText('order'))
+    assert gateway.intents==before
 
 def test_idempotent_order_intent_and_no_broker_calls():
     gateway=OrderGateway()

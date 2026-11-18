@@ -42,6 +42,34 @@ COMMIT_DURABILITY_CHECKS=('commit_durability_failure_retained_for_review',
 COMMIT_DURABILITY_PUBLIC_KEYS=frozenset(('source','passed',
     *COMMIT_DURABILITY_CHECKS,'actual_provider_access','broker_connected',
     'live_orders_enabled','sustained_forward_accepted','release_approved'))
+QUOTE_FIELDS=frozenset(('provider','product','bid','ask','last','received_at',
+    'exchange_time','read_only','orders_allowed'))
+
+
+def _require_quote(quote):
+    """Require the exact production-adapter output types before any coercion."""
+    if (type(quote) is not dict or
+            any(type(key) is not str for key in quote) or
+            not QUOTE_FIELDS.issubset(quote)):
+        raise ValueError('INVALID_FORWARD_QUOTE')
+    if (type(quote['provider']) is not str or
+            quote['provider']!='coinbase_exchange_public' or
+            type(quote['product']) is not str or quote['product']!=PRODUCT or
+            type(quote['exchange_time']) is not str or
+            type(quote['read_only']) is not bool or quote['read_only'] is not True or
+            type(quote['orders_allowed']) is not bool or quote['orders_allowed'] is not False):
+        raise ValueError('INVALID_FORWARD_QUOTE')
+    for field in ('bid','ask','last'):
+        value=quote[field]
+        if (type(value) not in (int,float) or
+                (type(value) is float and not math.isfinite(value)) or value<=0):
+            raise ValueError('INVALID_FORWARD_QUOTE')
+    received=quote['received_at']
+    if (type(received) not in (int,float) or
+            (type(received) is float and not math.isfinite(received)) or
+            not 0<=received<MAX_WALL_CLOCK_SECONDS):
+        raise ValueError('INVALID_FORWARD_QUOTE')
+    return quote
 
 
 def _database_busy(error):
@@ -462,6 +490,7 @@ class PaperForwardRunner:
             if report['capacity']['ordinary_commands_remaining']<required_writes or report['capacity']['intents_remaining']<required_ids or not report['capacity']['new_intents_allowed']:
                 self._stop.set();return self._record('PAUSED','JOURNAL_OR_ID_CAPACITY_VETO')
             quote=None
+            admitted_quote=None
             try:
                 self._require_ownership()
                 quote=self.fetcher(PRODUCT)
@@ -469,21 +498,19 @@ class PaperForwardRunner:
                 clock_reason=self._clock_check()
                 if clock_reason:return self._pause_clock(clock_reason)
                 now=self._clock_anchor[0]
-                if not isinstance(quote,dict):raise ValueError('MISSING_FORWARD_QUOTE')
+                quote=_require_quote(quote);admitted_quote=quote
                 if self._intake_stopped():return dict(decision='HOLD',reason='STOPPED_DURING_FETCH')
                 feed=self._guard.evaluate(quote,now)
-                if quote.get('product')!=PRODUCT:raise ValueError('QUOTE_PRODUCT_MISMATCH')
-                if not isinstance(quote.get('exchange_time'),str):raise ValueError('INVALID_EXCHANGE_TIMESTAMP')
                 exchange=datetime.fromisoformat(quote['exchange_time'].replace('Z','+00:00'))
                 if exchange.tzinfo is None:raise ValueError('QUOTE_TIMEZONE_MISSING')
                 stamp=exchange.timestamp()
-                received=float(quote['received_at'])
+                received=quote['received_at']
                 if feed['decision']=='VETO' or not 0<=now-received<=self._policy['receive_age_seconds'] or not 0<=now-stamp<=self._policy['exchange_age_seconds']:
                     raise ValueError('STALE_OR_UNVERIFIED_FORWARD_QUOTE')
                 bid=Decimal(str(quote['bid']));ask=Decimal(str(quote['ask']))
                 if not bid.is_finite() or not ask.is_finite():raise ValueError('INVALID_QUOTE')
             except (ValueError,KeyError,TypeError,OSError,TimeoutError) as exc:
-                self._record_quote(quote,False,type(exc).__name__)
+                self._record_quote(admitted_quote,False,type(exc).__name__)
                 self._prices.clear();self._last_rank=0
                 self._failures+=1;self._error=type(exc).__name__
                 if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()

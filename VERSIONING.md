@@ -1,5 +1,41 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.339 paper protocol exact-type admission
+
+**Current development build: 0.340.339 (pre-release).** Simulated-order
+protocol fields, paper-forward quote inputs and supplied Activity SSE reconnect
+cursors now reject non-built-in types before comparison, durable mutation,
+modeled execution or transcript normalization. Invalid quote evidence retains
+only a fixed marker; no attacker-provided raw mapping is persisted.
+
+The exact candidate passed 6,376 tests with 2 platform skips and two dependency
+warnings in 899.83 seconds. All 16 bounded offline profiles passed and saved
+evidence verified against 415 source files /
+`f70fa96bd59c6d73f0f500a64980407ed308eab73401a8565ca3ee95f1207aad`.
+The report SHA-256 is
+`963ee52295d76a0d2f8446399d37f21069e9b34be3773ad206a7911f7f6b3f25`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`ba7b97b31007c623299f1f9f5c906d7d4bfb80a0e72b72a71e4c51ad05d6c58c`.
+The staged-tree artifact audit covered 1,076 paths / 108,940,770 bytes with
+zero findings; the 4,517-line introduced high-confidence credential scan also
+found none. Hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #55 parent security/Gitleaks, browser-help and saved-evidence jobs passed for
+exact commit `cdbdaa432d2596f2ab8a369a49dec7934462063f`; its complete
+Windows regression remains running and is not promoted to success. This
+candidate requires fresh exact-head hosted checks. Native Windows installer and
+ordinary-user acceptance remain separate undispatched gates.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30–45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
 ## v0.340.338 tier-entry admission boundary
 
 **Current development build: 0.340.338 (pre-release).** Tier-entry permission

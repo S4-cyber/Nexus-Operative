@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.338'
+REVISION = '0.340.339'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1097,6 +1097,18 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; simulated tier-entry permission now preflights one exact built-in tier and a finite strictly positive exact built-in integer, float or Decimal notional before settings/permission reads, while durable and forward callers convert their already validated stored values to Decimal; Boolean, stringified, non-finite, zero, negative and equality-forging inputs fail storage-silent' if item.id=='M3' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; durable simulated-order admission now requires exact built-in order/product/side/provider/tier/event identifiers and event kinds before lookup, comparison or mutation, so equality-forging text cannot persist a command that later poisons journal replay' if item.id=='M4' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the opt-in paper forward runner now admits only an exact built-in public-quote mapping with exact provenance/permission text and booleans plus finite positive built-in prices and a finite built-in receipt clock before feed evaluation or modeled order creation; rejected polymorphic inputs retain only a fixed invalid-evidence marker' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; supplied Activity SSE reconnect review now requires exact built-in persisted and since cursors before transcript normalization, preventing equality-forging cursor subclasses from reporting exact reuse or forward advancement with mismatched cursor digests' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
@@ -1124,7 +1136,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.338 closes an M3 bounded-risk tier-entry admission seam. Tier permission now requires one exact built-in tier and a finite strictly positive exact built-in integer, float or Decimal notional before any settings or permission read. Boolean, stringified, non-finite, zero, negative and equality-forging inputs fail with fixed diagnostics and create no settings state; durable and forward callers pass validated Decimal values. This is injected local risk-boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.339 closes three compatible paper-protocol type-confusion seams before durable replay, modeled execution and reconnect evidence. Simulated order identifiers and protocol fields, forward quote mappings/provenance/permission fields and Activity SSE persisted/since cursors now require exact built-in types before comparison, normalization or mutation. Equality-forging order/cursor text and coercible quote strings can no longer poison a durable journal, create a modeled fill or claim exact cursor reuse; rejected quote mappings retain only a fixed invalid-evidence marker. This is injected local M4/M7/M8 boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

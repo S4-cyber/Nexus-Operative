@@ -7,6 +7,23 @@ from nexus.durable_orders import DurableOrderGateway
 from nexus.order_accounting import order_id_fingerprint, retired_id_set_sha256
 
 
+class EqualText(str):
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
+def test_type_confused_protocol_text_cannot_poison_durable_replay(tmp_path):
+    path=tmp_path/'orders.sqlite3';gateway=DurableOrderGateway(path)
+    gateway.submit('order','BTC-USD','BUY',25)
+    before=gateway.recovery_report()
+    with pytest.raises(ValueError,match='PRODUCT_NOT_ELIGIBLE_FOR_SIMULATION'):
+        gateway.submit('poison',EqualText('PRIVATE-PRODUCT'),'BUY',25)
+    with pytest.raises(ValueError,match='INVALID_EVENT_KIND'):
+        gateway.simulate_event('order','event',1,EqualText('PRIVATE-KIND'),25)
+    assert gateway.recovery_report()==before
+    assert DurableOrderGateway(path).recovery_report()==before
+
+
 def test_restart_preserves_partial_fees_cancel_and_idempotency(tmp_path):
     path = tmp_path/'orders.sqlite3'
     g = DurableOrderGateway(path)

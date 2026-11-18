@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.340'
+REVISION = '0.340.341'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1117,6 +1117,22 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; supplied Activity SSE link review now preflights the exact account before inspecting events and validates exact built-in list/mapping/key/scalar types into a detached immutable-use snapshot, preventing polymorphic or concurrently changed envelopes from presenting different budget and normalization views; the installed checkpoint rejects such initial evidence before provider IO or cursor storage' if item.id=='M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct PaperEngine capital, fee, cost, notional, market and mark values now share a finite 1e-18 through 1e12 envelope before risk-state mutation, preventing extreme finite values from producing zero/infinite public floats or corrupting cash, position and history state' if item.id=='M3' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; public quote-bundle summaries now admit one exact built-in review mapping/schema and capture exact text/count scalars once, preventing stateful mapping rereads or equality-forging text from moving private content into the public diagnostic' if item.id=='M4' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; public ticker product selection now requires an exact built-in allowlisted product before cache, flight, transport or URL construction, preventing equality-forging strings from changing the hard-coded public path' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; Activity SSE checkpoint initial and replay events now pass exact envelope validation into a detached snapshot before any caller-controlled copy protocol, so deepcopy laundering cannot create accepted evidence or reach provider IO and cursor storage' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
@@ -1144,7 +1160,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.340 closes two provider-input admission gaps before public quote publication and supplied Activity SSE normalization. Coinbase public ticker values and paper-forward bid/ask/last fields now share the bounded finite 1e-18 through 1e12 price envelope before float conversion, caching, retained evidence or entry arithmetic. Supplied Activity SSE review preflights the exact account before event inspection and copies exact built-in list/mapping/key/scalar inputs into one validated detached snapshot; polymorphic or changed envelopes cannot present different budget and normalization views, and the installed checkpoint rejects them before provider IO or cursor storage. This is injected local M7/M8 boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.341 closes four compatible direct-input boundaries before simulated risk mutation, public-path construction, public diagnostic output and Activity SSE checkpoint copying. PaperEngine values use a finite 1e-18 through 1e12 envelope before cash, position, history, peak or halt mutation. Public ticker products require exact built-in allowlisted text before cache, transport or URL construction. Public quote-bundle summaries validate one exact mapping/schema and capture exact text/count values once. Activity SSE checkpoint events pass exact envelope validation into a detached snapshot before any caller-controlled copy protocol. This is injected local M3/M4/M7/M8 boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

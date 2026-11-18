@@ -15,11 +15,15 @@ MAX_DRAWDOWN=D("0.05")
 COST_BPS=D("11")  # half-spread + modeled slippage per side
 FEE=D("0.01")
 SUPPORTED={"SPY","QQQ","IWM","BTC/USD","ETH/USD"}
+MIN_BOUNDED_VALUE=D("1e-18")
+MAX_BOUNDED_VALUE=D("1e12")
 
 def positive(n):
     try: v=D(str(n))
     except (InvalidOperation, ValueError, TypeError): raise ValueError("Invalid decimal")
-    if not v.is_finite() or v<=0: raise ValueError("Value must be finite and positive")
+    if (not v.is_finite() or
+            not MIN_BOUNDED_VALUE<=v<=MAX_BOUNDED_VALUE):
+        raise ValueError("Value must be finite, positive and bounded")
     return v
 
 def quote_age_ok(ts,now=None):

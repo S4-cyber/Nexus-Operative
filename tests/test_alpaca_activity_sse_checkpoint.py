@@ -266,6 +266,30 @@ def test_polymorphic_initial_event_is_network_and_storage_silent(tmp_path):
             cursor_store=ActivitySSECursorStore(path,ACCOUNT),opener=opener)
     assert not opener.requests and not path.exists()
 
+@pytest.mark.parametrize('target',('event','account'))
+def test_deepcopy_laundering_is_rejected_before_copy_io_or_storage(
+        tmp_path,target):
+    class LaunderedEvent(dict):
+        copied=False
+        def __deepcopy__(self,memo):
+            self.copied=True
+            return dict(self)
+    class LaunderedAccount:
+        copied=False
+        def __deepcopy__(self,memo):
+            self.copied=True
+            return ACCOUNT
+    path=tmp_path/'cursor.sqlite3';initial,_,raw=segments()
+    hostile=LaunderedEvent(initial[0]) if target=='event' else LaunderedAccount()
+    if target=='event':initial[0]=hostile
+    else:initial[0]['account_id']=hostile
+    opener=Opener(raw)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='INITIAL_EVENTS_INVALID'):
+        run(tmp_path,initial_events=initial,
+            cursor_store=ActivitySSECursorStore(path,ACCOUNT),opener=opener)
+    assert not hostile.copied and not opener.requests and not path.exists()
+
 
 @pytest.mark.parametrize(('field','value'), [
     ('mode', EqualText('foreign-mode')),

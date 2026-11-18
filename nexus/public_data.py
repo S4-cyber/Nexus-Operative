@@ -26,6 +26,11 @@ _ERROR='Public market quote unavailable or invalid'
 PUBLIC_PRICE_MIN=Decimal('1e-18')
 PUBLIC_PRICE_MAX=Decimal('1e12')
 
+def _product(value):
+    if type(value) is not str or value not in PRODUCTS:
+        raise ValueError("Product not on public allowlist")
+    return value
+
 def _new_stats():
     return dict(requests=0,cache_hits=0,shared_waits=0,shared_returns=0,
                 wait_timeouts=0,transport_attempts=0,transport_successes=0,
@@ -96,7 +101,7 @@ def _value(raw):
     return value
 
 def parse_ticker(product,payload,received=None):
-    if product not in PRODUCTS:raise ValueError("Product not on public allowlist")
+    product=_product(product)
     if not isinstance(payload,dict):raise ValueError("Invalid market response")
     received=time.time() if received is None else received
     try:
@@ -119,6 +124,7 @@ def parse_ticker(product,payload,received=None):
         "note":"Public exchange ticker; not a broker entitlement or executable price guarantee."}
 
 def _fetch_default(product):
+    product=_product(product)
     url=BASE+product+'/ticker'
     req=Request(url,headers={"Accept":"application/json","User-Agent":"NexusOperative-PublicMarketReader/1.0"})
     with _opener.open(req,timeout=4) as response:
@@ -130,7 +136,7 @@ def _fetch_default(product):
 
 
 def read_ticker(product,fetch=None,now=None):
-    if product not in PRODUCTS:raise ValueError("Unsupported market product")
+    product=_product(product)
     explicit_now=now is not None
     wall=time.time() if now is None else now
     mono=time.monotonic()

@@ -1,5 +1,42 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.341 direct-input mutation and disclosure boundaries
+
+**Current development build: 0.340.341 (pre-release).** Direct PaperEngine
+values now fail outside a finite `1e-18` through `1e12` envelope before state
+mutation. Public product paths, quote-bundle public summaries and Activity SSE
+checkpoint event copying now require exact built-in envelopes before transport,
+public output or caller-controlled copy hooks.
+
+The exact candidate passed 6,418 tests with 2 platform skips and two dependency
+warnings in 894.98 seconds. All 16 bounded offline profiles passed and saved
+evidence verified against 415 source files /
+`2fe37b377a2cc36a11dbdd8374254137a92fd1616254fe807d56c0050a94553d`.
+The report SHA-256 is
+`78273c0d5e6c5d558581aac9cef29c92a68d4f27da475051504065ff289876d7`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`ed83f6ff980bb40f25c07e01b4b9c93745fa8920620fdd550508e43b5e091160`.
+The final staged-tree artifact audit covered 1,078 paths with zero findings;
+the 4,386-line introduced high-confidence credential scan also found none.
+Local Gitleaks was unavailable, so fresh hosted checksum-pinned Gitleaks
+remains required.
+
+PR #57 parent security/Gitleaks, browser-help and saved-evidence jobs passed for
+exact commit `99bde3cb39f02f04facaa0ae88942bd76dc3b5f0`; its complete
+Windows regression remains running and is not promoted to success. This
+candidate requires fresh exact-head hosted checks. Native Windows installer and
+ordinary-user acceptance remain separate undispatched gates.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
 ## v0.340.340 provider-envelope snapshot and price bounds
 
 **Current development build: 0.340.340 (pre-release).** Public ticker and

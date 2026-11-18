@@ -97,7 +97,8 @@ class PaperEngine:
         return event
 
     def close(self,symbol,market_price,timestamp,marks):
-        if self.halted:raise ValueError("Engine halted")
+        # A latched halt blocks new exposure but must not strand an existing
+        # simulated position. Exit validation and the halt both remain active.
         if symbol not in self.positions:raise ValueError("Position not open")
         if not quote_age_ok(timestamp):raise ValueError("Quote too old")
         px=positive(market_price)

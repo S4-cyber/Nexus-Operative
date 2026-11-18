@@ -7,6 +7,7 @@ credential, contacts a provider, writes evidence or grants order authority.
 import argparse
 import getpass
 import json
+import re
 import sqlite3
 
 from nexus.alpaca_paper_contract import sha
@@ -171,6 +172,9 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
            opening_observation, closing_observation):
     """Read-only composition of accepted collection history and balance review."""
+    if (type(expected_activity_head) is not str or
+            re.fullmatch(r'[0-9a-f]{64}',expected_activity_head) is None):
+        _fail('ACTIVITY_HEAD_REFERENCE')
     journal_paths,journal_limits,journal_identities,journal_fingerprints=_journal_file_scope(
         pacing_path, activity_store_path, acceptance_store_path)
     stable_files=_stable_reader(journal_paths,journal_limits,journal_identities,

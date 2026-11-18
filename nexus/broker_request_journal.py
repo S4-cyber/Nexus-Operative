@@ -335,6 +335,7 @@ class BrokerRequestJournal:
     """Append-only bounded local journal, bound to one supplied paper account."""
     def __init__(self, path, paper_account_id):
         self.path = Path(path)
+        if type(paper_account_id) is not str:raise ValueError('INVALID_PAPER_ACCOUNT_SCOPE')
         try:account = str(UUID(paper_account_id))
         except (ValueError,TypeError,AttributeError):raise ValueError('INVALID_PAPER_ACCOUNT_SCOPE')
         self.account_digest = hashlib.sha256(account.encode()).hexdigest()

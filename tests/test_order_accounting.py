@@ -32,7 +32,7 @@ def test_accounting_paths_reject_type_confused_ids_before_mutation(tmp_path):
         lambda:g.simulate_quote_fill('buy',EqualText('fill'),1,1,10,10,1,1000,1000),
     )
     for attempt in attempts:
-        with pytest.raises(ValueError,match='^INVALID_(?:ORDER|EVENT)_ID$'):
+        with pytest.raises(ValueError,match='^ORDER_COMMAND_ARGUMENT_INVALID$'):
             attempt()
         assert g.recovery_report()==before
 

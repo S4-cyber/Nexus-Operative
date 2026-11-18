@@ -1,5 +1,42 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.348 canonical durability, trial-session and installer-file boundaries
+
+**Current development build: 0.340.348 (pre-release).** Durable commands admit
+only bounded exact JSON values before storage and apply their canonical retained
+representation. Exact numeric quote/settings boundaries precede mutation,
+overlapping empty non-clean trial sessions remain visible, funding preview is
+strictly non-authoritative, broker UUIDs cannot be polymorphic, and Windows
+installer review rejects hardlinked or identity-swapped files.
+
+The exact candidate passed 6,477 tests with 2 platform skips and two dependency
+warnings in 900.31 seconds. The affected scope passed 438 tests and the
+release/evidence scope passed 188. All sixteen offline profiles passed. Saved
+evidence matched 418 source files /
+`9eef981d241ab714ed030e376d1598dd7b717ec0d5a4c7f810e5da6c6e1cdcec`;
+report SHA-256 is
+`ecfb6f9252b09dc7964f1b4d45c65bdb4633a5b91a5c7ad36c3499e05fe9817d`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The synchronized 164-member
+wheel reports 0.340.348 and has SHA-256
+`d3dd99119755a3ad2baa098e992207280378bae1347ccfba0403948e8b9abb9b`.
+
+PR #64 exact parent `332a73f2174210201333a711ad3021b825398d0e`
+has green security/Gitleaks, saved-evidence and browser/help jobs; complete
+regression remains active and unclaimed. PR #63's regression was cancelled and
+is not a pass. Fresh exact-head workflows remain mandatory for this candidate,
+and the push/manual native Windows installer lane is undispatched.
+
+This is local injected M1/M3/M4/M5/M7/M8/M9 hardening, not actual broker
+acceptance, genuine-feed sustained-trial realism, native Windows owner
+acceptance, funding/live/cloud readiness, performance, profitability or release
+approval. No UI control or editable parameter changed. Engagement remains OFF
+by default; limits, account checks, fail-closed exits, independent emergency
+stop, seven beginner tabs and black/bright-purple bottom-right hover help remain
+intact. Implementation remains weighted 38% (30-45%, low confidence), with 0/9
+stages independently accepted; trading/funding/release permissions remain false
+and no launch date is established.
+
 ## v0.340.347 recovery-identity, bounded-fill and evidence-authority boundaries
 
 **Current development build: 0.340.347 (pre-release).** Broker lookup identity,

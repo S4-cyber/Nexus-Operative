@@ -97,9 +97,9 @@ def _validate_settings(values):
         raise ValueError("Unexpected or missing paper setting")
     budget=values['paper_budget']
     allocations=[values[key] for key in ('terrestrial_allocation','solar_allocation','universal_allocation')]
-    if isinstance(budget,bool) or not isinstance(budget,(float,int)) or not (0<budget<=1000000):
+    if type(budget) not in (float,int) or not (0<budget<=1000000):
         raise ValueError('Invalid paper budget')
-    if any(isinstance(value,bool) or not isinstance(value,int) or not 0<=value<=100 for value in allocations):
+    if any(type(value) is not int or not 0<=value<=100 for value in allocations):
         raise ValueError('Invalid allocations')
     if sum(allocations)!=100:raise ValueError('Tier allocations must total 100')
 

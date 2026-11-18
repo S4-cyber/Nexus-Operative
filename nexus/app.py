@@ -8,7 +8,8 @@ import sqlite3
 import time
 from pathlib import Path
 import sys
-from fastapi import FastAPI, HTTPException, Request
+from decimal import Decimal
+from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from nexus.state import load_settings, save_settings, audit
@@ -95,7 +96,7 @@ async def application_lifespan(application):
             if lifecycle_executor is not None:
                 lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.347",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.348",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -353,10 +354,6 @@ def paper_stress(value: StressRequest):
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc))
 
-class DepositPreview(BaseModel):
-    amount: float = Field(gt=0, le=1000000)
-    cadence: str = Field(pattern="^(once|weekly|monthly)$")
-
 def simulated_snapshot():
     elapsed = int((time.monotonic()-_started)//5)
     return [
@@ -377,7 +374,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.347", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.348", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -1118,9 +1115,20 @@ async def reset_emergency_halt(confirmation:HaltResetConfirmation):
     return await asyncio.to_thread(_complete_halt_reset,epoch)
 
 @app.post("/api/funding/preview")
-def funding_preview(data:DepositPreview):
-    return {"amount":round(data.amount,2), "cadence":data.cadence, "status":"PREVIEW_ONLY",
-      "bank_link_created":False,"transfer_scheduled":False}
+def funding_preview(data:object=Body(...)):
+    if type(data) is not dict or set(data)!= {'amount','cadence'}:
+        raise HTTPException(status_code=422,detail='FUNDING_PREVIEW_INVALID')
+    amount=data['amount'];cadence=data['cadence']
+    if (type(amount) not in (int,float) or not 0.01<=amount<=1000000 or
+            (type(amount) is float and not math.isfinite(amount)) or
+            Decimal(str(amount))*100 % 1):
+        raise HTTPException(status_code=422,detail='FUNDING_PREVIEW_INVALID')
+    if type(cadence) is not str or cadence not in ('once','weekly','monthly'):
+        raise HTTPException(status_code=422,detail='FUNDING_PREVIEW_INVALID')
+    return {"amount":float(Decimal(str(amount)).quantize(Decimal('0.01'))),
+      "cadence":cadence,"status":"PREVIEW_ONLY","bank_link_created":False,
+      "transfer_scheduled":False,"funding_authorized":False,
+      "money_movement_enabled":False,"live_orders_enabled":False}
 
 def portal_html_path():
     bundle=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))

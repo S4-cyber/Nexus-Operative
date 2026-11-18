@@ -26,6 +26,35 @@ MAX_PORTFOLIO_SNAPSHOT_ROWS = MAX_RETAINED_COMMANDS*4+256
 DB_BUSY_TIMEOUT_MS = 10_000
 ROTATION_MARKER = 'nexus-order-rotation.intent'
 METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
+MAX_COMMAND_ARGUMENT_NODES = 1024
+MAX_COMMAND_ARGUMENT_DEPTH = 16
+
+
+def _require_exact_command_value(value, *, depth=0, budget=None):
+    """Reject polymorphic command values before storage or state access.
+
+    Durable commands must apply the same scalar literals that JSON retains for
+    cold replay.  Bounded exact built-ins prevent a caller subclass from
+    presenting one value to warm validation and serializing a different one.
+    """
+    if budget is None:budget=[MAX_COMMAND_ARGUMENT_NODES]
+    budget[0]-=1
+    if budget[0]<0 or depth>MAX_COMMAND_ARGUMENT_DEPTH:
+        raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
+    kind=type(value)
+    if value is None or kind in (bool,int,str):return
+    if kind is float:
+        if math.isfinite(value):return
+        raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
+    if kind in (tuple,list):
+        for item in value:_require_exact_command_value(item,depth=depth+1,budget=budget)
+        return
+    if kind is dict:
+        for key,item in value.items():
+            if type(key) is not str:raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
+            _require_exact_command_value(item,depth=depth+1,budget=budget)
+        return
+    raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
 
 
 def _database_busy(error):
@@ -210,6 +239,19 @@ class DurableOrderGateway:
         if execution_clock is not None and not callable(execution_clock):raise ValueError('INVALID_EXECUTION_CLOCK')
         steps=tuple(steps)
         if not steps or len(steps)>4:raise ValueError('INVALID_ORDER_TRANSACTION_SIZE')
+        prepared=[]
+        for step in steps:
+            if (type(step) is not tuple or len(step)!=3 or type(step[0]) is not str or
+                    type(step[1]) is not tuple or type(step[2]) is not dict):
+                raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
+            method,args,kwargs=step
+            if method not in METHODS:raise ValueError('INVALID_COMMAND')
+            budget=[MAX_COMMAND_ARGUMENT_NODES]
+            _require_exact_command_value(args,budget=budget)
+            _require_exact_command_value(kwargs,budget=budget)
+            payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
+            command=json.loads(payload)
+            prepared.append((command['method'],command['args'],command['kwargs'],payload))
         root_guard=_OrderRootIdentity(self._path(),create=True)
         path=root_guard.path
         root_guard.require_current()
@@ -218,15 +260,10 @@ class DurableOrderGateway:
             except (ValueError,OSError):cut=True
             if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
             root_guard.require_current()
-        if len(steps)>1:
-            if [step[0] for step in steps]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
+        if len(prepared)>1:
+            if [step[0] for step in prepared]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
                 raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')
-            if len({step[1][0] for step in steps})!=1:raise ValueError('QUOTE_ORDER_TRANSACTION_ID_MISMATCH')
-        prepared=[]
-        for method,args,kwargs in steps:
-            if method not in METHODS:raise ValueError('INVALID_COMMAND')
-            payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
-            prepared.append((method,args,kwargs,payload))
+            if len({step[1][0] for step in prepared})!=1:raise ValueError('QUOTE_ORDER_TRANSACTION_ID_MISMATCH')
         with closing(self._connect(path)) as db:
             root_guard.require_current()
             with _transaction(db):
@@ -244,6 +281,7 @@ class DurableOrderGateway:
                         if len(args)>8:args=(*args[:8],evaluated,*args[9:])
                         else:kwargs={**kwargs,'evaluated_at':evaluated}
                         payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
+                        command=json.loads(payload);args=command['args'];kwargs=command['kwargs']
                     result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
                     results.append(result)
                 root_guard.require_current()

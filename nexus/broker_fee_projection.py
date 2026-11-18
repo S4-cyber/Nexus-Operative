@@ -46,6 +46,7 @@ def identifier(value):
 
 
 def broker_id(value):
+    if type(value) is not str:raise ValueError('INVALID_BROKER_PROJECTION_ORDER_ID')
     try:return str(UUID(value))
     except (ValueError,TypeError,AttributeError):raise ValueError('INVALID_BROKER_PROJECTION_ORDER_ID')
 

@@ -1,5 +1,45 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.339 paper protocol exact-type admission
+
+Simulated-order protocol text, paper-forward quote input and supplied Activity
+SSE reconnect cursors now require exact built-in types before lookup,
+comparison, normalization or mutation. Equality-forging order/cursor strings
+cannot poison durable replay or claim cursor reuse. Coercible quote strings,
+Boolean numeric fields, non-finite values, mapping subclasses and custom keys
+cannot create a modeled order; rejected quote mappings retain only a fixed
+invalid marker. The receipt-clock check also rejects an extreme integer without
+overflowing.
+
+The exact candidate passed 6,376 tests with 2 platform skips and two dependency
+warnings in 899.83 seconds. All sixteen bounded profiles passed. Saved evidence
+matched 415 source files /
+`f70fa96bd59c6d73f0f500a64980407ed308eab73401a8565ca3ee95f1207aad`;
+`validation/release_trials_0_340_339.json` SHA-256 is
+`963ee52295d76a0d2f8446399d37f21069e9b34be3773ad206a7911f7f6b3f25`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+fourteen controller smokes and the 19-case CI inventory passed. The 164-member
+wheel SHA-256 is
+`ba7b97b31007c623299f1f9f5c906d7d4bfb80a0e72b72a71e4c51ad05d6c58c`.
+The staged-tree artifact audit covered 1,076 paths / 108,940,770 bytes with
+zero findings; the 4,517-line introduced high-confidence credential scan also
+found none. Hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #55 exact parent `cdbdaa432d2596f2ab8a369a49dec7934462063f`
+has passed hosted security/Gitleaks, browser-help and saved evidence; its
+complete Windows regression remains active and unclaimed. Fresh exact-head
+hosted gates are mandatory for this candidate, and the push/manual native
+installer/distribution lane remains undispatched.
+
+This is local injected M4/M7/M8 boundary hardening, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30–45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.338 tier-entry admission boundary
 
 Tier-entry admission now validates one exact built-in tier and a finite,

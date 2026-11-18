@@ -26,12 +26,14 @@ def schema(db):
 
 
 def sanitize(quote):
-    if not isinstance(quote,dict):return {'missing_or_invalid_quote':True}
+    if (type(quote) is not dict or
+            any(type(key) is not str for key in quote)):
+        return {'missing_or_invalid_quote':True}
     result={}
     for key in FIELDS:
         value=quote.get(key)
-        if isinstance(value,str):value=value[:256]
-        elif isinstance(value,float) and not math.isfinite(value):value='NONFINITE'
+        if type(value) is str:value=value[:256]
+        elif type(value) is float and not math.isfinite(value):value='NONFINITE'
         elif type(value) not in (int,float,bool,type(None)):value='UNSUPPORTED_VALUE'
         result[key]=value
     return result

@@ -35,7 +35,7 @@ def _fail(code):
 
 
 def _cursor(value, code):
-    if not isinstance(value, str) or ULID.fullmatch(value) is None:
+    if type(value) is not str or ULID.fullmatch(value) is None:
         _fail(code)
     return value
 

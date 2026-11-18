@@ -8,7 +8,8 @@ import hashlib
 import json
 from bisect import bisect_left
 from decimal import Decimal, InvalidOperation
-from nexus.order_gateway import OrderGateway
+from nexus.order_gateway import (
+    OrderGateway, _require_event_id, _require_event_kind, _require_order_id)
 
 
 def number(value, zero=False):
@@ -40,7 +41,7 @@ def order_id_fingerprint(client_order_id):
     never permit reuse. The original ID is not copied into a fresh epoch, but
     low-entropy IDs can still be guessed and remain private operational data.
     """
-    if not isinstance(client_order_id,str):raise ValueError('INVALID_ORDER_ID')
+    _require_order_id(client_order_id)
     return hashlib.sha256((RETIRED_ID_POLICY+'\0'+client_order_id).encode()).hexdigest()[:32]
 
 
@@ -115,10 +116,11 @@ class AccountingOrderGateway(OrderGateway):
         return super().submit(client_order_id,*args,**kwargs)
 
     def lookup(self,client_order_id):
+        _require_order_id(client_order_id)
         return self.intents.get(client_order_id) or self.archived_intents.get(client_order_id)
 
     def archive_terminal(self,batch_id,sequence_boundary):
-        if not isinstance(batch_id,str) or not 1<=len(batch_id)<=64 or not batch_id.isascii() or not batch_id.replace('-','').replace('_','').isalnum():
+        if type(batch_id) is not str or not 1<=len(batch_id)<=64 or not batch_id.isascii() or not batch_id.replace('-','').replace('_','').isalnum():
             raise ValueError('INVALID_ARCHIVE_BATCH_ID')
         if batch_id in self.archive_batches:
             return {**copy.deepcopy(self.archive_batches[batch_id]),'idempotent_replay':True}
@@ -165,6 +167,7 @@ class AccountingOrderGateway(OrderGateway):
         return {"linked":True,"idempotent_replay":False}
 
     def set_execution_terms(self, client_order_id, created_at, ttl_seconds):
+        _require_order_id(client_order_id)
         created=number(created_at);ttl=number(ttl_seconds)
         if ttl>3600 or created+ttl>Decimal('1e12'):raise ValueError('ORDER_TTL_LIMIT')
         terms=dict(created_at=str(created.normalize()),expires_at=str((created+ttl).normalize()))
@@ -181,6 +184,7 @@ class AccountingOrderGateway(OrderGateway):
             return {**copy.deepcopy(record),'idempotent_replay':False}
 
     def expire_order(self, client_order_id, evaluated_at):
+        _require_order_id(client_order_id)
         now=number(evaluated_at)
         with self.lock:
             record=self.lookup(client_order_id)
@@ -194,9 +198,8 @@ class AccountingOrderGateway(OrderGateway):
     def simulate_quote_fill(self, client_order_id, event_id, sequence, quantity, bid, ask,
                             available_quantity, quote_at, evaluated_at, fee_bps=10, slippage_bps=5):
         from nexus.quote_execution import plan
+        _require_order_id(client_order_id);_require_event_id(event_id)
         if type(sequence) is not int or not 1<=sequence<=1000:raise ValueError('INVALID_EVENT_SEQUENCE')
-        if not isinstance(event_id,str) or not 1<=len(event_id)<=64 or not event_id.isascii() or not event_id.replace('-','').replace('_','').isalnum():
-            raise ValueError('INVALID_EVENT_ID')
         with self.lock:
             record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
@@ -222,6 +225,7 @@ class AccountingOrderGateway(OrderGateway):
             return result
 
     def simulate_event(self, client_order_id, event_id, sequence, kind, fill_notional='0', fee='0'):
+        _require_order_id(client_order_id);_require_event_id(event_id);_require_event_kind(kind)
         if client_order_id in self.order_terms and kind=='FILL':
             raise ValueError('TIMED_ORDER_REQUIRES_QUOTE_MODEL')
         return super().simulate_event(client_order_id,event_id,sequence,kind,fill_notional,fee)
@@ -235,6 +239,7 @@ class AccountingOrderGateway(OrderGateway):
             return dict(expired_order_ids=due,expired_count=len(due),live_orders_enabled=False)
 
     def simulate_priced_fill(self, client_order_id, event_id, sequence, quantity, price, fee='0'):
+        _require_order_id(client_order_id);_require_event_id(event_id)
         if client_order_id in self.order_terms and not self._applying_quote:
             raise ValueError('TIMED_ORDER_REQUIRES_QUOTE_MODEL')
         if type(sequence) is not int or not 1 <= sequence <= 1000:

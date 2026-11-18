@@ -61,6 +61,20 @@ def test_exact_cursor_reuse_deduplicates_and_advances_without_authority():
     assert call(initial, replay) == result
 
 
+@pytest.mark.parametrize(('field','code'), [
+    ('persisted_event_id', 'PERSISTED_CURSOR_INVALID'),
+    ('reconnect_since_id', 'SINCE_ID_INVALID'),
+])
+def test_cursor_subclasses_fail_before_transcript_review(
+        monkeypatch, field, code):
+    initial, replay = transcript()
+    monkeypatch.setattr(subject, '_normalize',
+        lambda *args, **kwargs: pytest.fail('transcript reviewed'))
+    with pytest.raises(ValueError,
+            match='^ALPACA_ACTIVITY_SSE_RECONNECT_' + code + '$'):
+        call(initial, replay, **{field: EqualText(initial[-1]['event_id'])})
+
+
 @pytest.mark.parametrize(('mutation','code'), [
     (lambda initial, replay, args: args.update(
         reconnect_since_id='01K00000000000000000000001'),

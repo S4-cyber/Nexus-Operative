@@ -3,6 +3,50 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.339 paper protocol exact-type admission
+
+Three compatible paper-path admission seams now fail closed before comparison,
+normalization, durable mutation or modeled execution. Simulated order IDs,
+products, sides, providers, tiers, event IDs and event kinds require exact
+built-in strings. Paper-forward input requires an exact built-in mapping with
+exact provenance and permission fields plus finite positive built-in prices and
+a bounded built-in receipt time. Activity SSE persisted/since cursors require
+exact built-in strings before transcript review. Equality-forging strings,
+coercible numeric strings, Boolean numeric values, non-finite values, mapping
+subclasses and non-built-in keys are rejected; invalid quote evidence retains
+only the fixed invalid marker. A huge integer receipt time also fails closed
+without overflowing its finite-value check.
+
+The exact candidate passed 6,376 tests with 2 platform skips and two dependency
+warnings in 899.83 seconds. All sixteen bounded profiles passed. Saved-evidence
+verification matched 415 source files /
+`f70fa96bd59c6d73f0f500a64980407ed308eab73401a8565ca3ee95f1207aad`;
+report SHA-256 is
+`963ee52295d76a0d2f8446399d37f21069e9b34be3773ad206a7911f7f6b3f25`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.339 wheel SHA-256 is
+`ba7b97b31007c623299f1f9f5c906d7d4bfb80a0e72b72a71e4c51ad05d6c58c`.
+The staged-tree artifact audit covered 1,076 paths / 108,940,770 bytes with
+zero findings; the 4,517-line introduced high-confidence credential scan also
+found none. Hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #55 exact parent `cdbdaa432d2596f2ab8a369a49dec7934462063f`
+has passed hosted public security/Gitleaks, browser-help and saved-evidence
+jobs. Its complete Windows regression remains in progress and is not claimed
+as passed. Fresh exact-head hosted jobs remain mandatory for this increment;
+the push/manual Windows EXE/installer/distribution workflow remains
+undispatched.
+
+This is injected local M4/M7/M8 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30–45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.338 tier-entry admission boundary
 
 Simulated tier-entry permission now requires one exact built-in tier plus a

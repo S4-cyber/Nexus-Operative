@@ -10,6 +10,20 @@ from nexus import alpaca_activity_sse_review as subject
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 
 
+class EqualText(str):
+    __hash__=str.__hash__
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
+class HostileList(list):
+    def __iter__(self):pytest.fail('hostile list iterated')
+
+
+class HostileDict(dict):
+    def items(self):pytest.fail('hostile mapping inspected')
+
+
 def events():
     return [
         subject._event('01K00000000000000000000001',
@@ -71,6 +85,37 @@ def test_nested_or_oversized_values_are_rejected_before_hashing():
     rows[0]['details']['symbol'] = 'B' * 4097
     with pytest.raises(ValueError, match='FIELD_CAP'):
         subject.review(rows, expected_account_id=ACCOUNT)
+
+
+@pytest.mark.parametrize(('rows_factory','code'),[
+    (lambda rows:HostileList(rows),'EVENT_CAP'),
+    (lambda rows:[HostileDict(rows[0]),rows[1]],'EVENT_SHAPE'),
+    (lambda rows:[{**rows[0],
+        'details':HostileDict(rows[0]['details'])},rows[1]],'DETAILS_SHAPE'),
+    (lambda rows:[{(EqualText(key) if key=='activity_type' else key):value
+        for key,value in rows[0].items()},rows[1]],'EVENT_SHAPE'),
+])
+def test_polymorphic_envelopes_fail_before_hostile_access(rows_factory,code):
+    with pytest.raises(ValueError,match='^ALPACA_ACTIVITY_SSE_'+code+'$'):
+        subject.review(rows_factory(events()),expected_account_id=ACCOUNT)
+
+
+def test_expected_account_subclass_fails_before_event_inspection(monkeypatch):
+    monkeypatch.setattr(subject,'_budget',
+        lambda *_:pytest.fail('events inspected'))
+    with pytest.raises(ValueError,match='^ALPACA_ACTIVITY_SSE_ACCOUNT_INVALID$'):
+        subject.review(events(),expected_account_id=EqualText(ACCOUNT))
+
+
+def test_budget_returns_detached_exact_snapshot():
+    rows=events();snapshot=subject._budget(rows)
+    assert snapshot==rows and snapshot is not rows
+    assert snapshot[0] is not rows[0]
+    assert snapshot[0]['details'] is not rows[0]['details']
+    rows[0]['activity_type']='PRIVATE_ACTIVITY'
+    rows[0]['details']['symbol']='PRIVATE_SYMBOL'
+    assert snapshot[0]['activity_type']=='TRD'
+    assert snapshot[0]['details']['symbol']=='BTCUSD'
 
 
 def test_huge_numeric_and_malformed_uuid_types_fail_with_bounded_codes():

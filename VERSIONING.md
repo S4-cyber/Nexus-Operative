@@ -1,5 +1,44 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.340 provider-envelope snapshot and price bounds
+
+**Current development build: 0.340.340 (pre-release).** Public ticker and
+paper-forward prices now fail closed outside the inclusive finite `1e-18`
+through `1e12` envelope before float publication, caching, retained evidence or
+modeled execution. Supplied Activity SSE review now preflights the exact account
+and normalizes one detached exact-built-in snapshot; polymorphic or changing
+inputs cannot pass one validation view and supply a different normalization
+view.
+
+The exact candidate passed 6,398 tests with 2 platform skips and two dependency
+warnings in 922.38 seconds. All 16 bounded offline profiles passed and saved
+evidence verified against 415 source files /
+`df56c9a9f6b2861abe0f07c72d4256b4adeca7989541e40576a347d2ec5debc3`.
+The report SHA-256 is
+`4ef56553c26d6f40f15fe665ef79b4edbc3afe015ad81a766285df9b2531ae6d`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`a2a45176980e22ecf068c7175eb7f6f26f7a2312ba6c2d3af01d67da1c5faba8`.
+The final public-artifact audit covered 1,077 paths / 109,144,946 bytes with
+zero findings; the 4,414-line introduced high-confidence credential scan also
+found none. Local Gitleaks was unavailable, so fresh hosted checksum-pinned
+Gitleaks remains required.
+
+PR #56 parent security/Gitleaks, browser-help and saved-evidence jobs passed for
+exact commit `41eba7a3607ca52798d3ae00b8e448af195ff1a7`; its complete
+Windows regression remains running and is not promoted to success. This
+candidate requires fresh exact-head hosted checks. Native Windows installer and
+ordinary-user acceptance remain separate undispatched gates.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
 ## v0.340.339 paper protocol exact-type admission
 
 **Current development build: 0.340.339 (pre-release).** Simulated-order

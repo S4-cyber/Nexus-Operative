@@ -1,5 +1,44 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.340 provider-envelope snapshot and price bounds
+
+Public Coinbase ticker and paper-forward quote values now share an inclusive
+finite `1e-18` through `1e12` admission envelope before publication, caching,
+retained evidence and entry arithmetic. Supplied Activity SSE link review
+preflights the exact account and copies exact built-in containers, keys and
+scalars into one detached validated snapshot; hostile or changing envelopes are
+rejected before normalization, provider I/O or checkpoint persistence.
+
+The exact candidate passed 6,398 tests with 2 platform skips and two dependency
+warnings in 922.38 seconds. All sixteen bounded profiles passed. Saved evidence
+matched 415 source files /
+`df56c9a9f6b2861abe0f07c72d4256b4adeca7989541e40576a347d2ec5debc3`;
+`validation/release_trials_0_340_340.json` SHA-256 is
+`4ef56553c26d6f40f15fe665ef79b4edbc3afe015ad81a766285df9b2531ae6d`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+fourteen controller smokes and the 19-case CI inventory passed. The 164-member
+wheel SHA-256 is
+`a2a45176980e22ecf068c7175eb7f6f26f7a2312ba6c2d3af01d67da1c5faba8`.
+The final public-artifact audit covered 1,077 paths / 109,144,946 bytes with
+zero findings; the 4,414-line introduced high-confidence credential scan also
+found none. Local Gitleaks was unavailable, so fresh hosted checksum-pinned
+Gitleaks remains mandatory.
+
+PR #56 exact parent `41eba7a3607ca52798d3ae00b8e448af195ff1a7`
+has passed hosted security/Gitleaks, browser-help and saved evidence; its
+complete Windows regression remains active and unclaimed. Fresh exact-head
+hosted gates are mandatory for this candidate, and the push/manual native
+installer/distribution lane remains undispatched.
+
+This is local injected M7/M8 boundary hardening, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30-45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.339 paper protocol exact-type admission
 
 Simulated-order protocol text, paper-forward quote input and supplied Activity

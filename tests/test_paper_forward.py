@@ -60,18 +60,36 @@ def latest_quote(r):
 
 @pytest.mark.parametrize(('field','value'),[
     ('bid','100'),('ask',True),('last',float('nan')),
+    ('bid',10**1000),('ask',10**1000),('last',10**1000),
+    ('bid',1e-300),('ask',1e-300),('last',1e-300),
     ('received_at','1000'),('received_at',10**1000),
     ('provider',EqualText('coinbase_exchange_public')),
     ('product',EqualText('BTC-USD')),
     ('exchange_time',EqualText('1970-01-01T00:16:40+00:00')),
     ('read_only',1),('orders_allowed',0),
 ])
-def test_noncanonical_quote_types_are_storage_silent_and_orderless(
+def test_noncanonical_or_out_of_range_quotes_are_storage_silent_and_orderless(
         tmp_path,monkeypatch,field,value):
     r,g,c=setup(tmp_path,monkeypatch);quote=c.quote('BTC-USD');quote[field]=value
     r.fetcher=lambda product:quote
     assert r.single_cycle()['reason']=='QUOTE_UNAVAILABLE_OR_INVALID'
     assert g.recovery_report()['orders']==[]
+    assert latest_quote(r)=={'missing_or_invalid_quote':True}
+
+
+def test_repeated_tiny_rising_quotes_never_reach_entry_arithmetic(
+        tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);outcomes=[]
+    for index in range(7):
+        c.now=1000+index*5;price=1e-300*(index+1)
+        r.fetcher=lambda product,p=price:dict(product=product,
+            provider='coinbase_exchange_public',read_only=True,
+            orders_allowed=False,bid=p,ask=p,last=p,received_at=c.now,
+            exchange_time=datetime.fromtimestamp(
+                c.now,timezone.utc).isoformat())
+        outcomes.append(r.single_cycle())
+    assert len(outcomes)==7 and not g.recovery_report()['orders']
+    assert outcomes[0]['reason']=='QUOTE_UNAVAILABLE_OR_INVALID'
     assert latest_quote(r)=={'missing_or_invalid_quote':True}
 
 

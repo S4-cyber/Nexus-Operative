@@ -254,6 +254,19 @@ def test_malformed_initial_review_is_fixed_and_network_silent(
     assert not opener.requests and not path.exists()
 
 
+def test_polymorphic_initial_event_is_network_and_storage_silent(tmp_path):
+    class MappingSubclass(dict):
+        pass
+
+    path=tmp_path/'cursor.sqlite3';initial,_,raw=segments()
+    initial[0]=MappingSubclass(initial[0]);opener=Opener(raw)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='INITIAL_EVENTS_INVALID'):
+        run(tmp_path,initial_events=initial,
+            cursor_store=ActivitySSECursorStore(path,ACCOUNT),opener=opener)
+    assert not opener.requests and not path.exists()
+
+
 @pytest.mark.parametrize(('field','value'), [
     ('mode', EqualText('foreign-mode')),
     ('status', EqualText('accepted')),

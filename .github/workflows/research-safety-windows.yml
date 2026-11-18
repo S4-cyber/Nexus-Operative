@@ -98,7 +98,7 @@ jobs:
       - name: Install headless browser for control-help acceptance
         run: python -m playwright install chromium --only-shell
       - name: Verify real-browser control help with isolated fixtures
-        run: python tools/portal_browser_smoke.py --output browser-evidence
+        run: python tools/portal_browser_smoke.py --output browser-evidence --source-commit "${{ github.event.pull_request.head.sha || github.sha }}"
       - name: Retain browser screenshots and acceptance report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

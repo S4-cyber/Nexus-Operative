@@ -41,7 +41,7 @@ def _timed_record(normalize,field):
 
 
 def identifier(value):
-    if not isinstance(value,str) or not re.fullmatch(r'[A-Za-z0-9_:-]{1,128}',value):raise ValueError('INVALID_BROKER_PROJECTION_ID')
+    if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_:-]{1,128}',value):raise ValueError('INVALID_BROKER_PROJECTION_ID')
     return value
 
 

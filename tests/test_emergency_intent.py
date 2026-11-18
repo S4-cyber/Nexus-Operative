@@ -225,6 +225,23 @@ def test_reset_failure_after_intent_unlink_reestablishes_both_durable_barriers(c
     assert not target.exists() and not r.status()['cut_requested'] and not r.status()['enabled']
 
 
+def test_reset_audit_failure_reestablishes_cut_and_durable_halt(control,monkeypatch):
+    c,g,r,*_=control
+    assert c.post('/api/simulate/halt').status_code==200
+    original=api.audit
+    def fail(_event):raise OSError('PRIVATE_AUDIT_PATH')
+    monkeypatch.setattr(api,'audit',fail)
+    reply=c.post('/api/simulate/halt/reset',json={'confirm_reset':True})
+    assert reply.status_code==503 and reply.json()['detail']=='HALT_RESET_AUDIT_UNAVAILABLE'
+    assert 'PRIVATE' not in reply.text
+    assert api._halted and not api._cut_confirmed and r.status()['cut_requested']
+    assert not r.status()['enabled'] and intent.requested(g._path())
+    assert g.recovery_report()['halted'] and api._recover_emergency_cut()==(True,True)
+    monkeypatch.setattr(api,'audit',original)
+    assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==200
+    assert not intent.requested(g._path()) and not r.status()['cut_requested']
+
+
 def test_intent_bounded_idempotent_and_existing_directory_is_not_silently_repaired(tmp_path):
     order=tmp_path/'orders.sqlite3';target=intent.path(order)
     assert not intent.requested(order) and not target.exists()

@@ -202,6 +202,16 @@ def test_open_client_id_cannot_rebind_another_broker_identity():
     with pytest.raises(ValueError,match='CLIENT_ID_CONFLICT'): run(value)
 
 
+def test_equality_forging_open_client_id_is_rejected_without_input_mutation():
+    class ForgedId(str):
+        def __hash__(self):return hash('open_fixture')
+        def __eq__(self,other):return other=='open_fixture'
+    value=active_order(client_order_id=ForgedId('literal_other'))
+    original=copy.deepcopy(value)
+    with pytest.raises(ValueError,match='CLIENT_ID'):review._open_order(value)
+    assert value==original
+
+
 @pytest.mark.parametrize('group',['orders','executions','fees','positions','open_orders'])
 def test_explicit_foreign_account_on_any_row_is_rejected(group):
     value=nonflat();value[group][0]['account_id']=OTHER

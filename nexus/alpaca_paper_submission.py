@@ -50,7 +50,7 @@ def _hash(value):
 
 
 def _credential(value):
-    if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
+    if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
         _fail('CREDENTIAL_FORMAT_INVALID')
 
 

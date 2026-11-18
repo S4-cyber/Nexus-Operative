@@ -60,7 +60,7 @@ def _open_order(raw):
     if raw.get('extended_hours') is not None and raw['extended_hours'] is not False:
         _fail('OPEN_ORDER_SCOPE')
     cid = raw.get('client_order_id')
-    if not isinstance(cid, str) or re.fullmatch(r'[A-Za-z0-9_-]{1,64}', cid) is None:
+    if type(cid) is not str or re.fullmatch(r'[A-Za-z0-9_-]{1,64}', cid) is None:
         _fail('CLIENT_ID')
     qty, price = contract.number(raw.get('qty')), contract.number(raw.get('limit_price'))
     payload = dict(client_order_id=cid, symbol='BTC/USD', side=raw['side'], type='limit',

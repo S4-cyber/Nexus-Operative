@@ -42,7 +42,7 @@ def text(value):
 
 
 def timestamp(value):
-    if not isinstance(value,str) or len(value)>64:raise ValueError('INVALID_BROKER_UPDATE_TIME')
+    if type(value) is not str or len(value)>64:raise ValueError('INVALID_BROKER_UPDATE_TIME')
     try:stamp=datetime.fromisoformat(value.replace('Z','+00:00'))
     except ValueError:raise ValueError('INVALID_BROKER_UPDATE_TIME')
     if stamp.tzinfo is None:raise ValueError('INVALID_BROKER_UPDATE_TIME')
@@ -68,9 +68,9 @@ def timestamp_order_ns(value):
 
 
 def preview(client_order_id,product,side,quantity,limit_price,asset,*,metadata_at,evaluated_at):
-    if not isinstance(client_order_id,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',client_order_id):raise ValueError('INVALID_BROKER_CLIENT_ID')
-    if not isinstance(product,str) or product not in PRODUCTS or not isinstance(side,str) or side not in ('BUY','SELL'):raise ValueError('BROKER_CONTRACT_SCOPE_NOT_ADMITTED')
-    if not isinstance(asset,dict) or asset.get('symbol')!=PRODUCTS[product] or asset.get('class')!='crypto' or asset.get('status')!='active' or asset.get('tradable') is not True or asset.get('fractionable') is not True:
+    if type(client_order_id) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',client_order_id):raise ValueError('INVALID_BROKER_CLIENT_ID')
+    if type(product) is not str or product not in PRODUCTS or type(side) is not str or side not in ('BUY','SELL'):raise ValueError('BROKER_CONTRACT_SCOPE_NOT_ADMITTED')
+    if type(asset) is not dict or any(type(asset.get(field)) is not str for field in ('symbol','class','status')) or asset.get('symbol')!=PRODUCTS[product] or asset.get('class')!='crypto' or asset.get('status')!='active' or asset.get('tradable') is not True or asset.get('fractionable') is not True:
         raise ValueError('BROKER_ASSET_METADATA_NOT_ELIGIBLE')
     if not 0<=number(evaluated_at)-number(metadata_at)<=60:raise ValueError('BROKER_ASSET_METADATA_STALE_OR_FUTURE')
     qty=number(quantity);price=number(limit_price)
@@ -92,18 +92,33 @@ def preview(client_order_id,product,side,quantity,limit_price,asset,*,metadata_a
                 limitations='Preview only. Metadata increments are caller supplied; no rounding. The local $200 quantity-times-limit screen is not a market-fill notional guarantee. No broker account, balance, entitlement, fee or fill is verified.')
 
 
+def _payload(value):
+    fields={'client_order_id','symbol','side','qty','type','time_in_force','limit_price'}
+    if (type(value) is not dict or set(value)!=fields or
+            any(type(value[field]) is not str for field in fields) or
+            re.fullmatch(r'[A-Za-z0-9_-]{1,64}',value['client_order_id']) is None or
+            value['symbol'] not in PRODUCTS.values() or value['side'] not in ('buy','sell') or
+            value['type']!='limit' or value['time_in_force']!='ioc'):
+        raise ValueError('INVALID_BROKER_PREVIEW')
+    return value
+
+
 def normalize(response,payload):
-    if not isinstance(response,dict):raise ValueError('INVALID_BROKER_ORDER_SNAPSHOT')
+    if type(response) is not dict:raise ValueError('INVALID_BROKER_ORDER_SNAPSHOT')
+    payload=_payload(payload)
+    exact=('id','client_order_id','symbol','asset_class','side','type','time_in_force','status','updated_at')
+    if any(type(response.get(field)) is not str for field in exact):
+        raise ValueError('INVALID_BROKER_ORDER_SNAPSHOT')
     try:broker_id=str(UUID(response['id']))
     except (ValueError,KeyError,TypeError,AttributeError):raise ValueError('INVALID_BROKER_ORDER_ID')
     for field in ('client_order_id','side','type','time_in_force'):
         if response.get(field)!=payload[field]:raise ValueError('BROKER_ORDER_IDENTITY_DISAGREEMENT')
     symbols={payload['symbol'],payload['symbol'].replace('/','')}
-    if not isinstance(response.get('symbol'),str) or response.get('symbol') not in symbols or response.get('asset_class')!='crypto':raise ValueError('BROKER_ORDER_IDENTITY_DISAGREEMENT')
+    if response.get('symbol') not in symbols or response.get('asset_class')!='crypto':raise ValueError('BROKER_ORDER_IDENTITY_DISAGREEMENT')
     if number(response.get('qty'))!=number(payload['qty']) or number(response.get('limit_price'))!=number(payload['limit_price']):
         raise ValueError('BROKER_ORDER_TERMS_DISAGREEMENT')
     status=response.get('status')
-    if not isinstance(status,str) or status not in STATUSES:raise ValueError('BROKER_ORDER_STATE_REQUIRES_REVIEW')
+    if status not in STATUSES:raise ValueError('BROKER_ORDER_STATE_REQUIRES_REVIEW')
     qty=number(response.get('filled_qty'),zero=True);requested=number(payload['qty'])
     if qty>requested:raise ValueError('BROKER_CUMULATIVE_OVERFILL')
     average=response.get('filled_avg_price')
@@ -128,11 +143,10 @@ def normalize(response,payload):
 class SnapshotTracker:
     """Bounded in-memory fixture tracker; no durable broker recovery authority."""
     def __init__(self,plan):
-        if not isinstance(plan,dict) or plan.get('mode')!='DISCONNECTED_ALPACA_PAPER_PREVIEW' or plan.get('sendable') is not False or plan.get('payload_sha256')!=sha(plan.get('payload')):
+        if type(plan) is not dict or plan.get('mode')!='DISCONNECTED_ALPACA_PAPER_PREVIEW' or plan.get('sendable') is not False or plan.get('payload_sha256')!=sha(plan.get('payload')):
             raise ValueError('INVALID_BROKER_PREVIEW')
         payload=plan.get('payload')
-        if not isinstance(payload,dict) or set(payload)!={'client_order_id','symbol','side','qty','type','time_in_force','limit_price'} or payload.get('symbol') not in PRODUCTS.values() or payload.get('side') not in ('buy','sell') or payload.get('type')!='limit' or payload.get('time_in_force')!='ioc':
-            raise ValueError('INVALID_BROKER_PREVIEW')
+        _payload(payload)
         self._payload=copy.deepcopy(payload);self._latest=None;self._seen=set()
 
     def observe(self,response):

@@ -197,7 +197,7 @@ class _ReadSession:
         if confirm_read_only_paper is not True:
             _fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
         for value in (api_key, api_secret):
-            if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
+            if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
                 _fail('PAPER_INSPECTION_CREDENTIAL_FORMAT_INVALID')
         from nexus.paper_read_pacing import OPERATIONS
         if operation is not None and (type(operation) is not str or operation not in OPERATIONS):

@@ -1,5 +1,41 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.346 reset-audit, broker-wire and owner-envelope boundaries
+
+**Current development build: 0.340.346 (pre-release).** A reset is not
+acknowledged unless its final audit commits; audit failure restores the process
+cut and both durable halt barriers. Broker identity/link fields and paper
+credentials require exact built-in text before persistence, reconciliation,
+network or vault access. Windows owner-profile acceptance now verifies the
+outer distribution envelope over the exact raw inner evidence files.
+
+The exact candidate passed 6,447 tests with 2 platform skips and two dependency
+warnings in 963.43 seconds; focused validation passed 442. All sixteen bounded
+offline profiles passed. Saved evidence matched 415 source files /
+`cc3d0a8ebe8307adc24929f29aae89e30a801842be01d58542b82d40950dd8fc`;
+report SHA-256 is
+`cf8724a518862bc6fd43343e1e1beb6c98fd354f0256e0daa6c5ca6b31af381e`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The synchronized 164-member
+wheel reports 0.340.346 and has SHA-256
+`311669f30cccad709b9fd7b2bbdd61a446cdc32b3de190a0a66af30430d37db6`.
+
+PR #62 exact parent `ace4fc00138ad7703f62e0a4d1823d5f58a9fd81` has passed
+hosted security/Gitleaks, saved evidence and browser/help; its complete
+regression remains active and unclaimed. Fresh exact-head workflows remain
+mandatory for this candidate. The push/manual native Windows installer lane is
+undispatched.
+
+This is local injected M1/M3/M4/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation remains weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted; trading/funding/release permissions remain false and no
+launch date is established.
+
 ## v0.340.345 request-identity, balance-head and distribution-envelope boundaries
 
 **Current development build: 0.340.345 (pre-release).** Durable broker request

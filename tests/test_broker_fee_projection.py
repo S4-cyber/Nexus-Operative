@@ -130,6 +130,18 @@ def test_reused_client_id_across_broker_ids_requires_review():
     assert 'CLIENT_ORDER_ID_MULTIPLE_BROKER_IDS' in projection.reconcile(**data)['reasons']
 
 
+def test_equality_forging_link_identity_is_rejected_before_reconciliation():
+    class ForgedId(str):
+        def __hash__(self):return hash('fixture_1')
+        def __eq__(self,other):return other=='fixture_1'
+    data=inputs()
+    data['orders'][0]['client_order_id']=ForgedId('literal_other')
+    original=copy.deepcopy(data)
+    with pytest.raises(ValueError,match='INVALID_BROKER_PROJECTION_ID'):
+        projection.reconcile(**data)
+    assert data==original
+
+
 def test_fixture_cli_and_api_do_not_create_account_files_or_offer_writes(tmp_path,monkeypatch):
     import nexus.app as backend
     from fastapi.testclient import TestClient

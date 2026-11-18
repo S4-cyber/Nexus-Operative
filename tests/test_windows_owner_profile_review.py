@@ -41,6 +41,17 @@ def fixture(tmp_path):
         "money_movement_enabled": False, "release_approved": False, "limitations": "fixture",
     }
     artifact = manifest([installer, executable, probe_tool, reviewer_tool], VERSION, SOURCE)
+    artifact_raw = json.dumps(artifact, sort_keys=True).encode("utf-8")
+    binding_raw = json.dumps(binding, sort_keys=True).encode("utf-8")
+    envelope = {
+        "schema": "nexus.artifacts.v1", "version": VERSION, "source_commit": SOURCE,
+        "signed": False, "release_approved": False, "artifacts": [
+            {"name": review.ARTIFACT_MANIFEST_NAME, "bytes": len(artifact_raw),
+             "sha256": hashlib.sha256(artifact_raw).hexdigest()},
+            {"name": review.DISTRIBUTION_BINDING_NAME, "bytes": len(binding_raw),
+             "sha256": hashlib.sha256(binding_raw).hexdigest()},
+        ],
+    }
     probe = {
         "profile": review.PROBE_PROFILE, "version": VERSION, "source_commit": SOURCE,
         "installer_sha256": installer_info[1], "installed_executable_sha256": executable_info[1],
@@ -55,19 +66,24 @@ def fixture(tmp_path):
         "live_orders_enabled": False, "money_movement_enabled": False, "release_approved": False,
         "limitations": review.PROBE_LIMITATIONS,
     }
-    return probe, binding, artifact, probe_info, reviewer_info, probe_tool, reviewer_tool
+    return (probe, binding, artifact, probe_info, reviewer_info, probe_tool, reviewer_tool,
+            envelope, artifact_raw, binding_raw)
 
 
 def verify(parts):
-    probe, binding, artifact, probe_info, reviewer_info, _, _ = parts
-    return review.verify(probe, binding, artifact, expected_version=VERSION,
-        expected_source_commit=SOURCE, probe_tool=probe_info, reviewer_tool=reviewer_info)
+    probe, binding, artifact, probe_info, reviewer_info, _, _, envelope, artifact_raw, binding_raw = parts
+    return review.verify(probe, binding, artifact, envelope,
+        artifact_manifest_raw=artifact_raw, distribution_binding_raw=binding_raw,
+        expected_version=VERSION, expected_source_commit=SOURCE,
+        probe_tool=probe_info, reviewer_tool=reviewer_info)
 
 
 def test_exact_owner_profile_probe_is_bound_without_promoting_authority(tmp_path):
     result = verify(fixture(tmp_path))
     assert result["passed"] and result["ordinary_user_profile_checked"]
     assert result["effective_acl_operations_checked"] and result["exact_distribution_bound"]
+    assert result["distribution_envelope_bound"] and result["artifact_manifest_file_bound"]
+    assert result["distribution_binding_file_bound"]
     assert result["installed_executable_bound"] and result["probe_tool_manifest_bound"]
     assert result["review_tool_manifest_bound"] and result["private_paths_retained"] is False
     assert all(result[key] is False for key in (
@@ -109,8 +125,22 @@ def test_missing_or_changed_manifest_tools_are_rejected(tmp_path):
     changed = list(parts[3])
     changed[1] = "b" * 64
     with pytest.raises(review.OwnerProfileReviewError):
-        review.verify(parts[0], parts[1], parts[2], expected_version=VERSION,
-            expected_source_commit=SOURCE, probe_tool=tuple(changed), reviewer_tool=parts[4])
+        review.verify(parts[0], parts[1], parts[2], parts[7],
+            artifact_manifest_raw=parts[8], distribution_binding_raw=parts[9],
+            expected_version=VERSION, expected_source_commit=SOURCE,
+            probe_tool=tuple(changed), reviewer_tool=parts[4])
+
+
+@pytest.mark.parametrize("target", ["binding", "manifest"])
+def test_semantically_equivalent_inner_file_substitution_breaks_outer_envelope(tmp_path, target):
+    parts = fixture(tmp_path)
+    changed = list(parts)
+    index = 9 if target == "binding" else 8
+    changed[index] = json.dumps(parts[1 if target == "binding" else 2],
+        sort_keys=True, indent=2).encode("utf-8")
+    assert json.loads(changed[index]) == (parts[1] if target == "binding" else parts[2])
+    with pytest.raises(review.OwnerProfileReviewError, match="distribution envelope"):
+        verify(tuple(changed))
 
 
 def test_probe_timestamp_session_and_exact_shape_are_strict(tmp_path):
@@ -128,16 +158,19 @@ def test_probe_timestamp_session_and_exact_shape_are_strict(tmp_path):
 
 def test_cli_refuses_duplicate_json_and_output_overwrite(tmp_path, monkeypatch, capsys):
     parts = fixture(tmp_path)
-    probe, binding, artifact, _, _, probe_tool, reviewer_tool = parts
+    probe, binding, artifact, _, _, probe_tool, reviewer_tool, envelope, artifact_raw, binding_raw = parts
     probe_path = tmp_path / "probe.json"
     binding_path = tmp_path / "binding.json"
     manifest_path = tmp_path / "manifest.json"
+    envelope_path = tmp_path / "distribution-envelope.json"
     output = tmp_path / "review.json"
     probe_path.write_text(json.dumps(probe), encoding="utf-8")
-    binding_path.write_text(json.dumps(binding), encoding="utf-8")
-    manifest_path.write_text(json.dumps(artifact), encoding="utf-8")
+    binding_path.write_bytes(binding_raw)
+    manifest_path.write_bytes(artifact_raw)
+    envelope_path.write_text(json.dumps(envelope), encoding="utf-8")
     monkeypatch.setattr("sys.argv", ["owner-review", "--probe", str(probe_path),
         "--distribution-binding", str(binding_path), "--artifact-manifest", str(manifest_path),
+        "--distribution-envelope", str(envelope_path),
         "--probe-tool", str(probe_tool), "--review-tool", str(reviewer_tool), "--expected-version", VERSION,
         "--expected-source-commit", SOURCE, "--output", str(output)])
     assert review.main() == 0

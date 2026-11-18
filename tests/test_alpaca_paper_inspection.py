@@ -116,6 +116,16 @@ def test_credentials_invalid_before_io(bad):
     assert not opener.requests
 
 
+def test_equality_forging_credential_is_rejected_before_header_or_io():
+    class ForgedCredential(str):
+        def encode(self,*_args,**_kwargs):return b'FORGED_WIRE_VALUE'
+    opener=Opener()
+    with pytest.raises(module.PaperInspectionError,match='CREDENTIAL_FORMAT_INVALID'):
+        module.inspect_account(ForgedCredential(KEY),SECRET,
+            confirm_read_only_paper=True,opener=opener)
+    assert not opener.requests
+
+
 def test_default_opener_disables_proxies_and_installs_redirect_guard(monkeypatch):
     opener = Opener()
     handlers = []

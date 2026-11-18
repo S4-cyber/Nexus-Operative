@@ -75,7 +75,19 @@ def submit(prepared, opener=None, **changes):
         permission_check=lambda:True,emergency_stop_check=lambda:False,
         credential_check=lambda:True)
     options.update(changes)
-    return module.submit_once(journal,'nx_fixture',KEY,SECRET,**options)
+    api_key=options.pop('api_key',KEY);api_secret=options.pop('api_secret',SECRET)
+    return module.submit_once(journal,'nx_fixture',api_key,api_secret,**options)
+
+
+def test_equality_forging_credential_is_rejected_before_store_or_transport(prepared):
+    class ForgedCredential(str):
+        def encode(self,*_args,**_kwargs):return b'FORGED_WIRE_VALUE'
+    journal,_,budget=prepared;opener=Opener()
+    request_before=journal.path.read_bytes();budget_before=budget.inspect()
+    with pytest.raises(module.PaperSubmissionError,match='CREDENTIAL_FORMAT_INVALID'):
+        submit(prepared,opener,api_key=ForgedCredential(KEY))
+    assert not opener.requests and journal.path.read_bytes()==request_before
+    assert budget.inspect()==budget_before
 
 
 def test_single_attempt_commits_unknown_before_post_and_retains_response(prepared):

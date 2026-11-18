@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.335'
+REVISION = '0.340.336'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1085,6 +1085,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the Activity SSE checkpoint coordinator now requires the complete private transport acknowledgement schema, exact policy/limitations/source mode, account and cursor digests, bounded count arithmetic, interruption status and every denied authority before any durable cursor mutation; this is an internal fail-closed composition boundary using injected fixtures, not provider source, stream coverage, paper-account reconciliation or broker acceptance' if item.id=='M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; Activity SSE reconnect reasons now require one exact built-in allowlisted string at every offline review, saved-credential, reconnect-budget, checkpoint and owner-acceptance ingress before callbacks, journal inspection or creation, reservation and the sole provider GET; malformed or equality-forging reasons are network/storage silent and retain no request authority' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
@@ -1112,7 +1116,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.335 closes an M3 bounded-risk input and serialization seam in the public paper risk screen. The admission boundary now requires one exact built-in request schema, built-in string keys, exact Boolean claims, exact tier text, exact built-in numeric types and finite field-specific magnitude limits. Numeric strings, custom conversion/equality objects, Boolean quantities, mapping subclasses, missing or extra fields, non-finite values and excessive exponents fail closed. The returned cost is finite or null, so adversarial evidence cannot produce a paper candidate with infinity or crash the JSON response. This is local boundary evidence, not verified market data, profitability, broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.336 closes an M8.2 Activity SSE reconnect-reason admission seam. Offline reconnect review, saved credentials, the durable reconnect budget, the checkpoint coordinator and the owner acceptance wrapper now require one exact built-in allowlisted reason before any caller callback, journal inspection or creation, durable reservation or provider GET. Unknown, null and equality-forging string-subclass evidence fails closed without consuming the one bounded request or creating cursor/budget state. This is injected local uncertainty-boundary evidence, not provider identity, entitlement, stream delivery, broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

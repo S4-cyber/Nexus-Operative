@@ -1414,7 +1414,8 @@ class ActivitySSEReconnectBudget:
 
         if confirm_reconnect_attempt is not True:
             _fail('CONFIRMATION_REQUIRED')
-        if reconnect_reason not in REASONS:
+        if (type(reconnect_reason) is not str or
+                reconnect_reason not in REASONS):
             _fail('RECONNECT_REASON_INVALID')
         if not callable(emergency_stop_check):
             _fail('EMERGENCY_STOP_CHECK_INVALID')
@@ -2076,6 +2077,9 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('READ_AUTHORIZATION_REQUIRED')
     if confirm_cursor_checkpoint is not True:
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
+    if (type(reconnect_reason) is not str or
+            reconnect_reason not in REASONS):
+        _fail('RECONNECT_REASON_INVALID')
     if reconnect_budget.account_sha256 != cursor_store.account_sha256:
         _fail('ACCOUNT_DISAGREEMENT')
     if not callable(permission_check):

@@ -1,5 +1,37 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.336 Activity SSE reconnect-reason preflight
+
+**Current development build: 0.340.336 (pre-release).** Activity SSE reconnect
+coordination now rejects every reason except an exact built-in allowlisted value
+before callbacks, journal or vault access, durable reservation and network IO.
+Unknown/null reasons and hostile string subclasses therefore cannot consume the
+single bounded provider request or create durable cursor/retry state.
+
+The exact dependency-complete candidate passed 6,334 tests with 2 platform
+skips and two dependency warnings in 931.22 seconds; focused reconnect,
+credential and acceptance validation passed 905 and the synchronized final
+scope passed 914. All 16 bounded offline profiles passed and saved evidence
+verified against 415 source files /
+`4c5e9ffd1746b7a5711eb55edf95a1db1424ce5961d0256af1328acb0cb4bbdf`.
+The report SHA-256 is
+`e005e3ef4f7474af8722d99f4fb78153fd9b0351083b213ca453100b09b0e8ca`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`c1bdaf9876a6076c83111f3885cd3e91ec6c848c4a95347739e7ce8ea045ec31`.
+The 1,073-path / 108,337,061-byte public-artifact audit found zero findings;
+fresh hosted exact-head security/Gitleaks and regression lanes remain required.
+
+This increment does not accept provider identity, broker paper, sustained
+genuine-feed trials, native Windows, funding/live/cloud or release gates. No
+Portal control changed. OFF defaults, limits, account checks, fail-closed exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right help are unchanged. Weighted implementation remains 38%
+(30–45%, low confidence), 0/9 stages independently accepted, with release and
+trading permission false and no launch date.
+
 ## v0.340.335 bounded paper risk-screen input and JSON boundary
 
 **Current development build: 0.340.335 (pre-release).** The public paper risk

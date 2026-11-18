@@ -1,5 +1,39 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.336 Activity SSE reconnect-reason preflight
+
+The Activity SSE reconnect review, installed credential path, durable retry
+budget, checkpoint coordinator and owner acceptance wrapper now admit only an
+exact built-in allowlisted reconnect reason before caller callbacks, journal or
+vault access, durable state creation and provider IO. Unknown, null and
+equality-forging string-subclass evidence fails locally without spending the
+single bounded request. Focused validation passed 905 tests and the synchronized
+final scope passed 914; the dependency-complete exact candidate passed 6,334
+with 2 platform skips and two dependency warnings in 931.22 seconds.
+
+All sixteen bounded profiles passed. Saved-evidence verification matched 415
+source files / `4c5e9ffd1746b7a5711eb55edf95a1db1424ce5961d0256af1328acb0cb4bbdf`;
+`validation/release_trials_0_340_336.json` SHA-256 is
+`e005e3ef4f7474af8722d99f4fb78153fd9b0351083b213ca453100b09b0e8ca`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+fourteen controller smokes and the 19-case CI inventory passed. The 164-member
+wheel SHA-256 is
+`c1bdaf9876a6076c83111f3885cd3e91ec6c848c4a95347739e7ce8ea045ec31`.
+The 1,073-path / 108,337,061-byte current-tree public-artifact audit found zero
+findings. Fresh exact-head hosted security/Gitleaks, regression, saved-evidence
+and browser-help checks remain required for this candidate; native installer
+and ordinary-user Windows acceptance remain separate gates.
+
+This is local injected M8.2 uncertainty hardening, not provider/source or
+entitlement acceptance, complete stream delivery, paper-account reconciliation,
+genuine-feed sustained trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30–45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.335 bounded paper risk-screen input and JSON boundary
 
 The paper risk-screen admission boundary now requires an exact built-in request

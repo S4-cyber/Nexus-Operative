@@ -3,6 +3,49 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.343 halt-exit, reconciliation-head and Windows artifact boundaries
+
+Three compatible M1/M3/M4/M8/M9 seams now fail closed. A genuine drawdown halt
+continues to reject every new PaperEngine open, but a validated close can reduce
+existing simulated exposure while the halt remains latched. Observation-pair
+and accepted-history reconciliation require exact built-in lowercase 64-hex
+activity heads before retained journal reads, preventing equality-forging
+subclasses from bypassing stale-head fences. The Windows release workflow no
+longer uploads a standalone executable before installer, release-evidence,
+manifest and distribution-binding checks; the final manifest-bound distribution
+is the only retained executable artifact.
+
+The exact candidate passed 6,426 tests with 2 platform skips and two dependency
+warnings in 956.97 seconds. Focused validation passed 124 tests, the broader
+broker-paper/retained-activity/Windows/release scope passed 2,712, and the
+synchronized affected/version scope passed 167. All sixteen bounded profiles
+passed. Saved-evidence verification matched 415 source files /
+`69b85da7dfb85cc36e942c05f53a575d3df1f0f333339e2266fb81554fe6bd84`;
+report SHA-256 is
+`56d0f1abeb904b7509cb5a7281ea964928e37ebd6d06dbbb23287863f39bbecc`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.343 wheel SHA-256 is
+`c20a3fd5701147141eb6590c939ed25920a03a33ce3b97f9822d381bbbae9a70`.
+The final staged-tree audit and introduced-line credential scan found no
+private artifact or high-confidence credential. Local Gitleaks was unavailable,
+so fresh hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #59 exact parent `8e139208776674bf77ea32607049fa4a767ab8f4`
+has passed hosted public security/Gitleaks. Its complete research-safety
+regression remains running and is not claimed as passed. Fresh exact-head hosted
+gates remain mandatory after publication. The push/manual native Windows lane
+remains undispatched.
+
+This is injected local boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.342 rejected-risk, browser-attribution and private-report boundaries
 
 Three independent M3/M8/M9 release seams now fail closed. PaperEngine computes

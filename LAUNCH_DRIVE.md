@@ -1,5 +1,45 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.343 halt-exit, reconciliation-head and Windows artifact boundaries
+
+PaperEngine drawdown halts now preserve validated risk-reducing closes while
+continuing to reject all new exposure and remaining latched. Observation-pair
+and accepted-history reconciliation reject non-exact-string activity heads
+before any retained journal read. Windows packaging no longer retains an early
+executable-only artifact; executable publication occurs only in the final
+source/checksum-manifest-bound distribution after installer and evidence gates.
+
+The exact candidate passed 6,426 tests with 2 platform skips and two dependency
+warnings in 956.97 seconds. Focused validation passed 124 tests, the broader
+broker-paper/retained-activity/Windows/release scope passed 2,712 and the
+synchronized affected/version scope passed 167. All sixteen bounded profiles
+passed. Saved evidence matched 415 source files /
+`69b85da7dfb85cc36e942c05f53a575d3df1f0f333339e2266fb81554fe6bd84`;
+`validation/release_trials_0_340_343.json` SHA-256 is
+`56d0f1abeb904b7509cb5a7281ea964928e37ebd6d06dbbb23287863f39bbecc`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+fourteen controller smokes and the 19-case CI inventory passed. The 164-member
+wheel SHA-256 is
+`c20a3fd5701147141eb6590c939ed25920a03a33ce3b97f9822d381bbbae9a70`.
+The staged-tree artifact and introduced-line high-confidence credential scans
+found zero findings. Local Gitleaks was unavailable, so fresh hosted
+checksum-pinned Gitleaks remains mandatory.
+
+PR #59 exact parent `8e139208776674bf77ea32607049fa4a767ab8f4`
+has passed hosted security/Gitleaks; its complete research-safety regression
+remains active and unclaimed. Fresh exact-head hosted gates are mandatory for
+this candidate, and the push/manual native installer/distribution lane remains
+undispatched.
+
+This is local injected M1/M3/M4/M8/M9 boundary hardening, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30-45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.342 rejected-risk, browser-attribution and private-report boundaries
 
 PaperEngine now keeps a higher candidate peak provisional until exposure and

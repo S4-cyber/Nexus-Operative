@@ -96,6 +96,17 @@ def test_explicit_account_and_history_head_are_mandatory(tmp_path,changes,code):
     assert store.path.read_bytes()==before
 
 
+def test_equality_forging_history_head_is_rejected_without_writes(tmp_path):
+    class EqualHead(str):
+        def __eq__(self,other):return True
+        def __ne__(self,other):return False
+
+    store=target(tmp_path);before=store.path.read_bytes()
+    with pytest.raises(ValueError,match='HEAD_REFERENCE'):
+        run(store,expected_head=EqualHead('0'*64))
+    assert store.path.read_bytes()==before
+
+
 def test_rehashed_foreign_account_or_promoted_manifest_cannot_be_used(tmp_path):
     first,last=observations();first['account_id']=OTHER;rehash(first)
     with pytest.raises(ValueError,match='ACCOUNT_DISAGREEMENT'):run(target(tmp_path),opening_observation=first)

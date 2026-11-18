@@ -273,6 +273,21 @@ def test_wrong_explicit_activity_head_is_rejected(tmp_path):
         subject.review(**options)
 
 
+def test_equality_forging_activity_head_is_rejected_before_journal_reads(tmp_path,monkeypatch):
+    class EqualHead(str):
+        def __eq__(self,other):return True
+        def __ne__(self,other):return False
+
+    options=prepared(tmp_path);before=snapshot(tmp_path);called=False
+    def forbidden(*args,**kwargs):
+        nonlocal called;called=True;raise AssertionError
+    monkeypatch.setattr(subject,'_journal_file_scope',forbidden)
+    options['expected_activity_head']=EqualHead('0'*64)
+    with pytest.raises(ValueError,match='ACTIVITY_HEAD_REFERENCE'):
+        subject.review(**options)
+    assert called is False and snapshot(tmp_path)==before
+
+
 def test_any_journal_change_during_composition_is_rejected(tmp_path,monkeypatch):
     options=prepared(tmp_path);original=subject.acceptance_status;calls=0
     def changed(**kwargs):

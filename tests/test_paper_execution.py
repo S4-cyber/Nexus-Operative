@@ -57,6 +57,20 @@ def test_cap_rejection_cannot_poison_peak_or_trigger_false_halt():
     event=e.open("terrestrial","IWM","UP","10","100",now(),{"SPY":"100"})
     assert event["action"]=="OPEN" and e.halted is False
 
+def test_drawdown_halt_blocks_open_but_allows_existing_position_close():
+    e=PaperEngine(capital="10000")
+    e.open("terrestrial","SPY","UP","100","100",now(),{})
+    e.cash=Decimal("9000")
+    with pytest.raises(ValueError,match="Max drawdown: engine halted"):
+        e._risk({"SPY":"1"})
+    with pytest.raises(ValueError,match="Engine halted"):
+        e.open("terrestrial","IWM","UP","10","100",now(),{"SPY":"100"})
+    event=e.close("SPY","100",now(),{})
+    assert event["action"]=="CLOSE"
+    assert "SPY" not in e.positions and e.halted is True
+    with pytest.raises(ValueError,match="Engine halted"):
+        e.open("terrestrial","IWM","UP","10","100",now(),{})
+
 def test_symbol_allowlist():
     e=PaperEngine()
     with pytest.raises(ValueError):e.open("solar","UNKNOWN","UP","1","500",now(),{})

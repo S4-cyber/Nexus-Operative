@@ -218,7 +218,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             if policy!=admit(policy.get('id')):_fail()
             evidence=forward_evidence.review(db,sid)
             if not evidence['integrity_ok']:_fail()
-            points=evidence['points'];seen+=len(points);previous=None;in_window=False
+            points=evidence['points'];seen+=len(points);previous=None
+            lifecycle_in_window=session_start<=end and session_end>=start
             terminal_reasons=forward_sessions.binding_reasons(last,state,sid,policy,
                 evidence['head_sha256'],len(points),points[-1]['cycle'] if points else 0,
                 evidence['parent_head_sha256'])
@@ -233,7 +234,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 checked_eligible=point['quote_eligible'] is True and checked
                 good=checked_eligible and source==PUBLIC
                 if start<=at<=end:
-                    in_window=True;selected+=1;eligible+=int(point['quote_eligible'])
+                    selected+=1;eligible+=int(point['quote_eligible'])
                     revalidated+=int(checked_eligible)
                     disagreements+=int(point['quote_eligible'] is True and not checked)
                     public+=int(source==PUBLIC);injected+=int(source==INJECTED);unknown+=int(source not in (PUBLIC,INJECTED))
@@ -248,7 +249,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                         left,right=max(start,old),min(end,at)
                         if left<right:intervals.append((left,right))
                 previous=at,good
-            if in_window:
+            if lifecycle_in_window:
                 session_count+=1
                 quote_error_sessions+=int(session_quote_errors>0)
                 if state=='RUNNING':running+=1

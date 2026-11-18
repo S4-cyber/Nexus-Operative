@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 
@@ -82,3 +83,10 @@ def test_cli_rehashes_final_installer_and_refuses_output_overwrite(tmp_path, mon
     installer.write_bytes(b"changed after smoke")
     output.unlink()
     assert review.main() == 1
+
+
+def test_final_installer_rehash_rejects_hardlinked_alias(tmp_path):
+    installer=tmp_path/'installer.exe';installer.write_bytes(b'installer fixture')
+    os.link(installer,tmp_path/'retained-alias.exe')
+    with pytest.raises(review.DistributionBindingError,match='installer file'):
+        review._installer(installer)

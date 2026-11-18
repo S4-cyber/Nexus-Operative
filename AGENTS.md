@@ -3,6 +3,47 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.348 canonical durability, trial-session and installer-file boundaries
+
+Durable order commands now reject polymorphic values before storage creation
+and apply the same canonical JSON values retained for cold replay. Quote clocks
+and persistent paper settings require finite exact built-in numerics before
+exposure or mutation. Sustained-trial review counts every overlapping session
+lifecycle, including empty running or cleanup sessions. Funding preview rejects
+coercion, fractional cents and extra fields and explicitly grants no bank,
+transfer, funding, money-movement or live-order authority. Broker UUID inputs
+require exact strings before journal creation. Windows installer phase and
+distribution review require a stable regular single-link file and bind its
+pre-open identity to the opened descriptor, rejecting hardlinked aliases.
+
+The exact candidate passed 6,477 tests with 2 platform skips and two dependency
+warnings in 900.31 seconds. The combined affected scope passed 438 tests and
+the release/roadmap/evidence scope passed 188, both with the same warnings. All
+sixteen bounded profiles passed. Saved-evidence verification matched 418 source
+files / `9eef981d241ab714ed030e376d1598dd7b717ec0d5a4c7f810e5da6c6e1cdcec`;
+report SHA-256 is
+`ecfb6f9252b09dc7964f1b4d45c65bdb4633a5b91a5c7ad36c3499e05fe9817d`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.348 wheel
+reports the synchronized version and has SHA-256
+`d3dd99119755a3ad2baa098e992207280378bae1347ccfba0403948e8b9abb9b`.
+
+PR #64 exact parent `332a73f2174210201333a711ad3021b825398d0e`
+has green hosted security/Gitleaks, saved evidence and browser/help jobs; its
+complete regression remains active and unclaimed. PR #63's equivalent
+regression was cancelled and is not a pass. Fresh exact-head hosted gates are
+mandatory for this candidate. The push/manual native Windows lane remains
+undispatched.
+
+This is injected local M1/M3/M4/M5/M7/M8/M9 boundary evidence, not
+broker-paper acceptance, genuine-feed sustained-trial realism, native Windows
+acceptance, funding/live/cloud readiness, performance, profitability or
+release approval. No UI control or editable parameter changed. Engagement
+remains OFF by default; limits, account checks, fail-closed exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation stays weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted.
+
 ## v0.340.347 recovery-identity, bounded-fill and evidence-authority boundaries
 
 Broker lookup clocks, completion tokens and transport outcomes now require

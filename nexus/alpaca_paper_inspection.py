@@ -58,7 +58,7 @@ class _NoRedirect(HTTPRedirectHandler):
 
 
 def _uuid(value):
-    if not isinstance(value, str) or len(value) != 36:
+    if type(value) is not str or len(value) != 36:
         _fail('PAPER_INSPECTION_ACCOUNT_ID_INVALID')
     try:
         return str(UUID(value))

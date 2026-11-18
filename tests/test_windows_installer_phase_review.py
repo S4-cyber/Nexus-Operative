@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import json
+import os
 
 import pytest
 
@@ -105,3 +106,10 @@ def test_phase_review_cli_writes_only_verified_summary(tmp_path, capsys, monkeyp
     result = verify(evidence())
     with pytest.raises(review.PhaseEvidenceError):
         review._write(output, result)
+
+
+def test_installer_digest_rejects_hardlinked_alias(tmp_path):
+    installer=tmp_path/'installer.exe';installer.write_bytes(b'installer fixture')
+    os.link(installer,tmp_path/'retained-alias.exe')
+    with pytest.raises(review.PhaseEvidenceError,match='installer file'):
+        review._installer_digest(installer)

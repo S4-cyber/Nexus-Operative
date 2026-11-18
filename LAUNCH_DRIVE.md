@@ -1,5 +1,40 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.348 — canonical durability, trial-session and installer-file boundaries
+
+This increment makes warm execution and cold replay consume one bounded exact
+command representation; rejects polymorphic quote clocks, paper settings and
+broker UUIDs before mutation or store creation; keeps empty overlapping
+non-clean sessions visible to sustained-trial incident review; makes funding
+preview reject coercion, fractional cents and extra fields while granting no
+authority; and binds Windows installer review to one stable regular single-link
+file so hardlinked aliases cannot inherit a reviewed digest.
+
+Local exact-source verification: 6,477 passed, 2 skipped and two known
+dependency warnings in 900.31 seconds; affected scope 438 passed; synchronized
+release/evidence scope 188 passed; all 16 bounded profiles passed; saved
+evidence matched 418 files /
+`9eef981d241ab714ed030e376d1598dd7b717ec0d5a4c7f810e5da6c6e1cdcec`
+with report SHA-256
+`ecfb6f9252b09dc7964f1b4d45c65bdb4633a5b91a5c7ad36c3499e05fe9817d`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+syntax and all 14 Node controller smokes passed. The 164-member synchronized
+wheel SHA-256 is
+`d3dd99119755a3ad2baa098e992207280378bae1347ccfba0403948e8b9abb9b`.
+
+Parent PR #64 has green exact-head security/Gitleaks, saved evidence and
+browser/help; complete regression is still running and unclaimed. PR #63's
+regression was cancelled. Fresh exact-head hosted gates and the undispatched
+push/manual native Windows installer lane remain required.
+
+No real broker/account/feed, native ordinary-user Windows host, funding system
+or cloud deployment was accessed. No UI control changed. Engagement and every
+financial permission remain OFF by default; limits, checks, fail-closed exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Weighted implementation remains 38%
+(30-45%, low confidence), with 0/9 stages independently accepted. Release,
+trading and funding approval remain false and no launch date is predicted.
+
 ## v0.340.347 recovery-identity, bounded-fill and evidence-authority boundaries
 
 Broker recovery now rejects forged clock, completion-token and outcome scalar

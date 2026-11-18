@@ -159,6 +159,19 @@ def test_even_complete_declared_public_coverage_cannot_accept_market_or_broker_t
     assert result['over_limit_coverage_gap_seconds']=='0'
 
 
+def test_empty_running_session_overlapping_window_blocks_incident_free_target(tmp_path,monkeypatch):
+    points=[(i,True) for i in range(0,72*3600+1,10)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED'),([],trial.PUBLIC,'RUNNING')])
+    result=run(path,72*3600)
+    assert result['coverage_fraction']=='1.000000'
+    assert result['sessions_in_window']==2 and result['running_sessions']==1
+    assert result['nonstopped_or_cleanup_review_sessions']==1
+    assert result['operational_incidents_present'] is True
+    assert result['declared_coverage_target_met'] is False
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS' in result['review_reasons']
+
+
 def test_high_aggregate_coverage_does_not_hide_over_limit_feed_gap(tmp_path,monkeypatch):
     points=[(i,True) for i in range(0,72*3600+1,5) if i not in (105,110)]
     path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])

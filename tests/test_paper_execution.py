@@ -1,7 +1,7 @@
 import time
 import pytest
 from decimal import Decimal
-from nexus.paper_execution import PaperEngine
+from nexus.paper_execution import PaperEngine, quote_age_ok
 
 def now():return time.time()
 
@@ -108,6 +108,18 @@ def test_polymorphic_close_symbol_cannot_select_or_remove_retained_position():
 def test_execution_cost_cannot_make_modeled_fill_price_zero_or_negative(cost_bps):
     with pytest.raises(ValueError,match='below 10000 bps'):
         PaperEngine(cost_bps=cost_bps)
+
+
+def test_polymorphic_stale_quote_clock_cannot_create_exposure():
+    class ForgedTime(float):
+        def __rsub__(self,other):return 0
+
+    engine=PaperEngine(capital='10000')
+    before=(engine.cash,dict(engine.positions),list(engine.history),engine.peak,engine.halted)
+    with pytest.raises(ValueError,match='Quote too old'):
+        engine.open('terrestrial','SPY','UP','10','500',ForgedTime(-1e20),{})
+    assert (engine.cash,engine.positions,engine.history,engine.peak,engine.halted)==before
+    assert quote_age_ok(1000,ForgedTime(1000)) is False
 
 def test_no_automatic_live_placement():
     from nexus import paper_execution

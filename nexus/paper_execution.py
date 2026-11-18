@@ -7,6 +7,7 @@ exposure, NOT margin borrowing, short sale, or an executable broker order.
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 import time
+import math
 
 D=Decimal
 TIERS={"terrestrial":D("0.01"),"solar":D("0.02"),"universal":D("0.03")}
@@ -27,8 +28,9 @@ def positive(n):
     return v
 
 def quote_age_ok(ts,now=None):
-    if isinstance(ts,bool) or not isinstance(ts,(float,int)): return False
+    if type(ts) not in (float,int) or not math.isfinite(ts) or not 0<=ts<=1e12:return False
     now=time.time() if now is None else now
+    if type(now) not in (float,int) or not math.isfinite(now) or not 0<=now<=1e12:return False
     return -1<=now-ts<=10
 
 @dataclass

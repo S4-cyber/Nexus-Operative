@@ -122,6 +122,21 @@ def test_account_head_and_interval_fences_preserve_history(tmp_path,changes,code
     assert store.path.read_bytes()==before
 
 
+def test_equality_forging_head_is_rejected_before_retained_history_read(tmp_path,monkeypatch):
+    class EqualHead(str):
+        def __eq__(self,other): return True
+        def __ne__(self,other): return False
+
+    store=target(tmp_path); before=store.path.read_bytes(); data=fixture_inputs()
+    monkeypatch.setattr(store,'inspect',lambda: pytest.fail('retained history read'))
+    with pytest.raises(ValueError,match='HEAD_REFERENCE'):
+        review.review(store,expected_account_id=ACCOUNT,
+            expected_head=EqualHead('0'*64),
+            opening_balances=data['opening_balances'],opening_at=data['opening_at'],
+            observed_balances=data['observed_balances'],observed_at=data['observed_at'])
+    assert store.path.read_bytes()==before
+
+
 def test_stale_review_head_rejected_after_an_append(tmp_path):
     store=target(tmp_path);old=store.inspect()['head_sha256']
     store.retain([],[],after='2026-10-16T00:00:00Z',until=START)

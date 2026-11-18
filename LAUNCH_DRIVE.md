@@ -1,5 +1,33 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.345 request-identity, balance-head and distribution-envelope boundaries
+
+Durable broker requests reject client-ID string subclasses before lookup or
+mutation and replay applies the same exact-type defense. Retained gross-balance
+review rejects forged history heads before storage access. The Windows
+distribution now ships a verified outer checksum envelope binding the inner
+payload manifest to the distribution-binding review.
+
+The exact candidate passed 6,434 tests with 2 platform skips and two dependency
+warnings in 978.24 seconds. Focused validation passed 97 tests and the
+synchronized affected/version/roadmap scope passed 108. All sixteen bounded
+profiles passed. Saved evidence matched 415 source files /
+`a6656009ef278df090a83adacfc2ba5a773fd06b143095c60263b46a9ca55b64`;
+`validation/release_trials_0_340_345.json` SHA-256 is
+`f465312b190931267bc7618351fda3ded4f42796fe5c749b928a3cce6670f660`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and fourteen controller smokes passed. The 164-member wheel SHA-256 is
+`a4c8fa30a3e3041d0c3f9dff3ef4a9d9886c70f5e06324abf5df32d16c9f381e`.
+
+Fresh exact-head hosted gates remain mandatory, and the push/manual native
+installer/distribution lane remains undispatched. This increment accepts no
+broker, sustained-market, native Windows, funding/live/cloud or release gate.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30-45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.344 interruption-token and Windows distribution boundaries
 
 Broker lookup, paper-read pacing and retained activity acceptance now reject

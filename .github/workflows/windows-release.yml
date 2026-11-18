@@ -182,6 +182,10 @@ jobs:
           python tools/windows_distribution_binding_review.py --phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json" --artifact-manifest release/artifact-manifest.json --installer "release/NexusOperative-Setup-$version.exe" --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json"
           if ($LASTEXITCODE -ne 0) { throw 'Installer distribution binding validation failed' }
           Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json
+          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/distribution-envelope.json release/artifact-manifest.json release/distribution-binding-review.json
+          if ($LASTEXITCODE -ne 0) { throw 'Distribution envelope creation failed' }
+          python -m nexus.artifact_manifest verify release/distribution-envelope.json release
+          if ($LASTEXITCODE -ne 0) { throw 'Distribution envelope verification failed' }
       - name: Upload distribution with source and checksum manifest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -190,6 +194,7 @@ jobs:
             release/NexusOperative.exe
             release/NexusOperative-Setup-*.exe
             release/artifact-manifest.json
+            release/distribution-envelope.json
             release/release-trial-evidence.json
             release/distribution-binding-review.json
             release/windows-owner-profile-probe.ps1

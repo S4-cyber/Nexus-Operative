@@ -3,6 +3,51 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.349 cut-ordering, consent, open-session and release-tree boundaries
+
+Guarded durable order mutations now re-sample the independent emergency latch
+after acquiring the SQLite write lock, so a cut published during contention
+vetoes the waiting submit or fill. Optional paid-provider preview consent is a
+bounded, duplicate-free exact JSON object checked after the local-origin gate
+and before provider authorization. A retained RUNNING trial remains an open
+incident even when its last update predates the review window. Release source
+fingerprints reject symlinks, non-regular files, identity swaps and paths
+outside the reviewed root; the public artifact audit rejects non-regular Git
+entries in the current tree and reachable history. The Windows distribution
+lane requires exactly one installer match with the reviewed versioned name
+immediately before its sole executable-bearing upload.
+
+The exact candidate passed 6,486 tests with 2 platform skips and two dependency
+warnings in 882.03 seconds. The synchronized affected/release scope passed 519
+tests with one platform skip and the same warnings. All sixteen bounded profiles passed. Saved-evidence
+verification matched 418 source files /
+`81b0467e97718e5750e45b8777e93b2d17ba0c264d8d67d01cc0d6289e662be5`;
+report SHA-256 is
+`b7d040715e55ef4c00343e4757923edf0b6f7ec21cf7da7c4c5e0cc9adede1b8`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.349 wheel
+reports the synchronized version and has SHA-256
+`41cdb14963030baebc6f4fc0c4b341cf4944fac1754cd3bf51938e9eb8c24adf`.
+The staged candidate audit found no artifact findings across 1,087 paths/blobs;
+the reachable-history audit found none across 1,108 paths, 10,913 blobs,
+1,216 commits and 1,414,832,379 bytes. The introduced high-confidence
+credential scan found zero signatures. Local Gitleaks remains unavailable, so
+the checksum-pinned hosted scan is mandatory.
+
+PR #65 exact head `d9dd5ebe3bcbc1d89ebdacc07b96f1b8486d26bd`
+has green hosted security/Gitleaks, saved-evidence, browser/help and complete
+regression jobs. Fresh exact-head hosted gates are mandatory for this
+candidate. The push/manual native Windows installer lane remains undispatched.
+
+This is injected local M3/M4/M7/M9 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.348 canonical durability, trial-session and installer-file boundaries
 
 Durable order commands now reject polymorphic values before storage creation

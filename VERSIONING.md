@@ -1,5 +1,46 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.349 cut-ordering, consent, open-session and release-tree boundaries
+
+**Current development build: 0.340.349 (pre-release).** Emergency admission is
+rechecked after the durable-order write lock; optional paid-provider consent is
+bounded, duplicate-free and exact before authorization; RUNNING trial sessions
+remain unresolved across later review windows; source evidence and public Git
+audits reject non-regular entries; and the Windows upload lane admits only its
+single reviewed versioned installer.
+
+The exact candidate passed 6,486 tests with 2 platform skips and two dependency
+warnings in 882.03 seconds. The synchronized affected/release scope passed 519
+tests with one platform skip and the same warnings. All sixteen bounded offline profiles passed. Saved
+evidence matched 418 source files /
+`81b0467e97718e5750e45b8777e93b2d17ba0c264d8d67d01cc0d6289e662be5`;
+report SHA-256 is
+`b7d040715e55ef4c00343e4757923edf0b6f7ec21cf7da7c4c5e0cc9adede1b8`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The synchronized 164-member
+wheel reports 0.340.349 and has SHA-256
+`41cdb14963030baebc6f4fc0c4b341cf4944fac1754cd3bf51938e9eb8c24adf`.
+The staged candidate audit found no artifact findings in 1,087 paths/blobs and
+the full fetched reachable-history audit found none in 1,108 paths, 10,913
+blobs and 1,216 commits. The introduced high-confidence credential scan found
+zero signatures. Local Gitleaks is unavailable and the hosted pinned scan
+remains required.
+
+PR #65 exact head `d9dd5ebe3bcbc1d89ebdacc07b96f1b8486d26bd` is
+fully green for hosted security/Gitleaks, saved evidence, browser/help and
+complete regression. Fresh exact-head workflows remain mandatory for this
+candidate, and the push/manual native Windows installer lane is undispatched.
+
+This is local injected M3/M4/M7/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation remains weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted; trading/funding/release permissions remain false and no
+launch date is established.
+
 ## v0.340.348 canonical durability, trial-session and installer-file boundaries
 
 **Current development build: 0.340.348 (pre-release).** Durable commands admit

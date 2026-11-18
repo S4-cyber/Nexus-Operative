@@ -3,6 +3,7 @@ from contextlib import closing
 import os
 from pathlib import Path
 import sqlite3
+import threading
 
 from fastapi.testclient import TestClient
 import pytest
@@ -81,9 +82,48 @@ def test_write_operation_pins_dynamic_root_before_emergency_check(tmp_path,monke
         seen.append(path);monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(second));return False
     monkeypatch.setattr(emergency_intent,'requested',retarget)
     gateway.submit('one','BTC-USD','BUY',100,tier='terrestrial')
-    assert seen==[first/'order_lifecycle.sqlite3']
+    assert seen==[first/'order_lifecycle.sqlite3',first/'order_lifecycle.sqlite3']
     assert (first/'order_lifecycle.sqlite3').exists()
     assert (first/'paper_portfolio.sqlite3').exists() and not second.exists()
+
+
+def test_write_rechecks_emergency_latch_after_sqlite_mutation_lock(tmp_path,monkeypatch):
+    gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3');samples=[]
+    def requested(path):
+        samples.append(path)
+        return len(samples)==2
+    monkeypatch.setattr(emergency_intent,'requested',requested)
+    with pytest.raises(ValueError,match='EMERGENCY_CUT_REQUESTED'):
+        gateway.submit('late','BTC-USD','BUY',100,tier='terrestrial')
+    assert samples==[gateway._path(),gateway._path()]
+    with sqlite3.connect(gateway._path()) as db:
+        assert db.execute('SELECT COUNT(*) FROM commands').fetchone()==(0,)
+
+
+def test_cut_published_during_sqlite_contention_vetoes_waiting_submit(tmp_path,monkeypatch):
+    gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
+    gateway.initialize_account(1000)
+    sampled=threading.Event();outcome=[];original=emergency_intent.requested
+    def requested(path):
+        value=original(path)
+        if not value:sampled.set()
+        return value
+    monkeypatch.setattr(emergency_intent,'requested',requested)
+    with sqlite3.connect(gateway._path(),timeout=1) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        def submit():
+            try:gateway.submit('late','BTC-USD','BUY',100,tier='terrestrial')
+            except Exception as error:outcome.append(error)
+        worker=threading.Thread(target=submit);worker.start()
+        assert sampled.wait(5)
+        emergency_intent.persist(gateway._path())
+        blocker.commit()
+        worker.join(5)
+    assert not worker.is_alive() and len(outcome)==1
+    assert type(outcome[0]) is ValueError and str(outcome[0])=='EMERGENCY_CUT_REQUESTED'
+    emergency_intent.clear(gateway._path())
+    report=gateway.recovery_report()
+    assert report['commands']==1 and report['orders']==[]
 
 
 def test_write_operation_keeps_portfolio_with_opened_order_root(tmp_path,monkeypatch):

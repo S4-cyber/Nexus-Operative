@@ -1,5 +1,7 @@
 """Nexus Operative development desktop API. Simulation only: no brokerage or money movement."""
 import math
+import json
+import re
 import threading
 import asyncio
 from contextlib import asynccontextmanager
@@ -96,7 +98,7 @@ async def application_lifespan(application):
             if lifecycle_executor is not None:
                 lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.348",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.349",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -244,9 +246,38 @@ register_paper_onboarding(app, _require_local_portal)
 from nexus.ai_onboarding import register as register_ai_onboarding
 register_ai_onboarding(app, _require_local_portal)
 
-class PublicAiConsent(BaseModel):
-    product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
-    preview_sha256: str = Field(pattern="^[a-f0-9]{64}$")
+PUBLIC_AI_CONSENT_MAX_BODY = 2048
+
+
+def _public_ai_consent_pairs(items):
+    value = {}
+    for key, item in items:
+        if key in value:
+            raise ValueError('DUPLICATE_KEY')
+        value[key] = item
+    return value
+
+
+async def _public_ai_consent(request):
+    if request.headers.get('content-type', '').split(';')[0].strip().lower() != 'application/json':
+        raise ValueError('CONTENT_TYPE')
+    length = request.headers.get('content-length')
+    if length is not None and (not length.isascii() or not length.isdecimal() or
+                               len(length) > 4 or int(length) > PUBLIC_AI_CONSENT_MAX_BODY):
+        raise ValueError('BODY_SIZE')
+    raw = bytearray()
+    async for chunk in request.stream():
+        if len(raw) + len(chunk) > PUBLIC_AI_CONSENT_MAX_BODY:
+            raise ValueError('BODY_SIZE')
+        raw.extend(chunk)
+    value = json.loads(raw.decode('utf-8'), object_pairs_hook=_public_ai_consent_pairs)
+    if type(value) is not dict or set(value) != {'product', 'preview_sha256'}:
+        raise ValueError('FIELDS')
+    product = value['product']; digest = value['preview_sha256']
+    if (type(product) is not str or product not in ('BTC-USD', 'ETH-USD', 'SOL-USD') or
+            type(digest) is not str or re.fullmatch(r'[a-f0-9]{64}', digest) is None):
+        raise ValueError('VALUES')
+    return product, digest
 
 @app.get("/api/paper/ai-provider/public-preview/{product}")
 def public_ai_research_preview(product: str):
@@ -254,9 +285,11 @@ def public_ai_research_preview(product: str):
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.post("/api/paper/ai-provider/public-preview/send")
-def public_ai_research_send(consent:PublicAiConsent,request:Request):
+async def public_ai_research_send(request:Request):
     _require_local_portal(request)
-    try:return ai_authorize_preview(consent.product,consent.preview_sha256)
+    try:product,digest=await _public_ai_consent(request)
+    except Exception:raise HTTPException(status_code=422,detail='PUBLIC_AI_CONSENT_BODY_INVALID')
+    try:return ai_authorize_preview(product,digest)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/paper/ai-provider/advisory-benchmark")
@@ -374,7 +407,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.348", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.349", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}

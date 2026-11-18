@@ -255,7 +255,8 @@ class DurableOrderGateway:
         root_guard=_OrderRootIdentity(self._path(),create=True)
         path=root_guard.path
         root_guard.require_current()
-        if any(step[0] in ('submit','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps):
+        cut_guarded=any(step[0] in ('submit','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps)
+        if cut_guarded:
             try:cut=emergency_intent.requested(path)
             except (ValueError,OSError):cut=True
             if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
@@ -270,6 +271,13 @@ class DurableOrderGateway:
                 portfolio=execution_portfolio.attach(db,path.parent/'paper_portfolio.sqlite3')
                 root_guard.require_current()
                 db.execute('BEGIN IMMEDIATE')
+                # Linearize ordinary mutation against the independent latch
+                # after any SQLite wait. A cut published first must win.
+                if cut_guarded:
+                    try:cut=emergency_intent.requested(path)
+                    except (ValueError,OSError):cut=True
+                    if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
+                    root_guard.require_current()
                 gateway,count=self._restore(db)
                 results=[]
                 for method,args,kwargs,payload in prepared:

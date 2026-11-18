@@ -12,6 +12,7 @@ from pathlib import Path
 import platform
 import re
 import sqlite3
+import stat
 import subprocess
 import sys
 import tempfile
@@ -2881,14 +2882,31 @@ def source_digest(root):
     configuration, so normalize only CRLF pairs before hashing.  Lone CR bytes
     and every other byte remain significant.
     """
-    root = Path(root); entries = []
+    root = Path(root); resolved_root = root.resolve(strict=True); entries = []
     paths = set(root.glob('nexus/*.py')) | set(root.glob('tests/*.py')) | set(root.glob('tools/*.py')) | set(root.glob('tools/*.cjs')) | set(root.glob('tools/*.ps1'))
     paths |= set(root.glob('ops/*.py')) | set(root.glob('ops/*.mjs'))
     paths |= set(root.glob('.github/workflows/*.yml')) | set(root.glob('.github/workflows/*.yaml')) | set(root.glob('portable/*.py'))
     paths |= {root/'pyproject.toml', root/'dashboard/portal_preview.html', root/'installer/NexusOperative.iss'}
     paths |= {root/name for name in ('.gitignore','.gitleaks.toml','.github/CODEOWNERS','.github/dependabot.yml') if (root/name).is_file()}
     for path in sorted(paths):
-        source=path.read_bytes().replace(b'\r\n',b'\n')
+        try:
+            before=path.lstat()
+            if not stat.S_ISREG(before.st_mode):raise OSError()
+            resolved=path.resolve(strict=True)
+            if not resolved.is_relative_to(resolved_root):raise OSError()
+            descriptor=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0))
+            try:
+                opened=os.fstat(descriptor)
+                if not stat.S_ISREG(opened.st_mode) or not os.path.samestat(before,opened):raise OSError()
+                with os.fdopen(descriptor,'rb') as source_file:
+                    descriptor=-1;source=source_file.read()
+            finally:
+                if descriptor>=0:os.close(descriptor)
+            after=path.lstat()
+            if not stat.S_ISREG(after.st_mode) or not os.path.samestat(before,after):raise OSError()
+        except OSError:
+            raise ReleaseTrialError('RELEASE_SOURCE_FILE_INVALID') from None
+        source=source.replace(b'\r\n',b'\n')
         entries.append((path.relative_to(root).as_posix(), hashlib.sha256(source).hexdigest()))
     return dict(files=len(entries), sha256=hashlib.sha256(json.dumps(entries, separators=(',', ':')).encode()).hexdigest())
 

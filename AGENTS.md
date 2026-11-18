@@ -3,6 +3,40 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.337 public account-evidence summary type boundary
+
+The allowlisted public account-evidence summary now requires exact built-in
+top-level keys, mode, policy and status text plus exact built-in gross-currency
+keys before comparison, decimal conversion or public copying. Equality-forging
+string subclasses and custom keys fail with the fixed public-summary diagnostic,
+so attacker-controlled private policy/status text cannot cross the privacy
+boundary. Direct account-evidence and downstream provider-reconciliation
+validation passed 409 tests; the synchronized component/version/roadmap scope
+passed 420, both with two dependency warnings. The exact candidate passed 6,339
+tests with 2 platform skips and the same warnings in 926.21 seconds.
+
+All sixteen bounded profiles passed. Saved-evidence verification matched 415
+source files / `5a2b2dc716ebea4bd23ba130a53560acc36dbeaf82a0ab73c16633c41696dcf3`;
+report SHA-256 is
+`2102999857c8c1fcdbd1cc5ad22708fab405dc44116c47874b67722bde1b0bad`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.337 wheel
+SHA-256 is
+`f7aa5a0185b7478160dce69790a22cd36c6d2a265825f3c0174bb6e4e5c3caad`.
+The final 1,074-path / 108,535,028-byte staged-tree public-artifact audit and
+4,286-added-line high-confidence credential scan found zero findings. Fresh
+exact-head hosted security/Gitleaks, browser, evidence and Windows regression
+remain mandatory after publication.
+
+This is injected local M4 data-minimization hardening, not authentication of
+private evidence, broker-paper acceptance, genuine-feed sustained-trial
+evidence, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control changed. Engagement remains OFF
+by default; limits, account checks, fail-closed exits, independent emergency
+stop, seven beginner tabs and black/bright-purple bottom-right hover help remain
+intact. Implementation stays weighted 38% (30–45%, low confidence), with 0/9
+stages independently accepted.
+
 ## v0.340.336 Activity SSE reconnect-reason preflight
 
 The installed Activity SSE path now requires one exact built-in allowlisted

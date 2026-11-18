@@ -1,5 +1,37 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.337 public account-evidence summary type boundary
+
+The allowlisted public account-evidence summary now validates exact built-in
+top-level keys, mode, policy, status and gross-currency keys before comparison,
+decimal conversion or copying. Equality-forging string subclasses and custom
+keys fail closed, preventing private attacker-controlled policy/status text from
+entering the public report. Direct account-evidence/provider-reconciliation
+checks passed 409 tests and the synchronized component/version/roadmap scope
+passed 420. The exact candidate passed 6,339 with 2 platform skips and two
+dependency warnings in 926.21 seconds.
+
+All sixteen bounded profiles passed. Saved-evidence verification matched 415
+source files / `5a2b2dc716ebea4bd23ba130a53560acc36dbeaf82a0ab73c16633c41696dcf3`;
+`validation/release_trials_0_340_337.json` SHA-256 is
+`2102999857c8c1fcdbd1cc5ad22708fab405dc44116c47874b67722bde1b0bad`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and fourteen controller smokes passed. The 164-member wheel SHA-256 is
+`f7aa5a0185b7478160dce69790a22cd36c6d2a265825f3c0174bb6e4e5c3caad`.
+The final 1,074-path / 108,535,028-byte staged-tree public-artifact audit and
+4,286-added-line high-confidence credential scan found zero findings. Fresh
+exact-head hosted gates remain mandatory; native installer and ordinary-user
+Windows acceptance remain separate gates.
+
+This is local injected M4 privacy hardening, not authentication of retained
+private evidence, broker-paper acceptance, genuine-feed sustained trial
+realism, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control changed; engagement remains OFF
+by default, and limits, account checks, fail-closed exits, emergency-stop
+independence, seven tabs and black/bright-purple bottom-right hover help remain
+unchanged. The weighted 38% baseline (30–45%, low confidence), 0/9 accepted
+stages, release/trading permissions and unset launch date remain unchanged.
+
 ## v0.340.336 Activity SSE reconnect-reason preflight
 
 The Activity SSE reconnect review, installed credential path, durable retry

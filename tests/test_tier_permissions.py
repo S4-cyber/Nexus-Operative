@@ -1,9 +1,38 @@
 import pytest
+from decimal import Decimal
 from fastapi.testclient import TestClient
 from nexus.app import app
 from nexus import app as backend
 from nexus.tier_permissions import current,configure,require_entry
 from nexus.tier_performance import tier_performance
+
+
+class EqualText(str):
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
+@pytest.mark.parametrize('notional',(
+    0,-1,True,None,'10',float('nan'),float('inf'),
+    Decimal('NaN'),Decimal('Infinity')))
+def test_invalid_entry_value_fails_before_settings_or_permission_read(
+        tmp_path,monkeypatch,notional):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr('nexus.tier_permissions.current',
+        lambda:pytest.fail('tier permission state read'))
+    with pytest.raises(ValueError,match='^RISK_TIER_INTENT_INVALID$'):
+        require_entry('terrestrial',notional)
+    assert not tuple(tmp_path.iterdir())
+
+
+def test_type_confused_tier_fails_before_notional_or_settings_read(
+        tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr('nexus.tier_permissions.current',
+        lambda:pytest.fail('tier permission state read'))
+    with pytest.raises(ValueError,match='^UNKNOWN_RISK_TIER$'):
+        require_entry(EqualText('terrestrial'),10)
+    assert not tuple(tmp_path.iterdir())
 
 def test_new_install_terrestrial_preset_and_caps_are_independent(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))

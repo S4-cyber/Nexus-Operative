@@ -1,5 +1,38 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.338 tier-entry admission boundary
+
+Tier-entry admission now validates one exact built-in tier and a finite,
+strictly positive exact built-in integer, float or Decimal notional before any
+settings or permission read. Boolean, stringified, non-finite, zero, negative
+and equality-forging inputs fail closed without creating settings state;
+durable-order and forward callers pass validated Decimal values. The direct
+tier/forward/durable/preflight/portfolio scope passed 96 tests and the
+synchronized release/version/roadmap scope passed 107. The exact candidate
+passed 6,349 with 2 platform skips and two dependency warnings in 915.45 seconds.
+
+All sixteen bounded profiles passed. Saved-evidence verification matched 415
+source files / `2a25dcc8d1ad3114ba1ac5066752f15625a760fa0a64a48c97597f66c0c01452`;
+`validation/release_trials_0_340_338.json` SHA-256 is
+`8dfe22369592a0bd4161856a011336ff781569eec4d9767e224095fae1751d1f`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+fourteen controller smokes and the 19-case CI inventory passed. The 164-member
+wheel SHA-256 is
+`883ec0d843c4755be42e8f0d6cd64340e7fe997fddc22c7698e3a7f1c7e1eb09`.
+The final 1,075-path / 108,733,285-byte staged-tree artifact audit and
+4,289-line introduced credential scan found zero findings. Fresh exact-head
+hosted gates remain mandatory; native
+installer and ordinary-user Windows acceptance remain separate gates.
+
+This is local injected M3 risk-boundary hardening, not broker-paper acceptance,
+genuine-feed sustained trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30–45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.337 public account-evidence summary type boundary
 
 The allowlisted public account-evidence summary now validates exact built-in

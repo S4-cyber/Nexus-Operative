@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.337'
+REVISION = '0.340.338'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1093,6 +1093,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the allowlisted public account-evidence summary now requires exact built-in top-level keys, mode, policy and status text plus exact built-in gross-currency keys before comparison or public copying, so equality-forging text subclasses cannot pass private policy/status text or ambiguous keys through the privacy boundary' if item.id=='M4' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; simulated tier-entry permission now preflights one exact built-in tier and a finite strictly positive exact built-in integer, float or Decimal notional before settings/permission reads, while durable and forward callers convert their already validated stored values to Decimal; Boolean, stringified, non-finite, zero, negative and equality-forging inputs fail storage-silent' if item.id=='M3' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
@@ -1120,7 +1124,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.337 closes an M4 privacy-boundary type-confusion seam in the public account-evidence summary. Exact built-in result keys, mode, policy and status text plus exact built-in gross-currency keys are required before equality checks, Decimal conversion or public copying. Equality-forging string subclasses and custom keys fail with a fixed diagnostic, so attacker-controlled private policy/status text cannot enter the allowlisted public report. This is injected local data-minimization evidence, not authentication of private evidence, broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.338 closes an M3 bounded-risk tier-entry admission seam. Tier permission now requires one exact built-in tier and a finite strictly positive exact built-in integer, float or Decimal notional before any settings or permission read. Boolean, stringified, non-finite, zero, negative and equality-forging inputs fail with fixed diagnostics and create no settings state; durable and forward callers pass validated Decimal values. This is injected local risk-boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

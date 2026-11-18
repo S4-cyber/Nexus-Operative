@@ -528,7 +528,7 @@ class PaperForwardRunner:
                 move=(self._prices[-1][1]/self._prices[0][1]-1)*10000
                 if move<self._policy['entry_threshold_bps']:return self._record('HOLD','EXPERIMENTAL_ENTRY_THRESHOLD_NOT_MET')
                 amount=min(Decimal(self._policy['maximum_entry_usd']),Decimal(account['initial'])*Decimal(self._policy['initial_entry_fraction_bps'])/10000)
-                try:require_entry(self._tier,str(amount))
+                try:require_entry(self._tier,amount)
                 except ValueError as exc:return self._record('VETO',str(exc))
                 if Decimal(account['cash'])<=Decimal(account['initial'])*(1-Decimal(self._policy['capital_loss_bps'])/10000):
                     self._stop.set();return self._record('PAUSED','INITIAL_CAPITAL_LOSS_THRESHOLD')

@@ -1,5 +1,35 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.344 interruption-token and Windows distribution boundaries
+
+**Current development build: 0.340.344 (pre-release).** Broker lookup and paper
+read interruption tokens, expected heads and retained activity heads require
+exact built-in lowercase 64-hex strings before storage access. The Windows
+workflow exposes executables only through one manifest-bound distribution
+artifact containing both the standalone executable and installer.
+
+The exact candidate passed 6,431 tests with 2 platform skips and two dependency
+warnings in 964.66 seconds. Focused validation passed 162 tests and the
+synchronized affected/version/roadmap scope passed 173. All 16 bounded offline
+profiles passed and saved evidence verified against 415 source files /
+`3ee944a6f5a706d3fd549886fc4414fd7a8cbdf081d8b11df70fa2f73d02a893`.
+The report SHA-256 is
+`15fbefb00c8d1dbf8aa6143e404f2bc85c9cc973a516929fbfcba8e97947c0b4`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax and fourteen controller smokes passed. The
+164-member wheel SHA-256 is
+`9bbd3b5e389e7e80dacc066c374d05140fd1fb978f951ce6f62403f2c8cdf193`.
+
+This candidate requires fresh exact-head hosted checks. Native Windows
+installer and ordinary-user acceptance remain separate undispatched gates.
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
 ## v0.340.343 halt-exit, reconciliation-head and Windows artifact boundaries
 
 **Current development build: 0.340.343 (pre-release).** Drawdown halt blocks new

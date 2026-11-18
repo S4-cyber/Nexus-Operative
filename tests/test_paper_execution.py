@@ -47,3 +47,27 @@ def test_symbol_allowlist():
 def test_no_automatic_live_placement():
     from nexus import paper_execution
     assert not hasattr(paper_execution.PaperEngine,"submit_live_order")
+
+@pytest.mark.parametrize('price',(Decimal('1e10000'),Decimal('1e-10000')))
+def test_extreme_open_price_is_rejected_before_state_mutation(price):
+    e=PaperEngine(capital='10000')
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError):
+        e.open('solar','SPY','UP','100',price,now(),{})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+@pytest.mark.parametrize('price',(Decimal('1e10000'),Decimal('1e-10000')))
+def test_extreme_close_price_is_rejected_before_state_mutation(price):
+    e=PaperEngine(capital='10000')
+    e.open('solar','SPY','UP','100','500',now(),{})
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError):e.close('SPY',price,now(),{})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+@pytest.mark.parametrize(('field','value'),(
+    ('capital',Decimal('1e10000')),('capital',Decimal('1e-10000')),
+    ('fee',Decimal('1e10000')),('fee',Decimal('1e-10000')),
+    ('cost_bps',Decimal('1e10000')),('cost_bps',Decimal('1e-10000')),
+))
+def test_extreme_engine_parameters_are_rejected(field,value):
+    with pytest.raises(ValueError):PaperEngine(**{field:value})

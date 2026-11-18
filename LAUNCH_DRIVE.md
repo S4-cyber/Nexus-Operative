@@ -1,5 +1,46 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.341 direct-input mutation and disclosure boundaries
+
+PaperEngine now rejects extreme finite direct values outside `1e-18` through
+`1e12` before risk-state mutation. Public ticker products require exact
+built-in allowlisted text before transport or URL construction. Public
+quote-bundle summaries validate one exact review mapping and capture exact
+public count/text scalars once. Activity SSE checkpoints validate and detach
+exact event envelopes before any caller-controlled copy hook. The regressions
+prove rejected inputs make no provider request, cursor write, public private-text
+copy, or simulated cash/position/history/peak/halt mutation.
+
+The exact candidate passed 6,418 tests with 2 platform skips and two dependency
+warnings in 894.98 seconds. All sixteen bounded profiles passed. Saved evidence
+matched 415 source files /
+`2fe37b377a2cc36a11dbdd8374254137a92fd1616254fe807d56c0050a94553d`;
+`validation/release_trials_0_340_341.json` SHA-256 is
+`78273c0d5e6c5d558581aac9cef29c92a68d4f27da475051504065ff289876d7`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+fourteen controller smokes and the 19-case CI inventory passed. The 164-member
+wheel SHA-256 is
+`ed83f6ff980bb40f25c07e01b4b9c93745fa8920620fdd550508e43b5e091160`.
+The final staged-tree artifact audit covered 1,078 paths with zero findings;
+the 4,386-line introduced high-confidence credential scan also found none.
+Local Gitleaks was unavailable, so fresh hosted checksum-pinned Gitleaks
+remains mandatory before promotion.
+
+PR #57 exact parent `99bde3cb39f02f04facaa0ae88942bd76dc3b5f0`
+has passed hosted security/Gitleaks, browser-help and saved evidence; its
+complete Windows regression remains active and unclaimed. Fresh exact-head
+hosted gates are mandatory for this candidate, and the push/manual native
+installer/distribution lane remains undispatched.
+
+This is local injected M3/M4/M7/M8 boundary hardening, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed; engagement remains OFF by default, and limits, account
+checks, fail-closed exits, emergency-stop independence, seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The weighted 38%
+baseline (30-45%, low confidence), 0/9 accepted stages, release/trading
+permissions and unset launch date remain unchanged.
+
 ## v0.340.340 provider-envelope snapshot and price bounds
 
 Public Coinbase ticker and paper-forward quote values now share an inclusive

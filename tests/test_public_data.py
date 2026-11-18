@@ -42,6 +42,22 @@ def test_product_allowlist_prevents_ssrf():
     assert q["product"]=="ETH-USD"
     assert called==["https://api.exchange.coinbase.com/products/ETH-USD/ticker"]
 
+def test_product_allowlist_rejects_equality_forging_path_before_transport():
+    class ForgedProduct(str):
+        def __hash__(self):return hash('BTC-USD')
+        def __eq__(self,other):return other=='BTC-USD'
+    product=ForgedProduct('BTC-USD/../../accounts?ignored=')
+    called=[]
+    with pytest.raises(ValueError,match='Product not on public allowlist'):
+        read_ticker(product,fetch=lambda url:called.append(url),now=NOW)
+    with pytest.raises(ValueError,match='Product not on public allowlist'):
+        parse_ticker(product,payload(),received=NOW)
+    assert not called
+
+@pytest.mark.parametrize('product',('BTC-USD','ETH-USD','SOL-USD'))
+def test_exact_builtin_products_remain_allowlisted(product):
+    assert parse_ticker(product,payload(),received=NOW)['product']==product
+
 def test_transport_failure_does_not_return_fake_quote():
     def down(_):raise TimeoutError()
     with pytest.raises(ValueError):read_ticker("BTC-USD",fetch=down,now=NOW)

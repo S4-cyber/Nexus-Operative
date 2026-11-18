@@ -3,6 +3,51 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.341 direct-input mutation and disclosure boundaries
+
+Four compatible M3/M4/M7/M8 seams now fail closed before simulated account
+mutation, public URL construction, public diagnostic copying or Activity SSE
+checkpoint copying. PaperEngine capital, fee, cost, notional, market and mark
+values share a finite `1e-18` through `1e12` envelope; rejected extreme opens
+and closes leave cash, positions, history, peak and halt state unchanged. Public
+ticker products require exact built-in allowlisted text before cache, flight,
+transport or URL construction. Public quote-bundle summaries require one exact
+built-in review mapping/schema and capture exact text/count values once.
+Activity SSE checkpoint events pass exact envelope validation into a detached
+snapshot before any caller-controlled `__deepcopy__` protocol.
+
+The exact candidate passed 6,418 tests with 2 platform skips and two dependency
+warnings in 894.98 seconds. Focused validation passed 243 tests, the broader
+downstream API/trial/reconciliation scope passed 783, and the synchronized
+affected/version scope passed 254. All sixteen bounded profiles passed.
+Saved-evidence verification matched 415 source files /
+`2fe37b377a2cc36a11dbdd8374254137a92fd1616254fe807d56c0050a94553d`;
+report SHA-256 is
+`78273c0d5e6c5d558581aac9cef29c92a68d4f27da475051504065ff289876d7`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.341 wheel SHA-256 is
+`ed83f6ff980bb40f25c07e01b4b9c93745fa8920620fdd550508e43b5e091160`.
+The final staged-tree artifact audit covered 1,078 paths with zero findings;
+the 4,386-line introduced high-confidence credential scan also found none.
+Local Gitleaks was unavailable, so fresh hosted checksum-pinned Gitleaks
+remains mandatory before promotion.
+
+PR #57 exact parent `99bde3cb39f02f04facaa0ae88942bd76dc3b5f0`
+has passed hosted public security/Gitleaks, browser-help and saved-evidence
+jobs. Its complete Windows regression remains running and is not claimed as
+passed. Fresh exact-head hosted jobs remain mandatory for this increment; the
+push/manual Windows EXE/installer/distribution workflow remains undispatched.
+
+This is injected local boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.340 provider-envelope snapshot and price bounds
 
 Public ticker parsing and paper-forward quote admission now share a finite

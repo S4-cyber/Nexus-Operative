@@ -46,10 +46,10 @@ def _fail(code):
 
 
 def _frozen_events(value, code):
-    if type(value) is not list:
-        _fail(code)
     try:
-        frozen = copy.deepcopy(value)
+        # Validate exact built-in containers/keys/scalars before invoking any
+        # caller-controlled copy protocol.  _budget returns a detached snapshot.
+        frozen = envelope._budget(value)
         # Prove that the private input is canonical-JSON serializable before IO.
         json.loads(canonical(frozen))
     except Exception:
@@ -180,7 +180,9 @@ def _initial_review_result(value):
 
 
 def _transport_result(value):
-    if type(value) is not tuple or len(value) != 2:
+    if (type(value) is not tuple or len(value) != 2 or
+            type(value[0]) is not dict or not value[0] or
+            type(value[1]) is not list or not value[1]):
         _fail('TRANSPORT_RESULT_INVALID')
     return value
 

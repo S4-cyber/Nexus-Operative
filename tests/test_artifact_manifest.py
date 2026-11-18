@@ -126,6 +126,27 @@ def test_cli_create_verify_missing_file_and_refuse_overwrite(tmp_path):
     assert subprocess.run(verify, capture_output=True).returncode == 1
 
 
+def test_distribution_envelope_detects_binding_review_substitution(tmp_path):
+    payload=tmp_path/'NexusOperative.exe'; payload.write_bytes(b'application')
+    inner=tmp_path/'artifact-manifest.json'
+    subprocess.run(_command()+['create','--version',VERSION,'--commit',SOURCE,
+        '--output',str(inner),str(payload)],check=True,capture_output=True)
+    review=tmp_path/'distribution-binding-review.json'
+    review.write_text('{"passed":true}\n',encoding='utf-8')
+    envelope=tmp_path/'distribution-envelope.json'
+    subprocess.run(_command()+['create','--version',VERSION,'--commit',SOURCE,
+        '--output',str(envelope),str(inner),str(review)],check=True,capture_output=True)
+    inner_verify=_command()+['verify',str(inner),str(tmp_path)]
+    envelope_verify=_command()+['verify',str(envelope),str(tmp_path)]
+    assert subprocess.run(inner_verify,capture_output=True).returncode==0
+    assert subprocess.run(envelope_verify,capture_output=True).returncode==0
+    review.write_text('{"passed":false}\n',encoding='utf-8')
+    assert subprocess.run(inner_verify,capture_output=True).returncode==0
+    changed=subprocess.run(envelope_verify,capture_output=True)
+    assert changed.returncode==1
+    assert changed.stdout==b'ARTIFACT_MANIFEST_CHECK_FAILED\n'
+
+
 @pytest.mark.parametrize("raw", (
     b'{"schema":"nexus.artifacts.v1","schema":"nexus.artifacts.v1"}',
     b'{"schema":NaN}',

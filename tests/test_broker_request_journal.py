@@ -87,6 +87,18 @@ def test_observation_requires_durable_attempt_and_conflicting_transition_rolls_b
         assert store.recovery()==before
 
 
+def test_equality_forging_client_id_cannot_corrupt_durable_request_identity(store):
+    class ForgedClientId(str):
+        def __hash__(self): return hash('nx_fixture')
+        def __eq__(self, other): return other == 'nx_fixture'
+
+    armed(store); before=store.recovery(); raw=store.path.read_bytes()
+    with pytest.raises(ValueError,match='INVALID_BROKER_CLIENT_ID'):
+        store.observe(ForgedClientId('forged'),response())
+    assert store.path.read_bytes()==raw
+    assert journal.BrokerRequestJournal(store.path,ACCOUNT).recovery()==before
+
+
 def test_extra_payload_and_response_fields_are_never_retained(store):
     p=plan();p['secret']='PRIVATE_PLAN';store.prepare(p)
     store.mark_submission_uncertain('nx_fixture')

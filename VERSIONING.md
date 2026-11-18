@@ -1,5 +1,35 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.345 request-identity, balance-head and distribution-envelope boundaries
+
+**Current development build: 0.340.345 (pre-release).** Durable broker request
+identities and retained gross-balance history heads require exact built-in
+strings before storage selection or mutation. Windows distribution publication
+adds a verified outer checksum envelope binding the inner payload manifest and
+distribution review.
+
+The exact candidate passed 6,434 tests with 2 platform skips and two dependency
+warnings in 978.24 seconds. Focused validation passed 97 tests and the
+synchronized affected/version/roadmap scope passed 108. All 16 bounded offline
+profiles passed and saved evidence verified against 415 source files /
+`a6656009ef278df090a83adacfc2ba5a773fd06b143095c60263b46a9ca55b64`.
+The report SHA-256 is
+`f465312b190931267bc7618351fda3ded4f42796fe5c749b928a3cce6670f660`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax and fourteen controller smokes passed. The
+164-member wheel SHA-256 is
+`a4c8fa30a3e3041d0c3f9dff3ef4a9d9886c70f5e06324abf5df32d16c9f381e`.
+
+This candidate requires fresh exact-head hosted checks. Native Windows
+installer and ordinary-user acceptance remain separate undispatched gates.
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
 ## v0.340.344 interruption-token and Windows distribution boundaries
 
 **Current development build: 0.340.344 (pre-release).** Broker lookup and paper

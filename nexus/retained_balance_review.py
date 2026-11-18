@@ -176,7 +176,7 @@ def review(store, *, expected_account_id, expected_head, opening_balances, openi
     if type(store) is not BrokerActivityStore: _fail('STORE_REQUIRED')
     account = adapter._uuid(expected_account_id)
     if store.account != account: _fail('ACCOUNT_DISAGREEMENT')
-    if not isinstance(expected_head, str) or re.fullmatch(r'[0-9a-f]{64}', expected_head) is None: _fail('HEAD_REFERENCE')
+    if type(expected_head) is not str or re.fullmatch(r'[0-9a-f]{64}', expected_head) is None: _fail('HEAD_REFERENCE')
     opening = balances(opening_balances); observed = balances(observed_balances)
     start, end = adapter._instant(opening_at), adapter._instant(observed_at)
     if end < start: _fail('INTERVAL_REGRESSION')

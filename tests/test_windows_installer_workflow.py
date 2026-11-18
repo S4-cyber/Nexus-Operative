@@ -64,10 +64,17 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert 'Copy-Item tools/windows_owner_profile_review.py release/windows-owner-profile-review.py' in workflow
     assert 'release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py' in workflow
     assert 'Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json' in workflow
+    envelope_create='python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/distribution-envelope.json release/artifact-manifest.json release/distribution-binding-review.json'
+    envelope_verify='python -m nexus.artifact_manifest verify release/distribution-envelope.json release'
+    assert envelope_create in workflow
+    assert envelope_verify in workflow
     assert 'release/windows-owner-profile-probe.ps1' in workflow
     assert 'release/windows-owner-profile-review.py' in workflow
     assert workflow.index('python -m nexus.artifact_manifest verify') < workflow.index('python tools/windows_distribution_binding_review.py')
-    assert workflow.index('python tools/windows_distribution_binding_review.py') < workflow.index('name: Upload distribution with source and checksum manifest')
+    assert workflow.index('python tools/windows_distribution_binding_review.py') < workflow.index('Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json')
+    assert workflow.index('Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json') < workflow.index(envelope_create)
+    assert workflow.index(envelope_create) < workflow.index(envelope_verify)
+    assert workflow.index(envelope_verify) < workflow.index('name: Upload distribution with source and checksum manifest')
     assert 'NexusOperative-Standalone-Windows' not in workflow
     assert 'name: Upload standalone EXE' not in workflow
     assert 'NexusOperative-Windows-Installer' not in workflow
@@ -86,6 +93,7 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert 'release/NexusOperative-Setup-*.exe' in distribution_upload
     assert 'release/artifact-manifest.json' in distribution_upload
     assert 'release/distribution-binding-review.json' in distribution_upload
+    assert 'release/distribution-envelope.json' in distribution_upload
     assert 'name: Preserve installer acceptance evidence\n        if: always()' in workflow
     assert '${{ runner.temp }}/nexus-installer-evidence' in workflow
     assert workflow.count(PRIOR_RECOVERY_FIXTURE_COMMIT)==2

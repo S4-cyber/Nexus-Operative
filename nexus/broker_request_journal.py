@@ -304,7 +304,7 @@ def _explicit_transaction(db):
 def _plan(value):
     tracker = contract.SnapshotTracker(value)
     payload = tracker._payload
-    if not isinstance(payload['client_order_id'], str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', payload['client_order_id']):
+    if type(payload['client_order_id']) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', payload['client_order_id']):
         raise ValueError('INVALID_BROKER_CLIENT_ID')
     quantity = contract.number(payload['qty']); price = contract.number(payload['limit_price'])
     with localcontext() as context:
@@ -518,7 +518,7 @@ class BrokerRequestJournal:
         if kind not in ('SUBMISSION_UNCERTAIN','OBSERVE') or set(body) not in shapes:
             raise ValueError('BROKER_JOURNAL_EVENT_INVALID')
         identity=body['client_order_id']
-        if not isinstance(identity,str) or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        if type(identity) is not str or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         request=requests[identity]
         if kind=='SUBMISSION_UNCERTAIN':
             if request['uncertain']:raise ValueError('BROKER_JOURNAL_DUPLICATE_ATTEMPT')
@@ -545,7 +545,7 @@ class BrokerRequestJournal:
 
     def _apply_lookup(self, requests, broker_ids, kind, body):
         identity=body.get('client_order_id')
-        if not isinstance(identity,str) or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        if type(identity) is not str or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         request=requests[identity]; state=request['lookup']; now=lookup.clock(body.get('evaluated_at'))
         if now<self._clock_floor(requests):raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
         if kind=='LOOKUP_INTERRUPTED':
@@ -742,7 +742,7 @@ class BrokerRequestJournal:
 
     @staticmethod
     def _identity(value):
-        if not isinstance(value,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',value):
+        if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',value):
             raise ValueError('INVALID_BROKER_CLIENT_ID')
 
     def observe(self, client_order_id, response):

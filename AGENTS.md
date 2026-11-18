@@ -3,6 +3,44 @@ Total output lines: 3006
 
 # Nexus Operative continuity instructions
 
+## v0.340.345 request-identity, balance-head and distribution-envelope boundaries
+
+Broker request client IDs now require exact built-in strings both at public
+admission and replay application, preventing equality-forging subclasses from
+selecting another retained request, persisting a different literal identity and
+making cold replay fail. Retained gross-balance review rejects non-exact history
+heads before any retained read. Windows packaging creates and verifies an outer
+distribution envelope over exactly the inner payload manifest and distribution
+binding review, so post-review substitution invalidates the shipped envelope
+without a circular digest.
+
+The exact candidate passed 6,434 tests with 2 platform skips and two dependency
+warnings in 978.24 seconds. Focused validation passed 97 tests and the
+synchronized affected/version/roadmap scope passed 108. All sixteen bounded
+profiles passed. Saved-evidence verification matched 415 source files /
+`a6656009ef278df090a83adacfc2ba5a773fd06b143095c60263b46a9ca55b64`;
+report SHA-256 is
+`f465312b190931267bc7618351fda3ded4f42796fe5c749b928a3cce6670f660`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.345 wheel
+SHA-256 is
+`a4c8fa30a3e3041d0c3f9dff3ef4a9d9886c70f5e06324abf5df32d16c9f381e`.
+
+PR #61 exact parent `41e1d78e0102f475a0294dca2242d70651af40ce`
+has passed hosted security/Gitleaks, saved evidence and browser/help; its
+complete regression remains active and unclaimed. Fresh exact-head hosted gates
+remain mandatory for this candidate, and the push/manual native Windows lane
+remains undispatched.
+
+This is injected local M1/M4/M8/M9 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.344 interruption-token and Windows distribution boundaries
 
 Broker lookup interruption tokens and expected heads, paper-read pacing tokens,

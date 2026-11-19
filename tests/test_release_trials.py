@@ -1585,6 +1585,20 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     with pytest.raises(ValueError,match='FORWARD_AUTHORITY'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['fault_injection']['source_loss']['fetches']=2
     with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    for field,value in (('post_pause_fetches',1),('worker_started',False),
+        ('order_hash_preserved',False),('evidence_hash_preserved',False),('cold_reopen_disabled',False),
+        ('healthy_reason','AUTOMATIC_RESTART')):
+        changed=copy.deepcopy(result);changed['fault_injection']['source_loss'][field]=value
+        with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    changed['fault_injection']['clock_regression']['review_reasons']=[]
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    changed['fault_injection']['invalid_clock']['reopened_evidence_sha256']='0'*64
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    changed['fault_injection']['stale_quote']['reopened_orders_sha256']='0'*64
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['fault_injection']['live_orders_enabled']=True
     with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['sessions'][0]['session']=result['recovered']['sessions'][1]['session']

@@ -1,5 +1,25 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.362 — actual-worker failure and cold-reopen fencing
+
+The mandatory disposable forward profile now proves its four injected failure
+treatments through the real local worker lifecycle instead of manual cycle
+calls. Exact durable pause evidence is captured while the worker and ownership
+are active; zero post-pause fetches are observed before abrupt child death. A
+cold runner stays disabled and fetch-free, and only an explicit distinct
+healthy session reacquires released ownership. Both sessions remain orderless
+and the failed session's scoped evidence hash is preserved.
+
+Final local regression passed 6,589 tests with two platform skips and one
+existing warning. All sixteen bounded offline profiles and saved-evidence
+verification passed. This closes an offline M7.1 evidence gap only: it is not
+native power-loss acceptance, sustained genuine-feed validation, broker-paper
+acceptance, funding/live/cloud readiness, performance, profitability or release
+approval. Engagement remains OFF by default; limits, account checks, exits and
+independent emergency stop remain unchanged. No UI control changed. Progress
+remains 38% weighted (about 40%, 30-45% uncertainty, low confidence), 0/9
+accepted, with no release permission, trading permission or launch date.
+
 ## v0.340.361 — final paper-asset and benchmark-clock resampling
 
 The internal Alpaca paper single-attempt boundary now re-reads BTC/USD asset

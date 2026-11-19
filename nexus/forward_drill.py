@@ -10,7 +10,8 @@ import time
 from nexus.recovery_drill import fingerprint
 
 LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include runner, evidence and durable linked ledger. '
-    'No actual feed, worker scheduling, process-kill, streaming, broker or sustained-market throughput acceptance.')
+    'Fault treatments use the actual worker loop with accelerated local scheduling and abrupt child termination, but no '
+    'actual feed, operating-system power loss, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
     'commit_durability','fault_injection','isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
@@ -18,12 +19,20 @@ RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverag
 SESSION_PUBLIC_KEYS=frozenset(('session','orders_sha256','evidence_sha256','quote_observations','modeled_buy_orders',
     'modeled_sell_orders'))
 LATENCY_PUBLIC_KEYS=frozenset(('p50_ms','p95_ms','p99_ms'))
-FAULT_CASE_PUBLIC_KEYS=frozenset(('cycles','fetches','reasons','paused','orders_created','ownership_released'))
+FAULT_CASE_PUBLIC_KEYS=frozenset(('cycles','fetches','reasons','paused','orders_created','ownership_released',
+    'worker_started','worker_paused_while_alive','cleanup_blocked_before_process_death','post_pause_fetches',
+    'process_terminated','cold_reopen_disabled','cold_worker_alive','cold_fetches_before_prepare',
+    'cold_ownership_available','failed_session','stored_state','counts','quote_observations',
+    'rejected_observations','review_reasons','failed_orders_sha256','failed_evidence_sha256',
+    'reopened_orders_sha256','reopened_evidence_sha256','order_hash_preserved',
+    'evidence_hash_preserved','new_session_distinct','healthy_decision','healthy_reason',
+    'healthy_orders_created','automatic_restart'))
 FAULT_PUBLIC_KEYS=frozenset(('mode','passed','source_loss','stale_quote','clock_regression','invalid_clock',
     'orders_created','sessions_paused','ownership_released','actual_provider_requests','automatic_retries',
     'broker_connected','live_orders_enabled','release_approved','limitations'))
-FAULT_LIMITATIONS=('Injected local failures only; proves bounded fail-closed runner behavior, not actual provider '
-    'availability, clock hardware, network recovery, broker operation or sustained-market acceptance.')
+FAULT_LIMITATIONS=('Injected local failures, accelerated worker scheduling and abrupt local child termination only; '
+    'proves bounded fail-closed worker/cold-reopen behavior, not actual provider availability, operating-system power '
+    'loss, clock hardware, network recovery, broker operation or sustained-market acceptance.')
 COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EXECUTION_OWNERSHIP_NOT_CHECKED',
     'INJECTED_OBSERVATIONS_IN_WINDOW','NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS',
     'ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','QUOTE_ERRORS_RETAINED_IN_WINDOW',
@@ -111,44 +120,141 @@ def _exercise(rounds):
     return dict(recovered=_review(sessions),cycle_latency=percentiles(latencies),cycles=len(latencies))
 
 
+def _write_fault_signal(path,payload):
+    """Publish one private temporary parent/child fixture handshake durably."""
+    path=Path(path);temporary=path.with_suffix('.tmp')
+    with open(temporary,'w',encoding='utf-8') as stream:
+        json.dump(payload,stream,sort_keys=True);stream.flush();os.fsync(stream.fileno())
+    os.replace(temporary,path)
+
+
+def _fault_worker_process(directory,name,signal_path):
+    """Run one real worker and block ordinary cleanup after its durable pause."""
+    from datetime import datetime,timezone
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus import paper_forward
+    from nexus.tier_permissions import configure
+    root=Path(directory);os.environ['NEXUS_PORTABLE_DATA']=str(root)
+    configure('terrestrial',True);paper_forward.INTERVAL=.02
+    samples=[0];fetches=[0]
+    def clock():
+        sample=samples[0];samples[0]+=1
+        if sample>=3 and name=='clock_regression':return 999.0
+        if sample==3 and name=='invalid_clock':return float('nan')
+        return 1000.0
+    def fetch(product):
+        fetches[0]+=1
+        if name=='source_loss':return None
+        received=980.0 if name=='stale_quote' else 1000.0
+        return dict(product=product,provider='coinbase_exchange_public',read_only=True,
+            orders_allowed=False,bid=100.0,ask=100.01,last=100.0,received_at=received,
+            exchange_time=datetime.fromtimestamp(1000,timezone.utc).isoformat())
+    gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+    runner=paper_forward.PaperForwardRunner(gateway,fetch,clock)
+    threading=__import__('threading');paused=threading.Event();release=threading.Event()
+    ordinary_release=runner._release_stopped_ownership
+    def blocked_release():
+        if runner._stop.is_set() and runner._session:
+            paused.set();release.wait()
+        ordinary_release()
+    runner._release_stopped_ownership=blocked_release
+    started=runner.start('terrestrial')
+    if not paused.wait(10):raise ValueError('FORWARD_DRILL_WORKER_PAUSE_TIMEOUT')
+    status=runner.status();at_pause=fetches[0]
+    time.sleep(.08)
+    _write_fault_signal(signal_path,dict(session=status['session'],cycles=status['cycles'],fetches=at_pause,
+        post_pause_fetches=fetches[0]-at_pause,worker_started=started['worker_alive'],
+        worker_paused_while_alive=status['worker_alive'] and not status['enabled'],
+        cleanup_blocked_before_process_death=status['ownership_held']))
+    while True:time.sleep(1)
+
+
+def _fault_reasons(runner,session):
+    with runner._read_db() as db:
+        details=[] if db is None else db.execute('SELECT detail FROM cycles ORDER BY id').fetchall()
+    return [item['reason'] for detail, in details for item in (json.loads(detail),)
+            if item['session']==session and item['decision']!='START']
+
+
+def _session_evidence_hash(report):
+    """Hash session evidence without the database-wide observation count."""
+    scoped=json.loads(json.dumps(report,sort_keys=True))
+    scoped['quote_evidence'].pop('storage_total',None)
+    return fingerprint(scoped)
+
+
+def _run_fault_worker(root,name):
+    signal=root/'worker-paused.json'
+    expression=('import sys; from nexus.forward_drill import _fault_worker_process; '
+        '_fault_worker_process(sys.argv[1],sys.argv[2],sys.argv[3])')
+    child=subprocess.Popen([sys.executable,'-c',expression,str(root),name,str(signal)],
+        stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True)
+    try:
+        deadline=time.monotonic()+20
+        while not signal.is_file():
+            if child.poll() is not None:
+                raise ValueError('FORWARD_DRILL_FAULT_WORKER_FAILED: '+(child.stderr.read() if child.stderr else '')[-2000:])
+            if time.monotonic()>=deadline:raise ValueError('FORWARD_DRILL_FAULT_WORKER_TIMEOUT')
+            time.sleep(.01)
+        observed=json.loads(signal.read_text())
+        child.kill();child.wait(timeout=10)
+        observed['process_terminated']=child.returncode is not None
+        return observed
+    finally:
+        if child.poll() is None:
+            child.kill();child.wait(timeout=10)
+        if child.stderr is not None:child.stderr.close()
+
+
 def _faults(directory):
-    """Exercise missing/stale source and bad clocks without provider or worker IO."""
+    """Exercise actual-worker failure, process-death and cold-reopen fences."""
     from datetime import datetime,timezone
     from nexus.durable_orders import DurableOrderGateway
     from nexus.paper_forward import PaperForwardRunner
     from nexus.tier_permissions import configure
     parent=Path(directory);parent.mkdir(parents=True,exist_ok=True)
-    previous=os.environ.get('NEXUS_PORTABLE_DATA')
-    reports={};total_orders=0
+    previous=os.environ.get('NEXUS_PORTABLE_DATA');reports={};total_orders=0
     try:
         for name in ('source_loss','stale_quote','clock_regression','invalid_clock'):
-            root=parent/name;root.mkdir()
-            os.environ['NEXUS_PORTABLE_DATA']=str(root)
-            configure('terrestrial',True)
-            now=[1000.0];fetches=[0]
-            def fetch(product):
+            root=parent/name;root.mkdir();observed=_run_fault_worker(root,name)
+            os.environ['NEXUS_PORTABLE_DATA']=str(root);configure('terrestrial',True)
+            fetches=[0]
+            def healthy_fetch(product):
                 fetches[0]+=1
-                if name=='source_loss':return None
-                received=now[0]-20 if name=='stale_quote' else now[0]
                 return dict(product=product,provider='coinbase_exchange_public',read_only=True,
-                    orders_allowed=False,bid=100.0,ask=100.01,last=100.0,received_at=received,
-                    exchange_time=datetime.fromtimestamp(now[0],timezone.utc).isoformat())
+                    orders_allowed=False,bid=100.0,ask=100.01,last=100.0,received_at=2000.0,
+                    exchange_time=datetime.fromtimestamp(2000,timezone.utc).isoformat())
             gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
-            runner=PaperForwardRunner(gateway,fetch,lambda:now[0])
-            runner.prepare('terrestrial')
-            outcomes=[]
-            if name in ('source_loss','stale_quote'):
-                for _ in range(3):
-                    now[0]+=1;outcomes.append(runner.single_cycle())
-            else:
-                now[0]=999.0 if name=='clock_regression' else float('nan')
-                outcomes.append(runner.single_cycle())
-            status=runner.status();orders=len(gateway.recovery_report()['orders'])
-            total_orders+=orders
-            reports[name]=dict(cycles=len(outcomes),fetches=fetches[0],
-                reasons=[item['reason'] for item in outcomes],paused=not status['enabled'],
-                orders_created=orders,ownership_released=not status['ownership_held'])
-            runner.stop('DISPOSABLE_FAULT_INJECTION')
+            reopened=PaperForwardRunner(gateway,healthy_fetch,lambda:2000.0)
+            cold=reopened.status();session=observed['session']
+            failed_orders=gateway.session_orders(session);failed_evidence=reopened.evidence_report(session)
+            failed_orders_hash=fingerprint(failed_orders);failed_evidence_hash=_session_evidence_hash(failed_evidence)
+            cold_fetches=fetches[0];prepared=reopened.prepare('terrestrial')
+            healthy=reopened.single_cycle();reopened.stop('DISPOSABLE_FAULT_RECOVERY_CHECK')
+            final_orders_hash=fingerprint(gateway.session_orders(session))
+            final_evidence_hash=_session_evidence_hash(reopened.evidence_report(session))
+            orders=len(failed_orders);total_orders+=orders
+            reports[name]=dict(cycles=observed['cycles'],fetches=observed['fetches'],
+                reasons=_fault_reasons(reopened,session),paused=failed_evidence['stored_state']=='PAUSED',
+                orders_created=orders,ownership_released=prepared['ownership_held'],
+                worker_started=observed['worker_started'],
+                worker_paused_while_alive=observed['worker_paused_while_alive'],
+                cleanup_blocked_before_process_death=observed['cleanup_blocked_before_process_death'],
+                post_pause_fetches=observed['post_pause_fetches'],process_terminated=observed['process_terminated'],
+                cold_reopen_disabled=not cold['enabled'],cold_worker_alive=cold['worker_alive'],
+                cold_fetches_before_prepare=cold_fetches,cold_ownership_available=prepared['ownership_held'],
+                failed_session=session,stored_state=failed_evidence['stored_state'],
+                counts=failed_evidence['counters'],quote_observations=failed_evidence['quote_evidence']['observations'],
+                rejected_observations=failed_evidence['quote_evidence']['rejected_observations'],
+                review_reasons=failed_evidence['reasons'],failed_orders_sha256=failed_orders_hash,
+                failed_evidence_sha256=failed_evidence_hash,reopened_orders_sha256=final_orders_hash,
+                reopened_evidence_sha256=final_evidence_hash,
+                order_hash_preserved=failed_orders_hash==final_orders_hash,
+                evidence_hash_preserved=failed_evidence_hash==final_evidence_hash,
+                new_session_distinct=prepared['session']!=session,healthy_decision=healthy['decision'],
+                healthy_reason=healthy['reason'],
+                healthy_orders_created=len(gateway.session_orders(prepared['session'])),
+                automatic_restart=cold['automatic_restart'])
     finally:
         if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
         else:os.environ['NEXUS_PORTABLE_DATA']=previous
@@ -157,7 +263,8 @@ def _faults(directory):
         clock_regression=reports['clock_regression'],invalid_clock=reports['invalid_clock'],
         orders_created=total_orders,sessions_paused=sum(item['paused'] for item in reports.values()),
         ownership_released=all(item['ownership_released'] for item in reports.values()),
-        actual_provider_requests=False,automatic_retries=False,broker_connected=False,
+        actual_provider_requests=False,
+        automatic_retries=any(item['post_pause_fetches']>0 for item in reports.values()),broker_connected=False,
         live_orders_enabled=False,release_approved=False,limitations=FAULT_LIMITATIONS)
 
 

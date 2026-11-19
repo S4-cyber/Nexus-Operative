@@ -1,5 +1,33 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.362 actual-worker fault and cold-reopen evidence
+
+**Current development build: 0.340.362 (pre-release).** The disposable forward
+fault matrix now runs all four treatments through the actual worker, retains a
+durable pause before ordinary cleanup, observes no post-pause fetch, terminates
+the child, and cold-reopens the same stores without automatic worker, fetch,
+restart or session reuse. Explicit recovery acquires process-released ownership
+in a distinct orderless warmup session while preserving the failed session's
+scoped evidence hash.
+
+The direct scope passed 16 tests, the synchronized release/version/roadmap/
+Windows-workflow scope passed 201, and final full regression passed 6,589 tests
+with two platform skips and one existing warning in 1,324.49 seconds. All
+sixteen bounded profiles passed and saved evidence matched 422 source files /
+`287f83d505cf6d30b80b2b23ef89839b910c5c2c6c263a6a62d0d08c93630123`;
+report SHA-256 is
+`f042483593e9deeb426b11c9ad4cdc16cae7ef449b0be0120b6772423b2d2c60`.
+The 165-member v0.340.362 wheel has SHA-256
+`62a80adb6446c21c44dfa82b7cd9333a183f1ae02cb57a827d8b25c6a1d7d3dd`.
+
+This remains below 1.0 and grants no native power-loss, actual provider,
+broker-paper, genuine-market, funding/live/cloud, performance, profitability or
+release acceptance. Owner approval remains required after all independent
+gates. Engagement and optional AI stay OFF by default; no new UI control or
+editable parameter was introduced. Implementation remains 38% weighted (about
+40%, 30-45% uncertainty, low confidence), with 0/9 stages independently
+accepted.
+
 ## v0.340.361 final asset and benchmark-clock resampling
 
 **Current development build: 0.340.361 (pre-release).** The disconnected

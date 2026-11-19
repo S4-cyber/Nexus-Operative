@@ -1228,7 +1228,7 @@ def _validate(profile, result):
         from nexus.durable_benchmark import (LATENCY_KEYS,LIMITATIONS as CAPACITY_LIMITATIONS,
             PUBLIC_KEYS as CAPACITY_KEYS,RECOVERY_KEYS,TREATMENT_KEYS)
         from nexus.durable_burst import (LIMITATIONS as BURST_LIMITATIONS,
-            PUBLIC_KEYS as BURST_KEYS)
+            PUBLIC_KEYS as BURST_KEYS,TIMING_ATTESTATION_KEYS)
         from nexus.execution_capacity import (CONTROL_RESERVE,
             PUBLIC_KEYS as DURABLE_CAPACITY_KEYS)
         _require(type(result) is dict and frozenset(result)==
@@ -1324,6 +1324,31 @@ def _validate(profile, result):
                 type(burst['cold_recovery_ms']) is float and
                 math.isfinite(burst['cold_recovery_ms']) and burst['cold_recovery_ms']>=0,
                 'CAPACITY_BURST_TIMING')
+            timing=burst['timing_attestation']
+            _require(type(timing) is dict and frozenset(timing)==TIMING_ATTESTATION_KEYS and
+                timing['scope']=='PROCESS_LOCAL_BOUNDED_BURST_WINDOW' and
+                type(timing['clock_samples']) is int and
+                timing['clock_samples']==2+timing['dequeued_outcomes']+
+                    timing['completed_outcomes'] and
+                type(timing['window_elapsed_ms']) is float and
+                math.isfinite(timing['window_elapsed_ms']) and timing['window_elapsed_ms']>=0 and
+                all(type(timing[key]) is int and timing[key]>=0 for key in
+                    ('queue_wait_sample_count','durable_roundtrip_sample_count',
+                     'admitted_to_completion_sample_count','dequeued_outcomes',
+                     'completed_outcomes','expired_outcomes','flushed_outcomes')) and
+                timing['queue_wait_sample_count']==timing['dequeued_outcomes']==
+                    burst['completed_roundtrips']+burst['expired_before_execution'] and
+                timing['durable_roundtrip_sample_count']==
+                    timing['admitted_to_completion_sample_count']==
+                    timing['completed_outcomes']==burst['completed_roundtrips'] and
+                timing['expired_outcomes']==burst['expired_before_execution'] and
+                timing['flushed_outcomes']==burst['halt_flushed'] and
+                timing['dequeued_outcomes']+timing['flushed_outcomes']==burst['admitted'] and
+                all(timing[key] is True for key in ('outcome_partition_verified',
+                    'finite_nonnegative_samples','monotonic_sequence_verified',
+                    'emergency_halt_in_window')) and
+                timing['market_or_broker_latency'] is timing['throughput_claimed'] is False,
+                'CAPACITY_BURST_TIMING_ATTESTATION')
     elif profile != 'forward': _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS

@@ -275,6 +275,14 @@ def test_capacity_trial_consumes_exact_bounded_scope():
     cases.append((changed,'CAPACITY_BURST_COUNTS'))
     changed=copy.deepcopy(result);changed['burst_treatment']['queue_wait_latency']['p99_ms']=float('inf')
     cases.append((changed,'CAPACITY_BURST_TIMING'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['timing_attestation']['extra']=0
+    cases.append((changed,'CAPACITY_BURST_TIMING_ATTESTATION'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['timing_attestation']['clock_samples']+=1
+    cases.append((changed,'CAPACITY_BURST_TIMING_ATTESTATION'))
+    changed=copy.deepcopy(result);changed['atomic_burst_treatment']['timing_attestation']['throughput_claimed']=True
+    cases.append((changed,'CAPACITY_BURST_TIMING_ATTESTATION'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['timing_attestation']['window_elapsed_ms']=float('inf')
+    cases.append((changed,'CAPACITY_BURST_TIMING_ATTESTATION'))
     changed=copy.deepcopy(result);changed['burst_treatment']['durable_capacity']['extra']=0
     cases.append((changed,'CAPACITY_BURST_RESERVE_SCHEMA'))
     changed=copy.deepcopy(result);changed['burst_treatment']['durable_capacity']['control_commands_reserved']=1000

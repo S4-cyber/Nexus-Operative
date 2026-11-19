@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.358'
+REVISION = '0.340.359'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1153,6 +1153,10 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The complete Windows regression pull-request lane is deterministically split across two exact-node execution shards after full collection in each job; both exact names and their complete checkout/compile/test step sequences are mandatory in offline inventory review, and either shard missing or non-green remains a denial. This reduces per-job timeout exposure without reducing collected test scope, but hosted success, native Windows application behavior and independent release approval remain separate.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; bounded linked-ledger burst percentiles now carry an exact process-local measurement-window attestation whose monotonic sample count, elapsed window, dequeued/completed/expired/flushed outcome partition and emergency-halt inclusion must reconcile with the public burst report; a clock regression fails closed rather than becoming expiry, while market/broker latency and throughput authority remain explicitly false' if item.id in ('M3','M5') else ''),
+    item.remaining) for item in MILESTONES)
+
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
@@ -1176,7 +1180,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.358 binds every bounded durable burst treatment to an exact post-run capacity snapshot: active and retained command counts, retained intent IDs, ordinary and total headroom equations, and the fixed 1,001-command halt/cancel/expiry reserve. The release validator consumes that exact schema and rejects altered reserve or bound evidence. Capacity diagnostics reject booleans, negative values, impossible command/intent counts and inconsistent retained-history bounds before calculating headroom. This is M3.2/M5.1 offline capacity-evidence hardening, not sustained pressure, native Windows power-loss, broker-paper acceptance, genuine-feed trial realism, funding/live/cloud readiness, performance, profitability or release approval. Local timing remains machine-specific and synthetic. Runtime engagement and optional AI remain OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.359 binds each bounded durable burst percentile set to an exact process-local measurement-window attestation: monotonic clock samples, elapsed window, queue/dequeue/completion/expiry/flush counts and emergency-halt inclusion must reconcile with the retained burst outcomes. A clock regression now fails closed instead of being classified as queue expiry, and the release validator rejects altered timing authority, sample arithmetic or outcome partitions. This is M3.2/M5.1 offline timing-evidence hardening, not sustained pressure, native Windows power-loss, broker-paper acceptance, genuine-feed trial realism, funding/live/cloud readiness, performance, profitability or release approval. Local timings remain machine-specific and synthetic and explicitly claim no market/broker latency or throughput. Runtime engagement and optional AI remain OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

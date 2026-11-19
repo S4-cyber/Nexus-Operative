@@ -3,6 +3,13 @@ from fastapi.testclient import TestClient
 from nexus.app import app
 from nexus.feed_guard import FeedGuard
 
+class EqualText(str):
+    __hash__=str.__hash__
+    def __eq__(self,other):return True
+
+class HostileQuote(dict):
+    def get(self,*args,**kwargs):raise AssertionError('must not inspect polymorphic mapping')
+
 def q(last=100,bid=99.9,ask=100.1,received=1000,product="BTC-USD"):
     return {"provider":"coinbase_exchange_public","product":product,"read_only":True,
             "orders_allowed":False,"bid":bid,"ask":ask,"last":last,"received_at":received}
@@ -27,6 +34,31 @@ def test_large_jump_veto_but_does_not_poison_baseline():
     d=g.evaluate(q(last=150,bid=149.9,ask=150.1,received=1002),now=1002)
     assert "UNCONFIRMED_PRICE_JUMP" in d["reasons"]
     assert g.evaluate(q(last=101,bid=100.9,ask=101.1,received=1003),now=1003)["decision"]=="READ_ONLY_OBSERVATION"
+
+@pytest.mark.parametrize('quote,reason',[
+    (None,'MISSING_QUOTE'),
+    (HostileQuote(product='BTC-USD'),'INVALID_QUOTE_FIELDS'),
+    ({EqualText('product'):'BTC-USD'},'INVALID_QUOTE_FIELDS'),
+])
+def test_missing_or_polymorphic_quote_fails_closed_without_dispatch(quote,reason):
+    report=FeedGuard().evaluate(quote,now=1000)
+    assert report['decision']=='VETO' and report['reasons']==[reason]
+    assert report['live_orders_enabled'] is False
+
+@pytest.mark.parametrize('now',[True,'1000',float('nan'),float('inf')])
+def test_invalid_runtime_clock_is_orderless_and_does_not_poison_baseline(now):
+    guard=FeedGuard()
+    assert guard.evaluate(q(),now=now)['reasons']==['INVALID_RUNTIME_CLOCK']
+    assert guard.evaluate(q(),now=1001)['decision']=='READ_ONLY_OBSERVATION'
+
+@pytest.mark.parametrize(('field','value'),[
+    ('received_at','1000'),('bid',EqualText('99.9')),('provider',EqualText('coinbase_exchange_public')),
+    ('product',EqualText('BTC-USD')),
+])
+def test_noncanonical_quote_scalars_are_vetoed(field,value):
+    quote=q();quote[field]=value
+    report=FeedGuard().evaluate(quote,now=1001)
+    assert report['decision']=='VETO' and report['live_orders_enabled'] is False
 
 def test_feed_guard_endpoint_is_present_without_broker():
     c=TestClient(app)

@@ -1,5 +1,31 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.360 forward fault-injection release evidence
+
+**Current development build: 0.340.360 (pre-release).** The disposable forward
+release profile now binds exact missing-source, stale-quote, regressed-clock and
+invalid-clock treatments through the real local runner. Each treatment must
+pause, release ownership and create zero orders; the saved validator requires
+fixed cycle/fetch/reason counts and false automatic-retry/provider/broker/live/
+release authority. Feed admission now refuses polymorphic mappings and invalid
+runtime clocks before baseline mutation, and the bounded decision lane
+distinguishes clock regression from expiry.
+
+Final full regression passed 6,575 tests with two platform skips and one
+existing warning in 1,192.23 seconds. All sixteen offline profiles passed and
+saved evidence matched 422 source files /
+`9902d75dfb2d2530a74ac5b7a3b87a58e778a0caf76b97508bf8dd33ae729bdd`;
+report SHA-256 is
+`e676ac147ef38fdd009799f2ede9701f5580e4124796da213282dee79ac1182e`.
+The 165-member v0.340.360 wheel reports v0.340.360 and has SHA-256
+`ef33d2f275eae145dd37441d05ef7bf04646f54ac796c317da378825ffbb8e53`.
+
+This remains below 1.0 and grants no genuine-feed, provider, clock-hardware,
+network-recovery, sustained-market, broker-paper, funding/live/cloud,
+performance, profitability or release acceptance. Owner approval remains
+required after all independent gates. Runtime engagement and optional AI stay
+OFF by default; no new UI control or editable parameter was introduced.
+
 ## v0.340.359 burst measurement-window attestation
 
 **Current development build: 0.340.359 (pre-release).** Bounded durable burst

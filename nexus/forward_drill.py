@@ -12,12 +12,18 @@ from nexus.recovery_drill import fingerprint
 LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include runner, evidence and durable linked ledger. '
     'No actual feed, worker scheduling, process-kill, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
-    'commit_durability','isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
+    'commit_durability','fault_injection','isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
     'ownership_released','halted','flat','portfolio_reconciled'))
 SESSION_PUBLIC_KEYS=frozenset(('session','orders_sha256','evidence_sha256','quote_observations','modeled_buy_orders',
     'modeled_sell_orders'))
 LATENCY_PUBLIC_KEYS=frozenset(('p50_ms','p95_ms','p99_ms'))
+FAULT_CASE_PUBLIC_KEYS=frozenset(('cycles','fetches','reasons','paused','orders_created','ownership_released'))
+FAULT_PUBLIC_KEYS=frozenset(('mode','passed','source_loss','stale_quote','clock_regression','invalid_clock',
+    'orders_created','sessions_paused','ownership_released','actual_provider_requests','automatic_retries',
+    'broker_connected','live_orders_enabled','release_approved','limitations'))
+FAULT_LIMITATIONS=('Injected local failures only; proves bounded fail-closed runner behavior, not actual provider '
+    'availability, clock hardware, network recovery, broker operation or sustained-market acceptance.')
 COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EXECUTION_OWNERSHIP_NOT_CHECKED',
     'INJECTED_OBSERVATIONS_IN_WINDOW','NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS',
     'ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','QUOTE_ERRORS_RETAINED_IN_WINDOW',
@@ -105,12 +111,69 @@ def _exercise(rounds):
     return dict(recovered=_review(sessions),cycle_latency=percentiles(latencies),cycles=len(latencies))
 
 
+def _faults(directory):
+    """Exercise missing/stale source and bad clocks without provider or worker IO."""
+    from datetime import datetime,timezone
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    parent=Path(directory);parent.mkdir(parents=True,exist_ok=True)
+    previous=os.environ.get('NEXUS_PORTABLE_DATA')
+    reports={};total_orders=0
+    try:
+        for name in ('source_loss','stale_quote','clock_regression','invalid_clock'):
+            root=parent/name;root.mkdir()
+            os.environ['NEXUS_PORTABLE_DATA']=str(root)
+            configure('terrestrial',True)
+            now=[1000.0];fetches=[0]
+            def fetch(product):
+                fetches[0]+=1
+                if name=='source_loss':return None
+                received=now[0]-20 if name=='stale_quote' else now[0]
+                return dict(product=product,provider='coinbase_exchange_public',read_only=True,
+                    orders_allowed=False,bid=100.0,ask=100.01,last=100.0,received_at=received,
+                    exchange_time=datetime.fromtimestamp(now[0],timezone.utc).isoformat())
+            gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+            runner=PaperForwardRunner(gateway,fetch,lambda:now[0])
+            runner.prepare('terrestrial')
+            outcomes=[]
+            if name in ('source_loss','stale_quote'):
+                for _ in range(3):
+                    now[0]+=1;outcomes.append(runner.single_cycle())
+            else:
+                now[0]=999.0 if name=='clock_regression' else float('nan')
+                outcomes.append(runner.single_cycle())
+            status=runner.status();orders=len(gateway.recovery_report()['orders'])
+            total_orders+=orders
+            reports[name]=dict(cycles=len(outcomes),fetches=fetches[0],
+                reasons=[item['reason'] for item in outcomes],paused=not status['enabled'],
+                orders_created=orders,ownership_released=not status['ownership_held'])
+            runner.stop('DISPOSABLE_FAULT_INJECTION')
+    finally:
+        if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
+        else:os.environ['NEXUS_PORTABLE_DATA']=previous
+    return dict(mode='DISPOSABLE_FORWARD_FAULT_INJECTION',passed=True,
+        source_loss=reports['source_loss'],stale_quote=reports['stale_quote'],
+        clock_regression=reports['clock_regression'],invalid_clock=reports['invalid_clock'],
+        orders_created=total_orders,sessions_paused=sum(item['paused'] for item in reports.values()),
+        ownership_released=all(item['ownership_released'] for item in reports.values()),
+        actual_provider_requests=False,automatic_retries=False,broker_connected=False,
+        live_orders_enabled=False,release_approved=False,limitations=FAULT_LIMITATIONS)
+
+
 def _child(directory,rounds,sessions=None):
     action=f'_exercise({rounds!r})' if sessions is None else f'_review({sessions!r})'
     expression='from nexus.forward_drill import _exercise,_review; import json; print(json.dumps('+action+'))'
     env={**os.environ,'NEXUS_PORTABLE_DATA':str(directory)}
     child=subprocess.run([sys.executable,'-c',expression],env=env,capture_output=True,text=True,timeout=180)
     if child.returncode:raise ValueError('FORWARD_DRILL_CHILD_FAILED: '+child.stderr[-2000:])
+    return json.loads(child.stdout)
+
+
+def _fault_child(directory):
+    expression='from nexus.forward_drill import _faults; import json; print(json.dumps(_faults('+repr(str(directory))+')))'
+    child=subprocess.run([sys.executable,'-c',expression],capture_output=True,text=True,timeout=180)
+    if child.returncode:raise ValueError('FORWARD_DRILL_FAULT_CHILD_FAILED: '+child.stderr[-2000:])
     return json.loads(child.stdout)
 
 
@@ -121,11 +184,13 @@ def run(rounds=3):
         sessions=[item['session'] for item in baseline['recovered']['sessions']]
         recovered=_child(root,rounds,sessions)
         _require(baseline['recovered']==recovered,'FRESH_PROCESS_DISAGREEMENT')
+        faults=_fault_child(root/'faults')
         from nexus.paper_forward import commit_durability_fixture_report
         durability=commit_durability_fixture_report()
         _require(durability['passed'] is True,'COMMIT_DURABILITY')
     return dict(mode='DISPOSABLE_FORWARD_RUNNER_DRILL',passed=True,rounds=rounds,cycles=baseline['cycles'],
                 cycle_latency=baseline['cycle_latency'],recovered=recovered,commit_durability=durability,
+                fault_injection=faults,
                 application_accounts_changed=False,
                 isolated_temporary_storage=True,broker_connected=False,live_orders_enabled=False,release_approved=False,
                 target_validated=False,limitations=LIMITATIONS)

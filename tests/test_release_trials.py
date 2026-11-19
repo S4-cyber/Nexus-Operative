@@ -1565,12 +1565,14 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     result=json.loads(path.read_text())['profiles']['forward'];trials._validate('forward',result)
     for target,field,code in ((result,'unconsumed','FORWARD_PROFILE_SCHEMA'),
         (result['recovered'],'unconsumed','FORWARD_RECOVERY_SCHEMA'),
+        (result['fault_injection'],'unconsumed','FORWARD_FAULT_SCHEMA'),
         (result['recovered']['sessions'][0],'unconsumed','FORWARD_SESSION_SCHEMA'),
         (result['cycle_latency'],'unconsumed','FORWARD_LATENCY_SCHEMA'),
         (result['recovered']['coverage_review'],'unconsumed','FORWARD_COVERAGE_SCHEMA')):
         changed=copy.deepcopy(result)
         if target is result:changed[field]=True
         elif target is result['recovered']:changed['recovered'][field]=True
+        elif target is result['fault_injection']:changed['fault_injection'][field]=True
         elif target is result['recovered']['sessions'][0]:changed['recovered']['sessions'][0][field]=True
         elif target is result['cycle_latency']:changed['cycle_latency'][field]=True
         else:changed['recovered']['coverage_review'][field]=True
@@ -1579,6 +1581,10 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     with pytest.raises(ValueError,match='FORWARD_SCOPE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['broker_connected']=1
     with pytest.raises(ValueError,match='FORWARD_AUTHORITY'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result);changed['fault_injection']['source_loss']['fetches']=2
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result);changed['fault_injection']['live_orders_enabled']=True
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['sessions'][0]['session']=result['recovered']['sessions'][1]['session']
     with pytest.raises(ValueError,match='FORWARD_SESSION_BINDING'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['cycle_latency']['p50_ms']=changed['cycle_latency']['p99_ms']+1

@@ -640,6 +640,58 @@ def test_existing_cursor_file_replacement_during_io_never_checkpoints(
     assert cold['retained_checkpoints'] == 1
 
 
+def test_cursor_directory_replacement_with_same_file_never_checkpoints(
+        tmp_path):
+    data = tmp_path / 'data'
+    data.mkdir()
+    path = data / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    initial, _, _ = segments()
+    retained_trade, first_raw = resumable_replay(initial[-1],
+        ('01K00000000000000000000005',
+         '01K00000000000000000000006',
+         '01K00000000000000000000007'),
+        ('55555555-5555-5555-5555-555555555555',
+         '66666666-6666-6666-6666-666666666666',
+         '77777777-7777-7777-7777-777777777777'),
+        ('dddddddd-dddd-dddd-dddd-dddddddddddd',
+         'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'), '04')
+    first, _, _ = run(tmp_path, cursor_store=store,
+        initial_events=initial, opener=Opener(first_raw))
+    initial = [*initial, retained_trade]
+    _, raw = resumable_replay(retained_trade,
+        ('01K00000000000000000000008',
+         '01K00000000000000000000009',
+         '01K0000000000000000000000A'),
+        ('88888888-8888-8888-8888-888888888888',
+         '99999999-9999-9999-9999-999999999999',
+         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+        ('ffffffff-ffff-ffff-ffff-ffffffffffff',
+         'abababab-abab-abab-abab-abababababab'), '07')
+    displaced = tmp_path / 'displaced'
+    before_file = path.stat()
+    before_directory = data.stat()
+
+    def replace_directory_but_preserve_file():
+        data.rename(displaced)
+        data.mkdir()
+        (displaced / path.name).replace(path)
+
+    opener = Opener(raw, callback=replace_directory_but_preserve_file)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_DIRECTORY_CHANGED'):
+        run(tmp_path, cursor_store=store, initial_events=initial,
+            expected_cursor_head=first['checkpoint_head_sha256'],
+            opener=opener)
+    after_file, after_directory = path.stat(), data.stat()
+    assert (before_file.st_dev, before_file.st_ino) == \
+        (after_file.st_dev, after_file.st_ino)
+    assert (before_directory.st_dev, before_directory.st_ino) != \
+        (after_directory.st_dev, after_directory.st_ino)
+    assert ActivitySSECursorStore(path, ACCOUNT).inspect()[
+        'retained_checkpoints'] == 1
+
+
 def test_fresh_cursor_path_creation_during_io_never_checkpoints(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     store = ActivitySSECursorStore(path, ACCOUNT)
@@ -648,6 +700,19 @@ def test_fresh_cursor_path_creation_during_io_never_checkpoints(tmp_path):
             match='CURSOR_FILE_CHANGED'):
         run(tmp_path, cursor_store=store, opener=opener)
     assert len(opener.requests) == 1 and path.read_bytes() == b'x'
+
+
+def test_fresh_cursor_directory_creation_during_io_never_checkpoints(
+        tmp_path):
+    data = tmp_path / 'fresh-data'
+    path = data / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    opener = Opener(segments()[2], callback=data.mkdir)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_DIRECTORY_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener)
+    assert len(opener.requests) == 1 and data.is_dir()
+    assert not path.exists()
 
 
 def test_failed_initial_store_review_cannot_mask_equal_path_retarget(

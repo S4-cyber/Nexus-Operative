@@ -1,5 +1,29 @@
 # Nexus Operative continuity instructions
 
+## v0.340.353 Activity SSE cursor-directory continuity boundary
+
+The explicit Activity SSE checkpoint coordinator now freezes the exact
+non-symlink cursor parent-directory identity, or proves the parent remains
+absent, before the sole provider read. It rechecks that physical scope after
+admission, transport, private event freezing, reconnect review and retained
+acknowledgement. Replacing an existing directory, or creating a previously
+absent parent during provider I/O, cannot inherit checkpoint authority even
+when the cursor file itself is preserved. This complements the independent
+cursor-file identity/byte binding and the cursor store's descriptor-bound
+commit, lost-ack recovery and ownership checks. Saved reconciliation evidence
+requires the fresh-parent rejection.
+
+This is injected local M8 reconciliation hardening, not provider source or
+delivery attestation, broker-paper acceptance, genuine-feed sustained-trial
+realism, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter changed.
+Engagement remains OFF by default; limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Fresh exact-source evidence and hosted CI are mandatory;
+the native Windows lane remains separately undispatched.
+
 ## v0.340.352 Activity SSE cursor-file continuity boundary
 
 The explicit Activity SSE checkpoint coordinator now freezes an existing

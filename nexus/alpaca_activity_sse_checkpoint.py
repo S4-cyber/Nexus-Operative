@@ -9,6 +9,7 @@ order.
 """
 import copy
 import json
+import stat
 import tempfile
 from pathlib import Path
 
@@ -39,6 +40,7 @@ FLAGS = ('provider_source_attested', 'stream_delivery_verified',
     'ready_for_routing', 'live_orders_enabled', 'money_movement_enabled',
     'release_approved')
 _NO_CURSOR_FILE_BINDING = object()
+_NO_CURSOR_DIRECTORY_BINDING = object()
 
 
 class ActivitySSECheckpointError(ValueError):
@@ -114,6 +116,48 @@ def _require_store_binding(store, binding):
         _fail('CURSOR_STORE_CHANGED')
 
 
+def _capture_cursor_directory_binding(path):
+    """Freeze one selected cursor parent or prove it remains absent."""
+    try:
+        observed = path.lstat()
+    except FileNotFoundError:
+        return None
+    except OSError:
+        _fail('CURSOR_DIRECTORY_UNAVAILABLE')
+    try:
+        if stat.S_ISLNK(observed.st_mode) or not stat.S_ISDIR(
+                observed.st_mode):
+            _fail('CURSOR_DIRECTORY_UNAVAILABLE')
+        resolved = path.resolve()
+        final = resolved.stat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (observed.st_dev, observed.st_ino) !=
+                (final.st_dev, final.st_ino)):
+            _fail('CURSOR_DIRECTORY_UNAVAILABLE')
+        return (str(resolved), final.st_dev, final.st_ino)
+    except ActivitySSECheckpointError:
+        raise
+    except (OSError, RuntimeError, TypeError):
+        _fail('CURSOR_DIRECTORY_UNAVAILABLE')
+
+
+def _require_cursor_directory_binding(path, binding):
+    if binding is None:
+        try:
+            path.lstat()
+        except FileNotFoundError:
+            return
+        except OSError:
+            pass
+        _fail('CURSOR_DIRECTORY_CHANGED')
+    try:
+        current = _capture_cursor_directory_binding(path)
+    except ActivitySSECheckpointError:
+        _fail('CURSOR_DIRECTORY_CHANGED')
+    if current != binding:
+        _fail('CURSOR_DIRECTORY_CHANGED')
+
+
 def _capture_cursor_file_binding(path, initialized):
     """Freeze an existing cursor main file or prove the fresh path absent."""
     if initialized is not True:
@@ -154,7 +198,8 @@ def _require_cursor_file_binding(path, binding):
 
 
 def _checked_store_call(callback, store, binding, error_code=None,
-        cursor_file_binding=_NO_CURSOR_FILE_BINDING):
+        cursor_file_binding=_NO_CURSOR_FILE_BINDING,
+        cursor_directory_binding=_NO_CURSOR_DIRECTORY_BINDING):
     """Finalize one ordinary callback against the exact captured store."""
     try:
         result = callback()
@@ -164,12 +209,18 @@ def _checked_store_call(callback, store, binding, error_code=None,
         if not isinstance(error, Exception):
             raise
         _require_store_binding(store, binding)
+        if cursor_directory_binding is not _NO_CURSOR_DIRECTORY_BINDING:
+            _require_cursor_directory_binding(
+                binding[1].absolute().parent, cursor_directory_binding)
         if cursor_file_binding is not _NO_CURSOR_FILE_BINDING:
             _require_cursor_file_binding(binding[2], cursor_file_binding)
         if error_code is not None:
             _fail(error_code)
         raise
     _require_store_binding(store, binding)
+    if cursor_directory_binding is not _NO_CURSOR_DIRECTORY_BINDING:
+        _require_cursor_directory_binding(
+            binding[1].absolute().parent, cursor_directory_binding)
     if cursor_file_binding is not _NO_CURSOR_FILE_BINDING:
         _require_cursor_file_binding(binding[2], cursor_file_binding)
     return result
@@ -560,10 +611,13 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         _fail('PERSISTED_CURSOR_DISAGREEMENT')
     cursor_file_binding = _capture_cursor_file_binding(
         store_binding[2], before['initialized'])
+    cursor_directory_binding = _capture_cursor_directory_binding(
+        store_binding[1].absolute().parent)
     admitted = _checked_store_call(
         lambda: _safety(permission_check, emergency_stop_check,
             credential_check), cursor_store, store_binding,
-            cursor_file_binding=cursor_file_binding)
+            cursor_file_binding=cursor_file_binding,
+            cursor_directory_binding=cursor_directory_binding)
     if not admitted:
         _fail('ADMISSION_REVOKED')
 
@@ -580,17 +634,20 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
     transport_review, replay = _checked_store_call(
         lambda: _transport_result(transport._collect_once_private(
             api_key, api_secret, **options)), cursor_store, store_binding,
-        cursor_file_binding=cursor_file_binding)
+        cursor_file_binding=cursor_file_binding,
+        cursor_directory_binding=cursor_directory_binding)
     replay = _checked_store_call(
         lambda: _frozen_events(replay, 'REPLAY_EVENTS_INVALID'),
         cursor_store, store_binding,
-        cursor_file_binding=cursor_file_binding)
+        cursor_file_binding=cursor_file_binding,
+        cursor_directory_binding=cursor_directory_binding)
     transport_review = _checked_store_call(
         lambda: _transport_review_result(transport_review, replay,
             account_sha256=initial_review['account_sha256'],
             persisted_event_id=persisted, injected=opener is not None),
         cursor_store, store_binding,
-        cursor_file_binding=cursor_file_binding)
+        cursor_file_binding=cursor_file_binding,
+        cursor_directory_binding=cursor_directory_binding)
     if (transport_review['gap_or_server_error_observed'] or
             transport_review['reconnect_review_required']):
         _fail('INTERRUPTED_SEGMENT_INELIGIBLE')
@@ -607,14 +664,16 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
                 next_cursor=replay[-1]['event_id'],
                 initial_count=len(initial), replay_count=len(replay)),
             cursor_store, store_binding,
-            cursor_file_binding=cursor_file_binding)
+            cursor_file_binding=cursor_file_binding,
+            cursor_directory_binding=cursor_directory_binding)
     except ActivitySSECheckpointError:
         raise
     except Exception:
         _fail('RECONNECT_REVIEW_FAILED')
     unchanged = _checked_store_call(cursor_store.inspect, cursor_store,
         store_binding, 'CURSOR_STORE_REVIEW_FAILED',
-        cursor_file_binding=cursor_file_binding)
+        cursor_file_binding=cursor_file_binding,
+        cursor_directory_binding=cursor_directory_binding)
     if (unchanged['head_sha256'] != expected_cursor_head or
             unchanged['current_event_id'] != before['current_event_id']):
         _fail('CURSOR_HEAD_CHANGED')
@@ -634,6 +693,8 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         return review_input_sha256
 
     next_cursor = replay[-1]['event_id']
+    _require_cursor_directory_binding(
+        store_binding[1].absolute().parent, cursor_directory_binding)
     _require_cursor_file_binding(store_binding[2], cursor_file_binding)
     saved = _checked_store_call(
         lambda: _checkpoint_receipt(cursor_store.checkpoint(checked,
@@ -644,12 +705,15 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             account_sha256=store_binding[3], next_cursor=next_cursor,
             reconnect_reservation_bound=reservation is not None),
         cursor_store, store_binding)
+    committed_directory_binding = _capture_cursor_directory_binding(
+        store_binding[1].absolute().parent)
     committed_file_binding = _capture_cursor_file_binding(
         store_binding[2], True)
     cold_binding = _checked_store_call(
         cursor_store.latest_checkpoint_binding, cursor_store, store_binding,
         'CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN',
-        cursor_file_binding=committed_file_binding)
+        cursor_file_binding=committed_file_binding,
+        cursor_directory_binding=committed_directory_binding)
     _checked_store_call(
         lambda: _checkpoint_binding(cold_binding, receipt=saved,
             account_sha256=store_binding[3],
@@ -657,7 +721,8 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             transport_input_sha256=transport_input_sha256, review=checked,
             reconnect_reservation_token=reservation),
         cursor_store, store_binding,
-        cursor_file_binding=committed_file_binding)
+        cursor_file_binding=committed_file_binding,
+        cursor_directory_binding=committed_directory_binding)
     return dict(mode='EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT',
         status='REVIEW_REQUIRED', policy=POLICY,
         source=transport_review['source'],
@@ -912,6 +977,31 @@ def fixture_report():
             file_replacement_error = str(error)
         file_replacement_recovery = ActivitySSECursorStore(
             store.path, account).inspect()
+        fresh_directory = Path(folder) / 'created-during-io'
+        directory_path = fresh_directory / 'cursor.sqlite3'
+        directory_store = ActivitySSECursorStore(directory_path, account)
+
+        class DirectoryCreatingOpener(Opener):
+            def open(self, request, timeout):
+                fresh_directory.mkdir()
+                return super().open(request, timeout)
+
+        directory_creation_error = None
+        try:
+            collect_and_checkpoint_once(
+                'fixture_key_only_123', 'fixture_secret_only_123',
+                expected_account_id=account, initial_events=first,
+                reconnect_reason='CONNECTION_DROPPED',
+                cursor_store=directory_store, expected_cursor_head=ZERO,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True,
+                opener=DirectoryCreatingOpener(),
+                wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+                permission_check=lambda: True,
+                emergency_stop_check=lambda: False,
+                credential_check=lambda: True)
+        except ActivitySSECheckpointError as error:
+            directory_creation_error = str(error)
         boundary_review, boundary_replay = transport._collect_once_private(
             'fixture_key_only_123', 'fixture_secret_only_123',
             expected_account_id=account, since_id=first[-1]['event_id'],
@@ -964,6 +1054,11 @@ def fixture_report():
                 file_replacement_error ==
                     'ALPACA_ACTIVITY_SSE_CHECKPOINT_CURSOR_FILE_CHANGED' and
                 file_replacement_recovery['retained_checkpoints'] == 1,
+            cursor_directory_creation_rejected=
+                directory_creation_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
+                    'CURSOR_DIRECTORY_CHANGED' and
+                fresh_directory.is_dir() and not directory_path.exists(),
             transport_boundary_rejects_promoted_acknowledgement=
                 boundary_error ==
                     'ALPACA_ACTIVITY_SSE_CHECKPOINT_'

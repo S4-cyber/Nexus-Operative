@@ -1,5 +1,27 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.353 — Activity SSE cursor-directory continuity
+
+The explicit paper Activity SSE checkpoint now binds the exact non-symlink
+cursor parent directory across its external reconnect read. An existing
+directory's identity is frozen; a fresh parent must remain absent. Admission,
+transport, private parsing, reconnect review and retained acknowledgement all
+recheck that scope, so replacing the directory or creating a fresh parent
+during provider I/O cannot inherit checkpoint authority even if the cursor
+file is preserved. The independent main-file identity/byte binding and the
+journal's descriptor-bound commit and recovery checks remain intact. Saved
+reconciliation evidence requires the fresh-parent rejection.
+
+No real provider/account/feed, native ordinary-user Windows host, funding
+system or cloud deployment was accessed. No UI control changed. Engagement and
+all financial permissions remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Release, trading and funding approval remain false and
+no launch date is predicted. Exact local evidence and fresh hosted CI remain
+mandatory; the native Windows installer lane is separately undispatched.
+
 ## v0.340.352 — Activity SSE cursor-file continuity
 
 The explicit paper Activity SSE checkpoint now binds the physical cursor

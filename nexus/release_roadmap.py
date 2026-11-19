@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.352'
+REVISION = '0.340.353'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1137,6 +1137,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; Activity SSE checkpoint initial and replay events now pass exact envelope validation into a detached snapshot before any caller-controlled copy protocol, so deepcopy laundering cannot create accepted evidence or reach provider IO and cursor storage' if item.id=='M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the explicit Activity SSE checkpoint now freezes the exact non-symlink cursor parent-directory identity, or proves that parent remains absent, across external provider IO and every subsequent semantic boundary through retained acknowledgement; replacing the directory or creating a fresh parent cannot inherit checkpoint authority even if the main file is preserved, complementing the independent cursor-file and descriptor-bound store protections' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
@@ -1164,7 +1168,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.352 closes an Activity SSE cursor-journal replacement boundary across the explicit broker-paper reconnect read. The coordinator freezes the existing bounded single-link main-file identity and bytes, or proves a fresh path remains absent, before external I/O and rechecks that scope after every admission, transport and semantic-review boundary through the final pre-checkpoint handoff. A byte-identical pathname replacement can no longer inherit the retained logical head and advance a different journal. The cursor store's separate descriptor-bound commit, recovery and acknowledgement checks remain intact. This is injected local M8 reconciliation hardening, not provider source or delivery attestation, broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence are strengthened, not bypassed. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.353 closes the adjacent Activity SSE cursor-directory continuity boundary across the explicit broker-paper reconnect read. The coordinator freezes the exact non-symlink parent-directory identity, or proves the parent remains absent, before external I/O and rechecks that scope after every admission, transport and semantic-review boundary through retained acknowledgement. Replacing an existing directory, or creating a previously absent parent during provider I/O, cannot inherit checkpoint authority even when the cursor file itself is preserved. This directory binding is independent of the main-file identity and byte binding and the cursor store's descriptor-bound commit, recovery and ownership checks. Saved reconciliation evidence now requires the fresh-parent rejection. This is injected local M8 reconciliation hardening, not provider source or delivery attestation, broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence are strengthened, not bypassed. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

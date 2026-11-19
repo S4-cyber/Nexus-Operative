@@ -12,6 +12,14 @@ class DummyVault:
     def get_password(self,service,account):return self.data.get((service,account))
     def delete_password(self,service,account):del self.data[(service,account)]
 
+
+@pytest.fixture(autouse=True)
+def isolate_process_local_vault_observation():
+    """Keep credential tests independent under deterministic CI sharding."""
+    vault._observation = None
+    yield
+    vault._observation = None
+
 def test_secure_vault_roundtrip_without_exposing_key(monkeypatch):
     store=DummyVault()
     monkeypatch.setattr(vault,"_vault",lambda:store)

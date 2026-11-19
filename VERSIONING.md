@@ -1,5 +1,43 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.358 burst capacity-bound evidence
+
+**Current development build: 0.340.358 (pre-release).** Bounded durable burst
+evidence now carries an exact replayed capacity snapshot. Active/retained
+commands, retained intent IDs, ordinary/total headroom and the fixed
+1,001-command halt/cancel/expiry reserve must agree. The release profile rejects
+altered schemas or bounds, while the capacity calculator rejects noncanonical
+and impossible inputs before reporting headroom.
+
+The direct scope passed 171 tests and the synchronized release/Windows-workflow
+scope passed 265, each with two existing warnings. All sixteen
+bounded offline profiles passed with 422-file source fingerprint
+`4cf158f042083d5bf7e23e3dd04c2c8013cb5011706d71b367d1a04f0b71860e`
+and report SHA-256
+`84709503954872c8ba921ce4361652267370415c8501869e34885fb1002e5fb5`.
+Both bounded treatments retained 67 commands and 16 IDs while reporting the
+full 1,001-command control reserve. These are local synthetic measurements,
+not broker or market latency. The 165-member wheel reports v0.340.358 and has
+SHA-256
+`4ab5836cd02f351d4fea7349d5dad723e23a5a6ded453c8ebbe479381c2f6f68`.
+
+Full regression exposed and repaired one draft validation error: a deliberately
+lower retained-history cap is independent from the active-epoch cap and must
+remain reviewable while new intake stays blocked. Final full regression passed
+6,561 tests with two platform skips and two existing warnings in 1,014.57
+seconds.
+
+Predecessor PR #74 passed all exact-source hosted jobs; fresh hosted execution
+is required for this increment. It does not establish sustained/native Windows
+pressure, broker-paper acceptance, genuine-feed realism, funding/live/cloud
+readiness, performance, profitability or release approval. No UI control or
+editable parameter changed. Engagement and optional AI remain OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven tabs and black/bright-purple bottom-right hover help
+remain intact. Implementation remains weighted 38% (30-45%, low confidence),
+with 0/9 stages accepted; trading, funding and release permissions remain false
+and no launch date is established.
+
 ## v0.340.357 admission-authority inventory
 
 **Current development build: 0.340.357 (pre-release).** A read-only endpoint

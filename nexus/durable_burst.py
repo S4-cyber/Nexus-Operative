@@ -3,6 +3,7 @@ from collections import deque
 import math
 import time
 from nexus.durable_orders import DurableOrderGateway
+from nexus.execution_capacity import CONTROL_RESERVE,PUBLIC_KEYS as CAPACITY_KEYS
 from nexus.state import isolated_settings
 from nexus.tier_permissions import configure
 from nexus import order_checkpoints
@@ -18,7 +19,8 @@ PUBLIC_KEYS=frozenset(('scope','atomic_order_transactions','offered','queue_capa
     'overflow_rejections','duplicate_rejections','completed_roundtrips','expired_before_execution',
     'halt_flushed','duplicate_fill_replays','queue_age_limit_ms','queue_wait_latency',
     'durable_roundtrip_latency','admitted_to_completion_latency','accounting_consistent','halted',
-    'durable_commands','cold_recovery_ms','application_accounts_changed','broker_orders',
+    'durable_commands','durable_capacity','capacity_bounds_verified','cold_recovery_ms',
+    'application_accounts_changed','broker_orders',
     'target_validated','limitations'))
 
 
@@ -76,6 +78,19 @@ def measure(root,cycles,clock=time.perf_counter,halt_after=None,atomic_orders=Fa
         consistent=(restored['halted'] and restored['portfolio_reconciled'] and
                     not restored['execution_account']['account']['positions'] and
                     len(restored['orders'])==2*completed and restored['commands']==3+8*completed)
+        capacity=restored['capacity']
+        capacity_bounds=(type(capacity) is dict and frozenset(capacity)==CAPACITY_KEYS and
+            capacity['command_count']==capacity['retained_commands']==restored['commands'] and
+            capacity['intent_count']==2*completed and
+            capacity['ordinary_commands_remaining']+capacity['command_count']==
+                capacity['ordinary_command_limit'] and
+            capacity['total_commands_remaining']+capacity['command_count']==
+                capacity['command_limit'] and
+            capacity['intents_remaining']+capacity['intent_count']==capacity['intent_limit'] and
+            capacity['control_commands_reserved']==CONTROL_RESERVE and
+            capacity['new_intents_allowed'] is capacity['lifecycle_intake_allowed'] is False and
+            capacity['reasons']==['EMERGENCY_HALT_ACTIVE'] and
+            capacity['history_deleted'] is capacity['automatic_archival_available'] is False)
         return dict(scope='TEMPORARY_LINKED_LEDGER_FIXTURE_BURST',atomic_order_transactions=atomic_orders,offered=cycles,queue_capacity=CAPACITY,
                     admitted=len(seen),overflow_rejections=overflow,duplicate_rejections=duplicates,
                     completed_roundtrips=completed,expired_before_execution=expired,halt_flushed=flushed,
@@ -83,6 +98,8 @@ def measure(root,cycles,clock=time.perf_counter,halt_after=None,atomic_orders=Fa
                     queue_wait_latency=percentiles(waits) if waits else None,
                     durable_roundtrip_latency=percentiles(execution) if execution else None,
                     admitted_to_completion_latency=percentiles(end_to_end) if end_to_end else None,
-                    accounting_consistent=consistent,halted=restored['halted'],durable_commands=restored['commands'],cold_recovery_ms=round(cold_ms,3),
+                    accounting_consistent=consistent,halted=restored['halted'],durable_commands=restored['commands'],
+                    durable_capacity=capacity,capacity_bounds_verified=capacity_bounds,
+                    cold_recovery_ms=round(cold_ms,3),
                     application_accounts_changed=False,broker_orders=0,target_validated=False,
                     limitations=LIMITATIONS)

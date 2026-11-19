@@ -1,5 +1,40 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.358 — burst capacity-bound evidence
+
+M3.2/M5.1 now binds every bounded linked-ledger burst to the replayed durable
+capacity snapshot. Command and retained-command totals, retained intent IDs,
+ordinary/total headroom and the fixed 1,001-command emergency/control reserve
+must satisfy exact equations. The saved capacity profile rejects schema drift,
+changed reserve evidence and noncanonical/impossible capacity inputs.
+
+The direct scope passed 171 tests and the synchronized release/Windows-workflow
+scope passed 265, each with two existing warnings. Sixteen bounded
+offline profiles passed; saved evidence matched 422 source files /
+`4cf158f042083d5bf7e23e3dd04c2c8013cb5011706d71b367d1a04f0b71860e`
+and report SHA-256 is
+`84709503954872c8ba921ce4361652267370415c8501869e34885fb1002e5fb5`.
+Both bounded 30-offer treatments retained 67 commands, 16 IDs and the full
+1,001-command control reserve after overflow and stop handling. These are
+machine-specific temporary synthetic results, not market or broker throughput.
+The 165-member v0.340.358 wheel has SHA-256
+`4ab5836cd02f351d4fea7349d5dad723e23a5a6ded453c8ebbe479381c2f6f68`.
+
+Full regression caught and repaired one draft invariant: retained-history and
+active-epoch limits are intentionally independent, so a lower retained cap
+must remain readable while blocking new intake. Final full regression passed
+6,561 tests with two platform skips and two existing warnings in 1,014.57
+seconds.
+
+Predecessor PR #74 is exact-source green across security, saved evidence,
+browser/help and both Windows regression shards. This increment still needs
+fresh hosted execution and does not close sustained pressure, native Windows,
+broker-paper, genuine-feed, funding/live/cloud or release gates. No UI control
+changed. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed entries, reducing exits, independent emergency stop, seven
+tabs and black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages accepted.
+
 ## v0.340.357 — admission-authority inventory
 
 M3.1 now has a source-declared, read-only inventory for twelve local authority

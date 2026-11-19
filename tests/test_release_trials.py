@@ -275,6 +275,12 @@ def test_capacity_trial_consumes_exact_bounded_scope():
     cases.append((changed,'CAPACITY_BURST_COUNTS'))
     changed=copy.deepcopy(result);changed['burst_treatment']['queue_wait_latency']['p99_ms']=float('inf')
     cases.append((changed,'CAPACITY_BURST_TIMING'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['durable_capacity']['extra']=0
+    cases.append((changed,'CAPACITY_BURST_RESERVE_SCHEMA'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['durable_capacity']['control_commands_reserved']=1000
+    cases.append((changed,'CAPACITY_BURST_RESERVE_BOUNDS'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['capacity_bounds_verified']=1
+    cases.append((changed,'CAPACITY_BURST_SCOPE'))
     changed=copy.deepcopy(result);changed['execution_quality']['unconsumed']=True
     cases.append((changed,'EXECUTION_QUALITY_SCHEMA'))
     changed=copy.deepcopy(result);changed['execution_quality']['passed']=1

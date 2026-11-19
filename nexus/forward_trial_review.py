@@ -18,6 +18,7 @@ import time
 
 from nexus import forward_evidence, forward_sessions
 from nexus.paper_forward import SESSION_LIMIT
+from nexus import feed_guard as feed_policy
 from nexus.feed_guard import FeedGuard
 from nexus.paper_policy import admit
 from nexus.sqlite_journal_guard import (capture_file_fingerprints,
@@ -207,7 +208,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         # before the existing chain reviewer, rather than accept parser last-wins.
         for payload, in db.execute('SELECT payload FROM forward_quotes'):
             if type(payload) is not str or forward_evidence.canonical(json.loads(payload))!=payload:_fail()
-        intervals=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
+        intervals=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
         clean_stopped=other_stopped=paused=running=quote_error_sessions=quote_errors=0
         reasons={'SOURCE_LABELS_AND_HASHES_UNATTESTED','ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','EXECUTION_OWNERSHIP_NOT_CHECKED'}
         for sid,started,updated,state,policy_raw,counts_raw,last_raw in rows:
@@ -244,6 +245,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                         if (type(point['error_type']) is not str or
                                 re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}',point['error_type']) is None):_fail()
                         session_quote_errors+=1;quote_errors+=1
+                    if checked_eligible and source==PUBLIC:
+                        cross_session_points.append((at,sid,point['cycle'],point['quote']))
                 if previous is not None:
                     old,was_good=previous;gap=at-old
                     if gap<0:_fail()
@@ -259,6 +262,33 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 elif last['reason']=='MANUAL_STOP':clean_stopped+=1
                 else:other_stopped+=1
                 if state!='STOPPED' or last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':flagged+=1
+        # Session-local coverage remains unchanged, but retained public quotes
+        # also need one chronological cross-session consistency pass. Otherwise
+        # rapidly rotating sessions can reset the jump heuristic indefinitely.
+        cross_rejected=set();equal_time={}
+        ordered=sorted(cross_session_points,key=lambda item:(item[0],item[1],item[2]))
+        for at,sid,cycle,quote in ordered:
+            product=quote['product']
+            # Compare price meaning, not JSON spelling (for example 100 vs
+            # "100.0"); provenance and permission fields already passed the
+            # exact local quote recheck above.
+            signature=tuple(FeedGuard.number(quote[key])
+                for key in ('bid','ask','last'))
+            key=(at,product)
+            prior=equal_time.get(key)
+            if prior is None:equal_time[key]=(sid,signature)
+            elif prior[0]!=sid and prior[1]!=signature:cross_rejected.add((sid,cycle))
+        previous_global={}
+        for at,sid,cycle,quote in ordered:
+            product=quote['product'];last=FeedGuard.number(quote['last'])
+            previous=previous_global.get(product)
+            if previous is not None:
+                old_at,old_sid,old_last=previous;elapsed=at-old_at
+                if (old_sid!=sid and 0<=elapsed<=feed_policy.MAX_GAP_SECONDS and
+                        abs(last-old_last)/old_last*100>feed_policy.MAX_JUMP_PCT):
+                    cross_rejected.add((sid,cycle))
+            previous_global[product]=(at,sid,last)
+        disagreements+=len(cross_rejected);revalidated-=len(cross_rejected)
         if seen!=count:_fail()
         binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,quote_heads=heads,quote_rows=count)).encode()).hexdigest()
     with localcontext() as context:

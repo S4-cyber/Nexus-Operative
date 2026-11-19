@@ -90,3 +90,10 @@ def test_final_installer_rehash_rejects_hardlinked_alias(tmp_path):
     os.link(installer,tmp_path/'retained-alias.exe')
     with pytest.raises(review.DistributionBindingError,match='installer file'):
         review._installer(installer)
+
+
+@pytest.mark.parametrize('name',['phase-review.json','artifact-manifest.json'])
+def test_binding_json_hardlink_is_rejected(tmp_path,name):
+    path=tmp_path/name;path.write_text('{}');os.link(path,tmp_path/('alias-'+name))
+    with pytest.raises(review.DistributionBindingError,match='json file'):
+        review._read_json(path)

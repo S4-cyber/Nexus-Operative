@@ -1,5 +1,6 @@
 """Exact-head retained fills, private CLI and conservative benchmark/fee scope."""
 import json
+import os
 import subprocess
 import sys
 
@@ -94,7 +95,7 @@ def test_request_append_during_arithmetic_is_retained_and_review_fails_without_r
                 preview('later_request','BTC-USD','BUY','2','100',asset,metadata_at=1000,evaluated_at=1001))
         return r
     monkeypatch.setattr(subject.quality,'review',changed)
-    with pytest.raises(ValueError,match='HEAD_DISAGREEMENT|JOURNALS_CHANGED'):subject.review(**args)
+    with pytest.raises(ValueError,match='HEAD_DISAGREEMENT|JOURNALS_CHANGED|FILE_SET_CHANGED'):subject.review(**args)
     assert calls==[1]
     assert len(BrokerRequestJournal(args['request_journal_path'],args['expected_account_id']).recovery()['requests'])==2
 
@@ -173,6 +174,54 @@ def test_missing_journals_and_aliased_paths_never_initialize_storage(tmp_path):
     args['pacing_path']=args['request_journal_path']
     with pytest.raises(ValueError,match='DISTINCT_JOURNALS_REQUIRED'):subject.review(**args)
     assert not root.exists()
+
+
+@pytest.mark.parametrize('field',['request_journal_path','pacing_path','activity_store_path','acceptance_store_path'])
+def test_same_byte_journal_replacement_during_reader_is_rejected(tmp_path,monkeypatch,field):
+    args=subject._fixture(tmp_path);path=args[field];retired=tmp_path/(path.name+'.retired')
+    original=subject.accepted.review;changed=[]
+    def replace(**kw):
+        result=original(**kw)
+        if not changed:
+            raw=path.read_bytes();os.replace(path,retired);path.write_bytes(raw);changed.append(True)
+        return result
+    monkeypatch.setattr(subject.accepted,'review',replace)
+    with pytest.raises(ValueError,match='FILE_(?:IDENTITY|SET)_CHANGED'):
+        subject.review(**args)
+
+
+@pytest.mark.parametrize('kind',['symlink','hardlink'])
+def test_selected_journal_leaf_alias_is_rejected(tmp_path,kind):
+    args=subject._fixture(tmp_path);original=args['request_journal_path'];alias=tmp_path/'selected-alias.sqlite3'
+    if kind=='symlink':
+        try:alias.symlink_to(original)
+        except OSError:pytest.skip('symlink unavailable')
+    else:os.link(original,alias)
+    args['request_journal_path']=alias
+    with pytest.raises(ValueError,match='FILE_(?:IDENTITY|FINGERPRINT)_UNAVAILABLE'):
+        subject.review(**args)
+
+
+def test_parent_alias_is_frozen_before_review(tmp_path):
+    actual=tmp_path/'actual';args=subject._fixture(actual);alias=tmp_path/'parent-alias'
+    try:alias.symlink_to(actual,target_is_directory=True)
+    except OSError:pytest.skip('symlink unavailable')
+    for field in ('request_journal_path','pacing_path','activity_store_path','acceptance_store_path'):
+        args[field]=alias/args[field].name
+    assert subject.review(**args)['journals_rechecked_unchanged'] is True
+
+
+def test_file_set_recheck_runs_when_semantic_reader_raises(tmp_path,monkeypatch):
+    args=subject._fixture(tmp_path);path=args['request_journal_path'];retired=tmp_path/'retired.sqlite3'
+    original=subject.quality.review
+    def mutate_then_fail(**kw):
+        if kw['fills']:
+            raw=path.read_bytes();os.replace(path,retired);path.write_bytes(raw)
+            raise RuntimeError('private semantic failure')
+        return original(**kw)
+    monkeypatch.setattr(subject.quality,'review',mutate_then_fail)
+    with pytest.raises(ValueError,match='FILE_(?:IDENTITY|SET)_CHANGED'):
+        subject.review(**args)
 
 
 @pytest.mark.parametrize('value',[{'private':'FIXTURE'},None,{'fills':[]}])

@@ -104,6 +104,19 @@ def test_symlink_and_hardlink_artifacts_are_rejected(tmp_path):
             subject.file_entry(alias)
 
 
+def test_path_replacement_after_descriptor_hash_is_rejected(tmp_path,monkeypatch):
+    artifact=tmp_path/'a.exe';artifact.write_bytes(b'reviewed bytes')
+    retired=tmp_path/'retired.exe';real_fstat=subject.os.fstat;calls=[]
+    def replace_on_final_descriptor_check(descriptor):
+        observed=real_fstat(descriptor);calls.append(1)
+        if len(calls)==2:
+            os.replace(artifact,retired);artifact.write_bytes(b'unreviewed replacement')
+        return observed
+    monkeypatch.setattr(subject.os,'fstat',replace_on_final_descriptor_check)
+    with pytest.raises(subject.ArtifactManifestError,match='ARTIFACT_CHANGED_DURING_READ'):
+        subject.file_entry(artifact)
+
+
 def _command():
     return [sys.executable, "-m", "nexus.artifact_manifest"]
 

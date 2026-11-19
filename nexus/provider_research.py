@@ -27,13 +27,18 @@ SCHEMA={"type":"object","additionalProperties":False,
                       "estimated_cost_usd":{"type":"number","minimum":0,"maximum":0.05}},
         "required":["role","verdict","reason","estimated_cost_usd"]}
 
-def _authorized_token():
+def _authorized_credential():
     """Resolve one credential source once; environment use requires opt-in."""
     token=credential_vault.retrieve()
-    if token:return token
+    if token:return 'vault',token
     if os.environ.get("NEXUS_ENABLE_LLM_RESEARCH")=="1":
-        return os.environ.get("OPENAI_API_KEY") or None
+        token=os.environ.get("OPENAI_API_KEY") or None
+        if token:return 'environment',token
     return None
+
+def _authorized_token():
+    selected=_authorized_credential()
+    return selected[1] if selected else None
 
 def enabled():
     return bool(_authorized_token())
@@ -52,8 +57,9 @@ def status():
 def request(role,snapshot,transport=None):
     global _calls
     if role not in ROLES:raise ValueError("Invalid advisory role")
-    token=_authorized_token()
-    if not token:raise ValueError("LLM_RESEARCH_DISABLED")
+    selected=_authorized_credential()
+    if not selected:raise ValueError("LLM_RESEARCH_DISABLED")
+    source,token=selected
     if not isinstance(snapshot,dict):raise ValueError("Invalid research input")
     raw=json.dumps(snapshot,sort_keys=True,allow_nan=False,separators=(",",":"))
     if len(raw.encode())>MAX_INPUT_BYTES:raise ValueError("Research payload too large")
@@ -83,7 +89,12 @@ def request(role,snapshot,transport=None):
                 if len(chunk)>MAX_BODY_BYTES:raise ValueError("MODEL_REPLY_TOO_LARGE")
                 return json.loads(chunk)
     try:
-        result=transport(body,token)
+        if source=='vault':
+            current,result=credential_vault.execute_saved(token,
+                lambda secret:transport(body,secret))
+            if not current:raise ValueError("LLM_SAVED_CREDENTIAL_CHANGED")
+        else:
+            result=transport(body,token)
         if not isinstance(result,dict):raise ValueError
         choices=result["choices"]
         if not isinstance(choices,list) or len(choices)!=1:raise ValueError

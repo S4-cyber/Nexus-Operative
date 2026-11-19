@@ -18,8 +18,15 @@ from nexus import broker_request_activity_review as original
 from nexus import alpaca_activity_normalizer as adapter
 from nexus.alpaca_paper_contract import sha
 from nexus.broker_activity_store import BrokerActivityStore
+from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
 from nexus.broker_request_journal import BrokerRequestJournal
+from nexus.broker_request_journal import MAX_DATABASE_BYTES as REQUEST_DATABASE_BYTES
+from nexus.paper_activity_acceptance_store import MAX_DATABASE_BYTES as ACCEPTANCE_DATABASE_BYTES
 from nexus.paper_activity_acceptance_probe import _private_path
+from nexus.paper_read_pacing import MAX_DATABASE_BYTES as PACING_DATABASE_BYTES
+from nexus.sqlite_journal_guard import (capture_file_fingerprints,
+    capture_file_identities, require_file_fingerprints,
+    require_file_identities)
 
 POLICY='nexus.paper-execution-quality-review.v1'
 BENCHMARK_KEYS=('decision_mid','decision_at_ns','request_event_at_ns','arrival_bid','arrival_ask','arrival_at_ns','end_at_ns','unfilled_mark')
@@ -29,6 +36,8 @@ CHECKS=('all_original_fills_derived','exact_heads_replayed','missing_fees_unlink
     'local_request_event_bound','changed_request_event_refused','legacy_request_event_refused',
     'repeat_review_matches','journals_unchanged','benchmark_not_attested','integer_fill_times_preserved')
 PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,*FLAGS))
+JOURNAL_LIMITS=(REQUEST_DATABASE_BYTES,PACING_DATABASE_BYTES,
+    ACTIVITY_DATABASE_BYTES,ACCEPTANCE_DATABASE_BYTES)
 
 
 def _fail(code):raise ValueError('PAPER_EXECUTION_QUALITY_'+code)
@@ -65,7 +74,8 @@ def _local_event_ns(value):
 def review(*,expected_account_id,request_journal_path,pacing_path,activity_store_path,acceptance_store_path,
            expected_request_head,expected_activity_head,client_order_id,benchmark):
     """Derive all retained priced fills for one original request; never sample a subset."""
-    paths=[_private_path(p)[1] for p in (request_journal_path,pacing_path,activity_store_path,acceptance_store_path)]
+    paths=tuple(_private_path(p)[0] for p in
+        (request_journal_path,pacing_path,activity_store_path,acceptance_store_path))
     if len(set(paths))!=4:_fail('DISTINCT_JOURNALS_REQUIRED')
     from nexus.sqlite_journal_guard import check_path_set
     check_path_set(paths,'PAPER_EXECUTION_QUALITY_')
@@ -73,18 +83,33 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
         if type(head) is not str or re.fullmatch('[0-9a-f]{64}',head) is None:_fail('HEAD_REFERENCE')
     if type(client_order_id) is not str or re.fullmatch('[A-Za-z0-9_-]{1,64}',client_order_id) is None:_fail('CLIENT_ID')
     benchmark=_benchmark(benchmark)
-    common=dict(expected_account_id=expected_account_id,request_journal_path=request_journal_path,pacing_path=pacing_path,
-        activity_store_path=activity_store_path,acceptance_store_path=acceptance_store_path,
+    identities=capture_file_identities(paths,'PAPER_EXECUTION_QUALITY_')
+    fingerprints=capture_file_fingerprints(paths,JOURNAL_LIMITS,
+        'PAPER_EXECUTION_QUALITY_')
+    def stable(reader):
+        try:value=reader()
+        except BaseException:
+            require_file_identities(paths,identities,'PAPER_EXECUTION_QUALITY_')
+            require_file_fingerprints(paths,JOURNAL_LIMITS,fingerprints,
+                'PAPER_EXECUTION_QUALITY_')
+            raise
+        require_file_identities(paths,identities,'PAPER_EXECUTION_QUALITY_')
+        require_file_fingerprints(paths,JOURNAL_LIMITS,fingerprints,
+            'PAPER_EXECUTION_QUALITY_')
+        return value
+    common=dict(expected_account_id=expected_account_id,request_journal_path=paths[0],pacing_path=paths[1],
+        activity_store_path=paths[2],acceptance_store_path=paths[3],
         expected_request_head=expected_request_head,expected_activity_head=expected_activity_head)
-    before=accepted.review(**common)
+    before=stable(lambda:accepted.review(**common))
     if (before.get('read_only') is not True or before.get('complete_accepted_history_replayed') is not True or
         before.get('local_request_activity_agreement') is not True or
         any(before.get(k) is not False for k in accepted.FLAGS)):_fail('ACCEPTED_REQUEST_AGREEMENT_REQUIRED')
-    replayed_before=accepted.replay(**common)
+    replayed_before=stable(lambda:accepted.replay(**common))
     if type(replayed_before) is not dict or replayed_before!=before:_fail('ACCEPTED_COMPONENT_INVALID')
-    journal=BrokerRequestJournal(request_journal_path,expected_account_id)
-    store=BrokerActivityStore(activity_store_path,expected_account_id)
-    requests=original._requests(journal);recovery=journal.recovery();retained=store.inspect()
+    journal=stable(lambda:BrokerRequestJournal(paths[0],expected_account_id))
+    store=stable(lambda:BrokerActivityStore(paths[2],expected_account_id))
+    requests=stable(lambda:original._requests(journal))
+    recovery=stable(journal.recovery);retained=stable(store.inspect)
     if (requests['head_sha256']!=expected_request_head or retained['head_sha256']!=expected_activity_head or
         recovery['head_sha256']!=expected_request_head or before['account_sha256']!=store.account_digest):_fail('HEAD_DISAGREEMENT')
     request=requests['requests'].get(client_order_id)
@@ -110,7 +135,7 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
     quality_benchmark={key:value for key,value in benchmark.items() if key!='request_event_at_ns'}
     quality_inputs=dict(product='BTC-USD',side=payload['side'].upper(),requested_quantity=payload['qty'],
         fills=fills,**quality_benchmark)
-    result=quality.review(**quality_inputs)
+    result=stable(lambda:quality.review(**quality_inputs))
     if (result.get('mode')!='SUPPLIED_EXECUTION_QUALITY_REVIEW' or result.get('policy')!=quality.POLICY or
         result.get('status')!='RESEARCH_REVIEW_REQUIRED' or any(result.get(k) is not False for k in quality.FLAGS) or
         result.get('unique_fills')!=len(records) or result.get('filled_quantity')!=selected[0]['explicit_fill_quantity'] or
@@ -118,10 +143,11 @@ def review(*,expected_account_id,request_journal_path,pacing_path,activity_store
         any(result.get(k) is not None for k in ('supplied_fee_total_usd','signed_shortfall_with_supplied_fees_usd',
             'executed_shortfall_with_supplied_fees_bps','signed_whole_order_shortfall_usd','whole_order_shortfall_bps'))):
         _fail('QUALITY_COMPONENT_DISAGREEMENT')
-    replayed_result=quality.replay(**quality_inputs)
+    replayed_result=stable(lambda:quality.replay(**quality_inputs))
     if type(replayed_result) is not dict or replayed_result!=result:_fail('QUALITY_COMPONENT_INVALID')
-    after=accepted.review(**common)
-    if (after!=before or original._requests(journal)!=requests or journal.recovery()!=recovery or store.inspect()!=retained):
+    after=stable(lambda:accepted.review(**common))
+    if (after!=before or stable(lambda:original._requests(journal))!=requests or
+            stable(journal.recovery)!=recovery or stable(store.inspect)!=retained):
         _fail('JOURNALS_CHANGED_DURING_REVIEW')
     scope=dict(policy=POLICY,account_sha256=before['account_sha256'],request_head_sha256=expected_request_head,
         activity_head_sha256=expected_activity_head,pacing_head_sha256=before['pacing_head_sha256'],

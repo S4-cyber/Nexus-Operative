@@ -7,7 +7,7 @@ import os
 import threading
 SERVICE="NexusOperativeResearch"
 ACCOUNT="OpenAIAdvisoryKey"
-_lock=threading.RLock()
+_lock=threading.Lock()
 _observation = None  # Process-local hint only; startup never inspects the OS store.
 
 def local_status():
@@ -64,6 +64,28 @@ def retrieve():
         except Exception:
             _observation = None
             return None
+
+def execute_saved(expected, callback):
+    """Invoke one paid action only while the exact saved secret is current.
+
+    Vault mutation shares this lock, so disconnect/install cannot return while
+    an already-authorized action is still using the prior saved credential.
+    """
+    global _observation
+    if type(expected) is not str or not callable(callback):
+        return False, None
+    with _lock:
+        try:
+            secret = _vault().get_password(SERVICE, ACCOUNT)
+            if secret is not None:
+                validate_secret(secret)
+            _observation = bool(secret)
+        except Exception:
+            _observation = None
+            return False, None
+        if secret != expected:
+            return False, None
+        return True, callback(secret)
 
 def configured():
     # Explicit legacy inspection; passive callers use local_status instead.

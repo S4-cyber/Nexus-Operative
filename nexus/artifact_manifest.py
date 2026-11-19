@@ -83,7 +83,13 @@ def file_entry(path):
         raise
     except OSError:
         _fail("INVALID_ARTIFACT_FILE")
-    if total != before.st_size or not _same_file(before, after):
+    try:
+        final = path.lstat()
+    except OSError:
+        _fail("ARTIFACT_CHANGED_DURING_READ")
+    if (total != before.st_size or not _same_file(before, after)
+            or not stat.S_ISREG(final.st_mode) or final.st_nlink != 1
+            or not _same_file(after, final)):
         _fail("ARTIFACT_CHANGED_DURING_READ")
     return {"name": path.name, "bytes": total, "sha256": digest.hexdigest()}
 

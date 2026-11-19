@@ -1,5 +1,45 @@
 # Nexus Operative continuity instructions
 
+## v0.340.361 post-reservation asset and benchmark-clock fences
+
+The disconnected Alpaca paper single-attempt boundary now performs a ninth
+bounded request after both durable reservations and immediately before its sole
+possible POST. The final BTC/USD status, tradability, fractionability, minimum
+size, quantity increment and price increment must equal the admitted preflight
+snapshot. Changed, malformed or ineligible terms consume the durable marker as
+`NOT_SENT`, retain original-client-ID review, perform zero POSTs and cannot
+re-arm. The mandatory pacing fixture and saved-evidence validator require both
+the successful resample and a changed-contract pre-POST denial.
+
+The local synthetic decision benchmark now samples only exact finite built-in
+numbers, requires every sample to be nondecreasing and the complete measurement
+window to advance, and retains its exact `3 * events + 2` sample count. Invalid,
+regressing, frozen or throwing clocks fail with fixed diagnostics instead of
+being clamped into zero latency, an invented high rate or target success.
+
+The affected broker/decision/release scope passed 237 tests before the final
+duration-precision amendment, the final decision-clock scope passed 26 tests,
+and exact-source full regression passed 6,589 tests with two platform skips and
+one existing warning in 1,289.25 seconds. All sixteen bounded offline profiles
+passed; saved evidence matched 422 source files /
+`b0e2ac66b40610a6faf0c2dcda7208ab12bfb58529520346ff31ce68aaed7684`
+and report SHA-256 is
+`716c6fc1400c3701a4960a7bbfeaac1304c8bb8dc746c968524302bf61ded1b5`.
+The 165-member v0.340.361 wheel reports the synchronized version and has
+SHA-256
+`00bf540ddaf20708635e0999b881addfa71a0c301e0fb8387ee562b282020042`.
+
+This is injected offline fail-closed evidence, not an atomic provider snapshot,
+actual broker-paper/account/quota acceptance, spendable-funds verification,
+genuine-feed trial realism, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter was
+added. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed entries, reducing exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Rough implementation remains about 40%, exact weighted index 38% (30-45%, low
+confidence), with 0/9 stages independently accepted. Fresh exact-source hosted
+CI remains mandatory.
+
 ## v0.340.360 forward fault-injection release evidence
 
 The mandatory disposable forward release profile now drives four isolated

@@ -46,7 +46,7 @@ class Opener:
     def __init__(self, values=None):
         positions=[dict(symbol='BTC/USD',asset_class='crypto',side='long',qty='3',qty_available='3')]
         self.values=list(values or [account(),positions,asset(),account(),positions,
-                                    account(),positions,response()])
+                                    account(),positions,asset(),response()])
         self.requests=[];self.responses=[]
     def open(self, request, timeout):
         self.requests.append((request,timeout)); value=self.values[len(self.requests)-1]
@@ -97,6 +97,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['account_and_position_capacity_resampled']
     assert result['sequential_preflight_stable']
     assert result['post_reservation_risk_resampled']
+    assert result['post_reservation_asset_resampled']
     assert result['post_transport_credentials_rechecked']
     assert result['request_and_post_budget_store_bindings_pinned']
     assert result['request_and_post_budget_file_identities_pinned']
@@ -121,9 +122,9 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert [request.full_url for request,_ in opener.requests]==[
         module.ACCOUNT_URL,module.POSITIONS_URL,module.ASSET_URL,
         module.ACCOUNT_URL,module.POSITIONS_URL,module.ACCOUNT_URL,
-        module.POSITIONS_URL,module.ORDER_URL]
+        module.POSITIONS_URL,module.ASSET_URL,module.ORDER_URL]
     assert [request.get_method() for request,_ in opener.requests]==[
-        'GET','GET','GET','GET','GET','GET','GET','POST']
+        'GET','GET','GET','GET','GET','GET','GET','GET','POST']
     posted=json.loads(opener.requests[-1][0].data)
     assert posted==plan()['payload']
     assert all(request.get_header('Apca-api-key-id')==KEY and
@@ -729,7 +730,7 @@ def test_lost_unknown_safety_closure_ack_preserves_original_failure(
         original(self,*args,**kwargs)
         raise RuntimeError('private lost safety closure acknowledgement')
     monkeypatch.setattr(PaperProviderPostBudget,'finish',lose_ack)
-    opener=Opener([account(),[],asset(),account(),[],account(),[],
+    opener=Opener([account(),[],asset(),account(),[],account(),[],asset(),
                    URLError('private transport detail')])
     with pytest.raises(module.PaperSubmissionError,
                        match='OUTCOME_UNKNOWN_LOOKUP_REQUIRED') as error:
@@ -757,7 +758,7 @@ def test_safety_closure_outside_last_trusted_window_is_not_trusted(
                 'submission_attempt_marked']
         opener=Opener(); changes=dict(emergency_stop_check=stop_after_marker)
     else:
-        opener=Opener([account(),[],asset(),account(),[],account(),[],
+        opener=Opener([account(),[],asset(),account(),[],account(),[],asset(),
                        URLError('private transport detail')])
         changes={}
     with pytest.raises(module.PaperSubmissionError,
@@ -792,7 +793,7 @@ def test_safety_closure_request_head_advance_during_budget_finish_is_uncertain(
                 'submission_attempt_marked']
         opener=Opener(); changes=dict(emergency_stop_check=stop_after_marker)
     else:
-        opener=Opener([account(),[],asset(),account(),[],account(),[],
+        opener=Opener([account(),[],asset(),account(),[],account(),[],asset(),
                        URLError('private transport detail')])
         changes={}
     with pytest.raises(module.PaperSubmissionError,
@@ -839,9 +840,32 @@ def test_post_reservation_risk_change_never_posts_and_never_rearms(
     initial_positions=[dict(symbol='BTC/USD',asset_class='crypto',side='long',
                             qty='3',qty_available='3')]
     opener=Opener([account(),initial_positions,asset(),account(),initial_positions,
-                   final_account,final_positions])
+                   final_account,final_positions,asset()])
     with pytest.raises(module.PaperSubmissionError,
                        match='POST_RESERVATION_STATE_CHANGED'):
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    assert retained['lookup_by_original_client_id_required']
+    assert all(request.get_method()!='POST' for request,_ in opener.requests)
+    assert prepared[2].history()[0]['outcome']=='NOT_SENT'
+    assert prepared[2].history()[0]['actual_posts']==0
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+@pytest.mark.parametrize('final_asset,code',[
+    (asset(tradable=False),'ASSET_NOT_ELIGIBLE'),
+    (asset(status='inactive'),'ASSET_NOT_ELIGIBLE'),
+    (asset(fractionable=False),'ASSET_NOT_ELIGIBLE'),
+    (asset(min_order_size='1'),'POST_RESERVATION_ASSET_CHANGED'),
+    (asset(min_trade_increment='.25'),'POST_RESERVATION_ASSET_CHANGED'),
+    (asset(price_increment='.25'),'POST_RESERVATION_ASSET_CHANGED'),
+    ({'malformed':'asset'},'ASSET_NOT_ELIGIBLE'),
+])
+def test_post_reservation_asset_change_never_posts_and_never_rearms(
+        prepared,final_asset,code):
+    opener=Opener([account(),[],asset(),account(),[],account(),[],final_asset])
+    with pytest.raises(module.PaperSubmissionError,match=code):
         submit(prepared,opener)
     retained=prepared[0].recovery()['requests'][0]
     assert retained['lookup_by_original_client_id_required']
@@ -864,7 +888,7 @@ def test_credential_mutation_during_final_transport_checkpoint_never_posts(
         # The second explicit credential sample occurs after the final risk
         # reads.  Mutate during the following POST-adjacent permission check,
         # reproducing the interval that used to follow the last pair check.
-        if credential_samples >= 2 and len(opener.requests)==7:
+        if credential_samples >= 2 and len(opener.requests)==8:
             credential_current=False
         return True
     with pytest.raises(module.PaperSubmissionError,
@@ -896,7 +920,7 @@ def test_credential_check_exception_is_fixed_and_post_silent(prepared):
 
 
 def test_post_transport_loss_preserves_unknown_and_cannot_retry(prepared):
-    opener=Opener([account(),[],asset(),account(),[],account(),[],
+    opener=Opener([account(),[],asset(),account(),[],account(),[],asset(),
                    URLError('private transport detail')])
     with pytest.raises(module.PaperSubmissionError,match='OUTCOME_UNKNOWN_LOOKUP_REQUIRED') as error:
         submit(prepared,opener)
@@ -963,7 +987,7 @@ def test_durable_response_completion_does_not_require_control_reauthorization(
 
 
 def test_invalid_post_response_preserves_unknown_without_secret_or_body_echo(prepared):
-    opener=Opener([account(),[],asset(),account(),[],account(),[],
+    opener=Opener([account(),[],asset(),account(),[],account(),[],asset(),
                    Reply({},raw=b'{"secret":"PRIVATE_BODY"}')])
     with pytest.raises(ValueError) as error:submit(prepared,opener)
     assert 'PRIVATE_BODY' not in str(error.value) and KEY not in str(error.value)

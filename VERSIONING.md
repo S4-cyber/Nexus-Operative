@@ -1,5 +1,31 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.361 final asset and benchmark-clock resampling
+
+**Current development build: 0.340.361 (pre-release).** The disconnected
+single-attempt paper boundary now requires a matching final BTC/USD eligibility
+and increment snapshot after both durable reservations. Any disagreement or
+ineligible final sample consumes the request as `NOT_SENT` before POST. The
+synthetic decision benchmark now fails closed on invalid, regressing or frozen
+clock windows and retains an exact sample-count/positive-duration attestation.
+
+Final full regression passed 6,589 tests with two platform skips and one
+existing warning in 1,289.25 seconds. All sixteen bounded profiles passed and
+saved evidence matched 422 source files /
+`b0e2ac66b40610a6faf0c2dcda7208ab12bfb58529520346ff31ce68aaed7684`;
+report SHA-256 is
+`716c6fc1400c3701a4960a7bbfeaac1304c8bb8dc746c968524302bf61ded1b5`.
+The 165-member v0.340.361 wheel has SHA-256
+`00bf540ddaf20708635e0999b881addfa71a0c301e0fb8387ee562b282020042`.
+
+This remains below 1.0 and grants no actual broker-paper, source, account,
+quota, spendable-funds, genuine-market, funding/live/cloud, performance,
+profitability or release acceptance. Owner approval remains required after all
+independent gates. Engagement and optional AI stay OFF by default; no new UI
+control or editable parameter was introduced. Implementation remains 38%
+weighted (about 40%, 30-45% uncertainty, low confidence), with 0/9 stages
+independently accepted.
+
 ## v0.340.360 forward fault-injection release evidence
 
 **Current development build: 0.340.360 (pre-release).** The disposable forward

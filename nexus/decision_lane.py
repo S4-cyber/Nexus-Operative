@@ -101,25 +101,37 @@ class BoundedDecisionLane:
 def benchmark(count=300,clock=time.perf_counter):
     if type(count)!=int or not 30<=count<=MAX_EVENTS:
         raise ValueError("INVALID_BENCHMARK_SIZE")
-    lane=BoundedDecisionLane(clock=clock)
+    previous=None;clock_samples=0
+    def sample():
+        nonlocal previous,clock_samples
+        try:value=clock()
+        except Exception:raise ValueError("BENCHMARK_CLOCK_INVALID") from None
+        if not finite_clock(value):raise ValueError("BENCHMARK_CLOCK_INVALID")
+        if previous is not None and value<previous:
+            raise ValueError("BENCHMARK_CLOCK_REGRESSION")
+        previous=value;clock_samples+=1
+        return value
+    lane=BoundedDecisionLane(clock=sample)
     latencies=[]
-    wall_start=clock()
+    wall_start=sample()
     outcomes={}
     for seq in range(count):
         # Bounded batches emulate a feed without creating an unbounded backlog.
-        start=clock()
+        start=sample()
         lane.offer(seq,start,"BTC-USD","BUY",10)
         result=lane.decide_one()
-        latencies.append(max(0,(clock()-start)*1000))
+        latencies.append((sample()-start)*1000)
         outcomes[result]=outcomes.get(result,0)+1
-    elapsed=max(clock()-wall_start,1e-9)
+    elapsed=sample()-wall_start
+    if elapsed<=0:raise ValueError("BENCHMARK_CLOCK_NO_PROGRESS")
     series=sorted(latencies)
     def pct(p):return round(series[min(len(series)-1,math.ceil(p*len(series))-1)],4)
     return {"mode":"OFFLINE_DECISION_CAPACITY_BENCHMARK",
         "events":count,"target_decisions_per_second":TARGET_DECISIONS_PER_SECOND,
         "local_decisions_per_second":round(count/elapsed,1),
         "p50_ms":pct(.5),"p95_ms":pct(.95),"p99_ms":pct(.99),
-        "measurement_duration_seconds":round(elapsed,5),
+        "measurement_duration_seconds":elapsed,
+        "measurement_clock_samples":clock_samples,
         "target_met_in_this_synthetic_run":count/elapsed>=TARGET_DECISIONS_PER_SECOND,
         "results":outcomes,"queue_capacity":lane.capacity,"retention":lane.snapshot(),
         "broker_orders_submitted":0,"broker_fills_confirmed":0,

@@ -11,10 +11,12 @@ $installDir = Join-Path $env:RUNNER_TEMP 'nexus-install-smoke'
 $dataDir = Join-Path $env:RUNNER_TEMP 'nexus-install-smoke-data'
 New-Item -ItemType Directory -Force $EvidenceDirectory, $dataDir | Out-Null
 $phaseEvidence = Join-Path $EvidenceDirectory 'installer-phases.jsonl'
+$resultEvidence = Join-Path $EvidenceDirectory 'installer-result.json'
 $python = (Get-Command python -ErrorAction Stop).Source
 if ($Version -cnotmatch '^0\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'Invalid development version binding' }
 if ($SourceCommit -cnotmatch '^[0-9a-f]{40}$') { throw 'Invalid source commit binding' }
 if (Test-Path $phaseEvidence) { throw 'Installer phase evidence already exists' }
+if (Test-Path $resultEvidence) { throw 'Installer result evidence already exists' }
 $installerSha256 = (Get-FileHash $Installer -Algorithm SHA256).Hash.ToLowerInvariant()
 $phaseSessionId = [Guid]::NewGuid().ToString('D')
 
@@ -135,4 +137,40 @@ if ((Get-FileHash $sentinel -Algorithm SHA256).Hash -ne $sentinelHash) { throw '
 if ((Get-FileHash $journal -Algorithm SHA256).Hash -ne $journalHash) { throw 'Uninstall modified user journal' }
 if ((Get-FileHash $settings -Algorithm SHA256).Hash -ne $settingsHash) { throw 'Uninstall modified saved setup' }
 if ((Get-FileHash $defaultSettings -Algorithm SHA256).Hash -ne $defaultSettingsHash) { throw 'Uninstall modified default saved setup' }
-@{first_run_paper_defaults=$true;saved_setup_survived_reinstall=$true;saved_setup_survived_restart=$true;setup_preserved_on_uninstall=$true;default_windows_data_recovery=$true;default_data_preserved_on_uninstall=$true;prior_version_data_recovery=$true;packaged_backup_recovery=$true;same_version_reinstall=$true;halt_recovered=$true;uninstall_preserved_data=$true;all_external_processes_bounded=$true;phase_evidence_recorded=$true;maximum_phase_timeout_seconds=300;cross_version_upgrade_verified=$false;native_window_verified=$false} | ConvertTo-Json | Set-Content "$EvidenceDirectory/installer-result.json" -Encoding UTF8
+$result = [ordered]@{
+    mode = 'INSTALLER_SMOKE_RESULT'
+    version = $Version
+    source_commit = $SourceCommit
+    installer_sha256 = $installerSha256
+    session_id = $phaseSessionId
+    first_run_paper_defaults = $true
+    saved_setup_survived_reinstall = $true
+    saved_setup_survived_restart = $true
+    setup_preserved_on_uninstall = $true
+    default_windows_data_recovery = $true
+    default_data_preserved_on_uninstall = $true
+    prior_version_data_recovery = $true
+    packaged_backup_recovery = $true
+    same_version_reinstall = $true
+    halt_recovered = $true
+    uninstall_preserved_data = $true
+    all_external_processes_bounded = $true
+    phase_evidence_recorded = $true
+    maximum_phase_timeout_seconds = 300
+    cross_version_upgrade_verified = $false
+    native_window_verified = $false
+    native_windows_acceptance = $false
+    actual_broker_acceptance = $false
+    live_orders_enabled = $false
+    money_movement_enabled = $false
+    release_approved = $false
+    limitations = 'Successful CI installer semantic checks only; not clean-machine, native-window, ordinary-user, power-loss, broker, market, funds or release acceptance.'
+}
+$temporaryResult = Join-Path $EvidenceDirectory ('.installer-result-' + [Guid]::NewGuid().ToString('N') + '.tmp')
+try {
+    $utf8NoBom = [Text.UTF8Encoding]::new($false)
+    [IO.File]::WriteAllText($temporaryResult, (($result | ConvertTo-Json) + [Environment]::NewLine), $utf8NoBom)
+    [IO.File]::Move($temporaryResult, $resultEvidence)
+} finally {
+    if (Test-Path $temporaryResult) { Remove-Item -LiteralPath $temporaryResult -Force }
+}

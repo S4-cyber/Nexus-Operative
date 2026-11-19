@@ -1,5 +1,42 @@
 # Nexus Operative continuity instructions
 
+## v0.340.364 installer semantic-result distribution binding
+
+The Windows installer smoke result is now a first-class, fail-closed member of
+the distribution trust chain. Its raw record binds the exact development
+version, source commit, installer SHA-256 and phase-session identifier to eleven
+semantic install/reinstall/recovery/preservation assertions, bounded external
+processes, and explicit false native, broker, live, money-movement and release
+authority. It is published through a unique temporary file and no-overwrite
+move, then a strict reviewer rejects duplicate keys, links, malformed types,
+stale source/session/digest metadata, substituted phase evidence, promoted
+authority or pre-existing output.
+
+The normalized result review is included in the inner artifact manifest,
+consumed by the distribution binding, carried in the distribution upload and
+independently revalidated by the ordinary-user owner-profile reviewer. The
+outer envelope continues to bind the inner manifest and distribution review,
+so semantic-result substitution breaks the shipped chain without introducing
+a hash cycle. The final strict installer/result/manifest/owner and documentation
+scope passed 151 tests with one existing dependency warning. Final full
+regression passed 6,665 tests with two platform skips and one existing warning
+in 1,297.22 seconds. All sixteen bounded offline profiles passed; saved
+evidence matched 424 source files /
+`9b44d33910b1b73a8c3ff82228426fb576bc048b1656116f6f49313e9714b1d9`
+and report SHA-256 is
+`68dd9d7fd255638ecf7daa05359a6c0487eefde500b36aa877e049a32eeee003`.
+
+This is source and local-workflow verification, not an executed native Windows
+installer, clean-machine, native-window, ordinary-profile, power-loss, actual
+broker or genuine-feed acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No control or editable parameter changed.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help remain intact. Rough
+implementation remains about 40%, exact weighted index 38% (30-45%, low
+confidence), with 0/9 stages independently accepted.
+
+
 ## v0.340.363 fail-closed worker cleanup and complete mutation inventory
 
 The paper-forward worker now disables itself and releases its cross-process

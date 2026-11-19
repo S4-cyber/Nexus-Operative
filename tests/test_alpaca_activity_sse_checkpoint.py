@@ -62,6 +62,28 @@ def segments(suffix=''):
     return initial, replay, raw
 
 
+def resumable_replay(previous, event_ids, ref_ids, order_ids, minute):
+    trade = _event(event_ids[0], ref_ids[0], 'TRD',
+        details={**previous['details'], 'order_id': order_ids[0],
+            'client_order_id': f'fixture_client_{minute}_a'},
+        at=f'2026-10-18T18:{minute}:00.100000000Z',
+        executed_at=f'2026-10-18T18:{minute}:00.000000000Z')
+    fee = _event(event_ids[1], ref_ids[1], 'FEE',
+        details={'parent_id': trade['ref_id'],
+            'system_date': '2026-10-18'},
+        at=f'2026-10-18T18:{int(minute) + 1:02d}:00.100000000Z',
+        executed_at=f'2026-10-18T18:{int(minute) + 1:02d}:00.000000000Z')
+    terminal = _event(event_ids[2], ref_ids[2], 'TRD',
+        details={**previous['details'], 'order_id': order_ids[1],
+            'client_order_id': f'fixture_client_{minute}_b'},
+        at=f'2026-10-18T18:{int(minute) + 2:02d}:00.100000000Z',
+        executed_at=f'2026-10-18T18:{int(minute) + 2:02d}:00.000000000Z')
+    replay = [copy.deepcopy(previous), trade, fee, terminal]
+    raw = ''.join('data: ' + canonical(row) + '\n\n'
+        for row in replay).encode()
+    return terminal, raw
+
+
 class Response:
     status = 200
     headers = {'Content-Type': 'text/event-stream; charset=utf-8'}
@@ -571,6 +593,61 @@ def test_cursor_store_binding_change_during_io_never_checkpoints(tmp_path):
         run(tmp_path, cursor_store=store, opener=opener)
     assert len(opener.requests) == 1
     assert not path.exists() and not moved.exists()
+
+
+def test_existing_cursor_file_replacement_during_io_never_checkpoints(
+        tmp_path):
+    initial, _, _ = segments()
+    retained_trade, first_raw = resumable_replay(initial[-1],
+        ('01K00000000000000000000005',
+         '01K00000000000000000000006',
+         '01K00000000000000000000007'),
+        ('55555555-5555-5555-5555-555555555555',
+         '66666666-6666-6666-6666-666666666666',
+         '77777777-7777-7777-7777-777777777777'),
+        ('dddddddd-dddd-dddd-dddd-dddddddddddd',
+         'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'), '04')
+    first, store, _ = run(tmp_path, initial_events=initial,
+        opener=Opener(first_raw))
+    path = store.path
+    initial = [*initial, retained_trade]
+    _, raw = resumable_replay(retained_trade,
+        ('01K00000000000000000000008',
+         '01K00000000000000000000009',
+         '01K0000000000000000000000A'),
+        ('88888888-8888-8888-8888-888888888888',
+         '99999999-9999-9999-9999-999999999999',
+         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+        ('ffffffff-ffff-ffff-ffff-ffffffffffff',
+         'abababab-abab-abab-abab-abababababab'), '07')
+    replacement = tmp_path / 'replacement.sqlite3'
+    before = path.stat()
+
+    def replace_with_identical_bytes():
+        replacement.write_bytes(path.read_bytes())
+        replacement.replace(path)
+
+    opener = Opener(raw, callback=replace_with_identical_bytes)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_FILE_CHANGED'):
+        run(tmp_path, cursor_store=store, initial_events=initial,
+            expected_cursor_head=first['checkpoint_head_sha256'],
+            opener=opener)
+    after = path.stat()
+    assert (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino)
+    assert len(opener.requests) == 1
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['retained_checkpoints'] == 1
+
+
+def test_fresh_cursor_path_creation_during_io_never_checkpoints(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    opener = Opener(segments()[2], callback=lambda: path.write_bytes(b'x'))
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_FILE_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener)
+    assert len(opener.requests) == 1 and path.read_bytes() == b'x'
 
 
 def test_failed_initial_store_review_cannot_mask_equal_path_retarget(

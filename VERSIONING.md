@@ -1,8 +1,30 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.352 Activity SSE cursor-file continuity boundary
+
+**Current development build: 0.340.352 (pre-release).** The explicit broker-paper
+Activity SSE checkpoint freezes an existing bounded single-link cursor main
+file's identity and bytes, or proves a fresh path remains absent, across the
+sole provider read and every following semantic boundary before checkpoint
+handoff. A byte-identical pathname replacement cannot preserve cursor authority
+merely because its logical head and contents match. The store's separate
+descriptor-bound commit, acknowledgement and recovery checks remain intact.
+
+This is injected local M8 reconciliation hardening, not provider source or
+delivery attestation, broker-paper acceptance, genuine-feed sustained-trial
+realism, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter changed.
+Engagement remains OFF by default; limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation
+remains weighted 38% (30-45%, low confidence), with 0/9 stages independently
+accepted; trading, funding and release permissions remain false and no launch
+date is established. Exact local release evidence and fresh hosted workflows
+are required for this source.
+
 ## v0.340.351 exact authority, journal and cross-session boundaries
 
-**Current development build: 0.340.351 (pre-release).** Saved paid-provider
+**Prior development build: 0.340.351 (pre-release).** Saved paid-provider
 requests lease the exact selected Windows-vault credential through transport;
 disconnect or rotation cannot return while the prior credential remains in
 use. Execution-quality review freezes and fingerprints all four private

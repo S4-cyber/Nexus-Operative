@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.351'
+REVISION = '0.340.352'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1086,6 +1086,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.remaining) for item in MILESTONES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Activity SSE checkpoint coordinator now freezes an existing bounded single-link cursor main-file identity and bytes, or proves a fresh path remains absent, across admission, the sole provider read, private parsing and reconnect review before checkpoint handoff; a byte-identical pathname replacement cannot preserve cursor authority, while the cursor store retains its separate descriptor-bound commit and recovery checks' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; Activity SSE reconnect reasons now require one exact built-in allowlisted string at every offline review, saved-credential, reconnect-budget, checkpoint and owner-acceptance ingress before callbacks, journal inspection or creation, reservation and the sole provider GET; malformed or equality-forging reasons are network/storage silent and retain no request authority' if item.id=='M8' else ''),
     item.remaining) for item in MILESTONES)
 
@@ -1160,7 +1164,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.351 closes compatible saved-credential, exact-journal, sustained-trial, artifact-path, Windows-evidence and strict-notional boundaries. A saved paid credential is leased under the vault mutation lock through transport, so disconnect or rotation either wins before I/O or waits for the bounded in-flight request. Execution-quality reconciliation freezes and fingerprints all four selected journals around every semantic reader. Retained public quotes receive a chronological cross-session consistency pass so session rotation cannot reset the single-source jump heuristic. Artifact hashing rechecks the public pathname after descriptor hashing; Windows phase and binding JSON reject hardlinks. Simulated intent notionals reject coercive booleans and strings before route mutation. This is injected local M1/M3/M4/M7/M9 boundary evidence, not broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence are strengthened, not bypassed. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.352 closes an Activity SSE cursor-journal replacement boundary across the explicit broker-paper reconnect read. The coordinator freezes the existing bounded single-link main-file identity and bytes, or proves a fresh path remains absent, before external I/O and rechecks that scope after every admission, transport and semantic-review boundary through the final pre-checkpoint handoff. A byte-identical pathname replacement can no longer inherit the retained logical head and advance a different journal. The cursor store's separate descriptor-bound commit, recovery and acknowledgement checks remain intact. This is injected local M8 reconciliation hardening, not provider source or delivery attestation, broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence are strengthened, not bypassed. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

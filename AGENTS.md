@@ -1,5 +1,27 @@
 # Nexus Operative continuity instructions
 
+## v0.340.352 Activity SSE cursor-file continuity boundary
+
+The explicit Activity SSE checkpoint coordinator now freezes an existing
+bounded single-link cursor database identity and bytes, or proves a fresh path
+remains absent, before the sole provider read. It rechecks that physical scope
+after admission, transport, private event freezing and reconnect review and at
+the final pre-checkpoint handoff. A byte-identical pathname replacement can no
+longer inherit the retained logical head and advance a different journal. The
+cursor store's descriptor-bound commit, lost-ack recovery and cold binding
+checks remain separate and unchanged.
+
+This is injected local M8 reconciliation hardening, not provider source or
+delivery attestation, broker-paper acceptance, genuine-feed sustained-trial
+realism, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter changed.
+Engagement remains OFF by default; limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Fresh exact-source evidence and hosted CI are mandatory;
+the native Windows lane remains separately undispatched.
+
 ## v0.340.351 exact authority, journal and cross-session boundaries
 
 Saved paid-provider requests now hold the vault mutation lock through the

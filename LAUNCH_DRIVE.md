@@ -1,5 +1,25 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.352 — Activity SSE cursor-file continuity
+
+The explicit paper Activity SSE checkpoint now binds the physical cursor
+journal across its external reconnect read. Existing bounded single-link bytes
+and identity are frozen; a fresh path must remain absent. Admission, transport,
+private parsing, reconnect review and the final pre-checkpoint handoff all
+recheck that scope, so a byte-identical replacement cannot inherit a retained
+logical head and advance a different file. The journal's independent
+descriptor-bound commit and crash/lost-ack recovery checks remain intact.
+
+No real provider/account/feed, native ordinary-user Windows host, funding
+system or cloud deployment was accessed. No UI control changed. Engagement and
+all financial permissions remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Release, trading and funding approval remain false and
+no launch date is predicted. Exact local evidence and fresh hosted CI remain
+mandatory; the native Windows installer lane is separately undispatched.
+
 ## v0.340.351 — exact authority and cross-session integrity
 
 This increment closes six compatible fail-closed seams. Saved paid-provider

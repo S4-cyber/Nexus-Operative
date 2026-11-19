@@ -274,7 +274,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         over_limit_gap_seconds=sum(over_limit_gaps,Decimal(0))
         target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and selected>0
         rejected=selected-eligible
-        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or over_limit_gaps)
+        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps)
         incident_free_target=target and not incidents
         if duration<MINIMUM_SECONDS:reasons.add('REQUESTED_WINDOW_SHORTER_THAN_72_HOURS')
         if fraction<Decimal('.95'):reasons.add('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT')

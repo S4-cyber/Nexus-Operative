@@ -23,6 +23,34 @@ def test_disabled_provider_never_calls_network(monkeypatch):
     else:assert False,"Disabled provider made a request"
     assert TestClient(app).get("/api/paper/ai-provider/status").json()["provider_connected"] is False
 
+def test_request_never_switches_from_vault_authority_to_unopted_environment(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY","unopted-environment-placeholder")
+    monkeypatch.delenv("NEXUS_ENABLE_LLM_RESEARCH",raising=False)
+    monkeypatch.setattr(provider,"_calls",0)
+    reads=[]
+    def vault():
+        reads.append(1)
+        return "saved-vault-placeholder" if len(reads)==1 else None
+    monkeypatch.setattr(provider.credential_vault,"retrieve",vault)
+    received=[]
+    result=provider.request("market_regime",{},transport=lambda body,token:
+        received.append(token) or reply())
+    assert result["provider_connected"] is True
+    assert received==["saved-vault-placeholder"] and len(reads)==1
+
+def test_environment_credential_requires_explicit_opt_in(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY","environment-placeholder")
+    monkeypatch.delenv("NEXUS_ENABLE_LLM_RESEARCH",raising=False)
+    monkeypatch.setattr(provider.credential_vault,"retrieve",lambda:None)
+    called=[]
+    with __import__('pytest').raises(ValueError,match='LLM_RESEARCH_DISABLED'):
+        provider.request("market_regime",{},transport=lambda *args:called.append(args))
+    assert not called
+    monkeypatch.setenv("NEXUS_ENABLE_LLM_RESEARCH","1")
+    result=provider.request("market_regime",{},transport=lambda body,token:
+        called.append(token) or reply())
+    assert result["provider_connected"] is True and called==["environment-placeholder"]
+
 def test_structured_provider_has_no_tools_or_broker_routes(monkeypatch):
     setup(monkeypatch)
     def transport(body,secret):

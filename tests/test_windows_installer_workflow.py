@@ -79,7 +79,12 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert "Get-ChildItem release -File -Filter 'NexusOperative-Setup-*.exe'" in workflow
     assert '$installers.Count -ne 1 -or $installers[0].FullName -cne $expected' in workflow
     assert workflow.index(envelope_verify) < workflow.index(exact_set)
-    assert workflow.index(exact_set) < workflow.index('name: Upload distribution with source and checksum manifest')
+    upload='name: Upload distribution with source and checksum manifest'
+    exact_index=workflow.index(exact_set)
+    upload_index=workflow.index(upload)
+    final_inner=workflow.index('python -m nexus.artifact_manifest verify release/artifact-manifest.json release',exact_index)
+    final_envelope=workflow.index('python -m nexus.artifact_manifest verify release/distribution-envelope.json release',exact_index)
+    assert exact_index < final_inner < final_envelope < upload_index
     assert 'NexusOperative-Standalone-Windows' not in workflow
     assert 'name: Upload standalone EXE' not in workflow
     assert 'NexusOperative-Windows-Installer' not in workflow

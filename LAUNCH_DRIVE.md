@@ -1,5 +1,27 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.350 — reducing exits and exact release integrity
+
+This increment closes six compatible fail-closed seams. Emergency state still
+vetoes every new entry but no longer strands an existing local-paper long;
+sell-only closes retain quote validation and atomic ledger checks. Optional
+paid research resolves one authorized credential source once and cannot switch
+to an unopted environment key. Post-reconciliation review preserves each
+selected journal leaf for no-follow identity checks. Retained injected and
+unknown observations are classified as incidents. The public artifact audit
+parses bounded BOM-prefixed JSON, and the Windows lane performs final inner and
+outer manifest verification immediately before its distribution upload.
+
+No real broker/account/feed, native ordinary-user Windows host, funding system
+or cloud deployment was accessed. No UI control changed. Engagement and every
+financial permission remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Release, trading and funding approval remain false and
+no launch date is predicted. Exact local evidence and fresh hosted CI remain
+mandatory; the native Windows installer lane is a separate undispatched gate.
+
 ## v0.340.349 — cut ordering, exact consent and release-tree boundaries
 
 This increment closes five compatible fail-open seams. Durable order intake

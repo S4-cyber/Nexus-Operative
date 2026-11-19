@@ -2,11 +2,26 @@
 from nexus import order_gateway
 
 CONTROL_RESERVE=1001
+PUBLIC_KEYS=frozenset(('read_only','command_count','command_limit','ordinary_command_limit',
+    'ordinary_commands_remaining','total_commands_remaining','control_commands_reserved',
+    'intent_count','intent_limit','intents_remaining','new_intents_allowed',
+    'lifecycle_intake_allowed','reasons','automatic_archival_available',
+    'explicit_logical_archival_available','history_deleted','recommended_action',
+    'retained_commands','retained_limit','note'))
 
 
 def report(command_count,intent_count,halted,command_limit,retained_commands=None,retained_limit=100000):
+    values=(command_count,intent_count,command_limit,retained_limit)
+    if (any(type(value) is not int or value<0 for value in values) or
+            type(halted) is not bool or command_limit<CONTROL_RESERVE or
+            retained_limit<CONTROL_RESERVE):
+        raise ValueError('EXECUTION_CAPACITY_INPUT_INVALID')
     ordinary_limit=max(0,command_limit-CONTROL_RESERVE)
     if retained_commands is None:retained_commands=command_count
+    if (type(retained_commands) is not int or retained_commands<command_count or
+            command_count>command_limit or retained_commands>retained_limit or
+            intent_count>order_gateway.MAX_INTENTS):
+        raise ValueError('EXECUTION_CAPACITY_INPUT_INVALID')
     remaining=min(max(0,ordinary_limit-command_count),max(0,retained_limit-CONTROL_RESERVE-retained_commands))
     total_remaining=min(max(0,command_limit-command_count),max(0,retained_limit-retained_commands))
     intent_remaining=max(0,order_gateway.MAX_INTENTS-intent_count)

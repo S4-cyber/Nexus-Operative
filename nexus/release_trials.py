@@ -1229,6 +1229,8 @@ def _validate(profile, result):
             PUBLIC_KEYS as CAPACITY_KEYS,RECOVERY_KEYS,TREATMENT_KEYS)
         from nexus.durable_burst import (LIMITATIONS as BURST_LIMITATIONS,
             PUBLIC_KEYS as BURST_KEYS)
+        from nexus.execution_capacity import (CONTROL_RESERVE,
+            PUBLIC_KEYS as DURABLE_CAPACITY_KEYS)
         _require(type(result) is dict and frozenset(result)==
             CAPACITY_KEYS|frozenset(('execution_quality','paper_execution_quality')),
             'CAPACITY_PROFILE_SCHEMA')
@@ -1283,6 +1285,7 @@ def _validate(profile, result):
             _require(burst['scope']=='TEMPORARY_LINKED_LEDGER_FIXTURE_BURST' and
                 burst['atomic_order_transactions'] is atomic and
                 burst['accounting_consistent'] is burst['halted'] is True and
+                burst['capacity_bounds_verified'] is True and
                 burst['application_accounts_changed'] is burst['target_validated'] is False and
                 burst['limitations']==BURST_LIMITATIONS,
                 'CAPACITY_BURST_SCOPE')
@@ -1300,6 +1303,22 @@ def _validate(profile, result):
                 type(burst['queue_age_limit_ms']) is float and
                 burst['queue_age_limit_ms']==250.0,
                 'CAPACITY_BURST_COUNTS')
+            capacity=burst['durable_capacity']
+            _require(type(capacity) is dict and frozenset(capacity)==DURABLE_CAPACITY_KEYS,
+                'CAPACITY_BURST_RESERVE_SCHEMA')
+            _require(capacity['read_only'] is True and
+                capacity['command_count']==capacity['retained_commands']==burst['durable_commands'] and
+                capacity['intent_count']==2*burst['completed_roundtrips'] and
+                capacity['ordinary_commands_remaining']+capacity['command_count']==
+                    capacity['ordinary_command_limit'] and
+                capacity['total_commands_remaining']+capacity['command_count']==
+                    capacity['command_limit'] and
+                capacity['intents_remaining']+capacity['intent_count']==capacity['intent_limit'] and
+                capacity['control_commands_reserved']==CONTROL_RESERVE and
+                capacity['new_intents_allowed'] is capacity['lifecycle_intake_allowed'] is False and
+                capacity['reasons']==['EMERGENCY_HALT_ACTIVE'] and
+                capacity['automatic_archival_available'] is capacity['history_deleted'] is False,
+                'CAPACITY_BURST_RESERVE_BOUNDS')
             _require(all(latency(burst[key]) for key in ('queue_wait_latency',
                     'durable_roundtrip_latency','admitted_to_completion_latency')) and
                 type(burst['cold_recovery_ms']) is float and

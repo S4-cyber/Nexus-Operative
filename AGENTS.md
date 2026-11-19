@@ -1,5 +1,49 @@
 # Nexus Operative continuity instructions
 
+## v0.340.358 burst capacity-bound evidence
+
+The bounded linked-ledger burst treatments now retain and validate their exact
+post-run durable-capacity snapshot. Active and retained command counts, retained
+intent IDs, ordinary and total headroom equations and the fixed 1,001-command
+halt/cancel/expiry reserve must agree with the replayed journal. The release
+profile consumes an exact capacity schema and rejects changed reserve or bound
+evidence. Capacity diagnostics now fail closed on booleans, negative values,
+impossible command/intent counts and inconsistent retained-history bounds.
+
+The direct capacity/burst/benchmark/archival/release-validator scope passed 171
+tests, and the synchronized release/version/roadmap/Windows-workflow scope
+passed 265 tests, each with two existing dependency warnings. All sixteen bounded offline profiles
+passed; saved evidence matched 422 source files /
+`4cf158f042083d5bf7e23e3dd04c2c8013cb5011706d71b367d1a04f0b71860e`
+and report SHA-256 is
+`84709503954872c8ba921ce4361652267370415c8501869e34885fb1002e5fb5`.
+Both 30-offer treatments admitted eight bounded items, rejected 22 overflow
+offers, retained 67 durable commands and 16 intent IDs after the stop, and
+reported the full 1,001-command control reserve. These are temporary local
+synthetic measurements, not sustained pressure, broker or market latency.
+The 165-member v0.340.358 wheel reports the synchronized version and has
+SHA-256
+`4ab5836cd02f351d4fea7349d5dad723e23a5a6ded453c8ebbe479381c2f6f68`.
+
+The first full regression correctly exposed that the retained-history cap is
+independent of the active-epoch cap. Capacity input validation now permits that
+more restrictive retained bound while still rejecting counts outside either
+limit; the direct archival regression is retained. Final full regression passed
+6,561 tests with two platform skips and two existing warnings in 1,014.57
+seconds.
+
+Exact-source predecessor PR #74 passed public security/Gitleaks, saved evidence,
+browser/help acceptance and both complete Windows regression shards. Fresh
+exact-source hosted execution remains mandatory for this increment. This is
+M3.2/M5.1 offline evidence hardening, not sustained or native Windows pressure
+acceptance, broker-paper acceptance, genuine-feed trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No button or editable parameter was added. Engagement and optional AI remain
+OFF by default; limits, account checks, fail-closed entries, reducing exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Weighted implementation remains 38%
+(30-45%, low confidence), with 0/9 stages independently accepted.
+
 ## v0.340.357 admission-authority inventory
 
 The read-only `GET /api/authority/inventory` endpoint now binds twelve

@@ -1,5 +1,32 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.365 trusted public-history policy bootstrap
+
+The successor public-repository audit continues to inspect every reachable
+object and retains existing path, content, JSON and entry-mode rules. It uses a
+finite four-GiB aggregate ceiling, sixteen-MiB per-object ceiling and optional
+exact-base candidate limits of sixty-four MiB / 4,096 newly reachable objects.
+Exact commit form, availability and ancestry are mandatory when delta review is
+enabled. The focused policy/workflow and synchronized release scope passed 113
+tests with one existing warning. Final full regression passed 6,673 tests with
+two platform skips and one existing warning in 1,254.91 seconds. All sixteen
+offline profiles and saved-evidence verification passed against 424 source
+files / `1530f942ef3c883f037297b24307871902f3992898211ae2824df9e0276dee56`;
+report SHA-256 is
+`f8327746b405c5fa551ad22443d0531cbc6de7adad64945b4c5c9eac65234f8c`.
+
+This is the first half of a two-stage trust change: the current PR must pass the
+base's old trusted policy with the compatible invocation; the next stacked PR
+activates the new exact-base CLI flags and must prove the successor policy in
+hosted security CI. This remains below 1.0 and grants no broker-paper,
+genuine-market, Windows, funding/live/cloud, performance, profitability or
+release acceptance. Owner approval remains required after all independent
+gates. Engagement and optional AI stay OFF by default; no UI control or
+editable parameter was introduced. Implementation remains 38% weighted (about
+40%, 30-45% uncertainty, low confidence), with 0/9 stages independently
+accepted.
+
+
 ## v0.340.364 installer semantic-result distribution binding
 
 The installer smoke result now carries the exact pre-release version, source

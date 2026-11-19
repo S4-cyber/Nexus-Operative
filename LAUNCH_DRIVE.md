@@ -1,5 +1,32 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.365 — trusted public-history policy bootstrap
+
+The next trusted repository audit policy preserves complete reachable-history
+inspection while adding finite per-object and exact-base candidate-delta caps.
+It allows at most four GiB aggregate, sixteen MiB per Git object, and 4,096 /
+sixty-four MiB newly reachable objects per candidate. Malformed, missing,
+unrelated or unavailable exact commit identities fail closed. The focused
+policy/workflow and synchronized release scope passed 113 tests with one
+existing warning. Final full regression passed 6,673 tests with two platform
+skips and one existing warning in 1,254.91 seconds. All sixteen offline
+profiles plus saved-evidence verification passed against 424 source files /
+`1530f942ef3c883f037297b24307871902f3992898211ae2824df9e0276dee56`;
+report SHA-256 is
+`f8327746b405c5fa551ad22443d0531cbc6de7adad64945b4c5c9eac65234f8c`.
+
+The workflow invocation deliberately remains backward-compatible because this
+PR is scanned by its base's trusted policy. The next stacked increment must
+activate the exact base/candidate flags and pass security CI before this gate is
+considered installed. This closes release-infrastructure exhaustion risk only;
+it is not broker-paper, sustained-feed, Windows, funding/live/cloud,
+performance, profitability or release acceptance. No UI control changed. OFF
+defaults, limits, account checks, exits, seven tabs and black/bright-purple
+bottom-right help remain unchanged. Progress stays 38% weighted (about 40%,
+30-45% uncertainty, low confidence), 0/9 accepted, with no release permission,
+trading permission or launch date.
+
+
 ## v0.340.364 — installer semantic-result distribution binding
 
 The Windows installer result now binds its exact version, source, installer

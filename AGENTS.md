@@ -1,5 +1,41 @@
 # Nexus Operative continuity instructions
 
+## v0.340.365 trusted public-history policy bootstrap
+
+The repository publication gate now has a reviewed successor policy before the
+old finite reachable-history ceiling is exhausted. Complete reachable history
+is still scanned. The successor retains the 100,000-object ceiling, raises the
+aggregate uncompressed ceiling to a finite four GiB, rejects any single Git
+object above sixteen MiB, and can bind an exact trusted base/candidate pair to
+at most 4,096 newly reachable objects and sixty-four MiB. Exact lowercase
+commit identities, full history, commit availability and base ancestry all
+fail closed with fixed allowlisted reason codes. Disposable Git histories cover
+aggregate, single-object, delta-byte, delta-object, malformed, missing and
+unrelated-commit treatments while proving complete clean-history inspection.
+
+This is an intentional two-stage trust rollout. Pull-request security executes
+policy from the exact base, so this bootstrap keeps the old compatible workflow
+invocation and must itself pass the old trusted 1.5-GiB policy. The next stacked
+increment must activate `--baseline-commit` and `--candidate-commit`; its run is
+the first proof using this newly trusted policy. The focused policy/workflow
+and synchronized release scope passed 113 tests with one existing dependency
+warning. Final full regression passed 6,673 tests with two platform skips and
+one existing warning in 1,254.91 seconds. All sixteen bounded offline profiles
+passed; saved evidence matched 424 source files /
+`1530f942ef3c883f037297b24307871902f3992898211ae2824df9e0276dee56`
+and report SHA-256 is
+`f8327746b405c5fa551ad22443d0531cbc6de7adad64945b4c5c9eac65234f8c`.
+
+This is publication-gate hardening, not broker-paper, sustained-market,
+Windows, funding/live/cloud, performance, profitability or release acceptance.
+No control or editable parameter changed. Engagement and optional AI remain OFF
+by default; limits, account checks, fail-closed entries, reducing exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Rough implementation remains about 40%,
+exact weighted index 38% (30-45%, low confidence), with 0/9 stages independently
+accepted.
+
+
 ## v0.340.364 installer semantic-result distribution binding
 
 The Windows installer smoke result is now a first-class, fail-closed member of

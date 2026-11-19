@@ -579,6 +579,12 @@ class PaperForwardRunner:
                 if reason in ('INVALID_RUNTIME_CLOCK','RUNTIME_CLOCK_DISCONTINUITY'):return self._pause_clock(reason)
                 if reason in ('STALE_OR_FUTURE_SYNTHETIC_QUOTE','STALE_OR_FUTURE_EXCHANGE_QUOTE_AT_FILL'):self._prices.clear();self._last_rank=0
                 if reason=='RUNNER_STOPPED_BEFORE_FILL':return dict(decision='HOLD',reason=reason)
+                # The independent cut owns the durable halt/cancel audit. Do
+                # not attempt an optional forward-session write after that
+                # authority has closed runner ownership: the write can race
+                # the completed cut and obscure the authoritative veto as a
+                # generic storage failure even though the fill rolled back.
+                if reason=='EMERGENCY_CUT_REQUESTED':return dict(decision='VETO',reason=reason)
                 return self._record('VETO',reason)
         except (OSError,sqlite3.Error,ValueError) as exc:
             self._error=type(exc).__name__;self._stop.set()

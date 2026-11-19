@@ -1,5 +1,43 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.357 admission-authority inventory
+
+**Current development build: 0.340.357 (pre-release).** A read-only endpoint
+binds twelve source-declared admission authorities to the exact application
+routes and fails closed on route drift. Every entry declares its safe default,
+gates, automatic start/resume posture and reducing-exit posture. Broker
+connection, live orders, money movement, spendable funds, release approval and
+learned-policy promotion remain false, and the inventory performs no
+credential, provider, storage or broker I/O.
+
+The direct scope passed 186 tests. The synchronized release/Windows-workflow
+scope passed 234 tests, the ordered CI inventory passed 20 Node tests, and
+compilation, deterministic roadmap equality and diff checks passed. All
+sixteen bounded offline profiles passed
+with 422-file source fingerprint
+`bdc202053733c64b8136bdd857e9b622751386845ed4344c06f197bc8c272f75`
+and report SHA-256
+`fc120a97664eb289540b8cc7a21466289d9ba884703cc33fa5dd0250845e7b86`.
+The 165-member wheel reports v0.340.357 and has SHA-256
+`d73708c520cef3acc26f61a721bcdf4bdd715acc12fb61724daba03be96dcb9c`.
+Full regression exposed and repaired an emergency-cut classification race:
+after a SQLite-blocked fill rolled back and cancelled, the completed cut now
+returns its authoritative veto directly instead of attempting an optional
+forward diagnostic after ownership closes. The race passed five exact
+repetitions and 73 related tests with one platform skip; final full regression
+passed 6,553 tests with two platform skips and two existing warnings in 984.79
+seconds.
+This is M3.1 authority-review hardening, not complete runtime-authority proof,
+native Windows installer acceptance, actual broker acceptance, genuine-feed
+trial realism, funding/live/cloud readiness, performance, profitability or
+release approval. No UI control or editable parameter changed. Engagement and
+optional AI remain OFF by default; limits, account checks, fail-closed entries,
+reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation
+remains weighted 38% (30-45%, low confidence), with 0/9 stages independently
+accepted; trading, funding and release permissions remain false and no launch
+date is established. Fresh exact-source hosted CI is required.
+
 ## v0.340.356 deterministic vault-test isolation
 
 **Current development build: 0.340.356 (pre-release).** Credential-vault tests

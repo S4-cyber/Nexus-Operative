@@ -1,5 +1,50 @@
 # Nexus Operative continuity instructions
 
+## v0.340.357 admission-authority inventory
+
+The read-only `GET /api/authority/inventory` endpoint now binds twelve
+source-declared admission authorities to the exact FastAPI route table. Each
+entry exposes its safe default, required gates, automatic-start/resume posture,
+reducing-exit posture and external-authority flags. A missing declared route
+fails closed. Inventory reads perform no credential, provider, storage or
+broker I/O. Broker connection, live orders, money movement, spendable funds,
+release approval and learned-policy promotion remain false everywhere.
+
+The direct authority/tier/forward/funding/emergency/order/broker-read/advisory
+scope passed 186 tests. The synchronized authority/release-evidence/trials/
+version/roadmap/Windows-workflow scope passed 234 tests, and the ordered CI
+inventory passed 20 Node tests; two existing dependency deprecation warnings
+remain. Compilation, deterministic roadmap equality and diff checks passed.
+All sixteen bounded offline profiles passed; saved
+evidence matched 422 source files /
+`bdc202053733c64b8136bdd857e9b622751386845ed4344c06f197bc8c272f75`
+and report SHA-256 is
+`fc120a97664eb289540b8cc7a21466289d9ba884703cc33fa5dd0250845e7b86`.
+The profile output explicitly keeps broker, live-order, money-movement,
+Windows, sustained-forward and release acceptance false.
+The 165-member v0.340.357 wheel reports the synchronized version and has
+SHA-256
+`d73708c520cef3acc26f61a721bcdf4bdd715acc12fb61724daba03be96dcb9c`.
+
+Full regression exposed one safe but ambiguous emergency-cut race: a fill
+blocked behind a real SQLite writer rolled back and cancelled after the cut,
+but an optional post-cut forward diagnostic raced closed ownership and
+reported a generic storage failure. The fill boundary now returns the
+authoritative `EMERGENCY_CUT_REQUESTED` veto directly after the independent
+cut owns durable halt/cancel audit. The exact race passed five repetitions and
+73 related tests with one platform skip; the final full suite passed 6,553
+tests with two platform skips and two existing warnings in 984.79 seconds.
+
+This is M3.1 reviewability hardening, not proof of complete runtime-authority
+coverage, broker-paper acceptance, genuine-feed sustained-trial realism,
+native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No button or editable parameter was added.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Weighted implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Fresh exact-source hosted CI remains mandatory.
+
 ## v0.340.356 deterministic vault-test isolation
 
 The second deterministic Windows regression shard exposed a process-state

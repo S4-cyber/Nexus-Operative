@@ -63,6 +63,7 @@ def file_entry(path):
              | getattr(os, "O_NONBLOCK", 0))
     digest = hashlib.sha256()
     total = 0
+    descriptor_validated = False
     try:
         with os.fdopen(os.open(path, flags), "rb") as stream:
             before = os.fstat(stream.fileno())
@@ -70,6 +71,7 @@ def file_entry(path):
                     or not 1 <= before.st_size <= MAX_ARTIFACT_BYTES
                     or (observed.st_dev, observed.st_ino) != (before.st_dev, before.st_ino)):
                 _fail("INVALID_ARTIFACT_FILE")
+            descriptor_validated = True
             while True:
                 block = stream.read(1024 * 1024)
                 if not block:
@@ -82,7 +84,8 @@ def file_entry(path):
     except ArtifactManifestError:
         raise
     except OSError:
-        _fail("INVALID_ARTIFACT_FILE")
+        _fail("ARTIFACT_CHANGED_DURING_READ" if descriptor_validated
+              else "INVALID_ARTIFACT_FILE")
     try:
         final = path.lstat()
     except OSError:

@@ -1,5 +1,42 @@
 # Nexus Operative continuity instructions
 
+## v0.340.355 portable artifact race classification
+
+Windows hosted regression exposed that a simulated artifact-path replacement
+can raise a sharing violation while the already validated descriptor is being
+rechecked. Artifact manifest creation now distinguishes lifecycle phases:
+opening and initial descriptor validation still report
+`INVALID_ARTIFACT_FILE`, while descriptor read, final descriptor inspection or
+close failures after validation report `ARTIFACT_CHANGED_DURING_READ`. Both
+paths deny manifest creation; the latter accurately preserves the integrity
+boundary instead of treating a post-validation race as an initial input error.
+
+The direct artifact/sharding scope passed 51 tests. The synchronized
+artifact/release-evidence/trials/version/roadmap/Windows-workflow scope passed
+253 tests, and the ordered CI inventory passed 20 Node tests; two existing
+dependency deprecation warnings remain. All sixteen bounded profiles passed.
+Saved-evidence verification matched 420 source files /
+`041fee5f23737c2921465bfa4159d4657bc256cbca17dc27f864527cbc25fe92`;
+report SHA-256 is
+`4fb4efbeeaf856d2b5718f5fb541a86a02c57d385db076ac37999d8652e20739`.
+Compilation, deterministic roadmap equality and diff checks passed. The
+164-member v0.340.355 wheel reports the synchronized version and has SHA-256
+`62a9a57bf3920a626113d6f0e5c27e4ac79f904d55dbc5b99b7289272ff28cd2`.
+The staged 1,095-path public-artifact audit found zero findings. Local Gitleaks
+and native Windows/Inno Setup remain unavailable, so fresh exact-source hosted
+security and Windows execution remain mandatory.
+
+This is M1/M9 distribution-integrity hardening, not native Windows installer
+acceptance, broker-paper acceptance, genuine-feed sustained-trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, risk-reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Weighted implementation remains 38% (30-45%, low
+confidence), with 0/9 stages independently accepted. Fresh exact-source hosted
+execution of both regression shards and every other required job remains
+mandatory; the native Windows installer lane remains separately undispatched.
+
 ## v0.340.354 deterministic Windows regression sharding
 
 The complete Windows pull-request regression now collects the full pytest suite

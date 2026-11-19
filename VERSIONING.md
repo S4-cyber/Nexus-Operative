@@ -1,8 +1,31 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.355 portable artifact race classification
+
+**Current development build: 0.340.355 (pre-release).** Artifact manifest
+creation now tracks whether its open descriptor has passed regular-file,
+single-link, bounded-size and pathname-identity validation. Any later read,
+final-descriptor or close error reports `ARTIFACT_CHANGED_DURING_READ`; open and
+pre-validation failures continue to report `INVALID_ARTIFACT_FILE`. Both fail
+closed. This makes the integrity classification portable when Windows denies a
+simulated replacement of an open file while retaining the earlier invalid-file
+contract for untrusted initial input.
+
+This is M1/M9 distribution-integrity hardening, not native Windows installer
+acceptance, actual broker acceptance, genuine-feed sustained-trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, risk-reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation remains weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted; trading, funding and
+release permissions remain false and no launch date is established. Fresh
+exact-head execution of both hosted regression shards and every remaining
+release job is required for this source.
+
 ## v0.340.354 deterministic Windows regression sharding
 
-**Current development build: 0.340.354 (pre-release).** The complete Windows
+**Prior development build: 0.340.354 (pre-release).** The complete Windows
 pull-request regression now collects the full pytest suite in each of two jobs
 and deterministically assigns every exact node ID to one execution shard.
 Malformed, partial or empty shard arguments fail closed. Exact-head and ordered

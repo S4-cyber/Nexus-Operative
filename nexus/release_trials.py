@@ -2338,6 +2338,7 @@ def _validate(profile, result):
                 'malformed_checkpoint_acknowledgement_retained',
                 'cold_checkpoint_binding_disagreement_retained',
                 'cursor_file_replacement_rejected',
+                'cursor_directory_creation_rejected',
                 'transport_boundary_rejects_promoted_acknowledgement',
                 'no_private_identifier_or_credential_echo',
                 'no_automatic_or_financial_authority')) and

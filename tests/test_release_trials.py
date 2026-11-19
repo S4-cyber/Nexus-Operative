@@ -189,7 +189,7 @@ def test_http_authority_inventory_rejects_unknown_mutation_and_authority_claim()
     with pytest.raises(ValueError,match='HTTP_AUTHORITY_INVENTORY_SCHEMA'):
         trials._validate('http',result)
     result=http_report()
-    result['authority_inventory']['bank_transfer_method_present']=True
+    result['authority_inventory']['bank_transfer_route_present']=True
     with pytest.raises(ValueError,match='HTTP_AUTHORITY_DENIALS'):
         trials._validate('http',result)
 
@@ -202,6 +202,31 @@ def test_http_authority_inventory_consumes_exact_route_classification():
     result=http_report();result['authority_inventory']['unconsumed']=True
     with pytest.raises(ValueError,match='HTTP_AUTHORITY_INVENTORY_SCHEMA'):
         trials._validate('http',result)
+
+
+@pytest.mark.parametrize('mutation',[
+    lambda rows:rows.pop(),
+    lambda rows:rows[0].update(capability='BROKER_LIVE_ORDER_POST'),
+    lambda rows:rows[0].update(app_route_bound=True),
+    lambda rows:rows[0].update(automatic_resume=True),
+    lambda rows:rows[0].update(release_approved=True),
+])
+def test_http_authority_inventory_consumes_exact_external_transports(mutation):
+    result=http_report();rows=result['authority_inventory']['external_transport_boundaries']
+    mutation(rows)
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_EXTERNAL_TRANSPORTS'):
+        trials._validate('http',result)
+
+
+@pytest.mark.parametrize(('field','value'),[
+    ('broker_order_transport_present',False),('ai_advisory_transport_present',False),
+    ('bank_transfer_transport_present',True),('cloud_control_transport_present',True),
+])
+def test_http_authority_transport_presence_cannot_be_hidden_or_promoted(field,value):
+    result=http_report();result['authority_inventory'][field]=value
+    code=('HTTP_AUTHORITY_DENIALS' if value is True else
+        'HTTP_AUTHORITY_EXTERNAL_TRANSPORTS')
+    with pytest.raises(ValueError,match=code):trials._validate('http',result)
 
 
 @pytest.mark.parametrize(('host_os','native_checked','tool_invocations'), [
@@ -1042,6 +1067,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('journal_file_identities_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('journal_store_bindings_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('semantic_reader_failures_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
+        (('selected_journal_leaf_links_rejected',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('identity_replacement_failure_rejected',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('store_retarget_rejected',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('stability_guard_bound',),False,'RECONCILIATION_STABILITY_GUARD'),

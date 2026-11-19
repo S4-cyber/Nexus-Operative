@@ -166,8 +166,29 @@ CAPABILITIES = frozenset((
     "LOCAL_EMERGENCY_ONLY", "LOCAL_ONLY", "LOCAL_PAPER_ORDER",
     "LOCAL_SECRET_STORAGE_ONLY", "PUBLIC_READ_ONLY",
 ))
+EXTERNAL_TRANSPORT_CAPABILITIES = frozenset((
+    "AI_ADVISORY_POST", "BROKER_PAPER_ORDER_POST",
+))
+EXTERNAL_TRANSPORT_BOUNDARIES = (
+    dict(id="ALPACA_PAPER_SINGLE_ATTEMPT_ORDER_POST",
+         module="nexus.alpaca_paper_submission", method="POST",
+         target="https://paper-api.alpaca.markets/v2/orders",
+         capability="BROKER_PAPER_ORDER_POST", default="OFF_UNROUTED",
+         app_route_bound=False, explicit_confirmation_required=True,
+         automatic_start=False, automatic_resume=False),
+    dict(id="OPENAI_RESEARCH_ADVISORY_POST",
+         module="nexus.provider_research", method="POST",
+         target="https://api.openai.com/v1/chat/completions",
+         capability="AI_ADVISORY_POST", default="OFF",
+         app_route_bound=True, explicit_confirmation_required=True,
+         automatic_start=False, automatic_resume=False),
+)
 MUTATING_ROUTE_PUBLIC_KEYS = frozenset((
     "method", "path", "authority_class", "capability"))
+EXTERNAL_TRANSPORT_BOUNDARY_PUBLIC_KEYS = frozenset((
+    "id", "module", "method", "target", "capability", "default",
+    "app_route_bound", "explicit_confirmation_required",
+    "automatic_start", "automatic_resume", *AUTHORITY_FLAGS))
 AUTHORITY_PUBLIC_KEYS = frozenset((
     "id", "scope", "routes", "default", "gates", "automatic_start",
     "automatic_resume", "reducing_exit_available_during_cut",
@@ -176,9 +197,13 @@ REPORT_PUBLIC_KEYS = frozenset((
     "mode", "read_only", "route_bindings_verified",
     "source_declaration_complete", "authorities", "authority_count",
     "authority_ids", "mutating_routes", "mutating_route_count",
+    "external_transport_boundaries_verified", "external_transport_boundaries",
+    "external_transport_boundary_count",
     "runtime_engagement_default", "external_ai_default",
-    "broker_order_method_present", "bank_transfer_method_present",
-    "cloud_control_method_present", "automatic_resume_present",
+    "broker_order_route_present", "bank_transfer_route_present",
+    "cloud_control_route_present", "broker_order_transport_present",
+    "bank_transfer_transport_present", "cloud_control_transport_present",
+    "ai_advisory_transport_present", "automatic_resume_present",
     "learned_policy_promotion_present", "limitations", *AUTHORITY_FLAGS))
 
 
@@ -202,6 +227,42 @@ def _reviewed_mutating_routes():
     return rows,set(bindings)
 
 
+def _reviewed_external_boundaries():
+    """Bind closed declarations to the two credentialed POST targets in source."""
+    from nexus import alpaca_paper_submission, provider_research
+    expected = {
+        "ALPACA_PAPER_SINGLE_ATTEMPT_ORDER_POST": (
+            "nexus.alpaca_paper_submission", "POST",
+            alpaca_paper_submission.ORDER_URL, "BROKER_PAPER_ORDER_POST"),
+        "OPENAI_RESEARCH_ADVISORY_POST": (
+            "nexus.provider_research", "POST",
+            provider_research.ENDPOINT, "AI_ADVISORY_POST"),
+    }
+    rows=[];identifiers=[]
+    for declaration in EXTERNAL_TRANSPORT_BOUNDARIES:
+        if type(declaration) is not dict or frozenset(declaration)!=(
+                EXTERNAL_TRANSPORT_BOUNDARY_PUBLIC_KEYS-set(AUTHORITY_FLAGS)):
+            raise ValueError("ADMISSION_AUTHORITY_EXTERNAL_BOUNDARY_DECLARATION_INVALID")
+        identifier=declaration.get("id")
+        if identifier in identifiers:
+            raise ValueError("ADMISSION_AUTHORITY_EXTERNAL_BOUNDARY_DECLARATION_DUPLICATE")
+        identifiers.append(identifier)
+        actual=(declaration.get("module"),declaration.get("method"),
+            declaration.get("target"),declaration.get("capability"))
+        if (expected.get(identifier)!=actual or
+                declaration.get("capability") not in EXTERNAL_TRANSPORT_CAPABILITIES or
+                declaration.get("default") not in ("OFF", "OFF_UNROUTED") or
+                type(declaration.get("app_route_bound")) is not bool or
+                declaration.get("explicit_confirmation_required") is not True or
+                declaration.get("automatic_start") is not False or
+                declaration.get("automatic_resume") is not False):
+            raise ValueError("ADMISSION_AUTHORITY_EXTERNAL_BOUNDARY_DECLARATION_INVALID")
+        rows.append({**declaration,**{flag:False for flag in AUTHORITY_FLAGS}})
+    if set(identifiers)!=set(expected):
+        raise ValueError("ADMISSION_AUTHORITY_EXTERNAL_BOUNDARY_INVENTORY_MISMATCH")
+    return rows
+
+
 def snapshot(application):
     """Bind the declared authority routes to this exact application."""
     available = set()
@@ -211,6 +272,7 @@ def snapshot(application):
             if method not in ("HEAD", "OPTIONS") and isinstance(path, str):
                 available.add((method, path))
     mutating_rows,reviewed_mutating=_reviewed_mutating_routes()
+    external_rows=_reviewed_external_boundaries()
     runtime_mutating={binding for binding in available if binding[0] in MUTATING_METHODS}
     if runtime_mutating != reviewed_mutating:
         raise ValueError("ADMISSION_AUTHORITY_MUTATING_ROUTE_INVENTORY_MISMATCH")
@@ -227,18 +289,28 @@ def snapshot(application):
         row["learned_policy_promotion"] = False
         rows.append(row)
     capabilities={row["capability"] for row in mutating_rows}
+    external_capabilities={row["capability"] for row in external_rows}
     return dict(
         mode="READ_ONLY_SOURCE_DECLARED_ADMISSION_AUTHORITY_INVENTORY",
         read_only=True, route_bindings_verified=True,
         source_declaration_complete=True, authorities=rows,
         authority_count=len(rows), authority_ids=[row["id"] for row in rows],
         mutating_routes=mutating_rows,mutating_route_count=len(mutating_rows),
+        external_transport_boundaries_verified=True,
+        external_transport_boundaries=external_rows,
+        external_transport_boundary_count=len(external_rows),
         runtime_engagement_default="OFF", external_ai_default="OFF",
-        broker_order_method_present="BROKER_ORDER" in capabilities,
-        bank_transfer_method_present="BANK_TRANSFER" in capabilities,
-        cloud_control_method_present="CLOUD_CONTROL" in capabilities,
+        broker_order_route_present="BROKER_ORDER" in capabilities,
+        bank_transfer_route_present="BANK_TRANSFER" in capabilities,
+        cloud_control_route_present="CLOUD_CONTROL" in capabilities,
+        broker_order_transport_present="BROKER_PAPER_ORDER_POST" in external_capabilities,
+        bank_transfer_transport_present="BANK_TRANSFER" in external_capabilities,
+        cloud_control_transport_present="CLOUD_CONTROL" in external_capabilities,
+        ai_advisory_transport_present="AI_ADVISORY_POST" in external_capabilities,
         automatic_resume_present=False, learned_policy_promotion_present=False,
         **{flag: False for flag in AUTHORITY_FLAGS},
-        limitations=("Source-declared route and gate inventory only. It does not prove runtime, "
-            "broker, operating-system or independent acceptance and grants no permission."),
+        limitations=("Source-declared route, gate and credentialed external-POST inventory only. "
+            "Transport presence is not route exposure, configuration, provider/account acceptance, "
+            "funding/live/cloud readiness or permission. The dormant broker-paper boundary remains "
+            "unrouted from the application and every external authority flag remains false."),
     )

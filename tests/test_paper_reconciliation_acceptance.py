@@ -113,6 +113,27 @@ def test_four_observation_stability_guard_is_exact_bound_read_only_and_non_autho
         assert result[flag] is False
 
 
+@pytest.mark.parametrize('field',[
+    'pacing_path','activity_store_path','acceptance_store_path'])
+@pytest.mark.parametrize('guarded_review',[False,True])
+@pytest.mark.parametrize('link_kind',['symbolic','hard'])
+def test_selected_journal_leaf_links_are_rejected_before_semantic_read(
+        tmp_path,field,guarded_review,link_kind):
+    options=guarded(tmp_path) if guarded_review else prepared(tmp_path)
+    target=options[field];alias=tmp_path/(field+'-'+link_kind+'.sqlite3')
+    try:
+        if link_kind=='symbolic':alias.symlink_to(target)
+        else:os.link(target,alias)
+    except OSError:
+        pytest.skip('selected link kind unavailable on this platform')
+    options[field]=alias
+    reviewer=(subject.review_with_stability_guards if guarded_review
+        else subject.review)
+    with pytest.raises(ValueError,match=(
+            '^PAPER_RECONCILIATION_ACCEPTANCE_SELECTED_JOURNAL_LEAF_INVALID$')):
+        reviewer(**options)
+
+
 @pytest.mark.parametrize('change,code',[
     ({'pre_opening_observation':lambda:_fixture_observation(ACCOUNT,'999','0',EPOCH+98,EPOCH+99)},'GUARD_BALANCE_CHANGED'),
     ({'pre_opening_observation':lambda:_fixture_observation(ACCOUNT,'1000','0',EPOCH+99,EPOCH+100)},'GUARD_WINDOWS_NOT_ORDERED'),
@@ -551,6 +572,7 @@ def test_release_fixture_is_repeatable_vault_and_provider_silent():
     assert result['journal_file_fingerprints_rechecked']
     assert result['journal_file_identities_rechecked']
     assert result['journal_store_bindings_rechecked']
+    assert result['selected_journal_leaf_links_rejected']
     assert result['identity_replacement_failure_rejected']
     assert result['store_retarget_rejected']
     assert result['changed_guard_balance_rejected'] and result['unordered_guard_windows_rejected']

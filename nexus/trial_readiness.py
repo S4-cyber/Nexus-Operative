@@ -200,18 +200,30 @@ def build(path,*,hours=72,now=None,order_gateway=None):
         orders=gateway.recovery_report()
         try:
             capacity=orders['capacity']
+            intent_count=capacity['intent_count']
+            intent_limit=capacity['intent_limit']
+            ordinary_intent_limit=capacity['ordinary_intent_limit']
             ordinary_remaining=capacity['ordinary_commands_remaining']
             intents_remaining=capacity['intents_remaining']
+            ordinary_intents_remaining=capacity['ordinary_intents_remaining']
+            exit_reserve_active=capacity['exit_intent_reserve_active']
+            exit_intents_remaining=capacity['exit_intents_remaining']
             total_remaining=capacity['total_commands_remaining']
             control_reserved=capacity['control_commands_reserved']
             lifecycle_allowed=capacity['lifecycle_intake_allowed']
         except (KeyError,TypeError):
             raise ValueError(FILE_PREFIX+'ORDER_CAPACITY_INVALID') from None
         if (any(type(value) is not int or value<0 for value in
-                (ordinary_remaining,intents_remaining,total_remaining,
+                (intent_count,intent_limit,ordinary_intent_limit,
+                 ordinary_remaining,intents_remaining,ordinary_intents_remaining,
+                 exit_intents_remaining,total_remaining,
                  control_reserved)) or
-                type(lifecycle_allowed) is not bool or
-                control_reserved!=min(CONTROL_RESERVE,total_remaining)):
+                type(lifecycle_allowed) is not bool or type(exit_reserve_active) is not bool or
+                control_reserved!=min(CONTROL_RESERVE,total_remaining) or
+                intent_count>intent_limit or intents_remaining!=intent_limit-intent_count or
+                ordinary_intent_limit!=intent_limit-(1 if exit_reserve_active else 0) or
+                ordinary_intents_remaining!=max(0,ordinary_intent_limit-intent_count) or
+                exit_intents_remaining!=intents_remaining-ordinary_intents_remaining):
             raise ValueError(FILE_PREFIX+'ORDER_CAPACITY_INVALID')
         emergency_reserve_clear=(control_reserved==CONTROL_RESERVE)
         account=orders['execution_account']['account'] or {}
@@ -223,6 +235,9 @@ def build(path,*,hours=72,now=None,order_gateway=None):
         intents_per_cycle=1 if retained_position else 2
         forecast_commands=needed*writes_per_cycle
         forecast_intents=needed*intents_per_cycle
+        next_intent_reserve_clear=(exit_intents_remaining>=1 if retained_position else
+            ordinary_intents_remaining>=1 and exit_intents_remaining>=1
+            if exit_reserve_active else intents_remaining>=2)
         return dict(mode='READ_ONLY_PAPER_TRIAL_READINESS',read_only=True,
         status='REVIEW_REQUIRED' if present else 'NO_RETAINED_HISTORY',hours=hours,after=after,until=until,
         minimum_trial_hours=72,history_present=present,review=review,
@@ -235,6 +250,9 @@ def build(path,*,hours=72,now=None,order_gateway=None):
             scope='One additional local session record only; no ownership, uptime, cleanup or automatic-start guarantee.'),
         order_capacity=dict(journal_present=orders['journal_present'],retained_position=retained_position,
             ordinary_commands_remaining=ordinary_remaining,intents_remaining=intents_remaining,
+            ordinary_intents_remaining=ordinary_intents_remaining,
+            exit_intent_reserve_active=exit_reserve_active,
+            exit_intents_remaining=exit_intents_remaining,
             total_commands_remaining=total_remaining,
             control_commands_reserved=control_reserved,
             required_control_command_reserve=CONTROL_RESERVE,
@@ -243,12 +261,12 @@ def build(path,*,hours=72,now=None,order_gateway=None):
             estimated_cycle_observations=needed,estimated_upper_bound_commands=forecast_commands,
             estimated_upper_bound_intents=forecast_intents,
             next_cycle_reserve_clear=(ordinary_remaining>=writes_per_cycle and
-                intents_remaining>=intents_per_cycle and lifecycle_allowed and
+                next_intent_reserve_clear and lifecycle_allowed and
                 emergency_reserve_clear),
             room_for_conservative_requested_window=(ordinary_remaining>=forecast_commands and
                 intents_remaining>=forecast_intents and lifecycle_allowed and
-                emergency_reserve_clear),
-            scope='Conservative local upper bound using the runner admission reserve on every policy-cadence cycle. The fixed control reserve is reported separately for halt, cancel and expiry paths; it is not a guarantee that an operation will succeed. This is not an expected trade count, a storage reservation, strategy evidence or permission. Logical archival preserves retained commands and cannot create indefinite capacity.'),
+                next_intent_reserve_clear and emergency_reserve_clear),
+            scope='Conservative local upper bound using the runner admission reserve on every policy-cadence cycle. A linked account protects one existing intent slot for an exact account-bound reducing exit without raising the total ID limit. The fixed control reserve is reported separately for halt, cancel and expiry paths; neither reserve guarantees that an operation will succeed. This is not an expected trade count, a storage reservation, strategy evidence or permission. Logical archival preserves retained commands and cannot create indefinite capacity.'),
         local_owner_quiescence=dict(checked=owner_index is not None,state=owner_state,
             retained_history_requires_owner_lock=True,active_owner_detected=False,
             cross_host_or_distributed_owner_checked=False,owner_file_created=False,

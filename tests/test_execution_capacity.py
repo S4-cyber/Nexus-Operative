@@ -64,6 +64,24 @@ def test_intent_ids_remain_reserved_after_cancel(tmp_path,monkeypatch):
     with pytest.raises(ValueError,match='INTENT_CAP_REACHED'):g.submit('c','SOL-USD','BUY',25)
 
 
+def test_linked_account_reports_one_existing_slot_as_exit_only(monkeypatch):
+    monkeypatch.setattr(order_gateway,'MAX_INTENTS',2)
+    capacity=report(4,1,False,10000,exit_intent_reserve_active=True)
+    assert capacity['intent_limit']==2 and capacity['intents_remaining']==1
+    assert capacity['ordinary_intent_limit']==1
+    assert capacity['ordinary_intents_remaining']==0
+    assert capacity['exit_intent_reserve_active'] is True
+    assert capacity['exit_intents_remaining']==1
+    assert capacity['new_intents_allowed'] is False
+    assert capacity['lifecycle_intake_allowed'] is True
+    assert 'EXIT_INTENT_RESERVE_PROTECTED' in capacity['reasons']
+
+
+def test_capacity_report_rejects_non_boolean_exit_reserve():
+    with pytest.raises(ValueError,match='EXECUTION_CAPACITY_INPUT_INVALID'):
+        report(0,0,False,10000,exit_intent_reserve_active=1)
+
+
 def test_simultaneous_admission_cannot_overrun_journal_limit(tmp_path,monkeypatch):
     from concurrent.futures import ThreadPoolExecutor
     monkeypatch.setattr(durable_orders,'MAX_COMMANDS',1006)

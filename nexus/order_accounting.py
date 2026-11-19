@@ -10,6 +10,8 @@ from bisect import bisect_left
 from decimal import Decimal, InvalidOperation
 from nexus.order_gateway import (
     OrderGateway, _require_event_id, _require_event_kind, _require_order_id)
+from nexus import order_gateway
+from nexus.execution_capacity import EXIT_INTENT_RESERVE
 
 
 def number(value, zero=False):
@@ -107,13 +109,38 @@ class AccountingOrderGateway(OrderGateway):
         if fingerprints is not None:self.retired_order_id_fingerprints=fingerprints
         return {**copy.deepcopy(lineage),'idempotent_replay':False}
 
-    def submit(self,client_order_id,*args,**kwargs):
+    def submit(self,client_order_id,product,side,notional,provider='nexus_local_paper',tier=None):
         fingerprint=order_id_fingerprint(client_order_id)
-        index=bisect_left(self.retired_order_id_fingerprints,fingerprint)
-        if (index<len(self.retired_order_id_fingerprints) and
-            self.retired_order_id_fingerprints[index]==fingerprint):
-            raise ValueError('RETIRED_ORDER_ID_REUSE')
-        return super().submit(client_order_id,*args,**kwargs)
+        with self.lock:
+            index=bisect_left(self.retired_order_id_fingerprints,fingerprint)
+            if (index<len(self.retired_order_id_fingerprints) and
+                self.retired_order_id_fingerprints[index]==fingerprint):
+                raise ValueError('RETIRED_ORDER_ID_REUSE')
+            if (self.lookup(client_order_id) is None and self.portfolio_linked and
+                    len(self.intents)>=max(0,order_gateway.MAX_INTENTS-EXIT_INTENT_RESERVE)):
+                raise ValueError('EXIT_INTENT_RESERVE_PROTECTED')
+            return super().submit(client_order_id,product,side,notional,provider,tier)
+
+    def submit_reducing(self,client_order_id,product,notional,quantity,
+                        expected_position_quantity,provider='nexus_local_paper',tier=None):
+        fingerprint=order_id_fingerprint(client_order_id)
+        reduction=number(quantity);expected=number(expected_position_quantity)
+        extra=dict(intent_scope='POSITION_REDUCING_EXIT',
+                   reduction_quantity=str(reduction.normalize()),
+                   expected_position_quantity=str(expected.normalize()))
+        with self.lock:
+            index=bisect_left(self.retired_order_id_fingerprints,fingerprint)
+            if (index<len(self.retired_order_id_fingerprints) and
+                self.retired_order_id_fingerprints[index]==fingerprint):
+                raise ValueError('RETIRED_ORDER_ID_REUSE')
+            if self.lookup(client_order_id) is None:
+                position=(self.account or {}).get('positions',{}).get(product)
+                if (not self.portfolio_linked or type(product) is not str or
+                        type(provider) is not str or provider!='nexus_local_paper' or
+                        type(position) is not dict or set(position)!={'quantity','entry'} or
+                        number(position['quantity'])!=expected or reduction>expected):
+                    raise ValueError('EXIT_INTENT_RESERVE_DENIED')
+            return super()._submit(client_order_id,product,'SELL',notional,provider,tier,extra)
 
     def lookup(self,client_order_id):
         _require_order_id(client_order_id)
@@ -257,6 +284,16 @@ class AccountingOrderGateway(OrderGateway):
             record = self.lookup(client_order_id)
             if record is None:
                 raise ValueError('UNKNOWN_ORDER_ID')
+            if record.get('intent_scope')=='POSITION_REDUCING_EXIT':
+                filled=sum((Decimal(detail['quantity']) for (oid,_),detail in self.executions.items()
+                            if oid==client_order_id),Decimal(0))
+                current=self.account['positions'].get(record['product'])
+                if (type(current) is not dict or set(current)!={'quantity','entry'} or
+                        Decimal(current['quantity'])!=
+                        Decimal(record['expected_position_quantity'])-filled):
+                    raise ValueError('REDUCING_EXIT_POSITION_CHANGED')
+                if filled+qty>Decimal(record['reduction_quantity']):
+                    raise ValueError('REDUCING_EXIT_QUANTITY_EXCEEDED')
             # Mixing reference-only and quantity-based fills in one order is ambiguous.
             if any((client_order_id, eid) not in self.executions for eid, event in record['lifecycle_events'].items() if event['kind']=='FILL'):
                 raise ValueError('ORDER_HAS_UNPRICED_FILLS')

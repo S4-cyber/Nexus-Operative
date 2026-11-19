@@ -21,7 +21,10 @@ def cycle(g,index):
     now=1000+index*30
     for side in ('BUY','SELL'):
         oid=side+'_'+str(index)
-        g.submit(oid,'BTC-USD',side,50,tier='terrestrial')
+        if side=='SELL':
+            quantity=g.recovery_report()['execution_account']['account']['positions']['BTC-USD']['quantity']
+            g.submit_reducing(oid,'BTC-USD',50,quantity,quantity,tier='terrestrial')
+        else:g.submit(oid,'BTC-USD',side,50,tier='terrestrial')
         g.set_execution_terms(oid,now,10)
         g.simulate_quote_fill(oid,'fill',1,1,25,25.1,2,now+1,now+1)
         g.cancel(oid)

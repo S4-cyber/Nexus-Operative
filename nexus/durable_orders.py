@@ -25,7 +25,7 @@ MAX_RETAINED_COMMANDS = 100000
 MAX_PORTFOLIO_SNAPSHOT_ROWS = MAX_RETAINED_COMMANDS*4+256
 DB_BUSY_TIMEOUT_MS = 10_000
 ROTATION_MARKER = 'nexus-order-rotation.intent'
-METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
+METHODS = frozenset(('submit', 'submit_reducing', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
 MAX_COMMAND_ARGUMENT_NODES = 1024
 MAX_COMMAND_ARGUMENT_DEPTH = 16
 
@@ -255,7 +255,7 @@ class DurableOrderGateway:
         root_guard=_OrderRootIdentity(self._path(),create=True)
         path=root_guard.path
         root_guard.require_current()
-        cut_guarded=any(step[0] in ('submit','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps)
+        cut_guarded=any(step[0] in ('submit','submit_reducing','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps)
         if cut_guarded:
             try:cut=emergency_intent.requested(path)
             except (ValueError,OSError):cut=True
@@ -321,7 +321,7 @@ class DurableOrderGateway:
                     require_entry(order['tier'],Decimal(order['notional']))
                 execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
             # Halt/cancel/reset must remain possible when normal intake is full.
-            if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill','bind_replacement_epoch'):
+            if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','submit_reducing','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill','bind_replacement_epoch'):
                 raise ValueError('ORDER_JOURNAL_CAP_REACHED')
             if (active_count >= MAX_COMMANDS and method!='archive_terminal') or count>=MAX_RETAINED_COMMANDS:
                 raise ValueError('ORDER_JOURNAL_CAP_REACHED')
@@ -346,6 +346,9 @@ class DurableOrderGateway:
 
     def submit(self, *args, **kwargs):
         return self._call('submit', *args, **kwargs)
+
+    def submit_reducing(self, *args, **kwargs):
+        return self._call('submit_reducing', *args, **kwargs)
 
     def simulate_event(self, *args, **kwargs):
         return self._call('simulate_event', *args, **kwargs)
@@ -481,7 +484,8 @@ class DurableOrderGateway:
                     recovery_diagnostics=dict(self.restore_diagnostics),
                     retention=dict(command_history_deleted=False,checkpoint_limit=2,journal_command_limit=MAX_COMMANDS,retained_history_command_limit=MAX_RETAINED_COMMANDS),
                     capacity=capacity_report(count-gateway.archival_boundary,len(gateway.intents),gateway.halted,MAX_COMMANDS,
-                        retained_commands=count,retained_limit=MAX_RETAINED_COMMANDS),
+                        retained_commands=count,retained_limit=MAX_RETAINED_COMMANDS,
+                        exit_intent_reserve_active=gateway.portfolio_linked),
                     lineage=(copy.deepcopy(gateway.epoch_lineage) if gateway.epoch_lineage is not None else
                              dict(generation=0,epoch_sha256='0'*64,predecessor_archive_sha256=None,
                                   predecessor_epoch_sha256=None)),

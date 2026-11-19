@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.367'
+REVISION = '0.340.368'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -273,6 +273,15 @@ DELIVERY_STAGES = tuple((dict(stage,
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; linked durable paper accounts now protect one slot inside the existing fixed intent-ID limit from ordinary intake, while an internal replayable reducing-exit command may consume that slot only after binding an exact current product, quantity and expected position; cold replay, duplicate conflict, ordinary-route denial and account-change fences preserve the total cap' if item.id=='M5' else
+        '; the paper-forward runner now admits entries only when both the ordinary-ID slice and the protected reducing-exit slice are available, and binds every reserved SELL to the exact reconciled holding before its modeled fill; public simulation requests cannot consume or invoke that exit slice' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Linked local-paper accounts now reserve one existing durable intent slot from ordinary intake and expose separate total, ordinary and reducing-exit headroom. The internal reducing command binds the exact SELL product, requested reduction and expected current holding in replayed history, rechecks position continuity at fill, and never raises the total ID limit. Public simulation, BUY, wrong-product, flat, unlinked, oversized, stale-position, halted and cut paths cannot consume the slot. This is bounded local exit-capacity hardening, not broker routing, market realism, provider/account acceptance, funding/live/cloud readiness or permission.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the provider-POST reconciliation boundary now validates the retained observation\'s shared gross-balance and activity subreviews, binds both account/activity heads to the outer observation, replays the gross-balance scope hash and rejects nested authority promotion or removed replay/arithmetic assurances' if item.id == 'M8' else ''),
@@ -1209,7 +1218,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.367 closes two release-evidence truth gaps. Reconciliation acceptance refuses symbolic and multiply linked final journal selections and rebinds canonical preflight results to each exact selected leaf identity before semantic reads. The read-only admission inventory now distinguishes application route exposure from the exact dormant Alpaca paper-order and optional AI credentialed POST transports; transport existence cannot be reported as route, configuration, provider/account acceptance or operational authority. This is bounded offline evidence-integrity hardening, not broker, genuine-market, Windows, funding/live/cloud, performance, profitability or release acceptance. The broker-paper transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.368 protects one slot inside the existing fixed durable intent-ID cap whenever the local paper account is linked. Ordinary and public simulation intake cannot consume that slot; only the internal replayable SELL command can use it, after binding the exact held product, reduction quantity and expected position and rechecking position continuity before fill. Flat, unlinked, BUY, wrong-product, oversized, stale-position, halted and independent-cut paths remain fail-closed. The total intent cap is unchanged, and cold replay preserves classification and duplicate conflicts. This is bounded local exit-capacity hardening, not broker, genuine-market, Windows, funding/live/cloud, performance, profitability or release acceptance. Broker transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default; limits, account checks, independent emergency stop and reducing exits remain intact. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

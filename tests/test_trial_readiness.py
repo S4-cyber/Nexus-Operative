@@ -151,6 +151,9 @@ def test_order_capacity_snapshot_is_read_only_and_uses_retained_position_reserve
     class Gateway:
         def recovery_report(self):
             return dict(journal_present=True,capacity=dict(ordinary_commands_remaining=20,intents_remaining=4,
+                intent_count=96,intent_limit=100,ordinary_intent_limit=99,
+                ordinary_intents_remaining=3,exit_intent_reserve_active=True,
+                exit_intents_remaining=1,
                 total_commands_remaining=1021,control_commands_reserved=1001,
                 lifecycle_intake_allowed=True),execution_account=dict(account=dict(positions={'BTC-USD':'fixture'})))
     report=ready.build(tmp_path/'unused'/'paper_forward.sqlite3',hours=1,now=START+3600,order_gateway=Gateway())
@@ -164,7 +167,10 @@ def test_depleted_control_reserve_blocks_trial_capacity_without_io(tmp_path):
     class Gateway:
         def recovery_report(self):
             return dict(journal_present=True,capacity=dict(ordinary_commands_remaining=0,
-                intents_remaining=4,total_commands_remaining=1000,control_commands_reserved=1000,
+                intents_remaining=4,ordinary_intents_remaining=4,
+                intent_count=96,intent_limit=100,ordinary_intent_limit=100,
+                exit_intent_reserve_active=False,exit_intents_remaining=0,
+                total_commands_remaining=1000,control_commands_reserved=1000,
                 lifecycle_intake_allowed=True),execution_account=dict(account=None))
     report=ready.build(tmp_path/'unused'/'paper_forward.sqlite3',hours=1,
         now=START+3600,order_gateway=Gateway())
@@ -203,7 +209,10 @@ def test_late_forward_history_appearance_invalidates_absent_review(tmp_path):
         def recovery_report(self):
             path.write_bytes(b'LATE_RETAINED_HISTORY')
             return dict(journal_present=False,capacity=dict(ordinary_commands_remaining=20,
-                intents_remaining=4,total_commands_remaining=1021,control_commands_reserved=1001,
+                intents_remaining=4,ordinary_intents_remaining=4,
+                intent_count=96,intent_limit=100,ordinary_intent_limit=100,
+                exit_intent_reserve_active=False,exit_intents_remaining=0,
+                total_commands_remaining=1021,control_commands_reserved=1001,
                 lifecycle_intake_allowed=True),
                 execution_account=dict(account=None))
     with pytest.raises(ValueError,match='^TRIAL_READINESS_FILE_SET_CHANGED$'):
@@ -250,7 +259,10 @@ def test_late_storage_root_replacement_invalidates_composite_result(tmp_path):
         def recovery_report(self):
             retired=tmp_path/'retired';root.rename(retired);root.mkdir()
             return dict(journal_present=False,capacity=dict(ordinary_commands_remaining=20,
-                intents_remaining=4,total_commands_remaining=1021,control_commands_reserved=1001,
+                intents_remaining=4,ordinary_intents_remaining=4,
+                intent_count=96,intent_limit=100,ordinary_intent_limit=100,
+                exit_intent_reserve_active=False,exit_intents_remaining=0,
+                total_commands_remaining=1021,control_commands_reserved=1001,
                 lifecycle_intake_allowed=True),
                 execution_account=dict(account=None))
     with pytest.raises(ValueError,match='^TRIAL_READINESS_STORAGE_ROOT_CHANGED$'):

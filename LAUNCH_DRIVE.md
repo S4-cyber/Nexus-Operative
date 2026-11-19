@@ -1,5 +1,38 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.368 durable position-reducing exit intent reserve
+
+Linked local-paper accounts now protect exactly one slot inside the existing
+fixed durable intent-ID limit from ordinary intake. The public simulation route,
+ordinary BUY/SELL requests and unrelated internal callers cannot consume that
+slot. Only the paper-forward runner's internal replayable reducing command may
+use it, after binding the exact held product, requested reduction quantity and
+expected current position in the durable command and intent digest. Fill
+application rechecks that no other quantity change occurred and never permits a
+cumulative reduction above the retained bound. Flat, unlinked, wrong-product,
+oversized, stale-position, halted and independent emergency-cut paths remain
+fail-closed. The total ID limit is unchanged.
+
+Capacity reports, start preflight and sustained-trial readiness now distinguish
+total physical IDs, ordinary-intake headroom and protected reducing-exit
+headroom. A new unlinked account must prove two total IDs before linking; a
+linked flat account must prove one ordinary plus one exit slot; a retained
+position may continue exit monitoring when ordinary intake is exhausted.
+Cold replay preserves the reducing classification and exact duplicate/conflict
+semantics. Logical archival, command reserves, account/position checks and
+emergency-stop independence are unchanged.
+
+This is bounded local exit-capacity hardening, not actual broker-paper,
+sustained genuine-market, native Windows/installer, funding/live/cloud,
+performance, profitability or release acceptance. Broker transport remains OFF
+and unrouted; all engagement and optional AI permissions remain OFF by default.
+No UI control or editable parameter changed, so the seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
 ## v0.340.367 truthful external-boundary inventory and selected-journal identity
 
 Reconciliation acceptance now refuses linked final journal selections before

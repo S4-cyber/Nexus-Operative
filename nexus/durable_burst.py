@@ -97,6 +97,11 @@ def measure(root,cycles,clock=time.perf_counter,halt_after=None,atomic_orders=Fa
             capacity['total_commands_remaining']+capacity['command_count']==
                 capacity['command_limit'] and
             capacity['intents_remaining']+capacity['intent_count']==capacity['intent_limit'] and
+            capacity['ordinary_intent_limit']==capacity['intent_limit']-1 and
+            capacity['ordinary_intents_remaining']+capacity['intent_count']==
+                capacity['ordinary_intent_limit'] and
+            capacity['exit_intent_reserve_active'] is True and
+            capacity['exit_intents_remaining']==1 and
             capacity['control_commands_reserved']==CONTROL_RESERVE and
             capacity['new_intents_allowed'] is capacity['lifecycle_intake_allowed'] is False and
             capacity['reasons']==['EMERGENCY_HALT_ACTIVE'] and

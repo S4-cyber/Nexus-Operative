@@ -212,6 +212,33 @@ def test_entry_preserves_an_exit_order_id(tmp_path,monkeypatch):
     assert not r.status()['enabled']
 
 
+def test_shared_simulation_cannot_consume_linked_exit_intent_reserve(tmp_path,monkeypatch):
+    from fastapi.testclient import TestClient
+    from nexus import order_gateway
+    import nexus.app as backend
+    monkeypatch.setattr(order_gateway,'MAX_INTENTS',2)
+    r,g,c=setup(tmp_path,monkeypatch)
+    assert warmup(r,c)['decision']=='BUY'
+    capacity=g.recovery_report()['capacity']
+    assert capacity['intents_remaining']==capacity['exit_intents_remaining']==1
+    assert capacity['ordinary_intents_remaining']==0
+    with pytest.raises(ValueError,match='EXIT_INTENT_RESERVE_PROTECTED'):
+        g.submit('shared_simulation','ETH-USD','SELL',1,tier='terrestrial')
+    monkeypatch.setattr(backend,'research_order_gateway',g)
+    monkeypatch.setattr(backend,'_halted',False)
+    response=TestClient(backend.app).post('/api/execution/intent/simulate',json={
+        'client_order_id':'public_sell','product':'BTC-USD','side':'SELL',
+        'notional':1.0,'provider':'nexus_local_paper','tier':'terrestrial'})
+    assert response.status_code==422
+    assert response.json()['detail']=='EXIT_INTENT_RESERVE_PROTECTED'
+    configure('terrestrial',False);c.price=102;c.now+=5
+    assert r.single_cycle()['decision']=='SELL'
+    report=g.recovery_report()
+    assert not report['execution_account']['account']['positions']
+    assert len(report['orders'])==order_gateway.MAX_INTENTS
+    r.stop()
+
+
 def test_failed_start_diagnostics_leave_runner_stopped(tmp_path,monkeypatch):
     import sqlite3
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))

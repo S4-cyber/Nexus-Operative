@@ -58,7 +58,8 @@ class OrderGateway:
             "live_orders_enabled":False,"broker_connected":False,
             "note":"External providers are placeholders; no credentials, broker calls or order routing."}
 
-    def submit(self,client_order_id,product,side,notional,provider="nexus_local_paper",tier=None):
+    def _submit(self,client_order_id,product,side,notional,provider="nexus_local_paper",tier=None,
+                extra_payload=None):
         _require_order_id(client_order_id)
         if type(product) is not str or product not in ("BTC-USD","ETH-USD","SOL-USD"):
             raise ValueError("PRODUCT_NOT_ELIGIBLE_FOR_SIMULATION")
@@ -73,6 +74,10 @@ class OrderGateway:
         payload={"id":client_order_id,"product":product,"side":side,
                  "notional":str(amount),"provider":provider,"tier":tier}
         payload["notional"]=str(amount.normalize())
+        if extra_payload is not None:
+            if type(extra_payload) is not dict or any(type(key) is not str for key in extra_payload):
+                raise ValueError("INVALID_INTENT_SCOPE")
+            payload.update(extra_payload)
         digest=hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
         with self.lock:
             old=self.lookup(client_order_id)
@@ -88,6 +93,9 @@ class OrderGateway:
                 "sent_to_broker":False,"live_orders_enabled":False}
             self.intents[client_order_id]=record
             return {**copy.deepcopy(record),"idempotent_replay":False}
+
+    def submit(self,client_order_id,product,side,notional,provider="nexus_local_paper",tier=None):
+        return self._submit(client_order_id,product,side,notional,provider,tier)
 
     def simulate_event(self,client_order_id,event_id,sequence,kind,fill_notional="0",fee="0"):
         """Apply an ordered offline lifecycle event; never updates a portfolio.

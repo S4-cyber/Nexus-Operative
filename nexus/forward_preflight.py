@@ -193,8 +193,13 @@ def build(orders,runner,*,tier,portal_active,halted):
                 if not storage['session_intake_allowed'] or not storage['quote_intake_allowed']:blocked.append('EVIDENCE_CAPACITY_REVIEW_REQUIRED')
                 extra=int(not recovery['execution_account']['initialized'])+int(not recovery['portfolio_reconciled'])
                 capacity=recovery['capacity']
-                if (not capacity['lifecycle_intake_allowed'] or capacity['ordinary_commands_remaining']<(4 if positions else 12)+extra
-                    or capacity['intents_remaining']<(1 if positions else 2)):blocked.append('JOURNAL_CAPACITY_REVIEW_REQUIRED')
+                id_capacity=(capacity['exit_intents_remaining'] if positions else
+                    min(capacity['ordinary_intents_remaining'],capacity['exit_intents_remaining'])
+                    if capacity['exit_intent_reserve_active'] else
+                    capacity['intents_remaining']//2)
+                if (not capacity['lifecycle_intake_allowed'] or
+                    capacity['ordinary_commands_remaining']<(4 if positions else 12)+extra or
+                    id_capacity<1):blocked.append('JOURNAL_CAPACITY_REVIEW_REQUIRED')
                 settings=None
                 if not positions:
                     settings_path=root/'portal_settings.sqlite3'

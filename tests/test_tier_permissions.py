@@ -77,6 +77,30 @@ def test_tier_buy_is_blocked_unless_engaged_and_portal_active(tmp_path,monkeypat
     c.post("/api/simulate/halt/reset",json={"confirm_reset":True})
     c.post("/api/portal",json={"enabled":False})
 
+
+@pytest.mark.parametrize('notional',[True,'1',None,[],{}])
+def test_simulated_order_notional_rejects_coercion_without_journal_write(tmp_path,monkeypatch,notional):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));client=TestClient(app)
+    before=tuple(tmp_path.iterdir())
+    response=client.post('/api/execution/intent/simulate',json={
+        'client_order_id':'strict_notional','product':'BTC-USD','side':'BUY',
+        'notional':notional,'provider':'nexus_local_paper','tier':'terrestrial'})
+    assert response.status_code==422 and tuple(tmp_path.iterdir())==before
+
+
+@pytest.mark.parametrize('notional',[1,1.5])
+def test_simulated_order_notional_accepts_json_numbers(tmp_path,monkeypatch,notional):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr(backend,'_halted',False);monkeypatch.setattr(backend,'_paused',True)
+    monkeypatch.setattr(backend.observer,'start',lambda:None)
+    monkeypatch.setattr(backend.refresh_worker,'start',lambda *a,**k:None)
+    monkeypatch.setattr(backend.observer,'stop',lambda:None)
+    client=TestClient(app);client.post('/api/portal',json={'enabled':True})
+    response=client.post('/api/execution/intent/simulate',json={
+        'client_order_id':'numeric_notional','product':'BTC-USD','side':'SELL',
+        'notional':notional,'provider':'nexus_local_paper','tier':'terrestrial'})
+    assert response.status_code==200
+
 def test_performance_readout_fails_closed_without_valid_history(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
     r=tier_performance("BTC-USD")

@@ -1,8 +1,32 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.351 exact authority, journal and cross-session boundaries
+
+**Current development build: 0.340.351 (pre-release).** Saved paid-provider
+requests lease the exact selected Windows-vault credential through transport;
+disconnect or rotation cannot return while the prior credential remains in
+use. Execution-quality review freezes and fingerprints all four private
+journals around every semantic reader. Sustained-trial review rejects
+cross-session equal-time conflicts and 15-percent jumps within 90 seconds,
+preventing rapid session rotation from resetting the retained heuristic.
+Artifact manifests recheck the public path after descriptor hashing, Windows
+phase/binding JSON rejects hardlinks, and simulated-intent notionals reject
+coercive Boolean/string inputs before mutation.
+
+This is local injected M1/M3/M4/M7/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation remains weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted; trading, funding and
+release permissions remain false and no launch date is established. Exact
+local release evidence and fresh hosted workflows are required for this source.
+
 ## v0.340.350 reducing-exit, credential-source and final-upload boundaries
 
-**Current development build: 0.340.350 (pre-release).** A latched emergency cut
+**Prior development build: 0.340.350 (pre-release).** A latched emergency cut
 continues to veto new entries while leaving only a quote-validated atomic close
 of an existing local-paper long available. Paid-provider requests select one
 authorized credential once and cannot fall back to an unopted environment key.

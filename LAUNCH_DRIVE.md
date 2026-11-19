@@ -1,5 +1,28 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.351 — exact authority and cross-session integrity
+
+This increment closes six compatible fail-closed seams. Saved paid-provider
+requests lease the selected vault credential through the bounded transport, so
+disconnect/rotation either wins before I/O or waits for the in-flight request.
+Execution-quality review binds all four private journals by selected path,
+identity and bytes around every semantic reader. Retained public quotes receive
+a chronological cross-session conflict/jump pass, preventing session rotation
+from resetting the single-source heuristic. Artifact creation rechecks the
+public pathname after hashing its descriptor, Windows phase/binding JSON
+rejects hardlinks, and simulated intent notionals reject coercive types before
+route mutation.
+
+No real broker/account/feed, native ordinary-user Windows host, funding system
+or cloud deployment was accessed. No UI control changed. Engagement and every
+financial permission remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Release, trading and funding approval remain false and
+no launch date is predicted. Exact local evidence and fresh hosted CI remain
+mandatory; the native Windows installer lane is separately undispatched.
+
 ## v0.340.350 — reducing exits and exact release integrity
 
 This increment closes six compatible fail-closed seams. Emergency state still

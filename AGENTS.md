@@ -1,5 +1,29 @@
 # Nexus Operative continuity instructions
 
+## v0.340.351 exact authority, journal and cross-session boundaries
+
+Saved paid-provider requests now hold the vault mutation lock through the
+bounded transport call, so disconnect or rotation cannot return while an old
+saved secret remains in use. Execution-quality review freezes all four selected
+journal paths and rechecks bounded identities and bytes after every semantic
+reader, including failures. Sustained-trial review performs a chronological
+cross-session public-quote consistency pass so session rotation cannot reset
+the 15-percent/90-second jump heuristic. Artifact creation rechecks the public
+pathname after descriptor hashing, Windows phase/binding JSON rejects
+hardlinks, and simulated-intent notionals reject Boolean/string coercion before
+route mutation.
+
+This is local injected boundary hardening, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, reducing exits, the independent
+emergency cut, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. The weighted implementation estimate remains 38% (30-45%,
+low confidence), with 0/9 stages independently accepted. Fresh exact-source
+local evidence and hosted CI are mandatory; the native Windows lane remains
+separately undispatched.
+
 ## v0.340.350 reducing-exit, credential-source and final-upload boundaries
 
 Emergency cuts continue to block every new paper entry, but the local portfolio

@@ -98,7 +98,7 @@ async def application_lifespan(application):
             if lifecycle_executor is not None:
                 lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.350",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.351",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -407,7 +407,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.350", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.351", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -785,7 +785,7 @@ class SimulatedOrderIntent(BaseModel):
     client_order_id: str = Field(min_length=1,max_length=64)
     product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
     side: str = Field(pattern="^(BUY|SELL)$")
-    notional: float = Field(gt=0,le=200)
+    notional: float = Field(gt=0,le=200,strict=True)
     provider: str = "nexus_local_paper"
     tier: str = Field(pattern="^(terrestrial|solar|universal)$")
 

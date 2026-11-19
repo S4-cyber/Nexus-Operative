@@ -7,6 +7,12 @@ import pytest
 from tools import windows_installer_phase_review as review
 
 
+def test_phase_jsonl_hardlink_is_rejected(tmp_path):
+    path=tmp_path/'phase.jsonl';path.write_text('{}\n');os.link(path,tmp_path/'alias.jsonl')
+    with pytest.raises(review.PhaseEvidenceError,match='file'):
+        review._read(path)
+
+
 VERSION = "0.340.108"
 SOURCE_COMMIT = "a" * 40
 INSTALLER_SHA256 = "b" * 64

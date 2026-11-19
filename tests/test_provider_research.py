@@ -32,6 +32,8 @@ def test_request_never_switches_from_vault_authority_to_unopted_environment(monk
         reads.append(1)
         return "saved-vault-placeholder" if len(reads)==1 else None
     monkeypatch.setattr(provider.credential_vault,"retrieve",vault)
+    monkeypatch.setattr(provider.credential_vault,"execute_saved",
+        lambda expected,callback:(True,callback(expected)))
     received=[]
     result=provider.request("market_regime",{},transport=lambda body,token:
         received.append(token) or reply())

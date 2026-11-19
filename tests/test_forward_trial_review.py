@@ -79,6 +79,63 @@ def rewrite(path, change, *, policy_change=None):
             db.execute('UPDATE sessions SET last_json=? WHERE id=?',(evidence.canonical(last),sid))
 
 
+def reprice_sessions(path,prices):
+    with closing(sqlite3.connect(path)) as db,db:
+        for sid,price in prices.items():
+            previous=evidence.GENESIS;count=0
+            rows=db.execute('SELECT cycle,payload FROM forward_quotes WHERE session=? ORDER BY cycle',(sid,)).fetchall()
+            for cycle,raw in rows:
+                point=json.loads(raw);point['quote'].update(bid=str(price),ask=str(price),last=str(price))
+                payload=evidence.canonical(point);digest=evidence.digest(previous,payload)
+                db.execute('UPDATE forward_quotes SET payload=?,previous=?,digest=? WHERE session=? AND cycle=?',
+                    (payload,previous,digest,sid,cycle));previous=digest;count+=1
+            db.execute('UPDATE forward_quote_heads SET observations=?,head=? WHERE session=?',(count,previous,sid))
+            last=json.loads(db.execute('SELECT last_json FROM sessions WHERE id=?',(sid,)).fetchone()[0])
+            last.update(cycle=count,quote_evidence_sha256=previous)
+            db.execute('UPDATE sessions SET last_json=? WHERE id=?',(evidence.canonical(last),sid))
+
+
+def test_cross_session_boundary_conflict_is_an_incident(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':100,'0000000000000002':1000})
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']>0
+    assert result['operational_incidents_present'] is True
+    assert result['declared_coverage_target_met'] is False
+
+
+def test_rotating_sessions_cannot_reset_price_jump_guard(tmp_path,monkeypatch):
+    sessions=[];prices={}
+    for index in range(864):
+        start=index*300;points=[(offset,True) for offset in range(start,start+301,10)]
+        sessions.append((points,trial.PUBLIC,'STOPPED'))
+        prices[f'{index+1:016x}']=100 if index%2==0 else 1000
+    path=database(tmp_path,monkeypatch,sessions);reprice_sessions(path,prices)
+    result=run(path,72*3600)
+    assert result['coverage_fraction']=='1.000000'
+    assert result['recorded_eligibility_disagreements_in_window']>0
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+
+
+def test_identical_cross_session_boundary_is_valid_and_unioned_once(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==0
+    assert result['declared_public_covered_seconds']=='10'
+
+
+def test_equal_cross_session_prices_allow_equivalent_numeric_spelling(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':'100.0','0000000000000002':'100.00'})
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==0
+    assert result['declared_public_covered_seconds']=='10'
+
+
 @pytest.mark.parametrize('changes', [
     {'received_at':START}, {'received_at':START+6}, {'received_at':False},
     {'exchange_time':until(-10)}, {'exchange_time':until(6)},

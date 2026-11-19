@@ -117,6 +117,25 @@ def test_path_replacement_after_descriptor_hash_is_rejected(tmp_path,monkeypatch
         subject.file_entry(artifact)
 
 
+def test_descriptor_error_after_validation_is_changed_during_read(tmp_path, monkeypatch):
+    artifact = tmp_path / "a.exe"
+    artifact.write_bytes(b"reviewed bytes")
+    real_fstat = subject.os.fstat
+    calls = 0
+
+    def fail_final_descriptor_check(descriptor):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise OSError("simulated descriptor instability")
+        return real_fstat(descriptor)
+
+    monkeypatch.setattr(subject.os, "fstat", fail_final_descriptor_check)
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="ARTIFACT_CHANGED_DURING_READ"):
+        subject.file_entry(artifact)
+
+
 def _command():
     return [sys.executable, "-m", "nexus.artifact_manifest"]
 

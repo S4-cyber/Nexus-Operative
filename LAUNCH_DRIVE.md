@@ -1,5 +1,43 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.355 — portable artifact race classification
+
+Two exact hosted Windows predecessors completed nearly the entire regression
+suite but failed the same artifact-manifest race assertion: after descriptor
+hashing, Windows surfaced `INVALID_ARTIFACT_FILE` where the stable integrity
+contract requires `ARTIFACT_CHANGED_DURING_READ`. Manifest creation now records
+when the descriptor has passed regular-file, single-link, size and path-identity
+validation. Subsequent read, final-descriptor or close errors are classified as
+an in-read integrity change and remain fail-closed; open and initial-validation
+errors remain invalid input. A platform-neutral injected descriptor-error test
+keeps this distinction reproducible outside Windows.
+
+The direct artifact/sharding scope passed 51 tests, and the synchronized
+artifact/release-evidence/trials/version/roadmap/Windows-workflow scope passed
+253 tests with two existing dependency deprecation warnings. The ordered CI
+inventory passed 20 Node tests. All sixteen bounded offline profiles and
+saved-evidence verification matched 420 exact source files /
+`041fee5f23737c2921465bfa4159d4657bc256cbca17dc27f864527cbc25fe92`;
+report SHA-256 is
+`4fb4efbeeaf856d2b5718f5fb541a86a02c57d385db076ac37999d8652e20739`.
+Compilation, deterministic roadmap equality and diff checks passed. The
+164-member v0.340.355 wheel reports the synchronized version and has SHA-256
+`62a9a57bf3920a626113d6f0e5c27e4ac79f904d55dbc5b99b7289272ff28cd2`.
+The staged 1,095-path public-artifact audit found zero findings. Local Gitleaks
+and native Windows/Inno Setup are unavailable; hosted exact-source checks and
+native installer acceptance remain mandatory.
+
+No real provider/account/feed, native ordinary-user Windows host, funding
+system or cloud deployment was accessed. No UI control changed. Engagement and
+all financial permissions remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Release, trading and funding approval remain false and
+no launch date is predicted. Fresh exact-head local evidence, both hosted
+Windows regression shards and the remaining release jobs must pass; native
+installer execution remains a separate external gate.
+
 ## v0.340.354 — deterministic Windows regression sharding
 
 The complete Windows pull-request regression now performs full pytest

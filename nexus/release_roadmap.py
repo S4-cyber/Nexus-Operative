@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.361'
+REVISION = '0.340.362'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1162,6 +1162,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.remaining) for item in MILESTONES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; those four fault treatments now run through the actual worker loop, retain the PAUSED session while its worker and process ownership are still active, observe zero post-pause fetches, terminate before ordinary cleanup and prove a cold runner remains disabled and fetch-free until an explicit distinct healthy session reacquires released ownership; the failed session remains orderless and its scoped evidence hash is unchanged' if item.id in ('M3','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the internal single-attempt paper POST boundary now re-samples the exact BTC/USD eligibility and size/quantity/price increments after both durable reservations, consuming changed or ineligible terms as NOT_SENT before transport; the local decision benchmark rejects invalid, regressing and non-advancing measurement clocks instead of manufacturing a passing rate' if item.id in ('M3','M8','M9') else ''),
     item.remaining) for item in MILESTONES)
 
@@ -1188,7 +1192,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.361 closes two offline safety-evidence defects. The internal Alpaca paper single-attempt boundary now performs a ninth bounded GET after both durable reservations and requires the final BTC/USD eligibility, fractionability, minimum size, quantity increment and price tick to equal the admitted preflight snapshot. Changed, malformed or ineligible terms consume the request marker as NOT_SENT with zero POSTs and no re-arm. The synthetic decision benchmark now requires exact finite built-in clock samples, nondecreasing sampling and a strictly advancing whole window; invalid, regressing or frozen clocks fail with fixed diagnostics instead of producing fabricated latency/rate or target success. This is injected offline evidence, not an atomic provider snapshot, actual broker-paper acceptance, provider quota/clock behavior, genuine-feed trial realism, funding/live/cloud, performance, profitability or release acceptance. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.362 exercises missing-source, stale-quote, regressed-clock and invalid-clock treatments through the actual paper-forward worker loop. Each durably pauses with exact bounded cycles, fetches and retained evidence before the fixture terminates the child ahead of ordinary ownership cleanup. A cold runner remains disabled, starts no worker, performs no fetch, reacquires released process ownership only through an explicit new session, creates zero orders and preserves the failed session's scoped evidence hash. This is accelerated injected local worker/process-death evidence, not operating-system power-loss acceptance, actual provider or broker-paper acceptance, genuine-feed trial realism, funding/live/cloud, performance, profitability or release acceptance. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

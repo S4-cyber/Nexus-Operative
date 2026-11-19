@@ -1,5 +1,41 @@
 # Nexus Operative continuity instructions
 
+## v0.340.362 actual-worker fault and cold-reopen evidence
+
+The mandatory forward fault profile now drives missing-source, stale-quote,
+regressed-clock and invalid-clock treatments through `start()` and the actual
+paper-forward worker loop. Each treatment durably reaches `PAUSED` with exact
+cycle, fetch, reason, counter and rejected-observation evidence while the worker
+and process ownership remain active. The disposable fixture observes zero
+post-pause fetches, then terminates the child before ordinary ownership cleanup.
+A cold runner remains disabled, starts no worker, performs no fetch and proves
+process-death lock release only when an explicit new healthy session acquires
+ownership. That session is distinct, produces one orderless warmup `HOLD`, and
+leaves the failed session's scoped evidence hash unchanged. Clock faults remain
+fetch-free and retain the exact `NO_RECORDED_QUOTE_EVIDENCE` review blocker.
+
+The direct worker/process-crash scope passed 16 tests and the synchronized
+forward/release/version/roadmap/Windows-workflow scope passed 201 tests, each
+with one existing dependency warning. Final full regression passed 6,589 tests
+with two platform skips and one existing warning in 1,324.49 seconds. All
+sixteen bounded offline profiles passed; saved evidence matched 422 source
+files / `287f83d505cf6d30b80b2b23ef89839b910c5c2c6c263a6a62d0d08c93630123`
+and report SHA-256 is
+`f042483593e9deeb426b11c9ad4cdc16cae7ef449b0be0120b6772423b2d2c60`.
+The 165-member v0.340.362 wheel reports the synchronized version and has
+SHA-256
+`62a80adb6446c21c44dfa82b7cd9333a183f1ae02cb57a827d8b25c6a1d7d3dd`.
+
+This is accelerated injected local worker/process-death evidence, not native
+power-loss behavior, actual provider or broker-paper acceptance, genuine-feed
+trial realism, funding/live/cloud readiness, performance, profitability or
+release approval. No UI control or editable parameter was added. Engagement
+and optional AI remain OFF by default; limits, account checks, fail-closed
+entries, reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Rough implementation
+remains about 40%, exact weighted index 38% (30-45%, low confidence), with 0/9
+stages independently accepted. Fresh exact-source hosted CI remains mandatory.
+
 ## v0.340.361 post-reservation asset and benchmark-clock fences
 
 The disconnected Alpaca paper single-attempt boundary now performs a ninth

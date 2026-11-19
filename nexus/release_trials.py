@@ -2795,10 +2795,14 @@ def _validate(profile, result):
             'live_orders_enabled','release_approved','target_validated')),
             'FORWARD_AUTHORITY')
         expected_faults={
-            'source_loss':(3,3,['QUOTE_UNAVAILABLE_OR_INVALID']*3),
-            'stale_quote':(3,3,['QUOTE_UNAVAILABLE_OR_INVALID']*3),
-            'clock_regression':(1,0,['RUNTIME_CLOCK_DISCONTINUITY']),
-            'invalid_clock':(1,0,['INVALID_RUNTIME_CLOCK']),
+            'source_loss':(3,3,['QUOTE_UNAVAILABLE_OR_INVALID']*3,
+                {'START':1,'VETO':2,'PAUSED':1},3,[]),
+            'stale_quote':(3,3,['QUOTE_UNAVAILABLE_OR_INVALID']*3,
+                {'START':1,'VETO':2,'PAUSED':1},3,[]),
+            'clock_regression':(1,0,['RUNTIME_CLOCK_DISCONTINUITY'],
+                {'START':1,'PAUSED':1},0,['NO_RECORDED_QUOTE_EVIDENCE']),
+            'invalid_clock':(1,0,['INVALID_RUNTIME_CLOCK'],
+                {'START':1,'PAUSED':1},0,['NO_RECORDED_QUOTE_EVIDENCE']),
         }
         _require(faults['mode']=='DISPOSABLE_FORWARD_FAULT_INJECTION' and
             faults['passed'] is True and faults['limitations']==FAULT_LIMITATIONS and
@@ -2809,9 +2813,29 @@ def _validate(profile, result):
                 'broker_connected','live_orders_enabled','release_approved')) and
             all(faults[name]['cycles']==cycles and faults[name]['fetches']==fetches and
                 faults[name]['reasons']==reasons and faults[name]['paused'] is True and
+                faults[name]['stored_state']=='PAUSED' and faults[name]['counts']==counts and
+                faults[name]['quote_observations']==observations and
+                faults[name]['rejected_observations']==observations and
+                faults[name]['review_reasons']==review_reasons and
                 faults[name]['orders_created']==0 and type(faults[name]['orders_created']) is int and
-                faults[name]['ownership_released'] is True
-                for name,(cycles,fetches,reasons) in expected_faults.items()),
+                faults[name]['healthy_orders_created']==0 and
+                faults[name]['post_pause_fetches']==0 and
+                faults[name]['cold_fetches_before_prepare']==0 and
+                faults[name]['healthy_decision']=='HOLD' and
+                faults[name]['healthy_reason']=='WARMUP_REQUIRES_SIX_DISTINCT_TICKS' and
+                all(faults[name][key] is True for key in ('ownership_released','worker_started',
+                    'worker_paused_while_alive','cleanup_blocked_before_process_death','process_terminated',
+                    'cold_reopen_disabled','cold_ownership_available','order_hash_preserved','evidence_hash_preserved',
+                    'new_session_distinct')) and
+                all(faults[name][key] is False for key in ('cold_worker_alive','automatic_restart')) and
+                re.fullmatch('[a-f0-9]{16}',faults[name]['failed_session']) is not None and
+                all(type(faults[name][key]) is str and re.fullmatch('[a-f0-9]{64}',faults[name][key]) is not None
+                    for key in ('failed_orders_sha256','failed_evidence_sha256','reopened_orders_sha256',
+                        'reopened_evidence_sha256')) and
+                faults[name]['failed_orders_sha256']==faults[name]['reopened_orders_sha256'] and
+                faults[name]['failed_evidence_sha256']==faults[name]['reopened_evidence_sha256']
+                for name,(cycles,fetches,reasons,counts,observations,review_reasons)
+                    in expected_faults.items()),
             'FORWARD_FAULT_EVIDENCE')
         hashes=[recovered['account_sha256']]
         session_ids=[]

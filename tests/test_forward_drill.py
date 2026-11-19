@@ -67,3 +67,29 @@ def test_fault_injection_is_bounded_orderless_and_fail_closed(tmp_path):
     assert result['stale_quote']['reasons']==['QUOTE_UNAVAILABLE_OR_INVALID']*3
     assert result['clock_regression']['reasons']==['RUNTIME_CLOCK_DISCONTINUITY']
     assert result['invalid_clock']['reasons']==['INVALID_RUNTIME_CLOCK']
+    for name in ('source_loss','stale_quote','clock_regression','invalid_clock'):
+        case=result[name]
+        assert case['worker_started'] and case['worker_paused_while_alive']
+        assert case['cleanup_blocked_before_process_death'] and case['process_terminated']
+        assert case['post_pause_fetches']==0 and case['automatic_restart'] is False
+        assert case['stored_state']=='PAUSED' and case['paused']
+        assert case['cold_reopen_disabled'] and case['cold_worker_alive'] is False
+        assert case['cold_fetches_before_prepare']==0 and case['cold_ownership_available']
+        assert case['ownership_released'] and case['new_session_distinct']
+        assert case['order_hash_preserved'] and case['evidence_hash_preserved']
+        assert case['failed_orders_sha256']==case['reopened_orders_sha256']
+        assert case['failed_evidence_sha256']==case['reopened_evidence_sha256']
+        assert len(case['failed_session'])==16 and len(case['failed_orders_sha256'])==64
+        assert case['healthy_decision']=='HOLD'
+        assert case['healthy_reason']=='WARMUP_REQUIRES_SIX_DISTINCT_TICKS'
+        assert case['healthy_orders_created']==0
+    for name in ('source_loss','stale_quote'):
+        case=result[name]
+        assert case['counts']=={'START':1,'VETO':2,'PAUSED':1}
+        assert case['quote_observations']==case['rejected_observations']==3
+        assert case['review_reasons']==[]
+    for name in ('clock_regression','invalid_clock'):
+        case=result[name]
+        assert case['counts']=={'START':1,'PAUSED':1}
+        assert case['quote_observations']==case['rejected_observations']==0
+        assert case['review_reasons']==['NO_RECORDED_QUOTE_EVIDENCE']

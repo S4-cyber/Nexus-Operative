@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.360'
+REVISION = '0.340.361'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1161,6 +1161,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the mandatory disposable forward release profile now executes isolated missing-source, stale-quote, regressed-clock and invalid-clock treatments through the actual runner, requires every session to pause and release ownership with zero orders, and binds exact bounded fetch/cycle/reason counts while automatic retry and every external authority remain false; standalone feed admission rejects polymorphic mappings and invalid runtime clocks before baseline mutation, and the research decision lane distinguishes clock regression from ordinary expiry' if item.id in ('M3','M7','M9') else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the internal single-attempt paper POST boundary now re-samples the exact BTC/USD eligibility and size/quantity/price increments after both durable reservations, consuming changed or ineligible terms as NOT_SENT before transport; the local decision benchmark rejects invalid, regressing and non-advancing measurement clocks instead of manufacturing a passing rate' if item.id in ('M3','M8','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
@@ -1184,7 +1188,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.360 adds mandatory M3.3 bad-clock and source-loss treatments to the disposable forward release profile. Isolated missing-source, stale-quote, regressed-clock and invalid-clock sessions must pause the actual runner, release ownership and create zero orders; exact cycle, fetch and fixed-reason counts are release-validated, with automatic retry and every provider/broker/live/release authority false. Standalone feed admission now rejects polymorphic mappings and invalid runtime clocks before baseline mutation, and the bounded research decision lane distinguishes clock regression from ordinary expiry. This is offline fail-closed evidence, not genuine-feed, provider-availability, clock-hardware, network-recovery, broker-paper, sustained-market, funding/live/cloud, performance, profitability or release acceptance. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.361 closes two offline safety-evidence defects. The internal Alpaca paper single-attempt boundary now performs a ninth bounded GET after both durable reservations and requires the final BTC/USD eligibility, fractionability, minimum size, quantity increment and price tick to equal the admitted preflight snapshot. Changed, malformed or ineligible terms consume the request marker as NOT_SENT with zero POSTs and no re-arm. The synthetic decision benchmark now requires exact finite built-in clock samples, nondecreasing sampling and a strictly advancing whole window; invalid, regressing or frozen clocks fail with fixed diagnostics instead of producing fabricated latency/rate or target success. This is injected offline evidence, not an atomic provider snapshot, actual broker-paper acceptance, provider quota/clock behavior, genuine-feed trial realism, funding/live/cloud, performance, profitability or release acceptance. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

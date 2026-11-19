@@ -1982,6 +1982,7 @@ def _validate(profile, result):
             ('marker_committed_before_post','exactly_one_post','response_retained',
              'account_and_position_capacity_resampled',
              'post_reservation_risk_resampled',
+             'post_reservation_asset_resampled',
              'post_transport_credentials_rechecked',
              'request_and_post_budget_store_bindings_pinned',
              'request_and_post_budget_file_identities_pinned',
@@ -2004,6 +2005,7 @@ def _validate(profile, result):
              'alpaca_post_budget_scope_required',
              'late_risk_change_blocked_before_reservation',
              'post_reservation_risk_change_blocked_before_post',
+             'post_reservation_asset_change_blocked_before_post',
              'transport_loss_preserved_for_original_id_lookup','repeat_submission_blocked',
              'output_never_sendable')),'SUBMISSION_TRANSPORT_FENCES')
         _require(all(transport[k] is False for k in ('actual_provider_access','actual_vault_access',

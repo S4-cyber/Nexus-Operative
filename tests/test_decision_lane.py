@@ -38,7 +38,26 @@ def test_benchmark_has_separate_local_speed_and_zero_trades():
     assert report["broker_orders_submitted"]==report["broker_fills_confirmed"]==0
     assert report["paper_orders_created"] is False
     assert report["live_orders_enabled"] is False
+    assert report["measurement_clock_samples"]==3*report["events"]+2
     with pytest.raises(ValueError):benchmark(100000)
+
+
+@pytest.mark.parametrize('clock,code',[
+    (lambda:10,'BENCHMARK_CLOCK_NO_PROGRESS'),
+    (iter([10,10,9]).__next__,'BENCHMARK_CLOCK_REGRESSION'),
+    (lambda:float('nan'),'BENCHMARK_CLOCK_INVALID'),
+    (lambda:True,'BENCHMARK_CLOCK_INVALID'),
+    (lambda:'10','BENCHMARK_CLOCK_INVALID'),
+    (lambda:(_ for _ in ()).throw(RuntimeError('private clock detail')),
+     'BENCHMARK_CLOCK_INVALID'),
+])
+def test_benchmark_rejects_untrusted_measurement_clock(clock,code):
+    with pytest.raises(ValueError,match=code) as error:benchmark(30,clock=clock)
+    assert 'private clock detail' not in str(error.value)
+
+
+def test_benchmark_does_not_swallow_process_control_exceptions():
+    with pytest.raises(KeyboardInterrupt):benchmark(30,clock=lambda:(_ for _ in ()).throw(KeyboardInterrupt()))
 
 def test_benchmark_api_is_offline_and_visible():
     client=TestClient(app)

@@ -1,5 +1,34 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.361 — final paper-asset and benchmark-clock resampling
+
+The internal Alpaca paper single-attempt boundary now re-reads BTC/USD asset
+eligibility and increments after both durable reservations and before its only
+possible POST. The exact safety snapshot must match preflight. Ineligible,
+malformed or merely changed terms close the reservation as `NOT_SENT`, retain
+lookup-only recovery and make zero POSTs. The release profile proves the final
+resample and a changed-contract denial; it still uses injected responses only.
+
+The synthetic decision benchmark now rejects invalid, regressing and frozen
+measurement clocks, retains the exact clock-sample count and reports the
+strictly positive measurement window without rounding it back to zero. Full
+regression passed 6,589 tests with two skips and one existing warning. All
+sixteen offline profiles matched 422-file source fingerprint
+`b0e2ac66b40610a6faf0c2dcda7208ab12bfb58529520346ff31ce68aaed7684`;
+saved-report SHA-256 is
+`716c6fc1400c3701a4960a7bbfeaac1304c8bb8dc746c968524302bf61ded1b5`.
+The 165-member wheel SHA-256 is
+`00bf540ddaf20708635e0999b881addfa71a0c301e0fb8387ee562b282020042`.
+
+This closes an offline M8.2/M3 evidence defect only. It is not provider or
+account acceptance, an atomic broker snapshot, actual order acceptance,
+spendable funds, broker-wide pacing, genuine-feed realism, performance,
+profitability or release readiness. No UI control changed. OFF defaults,
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven tabs and black/bright-purple bottom-right hover help
+remain unchanged. Rough implementation stays about 40% (exact 38%, range
+30-45%, low confidence), with 0/9 stages accepted.
+
 ## v0.340.360 — forward bad-clock and source-loss evidence
 
 The required disposable forward profile now retains exact fail-closed evidence

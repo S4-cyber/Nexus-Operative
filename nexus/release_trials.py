@@ -2803,7 +2803,8 @@ def _validate(profile, result):
         from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
             FAULT_CASE_PUBLIC_KEYS, FAULT_LIMITATIONS, FAULT_PUBLIC_KEYS,
             LATENCY_PUBLIC_KEYS, LIMITATIONS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
-            PROCESS_CONTROL_PUBLIC_KEYS, PUBLIC_KEYS,
+            PROCESS_CONTROL_PUBLIC_KEYS, PUBLIC_KEYS, SCHEDULER_CADENCE_CASE_PUBLIC_KEYS,
+            SCHEDULER_CADENCE_LIMITATIONS, SCHEDULER_CADENCE_PUBLIC_KEYS,
             RECOVERED_PUBLIC_KEYS, SESSION_PUBLIC_KEYS)
         from nexus.paper_forward import (COMMIT_DURABILITY_CHECKS,
             COMMIT_DURABILITY_PUBLIC_KEYS)
@@ -2814,6 +2815,7 @@ def _validate(profile, result):
         recovered=result['recovered']
         durability=result['commit_durability']
         faults=result['fault_injection']
+        cadence=result['scheduler_cadence']
         _require(type(durability) is dict and
             frozenset(durability)==COMMIT_DURABILITY_PUBLIC_KEYS and
             durability['source']==
@@ -2830,6 +2832,42 @@ def _validate(profile, result):
             all(type(faults[name]) is dict and frozenset(faults[name])==FAULT_CASE_PUBLIC_KEYS
                 for name in ('source_loss','stale_quote','clock_regression','invalid_clock')),
             'FORWARD_FAULT_SCHEMA')
+        _require(type(cadence) is dict and
+            frozenset(cadence)==SCHEDULER_CADENCE_PUBLIC_KEYS,
+            'FORWARD_SCHEDULER_CADENCE_SCHEMA')
+        _require(all(type(cadence[name]) is dict and
+            frozenset(cadence[name])==SCHEDULER_CADENCE_CASE_PUBLIC_KEYS
+            for name in ('nominal','overrun','invalid_clock','clock_regression','stalled_clock')),
+            'FORWARD_SCHEDULER_CADENCE_CASE_SCHEMA')
+        expected_cadence={
+            'nominal':([100.0,105.0,110.0],[5.0,5.0],3,3,[],0,0.0,0.0),
+            'overrun':([100.0,112.0],[12.0],2,2,['SCHEDULER_OVERRUN'],1,7.0,2.0),
+            'invalid_clock':([],[],0,0,['INVALID_SCHEDULER_CLOCK'],0,0.0,0.0),
+            'clock_regression':([100.0],[],1,1,['SCHEDULER_CLOCK_REGRESSION'],0,0.0,0.0),
+            'stalled_clock':([100.0],[],1,1,['SCHEDULER_CLOCK_STALLED'],0,0.0,0.0),
+        }
+        _require(cadence['mode']=='DISPOSABLE_FORWARD_SCHEDULER_CADENCE' and
+            cadence['passed'] is True and type(cadence['interval_seconds']) is int and
+            cadence['interval_seconds']==5 and cadence['limitations']==SCHEDULER_CADENCE_LIMITATIONS,
+            'FORWARD_SCHEDULER_CADENCE_EVIDENCE')
+        _require(all(
+            case['cycle_starts']==expected[0] and case['start_intervals']==expected[1] and
+            case['fetches']==expected[2] and type(case['fetches']) is int and
+            case['cycles']==expected[3] and type(case['cycles']) is int and
+            case['scheduler_reasons']==expected[4] and
+            case['overrun_records']==expected[5] and type(case['overrun_records']) is int and
+            case['cycle_duration_seconds']==expected[6] and
+            type(case['cycle_duration_seconds']) is float and
+            case['overrun_seconds']==expected[7] and type(case['overrun_seconds']) is float and
+            case['orders_created']==0 and type(case['orders_created']) is int and
+            case['stored_state']=='PAUSED' and case['ownership_released'] is True and
+            case['worker_stopped'] is True and case['burst_catchup_allowed'] is False
+            for name,expected in expected_cadence.items() for case in (cadence[name],)),
+            'FORWARD_SCHEDULER_CADENCE_EVIDENCE')
+        _require(all(cadence[key] is False for key in ('actual_provider_requests',
+            'automatic_retries','broker_connected','live_orders_enabled',
+            'sustained_forward_accepted','release_approved')),
+            'FORWARD_SCHEDULER_CADENCE_AUTHORITY')
         process_control=faults['process_control_cleanup']
         _require(type(process_control) is dict and
             frozenset(process_control)==PROCESS_CONTROL_PUBLIC_KEYS and

@@ -133,6 +133,10 @@ def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanne
     assert 'EXPECTED_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}' in text
     assert 'git -C scan rev-parse HEAD' in text
     assert 'python3 policy/tools/public_repo_audit.py --repository scan --history' in text
+    assert 'BASELINE_COMMIT: ${{ github.event.pull_request.base.sha || github.sha }}' in text
+    assert 'CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}' in text
+    assert '--baseline-commit "$BASELINE_COMMIT"' in text
+    assert '--candidate-commit "$CANDIDATE_COMMIT"' in text
     assert 'sha256sum --check --strict' in text and "--log-opts='--all'" in text
     assert '--redact=100' in text and '--log-level fatal' in text
     assert '--ignore-gitleaks-allow' in text and '--gitleaks-ignore-path /dev/null' in text

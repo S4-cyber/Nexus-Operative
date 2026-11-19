@@ -13,7 +13,7 @@ LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include 
     'Fault treatments use the actual worker loop with accelerated local scheduling and abrupt child termination, but no '
     'actual feed, operating-system power loss, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
-    'commit_durability','fault_injection','isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
+    'commit_durability','fault_injection','scheduler_cadence','isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
     'ownership_released','halted','flat','portfolio_reconciled'))
 SESSION_PUBLIC_KEYS=frozenset(('session','orders_sha256','evidence_sha256','quote_observations','modeled_buy_orders',
@@ -34,9 +34,18 @@ PROCESS_CONTROL_CASE_PUBLIC_KEYS=frozenset(('signal','worker_started','signal_ob
     'runner_disabled','ownership_released','orders_created','stored_state','effective_state',
     'automatic_restart'))
 PROCESS_CONTROL_PUBLIC_KEYS=frozenset(('keyboard_interrupt','system_exit'))
+SCHEDULER_CADENCE_CASE_PUBLIC_KEYS=frozenset(('cycle_starts','start_intervals','fetches','cycles',
+    'scheduler_reasons','overrun_records','cycle_duration_seconds','overrun_seconds','orders_created',
+    'stored_state','ownership_released','worker_stopped','burst_catchup_allowed'))
+SCHEDULER_CADENCE_PUBLIC_KEYS=frozenset(('mode','passed','interval_seconds','nominal','overrun',
+    'invalid_clock','clock_regression','stalled_clock','actual_provider_requests','automatic_retries',
+    'broker_connected','live_orders_enabled','sustained_forward_accepted','release_approved','limitations'))
 FAULT_LIMITATIONS=('Injected local failures, accelerated worker scheduling and abrupt local child termination only; '
     'proves bounded fail-closed worker/cold-reopen behavior, not actual provider availability, operating-system power '
     'loss, clock hardware, network recovery, broker operation or sustained-market acceptance.')
+SCHEDULER_CADENCE_LIMITATIONS=('Injected monotonic scheduling and public-quote-shaped local observations only; proves bounded worker '
+    'deadline, overrun and fail-closed behavior, not operating-system timer accuracy, actual provider cadence, sustained-market '
+    'throughput, broker operation or release acceptance.')
 COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EXECUTION_OWNERSHIP_NOT_CHECKED',
     'INJECTED_OBSERVATIONS_IN_WINDOW','NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS',
     'ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','QUOTE_ERRORS_RETAINED_IN_WINDOW',
@@ -154,7 +163,10 @@ def _fault_worker_process(directory,name,signal_path):
             orders_allowed=False,bid=100.0,ask=100.01,last=100.0,received_at=received,
             exchange_time=datetime.fromtimestamp(1000,timezone.utc).isoformat())
     gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
-    runner=paper_forward.PaperForwardRunner(gateway,fetch,clock)
+    schedule=[0.0]
+    def scheduler_wait(seconds):schedule[0]+=seconds
+    runner=paper_forward.PaperForwardRunner(gateway,fetch,clock,
+        scheduler_clock=lambda:schedule[0],scheduler_wait=scheduler_wait)
     threading=__import__('threading');paused=threading.Event();release=threading.Event()
     ordinary_release=runner._release_stopped_ownership
     def blocked_release():
@@ -318,6 +330,71 @@ def _faults(directory):
         live_orders_enabled=False,release_approved=False,limitations=FAULT_LIMITATIONS)
 
 
+def _scheduler_cadence_case(root,name):
+    """Run one actual worker against an injected monotonic scheduler."""
+    from datetime import datetime,timezone
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    root=Path(root);root.mkdir();os.environ['NEXUS_PORTABLE_DATA']=str(root)
+    configure('terrestrial',True)
+    scheduler={'now':100.0,'waits':[]};starts=[];holder={}
+    target=2 if name=='overrun' else 3
+
+    def scheduler_clock():
+        if name=='invalid_clock':return float('nan')
+        return scheduler['now']
+
+    def scheduler_wait(seconds):
+        scheduler['waits'].append(seconds)
+        if name=='clock_regression':scheduler['now']-=1
+        elif name!='stalled_clock':scheduler['now']+=seconds
+        if name in ('nominal','overrun') and len(scheduler['waits'])==target:
+            holder['runner']._pause_scheduler('DISPOSABLE_CADENCE_COMPLETE')
+
+    def fetch(product):
+        starts.append(scheduler['now'])
+        if name=='overrun' and len(starts)==1:scheduler['now']+=7
+        return dict(product=product,provider='coinbase_exchange_public',read_only=True,
+            orders_allowed=False,bid=100.0,ask=100.01,last=100.0,received_at=1000.0,
+            exchange_time=datetime.fromtimestamp(1000,timezone.utc).isoformat())
+
+    gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+    runner=PaperForwardRunner(gateway,fetch,lambda:1000.0,
+        scheduler_clock=scheduler_clock,scheduler_wait=scheduler_wait)
+    holder['runner']=runner
+    runner.start('terrestrial');runner._thread.join(10)
+    _require(not runner._thread.is_alive(),'SCHEDULER_WORKER_ALIVE')
+    history=list(reversed(runner.history()))
+    cadence_reason_codes=frozenset(('INVALID_SCHEDULER_CLOCK','SCHEDULER_CLOCK_REGRESSION',
+        'SCHEDULER_CLOCK_STALLED','SCHEDULER_OVERRUN'))
+    cadence_reasons=[row['reason'] for row in history if row['reason'] in cadence_reason_codes]
+    overruns=[row for row in history if row['reason']=='SCHEDULER_OVERRUN']
+    session=runner.sessions()['sessions'][0]
+    return dict(cycle_starts=starts,start_intervals=[starts[index]-starts[index-1]
+        for index in range(1,len(starts))],fetches=len(starts),cycles=runner.status()['cycles'],
+        scheduler_reasons=cadence_reasons,overrun_records=len(overruns),
+        cycle_duration_seconds=overruns[0]['scheduler_cycle_duration_seconds'] if overruns else 0.0,
+        overrun_seconds=overruns[0]['scheduler_overrun_seconds'] if overruns else 0.0,
+        orders_created=len(gateway.recovery_report()['orders']),stored_state=session['stored_state'],
+        ownership_released=not runner.status()['ownership_held'],worker_stopped=not runner.status()['worker_alive'],
+        burst_catchup_allowed=any(row.get('burst_catchup_allowed') is True for row in history))
+
+
+def _scheduler_cadence(directory):
+    previous=os.environ.get('NEXUS_PORTABLE_DATA');parent=Path(directory);parent.mkdir(parents=True,exist_ok=True)
+    try:
+        cases={name:_scheduler_cadence_case(parent/name,name) for name in
+            ('nominal','overrun','invalid_clock','clock_regression','stalled_clock')}
+    finally:
+        if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
+        else:os.environ['NEXUS_PORTABLE_DATA']=previous
+    return dict(mode='DISPOSABLE_FORWARD_SCHEDULER_CADENCE',passed=True,interval_seconds=5,
+        **cases,actual_provider_requests=False,automatic_retries=False,broker_connected=False,
+        live_orders_enabled=False,sustained_forward_accepted=False,release_approved=False,
+        limitations=SCHEDULER_CADENCE_LIMITATIONS)
+
+
 def _child(directory,rounds,sessions=None):
     action=f'_exercise({rounds!r})' if sessions is None else f'_review({sessions!r})'
     expression='from nexus.forward_drill import _exercise,_review; import json; print(json.dumps('+action+'))'
@@ -342,12 +419,13 @@ def run(rounds=3):
         recovered=_child(root,rounds,sessions)
         _require(baseline['recovered']==recovered,'FRESH_PROCESS_DISAGREEMENT')
         faults=_fault_child(root/'faults')
+        cadence=_scheduler_cadence(root/'cadence')
         from nexus.paper_forward import commit_durability_fixture_report
         durability=commit_durability_fixture_report()
         _require(durability['passed'] is True,'COMMIT_DURABILITY')
     return dict(mode='DISPOSABLE_FORWARD_RUNNER_DRILL',passed=True,rounds=rounds,cycles=baseline['cycles'],
                 cycle_latency=baseline['cycle_latency'],recovered=recovered,commit_durability=durability,
-                fault_injection=faults,
+                fault_injection=faults,scheduler_cadence=cadence,
                 application_accounts_changed=False,
                 isolated_temporary_storage=True,broker_connected=False,live_orders_enabled=False,release_approved=False,
                 target_validated=False,limitations=LIMITATIONS)

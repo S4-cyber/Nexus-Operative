@@ -102,11 +102,14 @@ class OrderCleanupFailure(Exception):
 
 
 class PaperForwardRunner:
-    def __init__(self,orders=gateway,fetcher=read_ticker,clock=time.time,monotonic_clock=None):
+    def __init__(self,orders=gateway,fetcher=read_ticker,clock=time.time,monotonic_clock=None,
+            scheduler_clock=None,scheduler_wait=None):
         self.orders=orders;self.fetcher=fetcher;self.clock=clock
         self.monotonic_clock=monotonic_clock or (time.monotonic if clock is time.time else clock)
         self._clock_anchor=None
         self._stop=threading.Event();self._stop.set()
+        self.scheduler_clock=scheduler_clock or time.monotonic
+        self.scheduler_wait=scheduler_wait or self._stop.wait
         self._cut_requested=threading.Event()
         self._thread=None;self._lock=threading.RLock();self._cycle_lock=threading.Lock()
         self._execution_lock=threading.RLock();self._control_lock=threading.Lock()
@@ -126,6 +129,10 @@ class PaperForwardRunner:
         except Exception:return None
         if not valid or (wall and not 0<=value<MAX_WALL_CLOCK_SECONDS):return None
         return value
+
+    def _scheduler_value(self):
+        value=self._clock_value(self.scheduler_clock)
+        return value if value is not None and 0<=value<MAX_WALL_CLOCK_SECONDS else None
 
     @staticmethod
     def _write_path():
@@ -404,19 +411,94 @@ class PaperForwardRunner:
 
     def _run(self):
         try:
+            sampled=self._scheduler_value()
+            if sampled is None:
+                self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                return
+            deadline=sampled
+            previous=sampled
             while not self._intake_stopped():
-                try:self.single_cycle()
+                started=self._scheduler_value()
+                if started is None:
+                    self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                    return
+                if started<previous:
+                    self._pause_scheduler('SCHEDULER_CLOCK_REGRESSION')
+                    return
+                previous=started
+                try:outcome=self.single_cycle()
                 except Exception as exc:
                     # Unknown worker failures pause rather than creating an unmonitored loop.
                     self._error=type(exc).__name__;self._stop.set()
                     try:self._record('PAUSED','UNHANDLED_WORKER_FAILURE',error_type=type(exc).__name__)
                     except (OSError,sqlite3.Error,ValueError):pass
-                self._stop.wait(INTERVAL)
+                else:
+                    if outcome.get('reason')=='CYCLE_BUSY':
+                        self._pause_scheduler('WORKER_CYCLE_CONCURRENCY')
+                        return
+                if self._intake_stopped():return
+                completed=self._scheduler_value()
+                if completed is None:
+                    self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                    return
+                if completed<previous:
+                    self._pause_scheduler('SCHEDULER_CLOCK_REGRESSION')
+                    return
+                previous=completed
+                nominal=deadline+INTERVAL
+                if completed>nominal:
+                    try:self._record('HOLD','SCHEDULER_OVERRUN',
+                            scheduler_interval_seconds=INTERVAL,
+                            scheduler_cycle_duration_seconds=completed-started,
+                            scheduler_overrun_seconds=completed-nominal,
+                            scheduler_clock_valid=True,burst_catchup_allowed=False)
+                    except (OSError,sqlite3.Error,ValueError):
+                        self._error='SCHEDULER_EVIDENCE_STORAGE_FAILURE';self._stop.set()
+                        return
+                    if self._intake_stopped():return
+                    deadline=completed+INTERVAL
+                    after_record=self._scheduler_value()
+                    if after_record is None:
+                        self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                        return
+                    if after_record<previous:
+                        self._pause_scheduler('SCHEDULER_CLOCK_REGRESSION')
+                        return
+                    previous=after_record
+                    if previous>deadline:deadline=previous+INTERVAL
+                else:deadline=nominal
+                while not self._intake_stopped() and previous<deadline:
+                    before=previous
+                    try:self.scheduler_wait(deadline-before)
+                    except Exception:
+                        self._pause_scheduler('SCHEDULER_WAIT_FAILURE')
+                        return
+                    if self._intake_stopped():return
+                    after=self._scheduler_value()
+                    if after is None:
+                        self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                        return
+                    if after<before:
+                        self._pause_scheduler('SCHEDULER_CLOCK_REGRESSION')
+                        return
+                    if after==before:
+                        self._pause_scheduler('SCHEDULER_CLOCK_STALLED')
+                        return
+                    previous=after
         finally:
             # Never leave a dead worker enabled or retaining its process
             # owner. BaseException remains observable by threading.excepthook.
             self._stop.set()
             self._release_stopped_ownership()
+
+    def _pause_scheduler(self,reason):
+        """Retain a sanitized durable stop when worker scheduling is untrustworthy."""
+        self._prices.clear();self._last_rank=0;self._error=reason;self._stop.set()
+        try:
+            return self._record('PAUSED',reason,scheduler_clock_valid=False,
+                scheduler_interval_seconds=INTERVAL,burst_catchup_allowed=False)
+        except (OSError,sqlite3.Error,ValueError):
+            return dict(decision='PAUSED',reason=reason)
 
     def _execute(self,*args):
         with self._execution_lock:return self._execute_locked(*args)

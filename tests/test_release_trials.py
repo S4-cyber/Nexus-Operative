@@ -1594,6 +1594,9 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
         (result['fault_injection'],'unconsumed','FORWARD_FAULT_SCHEMA'),
         (result['fault_injection']['process_control_cleanup'],'unconsumed',
             'FORWARD_PROCESS_CONTROL_SCHEMA'),
+        (result['scheduler_cadence'],'unconsumed','FORWARD_SCHEDULER_CADENCE_SCHEMA'),
+        (result['scheduler_cadence']['nominal'],'unconsumed',
+            'FORWARD_SCHEDULER_CADENCE_CASE_SCHEMA'),
         (result['recovered']['sessions'][0],'unconsumed','FORWARD_SESSION_SCHEMA'),
         (result['cycle_latency'],'unconsumed','FORWARD_LATENCY_SCHEMA'),
         (result['recovered']['coverage_review'],'unconsumed','FORWARD_COVERAGE_SCHEMA')):
@@ -1603,6 +1606,10 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
         elif target is result['fault_injection']:changed['fault_injection'][field]=True
         elif target is result['fault_injection']['process_control_cleanup']:
             changed['fault_injection']['process_control_cleanup'][field]=True
+        elif target is result['scheduler_cadence']:
+            changed['scheduler_cadence'][field]=True
+        elif target is result['scheduler_cadence']['nominal']:
+            changed['scheduler_cadence']['nominal'][field]=True
         elif target is result['recovered']['sessions'][0]:changed['recovered']['sessions'][0][field]=True
         elif target is result['cycle_latency']:changed['cycle_latency'][field]=True
         else:changed['recovered']['coverage_review'][field]=True
@@ -1611,6 +1618,23 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     with pytest.raises(ValueError,match='FORWARD_SCOPE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['broker_connected']=1
     with pytest.raises(ValueError,match='FORWARD_AUTHORITY'):trials._validate('forward',changed)
+    for name,field,value in (
+        ('nominal','start_intervals',[7.0,7.0]),
+        ('overrun','cycle_starts',[100.0,105.0]),
+        ('overrun','overrun_seconds',0.0),
+        ('invalid_clock','fetches',1),
+        ('clock_regression','scheduler_reasons',[]),
+        ('stalled_clock','ownership_released',False),
+        ('nominal','burst_catchup_allowed',True)):
+        changed=copy.deepcopy(result);changed['scheduler_cadence'][name][field]=value
+        with pytest.raises(ValueError,match='FORWARD_SCHEDULER_CADENCE_EVIDENCE'):
+            trials._validate('forward',changed)
+    changed=copy.deepcopy(result);changed['scheduler_cadence']['passed']=1
+    with pytest.raises(ValueError,match='FORWARD_SCHEDULER_CADENCE_EVIDENCE'):
+        trials._validate('forward',changed)
+    changed=copy.deepcopy(result);changed['scheduler_cadence']['live_orders_enabled']=True
+    with pytest.raises(ValueError,match='FORWARD_SCHEDULER_CADENCE_AUTHORITY'):
+        trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['fault_injection']['source_loss']['fetches']=2
     with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
     for field,value in (('post_pause_fetches',1),('worker_started',False),

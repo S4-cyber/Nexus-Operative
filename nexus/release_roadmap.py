@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.365'
+REVISION = '0.340.366'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1169,6 +1169,14 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the internal single-attempt paper POST boundary now re-samples the exact BTC/USD eligibility and size/quantity/price increments after both durable reservations, consuming changed or ineligible terms as NOT_SENT before transport; the local decision benchmark rejects invalid, regressing and non-advancing measurement clocks instead of manufacturing a passing rate' if item.id in ('M3','M8','M9') else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the actual paper-forward worker now schedules cycle starts against fixed monotonic deadlines instead of adding cycle duration to every interval, durably records bounded overruns and resets from completion without catch-up bursts, and pauses before further fetches if the independent scheduler clock is invalid, regresses or stalls; the mandatory forward release profile binds nominal, overrun and fail-closed actual-worker evidence while provider, retry, sustained-market and release authority remain false' if item.id in ('M3','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; pull-request repository security now passes the immutable exact base and candidate commits into the trusted base policy, preserving complete reachable-history inspection while enforcing finite per-object and newly reachable delta limits; push and manual runs bind the exact source to itself for a zero delta without weakening the complete scan' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
@@ -1192,7 +1200,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.365 bootstraps the next trusted public-history audit policy before the existing finite ceiling is exhausted. Complete reachable history remains scanned, while the installed policy raises the aggregate ceiling to a finite four GiB and adds a sixteen MiB per-object limit plus exact-base candidate-delta limits of sixty-four MiB and 4,096 objects. Exact lowercase commit identities, complete-history availability and baseline ancestry fail closed. The pull-request workflow intentionally keeps the old compatible invocation for this bootstrap because PR policy is loaded from the trusted base; the next stacked increment must activate and prove the new exact-base flags. This is repository publication-gate hardening, not broker, market, Windows, funding/live/cloud, performance, profitability or release acceptance. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.366 activates the trusted exact-base public-history limits and hardens the actual paper-forward worker's cycle-start cadence. Pull requests bind immutable base and candidate commits while complete reachable history remains mandatory; push/manual runs bind the exact source to itself for a zero delta. Worker starts use fixed monotonic deadlines, overruns are durably retained and rescheduled from completion without catch-up bursts, and invalid, regressing or stalled scheduler clocks pause before further fetches. Strict saved release evidence exercises nominal, overrun and fail-closed actual-worker cases. This is bounded offline and publication-gate hardening, not broker, genuine-market, Windows, funding/live/cloud, performance, profitability or release acceptance. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,5 +1,51 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.366 fixed forward cadence and trusted delta activation
+
+The paper-forward worker now schedules cycle starts against fixed independent
+monotonic deadlines instead of adding each cycle's duration to the configured
+interval. A bounded overrun is retained durably and the next deadline starts
+from completion, so the worker never emits a catch-up burst. Invalid,
+regressing, stalled, or failed scheduler boundaries pause before any further
+fetch, retain a sanitized fixed reason, release the local owner lease, and keep
+process-control signals visible. The mandatory forward profile now runs nominal,
+overrun, invalid-clock, regressed-clock, and stalled-clock treatments through
+the actual worker and strictly consumes their closed evidence schema. Every
+provider, automatic-retry, sustained-market, broker, live, and release authority
+field remains false.
+
+Pull-request repository security now passes the immutable exact base and head
+commits into the trusted base policy. Complete reachable history remains
+mandatory; the new per-object and newly reachable object/byte ceilings are
+therefore active rather than merely installed. Push and manual runs bind the
+exact source to itself for a zero delta while still scanning complete fetched
+history.
+
+The complete deterministic regression passed both required shards: 3,350 and
+3,335 tests, with one platform skip per shard and the existing Starlette/httpx
+warning. The synchronized release/evidence mutation scope passed 307 tests.
+All sixteen bounded offline
+profiles passed; saved evidence matched 425 source files /
+`6edbe713cb0f0c5e257b244a101d3dbbd7197326edfbbaa320eec42fcdb6f16e`
+and report SHA-256 is
+`645efed507125eefc6626ca3f781b45409c419733c25dd1e8a86dfebb8a2fb8e`.
+Compilation and all twenty CI-inventory Node checks passed. The 165-member
+v0.340.366 wheel has SHA-256
+`e5c72fdb51984279ec929b7b406a21a0dec4baf434e9c5b5fedecc6347cf046f`.
+The exact v0.340.365 parent passed both hosted pull-request workflows:
+public-security run `44600143092` and research run `44600143293`.
+
+This is bounded offline and publication-gate hardening, not actual broker-paper,
+sustained genuine-market, native Windows/installer, funding/live/cloud,
+performance, profitability, or release acceptance. Fresh exact-head hosted
+checks remain required for v0.340.366. No control or editable parameter changed;
+engagement and optional AI remain OFF by default, and limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven
+beginner-friendly tabs, and black/bright-purple bottom-right hover help remain
+intact. The roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission, or launch date.
+
 ## v0.340.365 — trusted public-history policy bootstrap
 
 The next trusted repository audit policy preserves complete reachable-history

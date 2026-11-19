@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.355'
+REVISION = '0.340.356'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1176,7 +1176,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.355 makes artifact-manifest failure classification portable after Windows CI exposed a real boundary mismatch. Once a regular single-link descriptor has been identity-validated, any read or closing descriptor error is treated as ARTIFACT_CHANGED_DURING_READ; open and pre-validation failures remain INVALID_ARTIFACT_FILE. This preserves denial while preventing a Windows sharing violation during a simulated path-replacement race from being misclassified. It is M1/M9 distribution-integrity hardening, not native installer acceptance, broker-paper acceptance, genuine-feed trial realism, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.356 isolates the process-local optional-AI vault observation around every credential-vault test. Deterministic Windows sharding exposed that a rotation test could leave its deliberate OBSERVED_PRESENT hint for the later zero-setup onboarding test, making an otherwise passive readiness check appear configured. The exact hosted ordering is now reproduced without changing production vault semantics: saved-vault presence is still only a cached hint, environment credentials still require explicit opt-in, and onboarding performs no vault or provider I/O. It is M1/M9 test-isolation and release-pipeline hardening, not native installer acceptance, broker-paper acceptance, genuine-feed trial realism, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

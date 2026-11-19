@@ -1,8 +1,30 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.356 deterministic vault-test isolation
+
+**Current development build: 0.340.356 (pre-release).** Credential-vault tests
+now clear the process-local passive observation before and after every case.
+This prevents a deliberate saved-key rotation fixture from leaking
+`OBSERVED_PRESENT` into a later zero-setup onboarding test under deterministic
+sharding. The exact hosted selection and order is reproducible locally.
+Production vault/status behavior is unchanged: passive status never opens the
+OS vault, environment credentials require explicit opt-in, and no provider
+request occurs from onboarding.
+
+This is M1/M9 test-isolation and release-pipeline hardening, not native Windows
+installer acceptance, actual broker acceptance, genuine-feed sustained-trial
+realism, funding/live/cloud readiness, performance, profitability or release
+approval. No UI control or editable parameter changed. Engagement remains OFF
+by default; limits, account checks, fail-closed entries, risk-reducing exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Implementation remains weighted 38%
+(30-45%, low confidence), with 0/9 stages independently accepted; trading,
+funding and release permissions remain false and no launch date is established.
+Fresh exact-head execution of every hosted release job is required.
+
 ## v0.340.355 portable artifact race classification
 
-**Current development build: 0.340.355 (pre-release).** Artifact manifest
+**Prior development build: 0.340.355 (pre-release).** Artifact manifest
 creation now tracks whether its open descriptor has passed regular-file,
 single-link, bounded-size and pathname-identity validation. Any later read,
 final-descriptor or close error reports `ARTIFACT_CHANGED_DURING_READ`; open and

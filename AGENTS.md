@@ -1,5 +1,46 @@
 # Nexus Operative continuity instructions
 
+## v0.340.356 deterministic vault-test isolation
+
+The second deterministic Windows regression shard exposed a process-state
+leak between otherwise independent tests. A credential-rotation test
+intentionally ended with the process-local optional-AI vault hint at
+`OBSERVED_PRESENT`; the later zero-setup onboarding test then inherited that
+hint and appeared configured despite both environment switches being absent.
+Every credential-vault test now begins and ends with the passive observation
+unset. The exact hosted selection/order is covered directly. Production status,
+vault mutation, credential selection and request behavior are unchanged.
+
+The exact shard-order reproduction passed 5 selected tests with 9 deselected;
+the direct vault/onboarding/provider/startup/sharding scope passed 48 tests and
+the synchronized release/version/roadmap scope passed 59. The combined
+vault/onboarding/artifact/release-evidence/trials/Windows-workflow scope passed
+284 tests, and the ordered CI inventory passed 20 Node tests; two existing
+dependency deprecation warnings remain. All sixteen bounded profiles passed.
+Saved-evidence verification matched 420 source files /
+`3f5972a50a2d6f175d4c2c1e28ee31ef304e639fd2f2a0debc8fdb52f6fadca4`;
+report SHA-256 is
+`13e7c0b845716a0b3a76dd1bc819a5a7b2335969b32e1a2ffa34e4aa61a3641f`.
+Compilation, deterministic roadmap equality and diff checks passed. The
+164-member v0.340.356 wheel reports the synchronized version and has SHA-256
+`e5c34568f55be7af60eb37aa4b3bc9e6e28bf04319793062b8509c13cde46c91`.
+The staged 1,096-path public-artifact audit found zero findings. Local Gitleaks
+and native Windows/Inno Setup remain unavailable, so fresh exact-source hosted
+security and Windows execution remain mandatory.
+
+This is M1/M9 test-isolation and release-pipeline hardening, not native Windows
+installer acceptance, broker-paper acceptance, genuine-feed sustained-trial
+realism, funding/live/cloud readiness, performance, profitability or release
+approval. No UI control or editable parameter changed. Engagement remains OFF
+by default; environment AI still requires explicit opt-in, onboarding performs
+no vault/provider I/O, and limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Fresh exact-source hosted execution of both regression
+shards and all other required jobs remains mandatory; native Windows installer
+acceptance remains separate.
+
 ## v0.340.355 portable artifact race classification
 
 Windows hosted regression exposed that a simulated artifact-path replacement

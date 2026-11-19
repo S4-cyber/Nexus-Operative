@@ -1,5 +1,43 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.356 — deterministic vault-test isolation
+
+PR #72 passed public security, saved evidence, browser/help and regression
+shard 0, but shard 1 reproduced one order-dependent onboarding failure after
+3,234 passes. A preceding credential-rotation test deliberately retained an
+`OBSERVED_PRESENT` process-local hint; the later zero-setup inventory inherited
+that test state even with both AI environment switches absent. Credential-vault
+tests now bracket each case with an unset passive observation. The exact shard
+selection passes locally, while production cached-status semantics, explicit
+vault actions and paid-provider request controls remain unchanged.
+
+The exact shard-order reproduction passed 5 selected tests with 9 deselected.
+The direct vault/onboarding/provider/startup/sharding scope passed 48 tests,
+the synchronized release/version/roadmap scope passed 59 and the combined
+vault/onboarding/artifact/release-evidence/trials/Windows-workflow scope passed
+284, with two existing dependency warnings. The ordered CI inventory passed 20
+Node tests. All sixteen bounded profiles and saved-evidence verification matched
+420 source files /
+`3f5972a50a2d6f175d4c2c1e28ee31ef304e639fd2f2a0debc8fdb52f6fadca4`;
+report SHA-256 is
+`13e7c0b845716a0b3a76dd1bc819a5a7b2335969b32e1a2ffa34e4aa61a3641f`.
+Compilation, deterministic roadmap equality and diff checks passed. The
+164-member v0.340.356 wheel reports the synchronized version and has SHA-256
+`e5c34568f55be7af60eb37aa4b3bc9e6e28bf04319793062b8509c13cde46c91`.
+The staged 1,096-path public-artifact audit found zero findings. Local Gitleaks
+and native Windows/Inno Setup remain unavailable.
+
+No real provider/account/feed, native ordinary-user Windows host, funding
+system or cloud deployment was accessed. No UI control changed. Engagement and
+all financial permissions remain OFF by default; environment AI still requires
+explicit opt-in, onboarding remains vault/network silent, and limits, account
+checks, fail-closed entries, reducing exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Weighted implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Release, trading and funding approval remain false and
+no launch date is predicted. Fresh exact-head hosted security, both regression
+shards, evidence/browser jobs and native installer acceptance remain required.
+
 ## v0.340.355 — portable artifact race classification
 
 Two exact hosted Windows predecessors completed nearly the entire regression

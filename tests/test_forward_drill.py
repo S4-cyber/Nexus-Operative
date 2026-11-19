@@ -63,6 +63,17 @@ def test_fault_injection_is_bounded_orderless_and_fail_closed(tmp_path):
     assert result['passed'] and result['orders_created']==0
     assert result['sessions_paused']==4 and result['ownership_released']
     assert result['actual_provider_requests'] is result['automatic_retries'] is False
+    assert set(result['process_control_cleanup'])==drill.PROCESS_CONTROL_PUBLIC_KEYS
+    for name,signal in (('keyboard_interrupt','KeyboardInterrupt'),
+            ('system_exit','SystemExit')):
+        case=result['process_control_cleanup'][name]
+        assert set(case)==drill.PROCESS_CONTROL_CASE_PUBLIC_KEYS
+        assert case['signal']==signal and case['worker_started']
+        assert case['signal_observed'] and case['worker_stopped']
+        assert case['runner_disabled'] and case['ownership_released']
+        assert case['orders_created']==0 and case['stored_state']=='RUNNING'
+        assert case['effective_state']=='STOPPED_WITHOUT_FINAL_RECORD'
+        assert case['automatic_restart'] is False
     assert result['source_loss']['reasons']==['QUOTE_UNAVAILABLE_OR_INVALID']*3
     assert result['stale_quote']['reasons']==['QUOTE_UNAVAILABLE_OR_INVALID']*3
     assert result['clock_regression']['reasons']==['RUNTIME_CLOCK_DISCONTINUITY']

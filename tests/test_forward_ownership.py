@@ -368,3 +368,61 @@ def test_worker_start_failure_releases_ownership(tmp_path,monkeypatch):
     with pytest.raises(RuntimeError,match='cannot start worker'):r.start('terrestrial')
     assert not r.status()['ownership_held'] and not r.status()['enabled']
     candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+
+
+@pytest.mark.parametrize('signal',[KeyboardInterrupt,SystemExit])
+def test_terminal_stop_process_control_releases_ownership(
+        tmp_path,monkeypatch,signal):
+    runner,gateway,clock=setup(tmp_path,monkeypatch)
+    runner.clock=lambda:(_ for _ in ()).throw(signal('CONTROL'))
+    with pytest.raises(signal):runner.stop('PROCESS_CONTROL_TEST')
+    status=runner.status()
+    assert not status['enabled'] and not status['ownership_held']
+    assert not gateway.recovery_report()['orders']
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+
+
+@pytest.mark.parametrize('signal',[KeyboardInterrupt,SystemExit])
+def test_worker_process_control_is_observable_and_releases_ownership(
+        tmp_path,monkeypatch,signal):
+    observed=[];raised=threading.Event();entered=threading.Event();release=threading.Event()
+    def hook(arguments):
+        observed.append(arguments.exc_type);raised.set()
+    monkeypatch.setattr(threading,'excepthook',hook)
+    runner,gateway,clock=setup(tmp_path,monkeypatch);runner.stop()
+    def fail_fetch(_product):
+        entered.set();assert release.wait(5);raise signal('CONTROL')
+    runner.fetcher=fail_fetch
+    started=runner.start('terrestrial')
+    assert started['worker_alive'] and entered.wait(5)
+    release.set();assert raised.wait(5)
+    runner._thread.join(timeout=5)
+    status=runner.status()
+    assert observed==[signal] and not status['worker_alive']
+    assert not status['enabled'] and not status['ownership_held']
+    assert not gateway.recovery_report()['orders']
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()
+
+
+def test_worker_stop_timeout_never_records_terminal_or_releases_live_owner(
+        tmp_path,monkeypatch):
+    runner,gateway,clock=setup(tmp_path,monkeypatch);runner.stop()
+    entered=threading.Event();release=threading.Event()
+    def blocked(_product):
+        entered.set();assert release.wait(5);return clock.quote(_product)
+    runner.fetcher=blocked
+    monkeypatch.setattr('nexus.paper_forward.STOP_JOIN_TIMEOUT',.01)
+    runner.start('terrestrial');assert entered.wait(5)
+    try:
+        with pytest.raises(ValueError,match='PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT'):
+            runner.stop('APPLICATION_SHUTDOWN')
+        status=runner.status()
+        assert status['worker_alive'] and status['ownership_held']
+        assert status['last_error']=='STOP_QUIESCENCE_TIMEOUT'
+        session=runner.sessions()['sessions'][0]
+        assert session['stored_state']=='RUNNING' and 'STOP' not in session['counts']
+    finally:
+        release.set();runner._thread.join(timeout=5)
+    assert not runner.status()['worker_alive'] and not runner.status()['ownership_held']
+    assert runner.sessions()['sessions'][0]['effective_state']=='STOPPED_WITHOUT_FINAL_RECORD'
+    candidate=ForwardOwnership(tmp_path);candidate.acquire();candidate.release()

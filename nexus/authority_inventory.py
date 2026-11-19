@@ -90,6 +90,118 @@ AUTHORITIES = (
 )
 
 
+# Complete reviewed inventory of every mutating HTTP boundary.  A new POST,
+# PUT, PATCH or DELETE route is a release-relevant authority change even when
+# it is not intended to trade or move funds, so additions must fail closed
+# until this exact declaration is reviewed with them.
+MUTATING_ROUTES = (
+    ("PUT", "/api/paper/settings", "PAPER_CONFIGURATION", "LOCAL_ONLY"),
+    ("POST", "/api/paper/scenario", "PAPER_RESEARCH", "LOCAL_ONLY"),
+    ("POST", "/api/paper/replay", "PAPER_RESEARCH", "LOCAL_ONLY"),
+    ("POST", "/api/execution/alpaca-paper/local-credentials/save", "PAPER_CREDENTIAL_VAULT", "LOCAL_SECRET_STORAGE_ONLY"),
+    ("POST", "/api/execution/alpaca-paper/local-credentials/remove", "PAPER_CREDENTIAL_VAULT", "LOCAL_SECRET_STORAGE_ONLY"),
+    ("POST", "/api/execution/alpaca-paper/local-credentials/status", "PAPER_CREDENTIAL_VAULT", "LOCAL_SECRET_STORAGE_ONLY"),
+    ("POST", "/api/execution/alpaca-paper/local-credentials/inspect", "BROKER_PAPER_READ", "BROKER_PAPER_READ_ONLY"),
+    ("POST", "/api/execution/alpaca-paper/local-credentials/asset-rules", "BROKER_PAPER_READ", "BROKER_PAPER_READ_ONLY"),
+    ("POST", "/api/execution/alpaca-paper/local-credentials/paced-inspect", "BROKER_PAPER_READ", "BROKER_PAPER_READ_ONLY"),
+    ("POST", "/api/execution/alpaca-paper/local-credentials/pacing-status", "BROKER_PAPER_READ", "LOCAL_ONLY"),
+    ("POST", "/api/paper/ai-provider/vault/connect", "AI_CREDENTIAL_VAULT", "LOCAL_SECRET_STORAGE_ONLY"),
+    ("POST", "/api/paper/ai-provider/vault/disconnect", "AI_CREDENTIAL_VAULT", "LOCAL_SECRET_STORAGE_ONLY"),
+    ("POST", "/api/paper/ai-provider/public-preview/send", "AI_ADVISORY", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/ai-provider/{role}/research", "AI_ADVISORY", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/model-council", "MODEL_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/evidence-audit", "MODEL_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/council", "MODEL_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/tournament", "MODEL_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/walk-forward", "MODEL_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/replay/record", "MODEL_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/risk-screen", "MODEL_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/stress", "MODEL_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/candle-research/{product}/regime-stress", "MARKET_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/candle-research/{product}/execution-stress", "MARKET_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/candle-research/{product}/cost-sensitivity", "MARKET_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/candle-research/{product}/evaluate", "MARKET_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/historical-candles/{product}/collect", "PUBLIC_DATA_RESEARCH", "PUBLIC_READ_ONLY"),
+    ("POST", "/api/research-ticks/{product}/capture", "PUBLIC_DATA_RESEARCH", "PUBLIC_READ_ONLY"),
+    ("POST", "/api/market-evidence/{product}/capture", "PUBLIC_DATA_RESEARCH", "PUBLIC_READ_ONLY"),
+    ("POST", "/api/paper/portfolio/snapshot", "LOCAL_PAPER_PORTFOLIO", "LOCAL_ONLY"),
+    ("POST", "/api/paper/portfolio/init", "LOCAL_PAPER_PORTFOLIO", "LOCAL_ONLY"),
+    ("POST", "/api/paper/portfolio/buy", "LOCAL_PAPER_PORTFOLIO", "LOCAL_PAPER_ORDER"),
+    ("POST", "/api/paper/portfolio/sell", "LOCAL_PAPER_PORTFOLIO", "LOCAL_PAPER_ORDER"),
+    ("POST", "/api/expansion/{avenue}/screen", "MARKET_RESEARCH", "ADVISORY_ONLY"),
+    ("POST", "/api/paper/forward/start", "LOCAL_PAPER_FORWARD", "LOCAL_PAPER_ORDER"),
+    ("POST", "/api/paper/forward/stop", "LOCAL_PAPER_FORWARD", "LOCAL_PAPER_ORDER"),
+    ("POST", "/api/execution/operation-drill", "LOCAL_OPERATIONS", "LOCAL_ONLY"),
+    ("POST", "/api/execution/durable-benchmark", "LOCAL_OPERATIONS", "LOCAL_ONLY"),
+    ("POST", "/api/execution/archive-terminal", "LOCAL_OPERATIONS", "LOCAL_ONLY"),
+    ("POST", "/api/execution/intent/simulate", "LOCAL_SIMULATED_EXECUTION", "LOCAL_PAPER_ORDER"),
+    ("POST", "/api/execution/intent/{client_order_id}/cancel", "LOCAL_SIMULATED_EXECUTION", "LOCAL_PAPER_ORDER"),
+    ("POST", "/api/matrix/hub/refresh/start", "LOCAL_MATRIX", "LOCAL_ONLY"),
+    ("POST", "/api/matrix/hub/refresh/stop", "LOCAL_MATRIX", "LOCAL_ONLY"),
+    ("POST", "/api/matrix/hub/prepare", "LOCAL_MATRIX", "LOCAL_ONLY"),
+    ("POST", "/api/matrix/hub/build", "LOCAL_MATRIX", "LOCAL_ONLY"),
+    ("POST", "/api/matrix/account/observe", "LOCAL_MATRIX", "LOCAL_ONLY"),
+    ("PUT", "/api/tiers/{tier}/permission", "RISK_PERMISSION", "LOCAL_ONLY"),
+    ("POST", "/api/research/found-markets/control", "PUBLIC_DATA_RESEARCH", "PUBLIC_READ_ONLY"),
+    ("POST", "/api/portal", "PORTAL_CONTROL", "LOCAL_ONLY"),
+    ("POST", "/api/simulate/halt", "EMERGENCY_CONTROL", "LOCAL_EMERGENCY_ONLY"),
+    ("POST", "/api/simulate/halt/reset", "EMERGENCY_CONTROL", "LOCAL_EMERGENCY_ONLY"),
+    ("POST", "/api/funding/preview", "FUNDING_PREVIEW", "FUNDING_PREVIEW_ONLY"),
+)
+
+MUTATING_METHODS = frozenset(("POST", "PUT", "PATCH", "DELETE"))
+EXTERNAL_CAPABILITIES = frozenset(("BANK_TRANSFER", "BROKER_ORDER", "CLOUD_CONTROL"))
+AUTHORITY_CLASSES = frozenset((
+    "AI_ADVISORY", "AI_CREDENTIAL_VAULT", "BANK_TRANSFER",
+    "BROKER_ORDER", "BROKER_PAPER_READ", "CLOUD_CONTROL",
+    "EMERGENCY_CONTROL", "FUNDING_PREVIEW", "LOCAL_MATRIX",
+    "LOCAL_OPERATIONS", "LOCAL_PAPER_FORWARD", "LOCAL_PAPER_PORTFOLIO",
+    "LOCAL_SIMULATED_EXECUTION", "MARKET_RESEARCH", "MODEL_RESEARCH",
+    "PAPER_CONFIGURATION", "PAPER_CREDENTIAL_VAULT", "PAPER_RESEARCH",
+    "PORTAL_CONTROL", "PUBLIC_DATA_RESEARCH", "RISK_PERMISSION",
+))
+CAPABILITIES = frozenset((
+    "ADVISORY_ONLY", "BANK_TRANSFER", "BROKER_ORDER",
+    "BROKER_PAPER_READ_ONLY", "CLOUD_CONTROL", "FUNDING_PREVIEW_ONLY",
+    "LOCAL_EMERGENCY_ONLY", "LOCAL_ONLY", "LOCAL_PAPER_ORDER",
+    "LOCAL_SECRET_STORAGE_ONLY", "PUBLIC_READ_ONLY",
+))
+MUTATING_ROUTE_PUBLIC_KEYS = frozenset((
+    "method", "path", "authority_class", "capability"))
+AUTHORITY_PUBLIC_KEYS = frozenset((
+    "id", "scope", "routes", "default", "gates", "automatic_start",
+    "automatic_resume", "reducing_exit_available_during_cut",
+    "learned_policy_promotion", *AUTHORITY_FLAGS))
+REPORT_PUBLIC_KEYS = frozenset((
+    "mode", "read_only", "route_bindings_verified",
+    "source_declaration_complete", "authorities", "authority_count",
+    "authority_ids", "mutating_routes", "mutating_route_count",
+    "runtime_engagement_default", "external_ai_default",
+    "broker_order_method_present", "bank_transfer_method_present",
+    "cloud_control_method_present", "automatic_resume_present",
+    "learned_policy_promotion_present", "limitations", *AUTHORITY_FLAGS))
+
+
+def _reviewed_mutating_routes():
+    rows=[];bindings=[]
+    for declaration in MUTATING_ROUTES:
+        if (type(declaration) is not tuple or len(declaration)!=4 or
+                any(type(value) is not str for value in declaration)):
+            raise ValueError("ADMISSION_AUTHORITY_MUTATING_ROUTE_DECLARATION_INVALID")
+        method,path,authority_class,capability=declaration
+        if (method not in MUTATING_METHODS or not path.startswith("/api/") or
+                authority_class not in AUTHORITY_CLASSES or
+                capability not in CAPABILITIES):
+            raise ValueError("ADMISSION_AUTHORITY_MUTATING_ROUTE_DECLARATION_INVALID")
+        binding=(method,path)
+        if binding in bindings:
+            raise ValueError("ADMISSION_AUTHORITY_MUTATING_ROUTE_DECLARATION_DUPLICATE")
+        bindings.append(binding)
+        rows.append(dict(method=method,path=path,
+            authority_class=authority_class,capability=capability))
+    return rows,set(bindings)
+
+
 def snapshot(application):
     """Bind the declared authority routes to this exact application."""
     available = set()
@@ -98,6 +210,10 @@ def snapshot(application):
         for method in getattr(route, "methods", ()) or ():
             if method not in ("HEAD", "OPTIONS") and isinstance(path, str):
                 available.add((method, path))
+    mutating_rows,reviewed_mutating=_reviewed_mutating_routes()
+    runtime_mutating={binding for binding in available if binding[0] in MUTATING_METHODS}
+    if runtime_mutating != reviewed_mutating:
+        raise ValueError("ADMISSION_AUTHORITY_MUTATING_ROUTE_INVENTORY_MISMATCH")
     declared = {route for authority in AUTHORITIES for route in authority["routes"]}
     missing = declared - available
     if missing:
@@ -110,13 +226,17 @@ def snapshot(application):
         row.update({flag: False for flag in AUTHORITY_FLAGS})
         row["learned_policy_promotion"] = False
         rows.append(row)
+    capabilities={row["capability"] for row in mutating_rows}
     return dict(
         mode="READ_ONLY_SOURCE_DECLARED_ADMISSION_AUTHORITY_INVENTORY",
         read_only=True, route_bindings_verified=True,
         source_declaration_complete=True, authorities=rows,
         authority_count=len(rows), authority_ids=[row["id"] for row in rows],
+        mutating_routes=mutating_rows,mutating_route_count=len(mutating_rows),
         runtime_engagement_default="OFF", external_ai_default="OFF",
-        broker_order_method_present=False, bank_transfer_method_present=False,
+        broker_order_method_present="BROKER_ORDER" in capabilities,
+        bank_transfer_method_present="BANK_TRANSFER" in capabilities,
+        cloud_control_method_present="CLOUD_CONTROL" in capabilities,
         automatic_resume_present=False, learned_policy_promotion_present=False,
         **{flag: False for flag in AUTHORITY_FLAGS},
         limitations=("Source-declared route and gate inventory only. It does not prove runtime, "

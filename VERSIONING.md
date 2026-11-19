@@ -1,8 +1,31 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.354 deterministic Windows regression sharding
+
+**Current development build: 0.340.354 (pre-release).** The complete Windows
+pull-request regression now collects the full pytest suite in each of two jobs
+and deterministically assigns every exact node ID to one execution shard.
+Malformed, partial or empty shard arguments fail closed. Exact-head and ordered
+step-inventory reviewers require both named shard jobs, so a missing, cancelled,
+skipped or failed shard cannot satisfy the complete-regression gate. The split
+reduces per-job timeout exposure without reducing collected test membership or
+immutable checkout binding.
+
+This is M9 release-pipeline hardening, not native Windows application
+acceptance, actual broker acceptance, genuine-feed sustained-trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, risk-reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation remains weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted; trading, funding and
+release permissions remain false and no launch date is established. Fresh
+exact-head execution of both shards and the remaining hosted workflows is
+required for this source.
+
 ## v0.340.353 Activity SSE cursor-directory continuity boundary
 
-**Current development build: 0.340.353 (pre-release).** The explicit
+**Prior development build: 0.340.353 (pre-release).** The explicit
 broker-paper Activity SSE checkpoint freezes the exact non-symlink cursor
 parent-directory identity, or proves the parent remains absent, across the sole
 provider read and each following semantic boundary through retained

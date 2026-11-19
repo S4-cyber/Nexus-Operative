@@ -1,5 +1,25 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.354 — deterministic Windows regression sharding
+
+The complete Windows pull-request regression now performs full pytest
+collection in each of two jobs, then assigns every exact node ID to one stable
+execution shard. Invalid or empty shard scope fails closed. Exact-head and
+ordered-step inventory review now requires both explicit shard names, making a
+missing, cancelled, skipped or failed half release-blocking. The split reduces
+per-job timeout exposure after a cancelled monolithic predecessor without
+reducing collected scope or immutable checkout binding.
+
+No real provider/account/feed, native ordinary-user Windows host, funding
+system or cloud deployment was accessed. No UI control changed. Engagement and
+all financial permissions remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Release, trading and funding approval remain false and
+no launch date is predicted. Both exact hosted shards and the remaining release
+jobs must pass; the native Windows installer lane is separately undispatched.
+
 ## v0.340.353 — Activity SSE cursor-directory continuity
 
 The explicit paper Activity SSE checkpoint now binds the exact non-symlink

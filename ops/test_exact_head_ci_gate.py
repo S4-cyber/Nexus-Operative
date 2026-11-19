@@ -36,7 +36,7 @@ class TestGate(unittest.TestCase):
         outcome = review(bundle())
         self.assertTrue(outcome["ci_inventory_consistent"])
         self.assertTrue(outcome["exact_checkout_bound"])
-        self.assertEqual(outcome["jobs_checked"], 5)
+        self.assertEqual(outcome["jobs_checked"], 6)
         self.assertFalse(outcome["release_approved"])
         self.assertFalse(outcome["live_trading_enabled"])
         self.assertFalse(outcome["native_windows_accepted"])

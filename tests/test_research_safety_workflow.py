@@ -19,7 +19,12 @@ def test_long_running_safety_gates_have_independent_windows_job_budgets():
     browser = _job_block(text, "portal-browser-help", None)
 
     assert "timeout-minutes: 120" in regression
-    assert "python -m pytest -q" in regression
+    assert "name: offline-regression-${{ matrix.shard }}-of-2" in regression
+    assert "fail-fast: false" in regression
+    assert "shard: [0, 1]" in regression
+    assert "python -m pytest -q -p ops.pytest_shard" in regression
+    assert "--nexus-shard-index ${{ matrix.shard }}" in regression
+    assert "--nexus-shard-count 2" in regression
     assert "nexus.release_trials" not in regression
     assert "portal_browser_smoke.py" not in regression
 

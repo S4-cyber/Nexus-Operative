@@ -1,5 +1,26 @@
 # Nexus Operative continuity instructions
 
+## v0.340.354 deterministic Windows regression sharding
+
+The complete Windows pull-request regression now collects the full pytest suite
+in each of two jobs and deterministically assigns every exact node ID to one
+execution shard. Malformed, partial or empty shard arguments fail closed. The
+exact-head and ordered-step inventory reviewers require both named shard jobs,
+so a missing, cancelled, skipped or failed shard cannot be mistaken for a
+complete regression. This reduces the per-job timeout exposure observed in the
+prior monolithic lane without dropping test membership or checkout binding.
+
+This is M9 release-pipeline hardening, not native Windows application
+acceptance, broker-paper acceptance, genuine-feed sustained-trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, risk-reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Weighted implementation remains 38% (30-45%, low
+confidence), with 0/9 stages independently accepted. Fresh exact-source hosted
+execution must prove both shards and all other release jobs; the native Windows
+installer lane remains separately undispatched.
+
 ## v0.340.353 Activity SSE cursor-directory continuity boundary
 
 The explicit Activity SSE checkpoint coordinator now freezes the exact

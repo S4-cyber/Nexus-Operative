@@ -37,7 +37,11 @@ The input is a manually constructed, UTF-8 JSON file no larger than 512 KiB. It 
 
 Add the remaining two required workflows with their exact workflow paths, run/job identities, attempts and checked-out SHA:
 
-- `Nexus research safety regression` must contain exactly green `offline-regression`, `offline-release-evidence` and `portal-browser-help` jobs.
+- `Nexus research safety regression` must contain exactly green
+  `offline-regression-0-of-2`, `offline-regression-1-of-2`,
+  `offline-release-evidence` and `portal-browser-help` jobs. Both deterministic
+  regression shards collect the complete suite and divide execution by exact
+  pytest node ID; neither shard alone is a complete regression result.
 - `Windows simulated-research build` must contain exactly one green `test-and-build` job.
 
 The example above is intentionally incomplete and returns `CI_GATE_REVIEW_REQUIRED` (exit 2). A complete internally consistent inventory returns an allowlisted `EXACT_CHECKOUT_CI_INVENTORY_ONLY` response with all approval and acceptance flags false. Unknown fields, workflows, jobs, paths, events, duplicated identifiers, cross-run jobs, changed input files and non-green state fail closed.

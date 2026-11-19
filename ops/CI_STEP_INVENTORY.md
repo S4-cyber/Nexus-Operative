@@ -42,6 +42,12 @@ Required schema:
 }
 ```
 
+The research-safety workflow contributes both exact regression shard names,
+`offline-regression-0-of-2` and `offline-regression-1-of-2`. A green run is
+incomplete if either shard is absent, cancelled, skipped or failed. Each shard
+must retain the same checkout binding, compilation and complete-suite step
+sequence before this supplemental inventory can pass.
+
 This example is intentionally incomplete and **must** be rejected. Add exactly the other two required workflows, all expected jobs, and completed step summaries to form a review candidate. All required steps must occur exactly once and in the documented order. A missing, skipped or cancelled installer-distribution phase is denied even if an earlier application test passed.
 
 **Important:** The file contains only nonsecret run IDs, statuses, names and commit hashes. Do not attach raw logs, credentials, personal paths, broker data or retained market observations. The tool makes no network calls, does not inspect private accounts and produces no release/trading authorization. Duplicate JSON keys are not a provenance guarantee; independently inspect exported GitHub run and job records, checked-out source, signed release artifacts, ordinary-user Windows tests, and owner approval.

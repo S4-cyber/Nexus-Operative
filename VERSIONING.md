@@ -1,5 +1,47 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.367 truthful external-boundary inventory and selected-journal identity
+
+Reconciliation acceptance now requires every caller-selected pacing, activity
+and acceptance journal leaf to be a regular single-link file. It then rebinds
+the canonical path-set result to the exact selected identity before semantic
+reads, refusing symbolic links, hard links and observed leaf replacement.
+
+The read-only admission inventory now distinguishes application routes from
+credentialed outbound transports. It binds the dormant Alpaca paper-order and
+optional AI advisory POST boundaries to exact fixed targets, OFF defaults,
+explicit confirmation and false authority. The broker transport remains
+unrouted; reporting its existence grants no account, funding, routing, live,
+cloud, spend or release permission.
+
+Focused validation passed 22 authority/live-loopback tests, 70 reconciliation
+acceptance tests and 14 version/roadmap/Windows-workflow tests, with the existing
+Starlette/httpx warning. All sixteen bounded offline profiles passed; saved
+evidence matches 425 source files /
+`2544a293c229fa166a091df264933caba334a27dc33789a3e9d2e8a8db467d4d`
+and report SHA-256 is
+`70e59830d40ff1072b40439f9e1ae0dc2f970edda8d47a7e2c288f7b7d54923c`.
+The complete deterministic regression passed both required shards: 3,367 and
+3,346 tests, each with one expected platform skip and the existing warning.
+Compilation and all fourteen Portal/controller Node checks passed. The
+165-member v0.340.367 wheel reports the synchronized version and has SHA-256
+`b1b4b2989f0aae49eea7d64efb316aa8fd04ae59074ed6e3fe50a690978ebded`.
+The trusted current-candidate artifact audit checked 1,112 paths/blobs and the
+exact-parent history audit checked 1,230 commits / 11,211 blobs with a 21-object
+candidate delta; both had zero findings. The introduced-line high-confidence
+credential scan found zero
+matches. Local Gitleaks is unavailable, so its pinned exact-head hosted job and
+the remaining hosted CI gates are mandatory and are not claimed as complete.
+
+This version remains below 1.0 and grants no broker-paper, genuine-market,
+Windows, funding/live/cloud, performance, profitability or release acceptance.
+Owner approval remains required after all independent gates. No UI control or
+editable parameter was introduced; OFF defaults, limits, account checks,
+reducing exits, independent emergency stop, seven tabs and black/bright-purple
+bottom-right help remain intact. Implementation remains 38% weighted (about
+40%, 30–45% uncertainty, low confidence), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
 ## v0.340.366 fixed forward cadence and trusted delta activation
 
 The paper-forward worker now schedules cycle starts against fixed independent

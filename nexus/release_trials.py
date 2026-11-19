@@ -494,12 +494,17 @@ def _http_trial():
         _require(authority_inventory['route_bindings_verified'] is True and
             authority_inventory['source_declaration_complete'] is True and
             authority_inventory['mutating_route_count']==52 and
+            authority_inventory['external_transport_boundaries_verified'] is True and
+            authority_inventory['external_transport_boundary_count']==2 and
             all(authority_inventory[key] is False for key in (
-                'broker_order_method_present','bank_transfer_method_present',
-                'cloud_control_method_present','automatic_resume_present',
+                'broker_order_route_present','bank_transfer_route_present',
+                'cloud_control_route_present','bank_transfer_transport_present',
+                'cloud_control_transport_present','automatic_resume_present',
                 'learned_policy_promotion_present','broker_connected',
                 'live_orders_enabled','money_movement_enabled','release_approved',
-                'spendable_funds_verified')),
+                'spendable_funds_verified')) and
+            authority_inventory['broker_order_transport_present'] is True and
+            authority_inventory['ai_advisory_transport_present'] is True,
             'HTTP_AUTHORITY_INVENTORY')
         trial=responses['/api/paper/forward/trial-readiness']
         owner=trial['local_owner_quiescence']
@@ -1366,7 +1371,8 @@ def _validate(profile, result):
     elif profile != 'forward': _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
         from nexus.authority_inventory import (AUTHORITY_FLAGS,
-            AUTHORITY_PUBLIC_KEYS, AUTHORITIES, MUTATING_ROUTE_PUBLIC_KEYS,
+            AUTHORITY_PUBLIC_KEYS, AUTHORITIES, EXTERNAL_TRANSPORT_BOUNDARIES,
+            EXTERNAL_TRANSPORT_BOUNDARY_PUBLIC_KEYS, MUTATING_ROUTE_PUBLIC_KEYS,
             MUTATING_ROUTES, REPORT_PUBLIC_KEYS)
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
         tools=result['paper_tools_source']
@@ -1388,6 +1394,8 @@ def _validate(profile, result):
             authority['authority_count']==len(AUTHORITIES) and
             authority['authority_ids']==[row['id'] for row in AUTHORITIES] and
             authority['mutating_route_count']==len(MUTATING_ROUTES)==52 and
+            authority['external_transport_boundaries_verified'] is True and
+            authority['external_transport_boundary_count']==len(EXTERNAL_TRANSPORT_BOUNDARIES)==2 and
             authority['runtime_engagement_default']=='OFF' and
             authority['external_ai_default']=='OFF',
             'HTTP_AUTHORITY_INVENTORY_SCHEMA')
@@ -1409,11 +1417,26 @@ def _validate(profile, result):
                 frozenset(row)==MUTATING_ROUTE_PUBLIC_KEYS
                 for row in authority['mutating_routes']),
             'HTTP_AUTHORITY_MUTATING_ROUTES')
+        expected_external=[{**row,**{flag:False for flag in AUTHORITY_FLAGS}}
+            for row in EXTERNAL_TRANSPORT_BOUNDARIES]
+        _require(type(authority['external_transport_boundaries']) is list and
+            authority['external_transport_boundaries']==expected_external and
+            all(type(row) is dict and
+                frozenset(row)==EXTERNAL_TRANSPORT_BOUNDARY_PUBLIC_KEYS and
+                row['explicit_confirmation_required'] is True and
+                row['automatic_start'] is row['automatic_resume'] is False and
+                all(row[flag] is False for flag in AUTHORITY_FLAGS)
+                for row in authority['external_transport_boundaries']),
+            'HTTP_AUTHORITY_EXTERNAL_TRANSPORTS')
         _require(all(authority[key] is False for key in (
-                'broker_order_method_present','bank_transfer_method_present',
-                'cloud_control_method_present','automatic_resume_present',
+                'broker_order_route_present','bank_transfer_route_present',
+                'cloud_control_route_present','bank_transfer_transport_present',
+                'cloud_control_transport_present','automatic_resume_present',
                 'learned_policy_promotion_present',*AUTHORITY_FLAGS)),
             'HTTP_AUTHORITY_DENIALS')
+        _require(authority['broker_order_transport_present'] is True and
+            authority['ai_advisory_transport_present'] is True,
+            'HTTP_AUTHORITY_EXTERNAL_TRANSPORTS')
         _require(result['trial_readiness_passive_read'] is True and
             result['trial_readiness_owner_quiescence_checked'] is True,
             'HTTP_TRIAL_READINESS_READ')
@@ -2733,7 +2756,8 @@ def _validate(profile, result):
             result['journal_file_fingerprints_rechecked'] is True and
             result['journal_file_identities_rechecked'] is True and
             result['journal_store_bindings_rechecked'] is True and
-            result['semantic_reader_failures_rechecked'] is True,
+            result['semantic_reader_failures_rechecked'] is True and
+            result['selected_journal_leaf_links_rejected'] is True,
             'RECONCILIATION_ACCEPTANCE_BINDING')
         _require(result['identity_replacement_failure_rejected'] is True and
             result['store_retarget_rejected'] is True,

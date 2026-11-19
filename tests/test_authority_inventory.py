@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from nexus.app import app
 from nexus import authority_inventory
 from nexus.authority_inventory import (AUTHORITY_FLAGS, AUTHORITIES,
+    EXTERNAL_TRANSPORT_BOUNDARIES, EXTERNAL_TRANSPORT_BOUNDARY_PUBLIC_KEYS,
     MUTATING_ROUTES, snapshot)
 
 
@@ -25,9 +26,13 @@ def test_inventory_binds_every_declared_route_without_storage(tmp_path, monkeypa
     assert report["external_ai_default"] == "OFF"
     assert not root.exists()
     assert all(report[flag] is False for flag in AUTHORITY_FLAGS)
-    assert report["broker_order_method_present"] is False
-    assert report["bank_transfer_method_present"] is False
-    assert report["cloud_control_method_present"] is False
+    assert report["broker_order_route_present"] is False
+    assert report["bank_transfer_route_present"] is False
+    assert report["cloud_control_route_present"] is False
+    assert report["broker_order_transport_present"] is True
+    assert report["ai_advisory_transport_present"] is True
+    assert report["bank_transfer_transport_present"] is False
+    assert report["cloud_control_transport_present"] is False
     assert report["automatic_resume_present"] is False
     assert report["learned_policy_promotion_present"] is False
 
@@ -47,6 +52,41 @@ def test_every_authority_denies_external_and_automatic_authority():
     assert by_id["PRODUCTION_RELEASE"]["routes"] == []
     assert by_id["PRODUCTION_RELEASE"]["default"] == "NOT_APPROVED"
     assert by_id["LOCAL_PAPER_REDUCING_EXIT"]["reducing_exit_available_during_cut"] is True
+
+
+def test_external_transport_presence_is_exact_but_never_authority():
+    report=snapshot(app)
+    boundaries=report['external_transport_boundaries']
+    assert report['external_transport_boundaries_verified'] is True
+    assert report['external_transport_boundary_count']==len(boundaries)==2
+    assert all(frozenset(row)==EXTERNAL_TRANSPORT_BOUNDARY_PUBLIC_KEYS
+        for row in boundaries)
+    by_id={row['id']:row for row in boundaries}
+    broker=by_id['ALPACA_PAPER_SINGLE_ATTEMPT_ORDER_POST']
+    assert broker['capability']=='BROKER_PAPER_ORDER_POST'
+    assert broker['default']=='OFF_UNROUTED' and not broker['app_route_bound']
+    advisory=by_id['OPENAI_RESEARCH_ADVISORY_POST']
+    assert advisory['capability']=='AI_ADVISORY_POST'
+    assert advisory['default']=='OFF' and advisory['app_route_bound']
+    for row in boundaries:
+        assert row['explicit_confirmation_required'] is True
+        assert row['automatic_start'] is row['automatic_resume'] is False
+        assert all(row[flag] is False for flag in AUTHORITY_FLAGS)
+
+
+@pytest.mark.parametrize('mutation,code',[
+    (lambda rows:rows[:-1], 'INVENTORY_MISMATCH'),
+    (lambda rows:rows+(rows[0],), 'DECLARATION_DUPLICATE'),
+    (lambda rows:({**rows[0], 'method':'GET'},*rows[1:]), 'DECLARATION_INVALID'),
+    (lambda rows:({**rows[0], 'target':'https://paper-api.alpaca.markets/v2/live-orders'},*rows[1:]), 'DECLARATION_INVALID'),
+    (lambda rows:({**rows[0], 'capability':'BROKER_LIVE_ORDER_POST'},*rows[1:]), 'DECLARATION_INVALID'),
+    (lambda rows:({**rows[0], 'automatic_resume':True},*rows[1:]), 'DECLARATION_INVALID'),
+])
+def test_external_transport_declaration_mutations_fail_closed(monkeypatch,mutation,code):
+    monkeypatch.setattr(authority_inventory,'EXTERNAL_TRANSPORT_BOUNDARIES',
+        tuple(mutation(EXTERNAL_TRANSPORT_BOUNDARIES)))
+    with pytest.raises(ValueError,match='ADMISSION_AUTHORITY_EXTERNAL_BOUNDARY_'+code):
+        snapshot(app)
 
 
 def test_missing_declared_route_fails_closed():

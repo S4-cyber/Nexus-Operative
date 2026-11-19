@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.366'
+REVISION = '0.340.367'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -787,6 +787,15 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Every valid shared broker-paper owner lease now captures the no-follow identity of the directory that publishes its exact owner-directory entry before opening the marker. That identity is required during marker preparation, every active validation and context exit, so a replacement immediate parent cannot inherit authority by moving the same owner directory back under the public pathname. This is one additional local ancestry level, not full ancestor-chain, extended-ACL, distributed-owner, native-profile, provider/account or broker acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; final caller-selected reconciliation journal leaves must now remain regular single-link files bound to the canonical preflight identity before semantic acceptance, so symbolic links, hard links and observed leaf replacement fail closed' if item.id=='M4' else
+        '; the read-only admission inventory now separately binds the dormant Alpaca paper-order and optional AI credentialed POST transports to exact fixed targets while proving that transport existence is not route exposure or operational authority' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Reconciliation acceptance now rejects symbolic or multiply linked caller-selected pacing, activity and acceptance journal leaves before semantic reads and rebinds each canonical preflight result to the exact selected identity. The source-declared authority inventory separately reports application routes and the two exact credentialed POST transports: the paper-order transport remains OFF and unrouted, while every broker, funding, live, cloud, spend and release authority flag remains false. This is local evidence-integrity and truthful capability inventory, not provider/account connectivity, broker acceptance, genuine-market coverage, sustained operation, funding/live/cloud readiness or permission.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -1200,7 +1209,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.366 activates the trusted exact-base public-history limits and hardens the actual paper-forward worker's cycle-start cadence. Pull requests bind immutable base and candidate commits while complete reachable history remains mandatory; push/manual runs bind the exact source to itself for a zero delta. Worker starts use fixed monotonic deadlines, overruns are durably retained and rescheduled from completion without catch-up bursts, and invalid, regressing or stalled scheduler clocks pause before further fetches. Strict saved release evidence exercises nominal, overrun and fail-closed actual-worker cases. This is bounded offline and publication-gate hardening, not broker, genuine-market, Windows, funding/live/cloud, performance, profitability or release acceptance. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.367 closes two release-evidence truth gaps. Reconciliation acceptance refuses symbolic and multiply linked final journal selections and rebinds canonical preflight results to each exact selected leaf identity before semantic reads. The read-only admission inventory now distinguishes application route exposure from the exact dormant Alpaca paper-order and optional AI credentialed POST transports; transport existence cannot be reported as route, configuration, provider/account acceptance or operational authority. This is bounded offline evidence-integrity hardening, not broker, genuine-market, Windows, funding/live/cloud, performance, profitability or release acceptance. The broker-paper transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

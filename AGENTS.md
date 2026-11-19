@@ -1,5 +1,52 @@
 # Nexus Operative continuity instructions
 
+## v0.340.367 truthful external-boundary inventory and selected-journal identity
+
+Reconciliation acceptance now rejects symbolic or multiply linked caller-selected
+pacing, activity and acceptance journal leaves before semantic reads. After the
+ordinary canonical path-set preflight, it rebinds every result to the exact
+selected leaf identity and rejects an observed replacement. This prevents a
+linked final path from silently selecting and certifying a different retained
+private history.
+
+The read-only admission-authority inventory now separates application route
+exposure from credentialed external transport existence. It binds the dormant
+single-attempt Alpaca paper-order transport and the optional AI advisory
+transport to their exact fixed POST targets, explicit confirmation, OFF state,
+and false authority. The broker transport remains unrouted from the application;
+its existence is not configuration, provider/account acceptance, funding,
+routing or permission.
+
+Focused validation passed 22 authority/live-loopback tests, 70 reconciliation
+acceptance tests and 14 version/roadmap/Windows-workflow tests, with the existing
+Starlette/httpx warning. All sixteen bounded offline profiles passed; saved
+evidence matches 425 source files /
+`2544a293c229fa166a091df264933caba334a27dc33789a3e9d2e8a8db467d4d`
+and report SHA-256 is
+`70e59830d40ff1072b40439f9e1ae0dc2f970edda8d47a7e2c288f7b7d54923c`.
+The complete deterministic regression passed both required shards: 3,367 and
+3,346 tests, with one expected platform skip per shard and the existing warning.
+Compilation and all fourteen Portal/controller Node checks passed. The
+165-member v0.340.367 wheel reports the synchronized version and has SHA-256
+`b1b4b2989f0aae49eea7d64efb316aa8fd04ae59074ed6e3fe50a690978ebded`.
+The trusted current-candidate artifact audit checked 1,112 paths/blobs and the
+exact-parent history audit checked 1,230 commits / 11,211 blobs with a 21-object
+candidate delta; both had zero findings. The introduced-line high-confidence
+credential scan found zero
+matches. Local Gitleaks is unavailable, so the pinned fresh exact-head hosted
+secret scan remains authoritative; no uncompleted check is claimed as passed.
+
+This is bounded offline evidence-integrity hardening, not actual broker-paper,
+sustained genuine-market, native Windows/installer, funding/live/cloud,
+performance, profitability or release acceptance. No control or editable
+parameter changed. Engagement and optional AI remain OFF by default; limits,
+account checks, fail-closed entries, reducing exits, independent emergency stop,
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain intact. The roadmap estimate is unchanged: exact weighted implementation
+38% (displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
 ## v0.340.366 fixed forward cadence and trusted delta activation
 
 The paper-forward worker now schedules cycle starts against fixed independent

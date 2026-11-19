@@ -11,7 +11,8 @@ const REQUIRED = Object.freeze({
     'Install checksum-pinned Gitleaks',
     'Scan all fetched history without logging secret values', 'Complete job']},
   'Nexus research safety regression': {
-    'offline-regression': ['Run actions/checkout@', 'Bind job to exact source commit', 'Compile Python source', 'Run complete Python regression suite', 'Complete job'],
+    'offline-regression-0-of-2': ['Run actions/checkout@', 'Bind job to exact source commit', 'Compile Python source', 'Run complete Python regression suite', 'Complete job'],
+    'offline-regression-1-of-2': ['Run actions/checkout@', 'Bind job to exact source commit', 'Compile Python source', 'Run complete Python regression suite', 'Complete job'],
     'offline-release-evidence': ['Run actions/checkout@', 'Bind job to exact source commit', 'Run bounded offline release trials', 'Revalidate saved offline evidence against this source', 'Complete job'],
     'portal-browser-help': ['Run actions/checkout@', 'Bind job to exact source commit', 'Verify real-browser control help with isolated fixtures', 'Complete job']},
   'Windows simulated-research build': {'test-and-build': [

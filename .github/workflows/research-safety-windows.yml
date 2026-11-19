@@ -9,11 +9,16 @@ permissions:
   contents: read
 jobs:
   offline-regression:
+    name: offline-regression-${{ matrix.shard }}-of-2
     runs-on: windows-latest
     # Exact v0.340.299 reached 5,423 passes / 90% after 89m06s on hosted
     # Python 3.11 before the 90-minute outer deadline cancelled the tail.
     # Keep the complete suite bounded with measured load/runtime headroom.
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -36,7 +41,7 @@ jobs:
       - name: Compile Python source
         run: python -m compileall -q nexus tests ops
       - name: Run complete Python regression suite
-        run: python -m pytest -q
+        run: python -m pytest -q -p ops.pytest_shard --nexus-shard-index ${{ matrix.shard }} --nexus-shard-count 2
 
   offline-release-evidence:
     runs-on: windows-latest

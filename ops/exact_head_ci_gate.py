@@ -29,8 +29,8 @@ REQUIRED = {
         "workflow_path": ".github/workflows/research-safety-windows.yml",
         "events": frozenset({"pull_request", "push", "workflow_dispatch"}),
         "jobs": frozenset({
-            "offline-regression", "offline-release-evidence",
-            "portal-browser-help",
+            "offline-regression-0-of-2", "offline-regression-1-of-2",
+            "offline-release-evidence", "portal-browser-help",
         }),
     },
     "Windows simulated-research build": {

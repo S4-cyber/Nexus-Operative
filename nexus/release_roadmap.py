@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.353'
+REVISION = '0.340.354'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1141,8 +1141,16 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the explicit Activity SSE checkpoint now freezes the exact non-symlink cursor parent-directory identity, or proves that parent remains absent, across external provider IO and every subsequent semantic boundary through retained acknowledgement; replacing the directory or creating a fresh parent cannot inherit checkpoint authority even if the main file is preserved, complementing the independent cursor-file and descriptor-bound store protections' if item.id=='M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Windows complete-regression pull-request lane now uses two deterministic exact-node pytest execution shards while retaining full collection in each job; exact-head and step-inventory reviewers require both named shards green, so cancellation, omission, skip or failure of either shard remains release-blocking rather than being mistaken for complete regression' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
+    if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The complete Windows regression pull-request lane is deterministically split across two exact-node execution shards after full collection in each job; both exact names and their complete checkout/compile/test step sequences are mandatory in offline inventory review, and either shard missing or non-green remains a denial. This reduces per-job timeout exposure without reducing collected test scope, but hosted success, native Windows application behavior and independent release approval remain separate.')
     if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
 
 def snapshot():
@@ -1168,7 +1176,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.353 closes the adjacent Activity SSE cursor-directory continuity boundary across the explicit broker-paper reconnect read. The coordinator freezes the exact non-symlink parent-directory identity, or proves the parent remains absent, before external I/O and rechecks that scope after every admission, transport and semantic-review boundary through retained acknowledgement. Replacing an existing directory, or creating a previously absent parent during provider I/O, cannot inherit checkpoint authority even when the cursor file itself is preserved. This directory binding is independent of the main-file identity and byte binding and the cursor store's descriptor-bound commit, recovery and ownership checks. Saved reconciliation evidence now requires the fresh-parent rejection. This is injected local M8 reconciliation hardening, not provider source or delivery attestation, broker-paper acceptance, genuine-feed trial realism, native Windows acceptance, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence are strengthened, not bypassed. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.354 replaces the single long-running Windows complete-regression job with two deterministic exact-once pytest execution shards. Every shard still performs full collection, hashes each exact node ID to one bounded shard and fails on malformed or empty scope; the exact-head and step-inventory reviewers now require both named shard jobs green, so a missing, cancelled, skipped or failed shard cannot be promoted as complete regression. This closes an observed hosted timeout/cancellation risk without reducing test membership or weakening checkout binding. It is M9 release-pipeline hardening, not native Windows application acceptance, broker-paper acceptance, genuine-feed trial realism, funding/live/cloud readiness, performance, profitability or release approval. Runtime engagement remains OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

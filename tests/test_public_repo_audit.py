@@ -185,10 +185,81 @@ def test_aggregate_history_byte_cap_still_refuses_without_skipping_objects(tmp_p
     with pytest.raises(ValueError,match='HISTORY_BYTE_CAP'):audit.audit(root,history=True)
 
 
+def test_per_object_cap_is_finite_and_fail_closed(tmp_path,monkeypatch):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    monkeypatch.setattr(audit,'MAX_OBJECT_BYTES',1)
+    with pytest.raises(ValueError,match='OBJECT_BYTE_CAP'):audit.audit(root,history=True)
+
+
+def test_exact_base_to_candidate_delta_is_measured_after_complete_history_scan(tmp_path):
+    root=repository(tmp_path);commit(root,'base.txt',b'base public fixture')
+    baseline=git(root,'rev-parse','HEAD').strip().decode()
+    commit(root,'candidate.txt',b'candidate public fixture')
+    candidate=git(root,'rev-parse','HEAD').strip().decode()
+    expected=len({line.split(b' ',1)[0] for line in
+        git(root,'rev-list','--objects',candidate,'^'+baseline).splitlines()})
+    report=audit.audit(root,history=True,baseline_commit=baseline,
+        candidate_commit=candidate)
+    assert report['passed'] and report['blobs_checked']==2
+    assert report['baseline_commit']==baseline and report['candidate_commit']==candidate
+    assert report['delta_objects_checked']==expected and report['delta_bytes_checked']>0
+
+
+@pytest.mark.parametrize(('field','reason'),[
+    ('baseline','INVALID_BASELINE_COMMIT'),
+    ('candidate','INVALID_CANDIDATE_COMMIT'),
+])
+def test_delta_commits_require_exact_lowercase_object_ids(tmp_path,field,reason):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    head=git(root,'rev-parse','HEAD').strip().decode()
+    values=dict(baseline_commit=head,candidate_commit=head);values[field+'_commit']='HEAD'
+    with pytest.raises(ValueError,match=reason):audit.audit(root,history=True,**values)
+
+
+def test_missing_and_unrelated_delta_commits_fail_closed(tmp_path):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    head=git(root,'rev-parse','HEAD').strip().decode()
+    missing='0'*len(head)
+    with pytest.raises(ValueError,match='BASELINE_COMMIT_UNAVAILABLE'):
+        audit.audit(root,history=True,baseline_commit=missing,candidate_commit=head)
+    tree=git(root,'write-tree').strip().decode()
+    unrelated=subprocess.run(['git','-C',str(root),'commit-tree',tree],input=b'unrelated\n',
+        check=True,capture_output=True).stdout.strip().decode()
+    with pytest.raises(ValueError,match='BASELINE_NOT_ANCESTOR'):
+        audit.audit(root,history=True,baseline_commit=head,candidate_commit=unrelated)
+
+
+def test_delta_requires_both_commits_and_complete_history(tmp_path):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    head=git(root,'rev-parse','HEAD').strip().decode()
+    with pytest.raises(ValueError,match='DELTA_COMMIT_PAIR_REQUIRED'):
+        audit.audit(root,history=True,baseline_commit=head)
+    with pytest.raises(ValueError,match='DELTA_REQUIRES_HISTORY'):
+        audit.audit(root,baseline_commit=head,candidate_commit=head)
+
+
+@pytest.mark.parametrize(('limit','reason'),[
+    ('MAX_DELTA_BYTES','DELTA_BYTE_CAP'),
+    ('MAX_DELTA_OBJECTS','DELTA_OBJECT_CAP'),
+])
+def test_candidate_delta_caps_fail_closed(tmp_path,monkeypatch,limit,reason):
+    root=repository(tmp_path);commit(root,'base.txt',b'base public fixture')
+    baseline=git(root,'rev-parse','HEAD').strip().decode()
+    commit(root,'candidate.txt',b'candidate public fixture')
+    candidate=git(root,'rev-parse','HEAD').strip().decode()
+    monkeypatch.setattr(audit,limit,0)
+    with pytest.raises(ValueError,match=reason):
+        audit.audit(root,history=True,baseline_commit=baseline,
+            candidate_commit=candidate)
+
+
 def test_history_budget_is_finite_and_above_measured_reachable_history():
-    measured_bytes=1_202_605_780
-    assert audit.MAX_BYTES == 1536 * 1024 * 1024
-    assert measured_bytes < audit.MAX_BYTES < 2 * 1024 * 1024 * 1024
+    measured_bytes=1_467_457_423
+    assert audit.MAX_BYTES == 4 * 1024 * 1024 * 1024
+    assert audit.MAX_OBJECT_BYTES == 16 * 1024 * 1024
+    assert audit.MAX_DELTA_BYTES == 64 * 1024 * 1024
+    assert audit.MAX_DELTA_OBJECTS == 4096
+    assert measured_bytes < audit.MAX_BYTES <= 4 * 1024 * 1024 * 1024
 
 
 @pytest.mark.parametrize('reason,expected',[('HISTORY_BYTE_CAP','HISTORY_BYTE_CAP'),

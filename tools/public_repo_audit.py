@@ -10,10 +10,14 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-# Full reachable history measured 1,202,605,780 uncompressed bytes on 2026-11-12.
-# Keep a finite 1.5-GiB budget with growth headroom; scan all objects without pruning.
-MAX_BYTES = 1536 * 1024 * 1024
+# Full reachable history measured 1,467,457,423 uncompressed bytes on 2026-11-19.
+# Preserve a finite complete-history ceiling while separately bounding every
+# object and each candidate's newly reachable delta from its exact trusted base.
+MAX_BYTES = 4 * 1024 * 1024 * 1024
 MAX_OBJECTS = 100000
+MAX_OBJECT_BYTES = 16 * 1024 * 1024
+MAX_DELTA_BYTES = 64 * 1024 * 1024
+MAX_DELTA_OBJECTS = 4096
 PRIVATE_MAGIC = (b'SQLite format 3\x00', b'-----'+b'BEGIN PRIVATE KEY-----', b'-----'+b'BEGIN RSA PRIVATE KEY-----',
                  b'-----'+b'BEGIN EC PRIVATE KEY-----', b'-----'+b'BEGIN OPENSSH PRIVATE KEY-----',
                  b'-----'+b'BEGIN ENCRYPTED PRIVATE KEY-----', b'NEXUS-OBS-ENC-1\n', b'NEXUS-QUOTE-EVIDENCE-ENC-1\n')
@@ -65,6 +69,35 @@ def _git(repo,*args):
     return result.stdout
 
 
+def _exact_commit(repo, value, label):
+    code=f'INVALID_{label}_COMMIT'
+    unavailable=f'{label}_COMMIT_UNAVAILABLE'
+    if type(value) is not str or re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}',value) is None:
+        raise ValueError(code)
+    result=subprocess.run(['git','-C',str(repo),'rev-parse','--verify',value+'^{commit}'],
+        capture_output=True,check=False,timeout=120)
+    if result.returncode:raise ValueError(unavailable)
+    resolved=result.stdout.strip()
+    if resolved.decode('ascii','strict')!=value:raise ValueError(code)
+    return resolved
+
+
+def _delta_ids(repo, baseline_commit, candidate_commit):
+    baseline=_exact_commit(repo,baseline_commit,'BASELINE')
+    candidate=_exact_commit(repo,candidate_commit,'CANDIDATE')
+    relation=subprocess.run(['git','-C',str(repo),'merge-base','--is-ancestor',
+        baseline.decode(),candidate.decode()],capture_output=True,check=False,timeout=120)
+    if relation.returncode==1:raise ValueError('BASELINE_NOT_ANCESTOR')
+    if relation.returncode:raise ValueError('GIT_AUDIT_INCOMPLETE')
+    raw=_git(repo,'rev-list','--objects',candidate.decode(),'^'+baseline.decode())
+    ids=set()
+    for line in raw.splitlines():
+        oid=line.split(b' ',1)[0]
+        if re.fullmatch(rb'[0-9a-f]{40,64}',oid) is None:raise ValueError('INVALID_GIT_OBJECT')
+        ids.add(oid)
+    return ids
+
+
 def _tree_modes(raw, oid_bytes):
     modes=[];cursor=0
     while cursor<len(raw):
@@ -76,8 +109,13 @@ def _tree_modes(raw, oid_bytes):
     return modes
 
 
-def audit(repo, *, history=False, required_refs=()):
+def audit(repo, *, history=False, required_refs=(), baseline_commit=None,
+          candidate_commit=None):
     repo = Path(repo); findings = []; total = 0; blobs = 0
+    if (baseline_commit is None)!=(candidate_commit is None):
+        raise ValueError('DELTA_COMMIT_PAIR_REQUIRED')
+    if baseline_commit is not None and not history:
+        raise ValueError('DELTA_REQUIRES_HISTORY')
     if history and _git(repo,'rev-parse','--is-shallow-repository').strip() != b'false': raise ValueError('FULL_HISTORY_REQUIRED')
     for ref in required_refs:
         if not re.fullmatch(r'refs/[A-Za-z0-9_./-]+',ref): raise ValueError('INVALID_REQUIRED_REF')
@@ -87,6 +125,7 @@ def audit(repo, *, history=False, required_refs=()):
     for name in sorted(paths):
         rule = path_rule(name)
         if rule: findings.append(dict(rule=rule,path_sha256=hashlib.sha256(name.encode()).hexdigest()))
+    delta_ids=_delta_ids(repo,baseline_commit,candidate_commit) if baseline_commit is not None else set()
     objects = _git(repo,'rev-list','--objects','--all') if history else _git(repo,'ls-files','-s')
     ids = set()
     for line in objects.splitlines():
@@ -99,6 +138,7 @@ def audit(repo, *, history=False, required_refs=()):
         if re.fullmatch(rb'[0-9a-f]{40,64}',oid) is None: raise ValueError('INVALID_GIT_OBJECT')
         ids.add(oid)
     if len(ids)>MAX_OBJECTS: raise ValueError('OBJECT_AUDIT_CAP')
+    delta_total=0
     child = subprocess.Popen(['git','-C',str(repo),'cat-file','--batch'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
     try:
         for oid in sorted(ids):
@@ -107,7 +147,9 @@ def audit(repo, *, history=False, required_refs=()):
             if len(header)!=3 or header[0]!=oid: raise ValueError('OBJECT_AUDIT_INCOMPLETE')
             size=int(header[2]);total+=size
             if size<0:raise ValueError('INVALID_OBJECT_SIZE')
+            if size>MAX_OBJECT_BYTES:raise ValueError('OBJECT_BYTE_CAP')
             if total>MAX_BYTES: raise ValueError('HISTORY_BYTE_CAP')
+            if oid in delta_ids:delta_total+=size
             remaining=size;prefix=b'';json_blocks=[];tree_blocks=[]
             while remaining:
                 block=child.stdout.read(min(65536,remaining))
@@ -135,8 +177,12 @@ def audit(repo, *, history=False, required_refs=()):
         if child.wait(timeout=15)!=0:raise ValueError('OBJECT_AUDIT_INCOMPLETE')
     finally:
         if child.poll() is None:child.kill();child.wait()
+    if len(delta_ids)>MAX_DELTA_OBJECTS:raise ValueError('DELTA_OBJECT_CAP')
+    if delta_total>MAX_DELTA_BYTES:raise ValueError('DELTA_BYTE_CAP')
     return dict(mode='PUBLIC_REPOSITORY_ARTIFACT_AUDIT',passed=not findings,history_scanned=history,
         paths_checked=len(paths),blobs_checked=blobs,bytes_checked=total,findings=findings,
+        baseline_commit=baseline_commit,candidate_commit=candidate_commit,
+        delta_objects_checked=len(delta_ids),delta_bytes_checked=delta_total,
         commits_checked=int(_git(repo,'rev-list','--count','--all').strip()) if history else None,
         limitations='Reachable fetched refs only. Not a secret detector, source attestation, privacy guarantee or review of deleted refs, Actions logs/artifacts, issues or external copies.')
 
@@ -144,12 +190,18 @@ def audit(repo, *, history=False, required_refs=()):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repository',default='.');parser.add_argument('--history',action='store_true')
-    parser.add_argument('--require-ref',action='append',default=[]);args=parser.parse_args()
-    try:report=audit(args.repository,history=args.history,required_refs=args.require_ref)
+    parser.add_argument('--require-ref',action='append',default=[])
+    parser.add_argument('--baseline-commit');parser.add_argument('--candidate-commit');args=parser.parse_args()
+    try:report=audit(args.repository,history=args.history,required_refs=args.require_ref,
+        baseline_commit=args.baseline_commit,candidate_commit=args.candidate_commit)
     except (OSError,ValueError,UnicodeError,subprocess.SubprocessError) as error:
         allowed={'FULL_HISTORY_REQUIRED','INVALID_REQUIRED_REF','GIT_AUDIT_INCOMPLETE',
             'INVALID_GIT_OBJECT','OBJECT_AUDIT_CAP','INVALID_OBJECT_SIZE',
-            'HISTORY_BYTE_CAP','OBJECT_AUDIT_INCOMPLETE'}
+            'HISTORY_BYTE_CAP','OBJECT_BYTE_CAP','DELTA_COMMIT_PAIR_REQUIRED',
+            'DELTA_REQUIRES_HISTORY','INVALID_BASELINE_COMMIT','BASELINE_COMMIT_UNAVAILABLE',
+            'INVALID_CANDIDATE_COMMIT','CANDIDATE_COMMIT_UNAVAILABLE',
+            'BASELINE_NOT_ANCESTOR','DELTA_OBJECT_CAP','DELTA_BYTE_CAP',
+            'OBJECT_AUDIT_INCOMPLETE'}
         code=str(error) if type(error) is ValueError and str(error) in allowed else 'INTERNAL_ERROR'
         print('PUBLIC_REPOSITORY_AUDIT_INCOMPLETE:'+code);return 2
     print(json.dumps(report,sort_keys=True));return 0 if report['passed'] else 1

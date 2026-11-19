@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.359'
+REVISION = '0.340.360'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1157,6 +1157,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; bounded linked-ledger burst percentiles now carry an exact process-local measurement-window attestation whose monotonic sample count, elapsed window, dequeued/completed/expired/flushed outcome partition and emergency-halt inclusion must reconcile with the public burst report; a clock regression fails closed rather than becoming expiry, while market/broker latency and throughput authority remain explicitly false' if item.id in ('M3','M5') else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the mandatory disposable forward release profile now executes isolated missing-source, stale-quote, regressed-clock and invalid-clock treatments through the actual runner, requires every session to pause and release ownership with zero orders, and binds exact bounded fetch/cycle/reason counts while automatic retry and every external authority remain false; standalone feed admission rejects polymorphic mappings and invalid runtime clocks before baseline mutation, and the research decision lane distinguishes clock regression from ordinary expiry' if item.id in ('M3','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
@@ -1180,7 +1184,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.359 binds each bounded durable burst percentile set to an exact process-local measurement-window attestation: monotonic clock samples, elapsed window, queue/dequeue/completion/expiry/flush counts and emergency-halt inclusion must reconcile with the retained burst outcomes. A clock regression now fails closed instead of being classified as queue expiry, and the release validator rejects altered timing authority, sample arithmetic or outcome partitions. This is M3.2/M5.1 offline timing-evidence hardening, not sustained pressure, native Windows power-loss, broker-paper acceptance, genuine-feed trial realism, funding/live/cloud readiness, performance, profitability or release approval. Local timings remain machine-specific and synthetic and explicitly claim no market/broker latency or throughput. Runtime engagement and optional AI remain OFF by default; limits, account checks, fail-closed entries, risk-reducing exits and emergency-stop independence remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.360 adds mandatory M3.3 bad-clock and source-loss treatments to the disposable forward release profile. Isolated missing-source, stale-quote, regressed-clock and invalid-clock sessions must pause the actual runner, release ownership and create zero orders; exact cycle, fetch and fixed-reason counts are release-validated, with automatic retry and every provider/broker/live/release authority false. Standalone feed admission now rejects polymorphic mappings and invalid runtime clocks before baseline mutation, and the bounded research decision lane distinguishes clock regression from ordinary expiry. This is offline fail-closed evidence, not genuine-feed, provider-availability, clock-hardware, network-recovery, broker-paper, sustained-market, funding/live/cloud, performance, profitability or release acceptance. Runtime engagement and optional AI remain OFF by default; limits, account checks, risk-reducing exits and independent emergency stop remain unchanged. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

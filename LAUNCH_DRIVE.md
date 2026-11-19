@@ -1,5 +1,39 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.360 — forward bad-clock and source-loss evidence
+
+The required disposable forward profile now retains exact fail-closed evidence
+for four isolated M3.3 treatments through the actual paper-forward runner:
+missing source, stale quotes, a regressed runtime clock and an invalid runtime
+clock. Missing/stale treatments make three explicitly invoked injected fetches
+and pause on the third failure. Bad clocks pause in one cycle before fetch.
+Every treatment releases local ownership, creates zero orders and keeps
+automatic retry, provider access, broker connection, live orders and release
+approval false. The release validator consumes the exact nested schema,
+cycle/fetch/reason counts and authority fields.
+
+Feed admission also rejects polymorphic mappings, equality-forging keys and
+invalid runtime clocks before baseline mutation. Exact built-in canonical
+numeric text remains supported for retained-evidence revalidation. The bounded
+research decision lane distinguishes `CLOCK_REGRESSION` from ordinary expiry
+and counts it separately. The complete regression passed 6,575 tests with two
+platform skips and one existing warning; all sixteen offline profiles and
+saved evidence matched 422 source files /
+`9902d75dfb2d2530a74ac5b7a3b87a58e778a0caf76b97508bf8dd33ae729bdd`.
+Evidence SHA-256 is
+`e676ac147ef38fdd009799f2ede9701f5580e4124796da213282dee79ac1182e`;
+the 165-member v0.340.360 wheel SHA-256 is
+`ef33d2f275eae145dd37441d05ef7bf04646f54ac796c317da378825ffbb8e53`.
+
+This does not authenticate an actual feed, provider outage behavior, clock
+hardware, network recovery, market realism, broker acceptance, sustained
+operation, funds, live/cloud deployment, performance, profitability or release
+readiness. No UI control or parameter changed. OFF defaults, limits, account
+checks, fail-closed entries, reducing exits, independent emergency stop, seven
+tabs and black/bright-purple bottom-right hover help remain unchanged. Rough
+implementation stays about 40% (exact weighted index 38%, uncertainty 30-45%,
+low confidence), with 0/9 stages accepted.
+
 ## v0.340.359 — burst measurement-window attestation
 
 M3.2/M5.1 burst evidence now binds each percentile set to an exact

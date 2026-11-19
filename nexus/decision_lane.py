@@ -32,7 +32,8 @@ class BoundedDecisionLane:
         self.seen=set()
         self.halted=False
         self.metrics={"queued":0,"accepted":0,"rejected":0,"overflow":0,
-                      "expired":0,"duplicates":0,"processed":0,"retention_full":0,"invalid_clock":0}
+                      "expired":0,"duplicates":0,"processed":0,"retention_full":0,
+                      "invalid_clock":0,"clock_regressions":0}
 
     def offer(self,sequence,created_at,product,side,notional):
         if self.halted:return "HALTED"
@@ -64,7 +65,11 @@ class BoundedDecisionLane:
             self.metrics["rejected"]+=1
             return "INVALID_CLOCK"
         delta=now-created
-        if not math.isfinite(delta) or delta<0 or delta*1000>MAX_AGE_MS:
+        if delta<0:
+            self.metrics["clock_regressions"]+=1
+            self.metrics["rejected"]+=1
+            return "CLOCK_REGRESSION"
+        if not math.isfinite(delta) or delta*1000>MAX_AGE_MS:
             self.metrics["expired"]+=1
             self.metrics["rejected"]+=1
             return "EXPIRED"

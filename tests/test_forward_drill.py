@@ -57,3 +57,13 @@ def test_cli_reports_injected_fixture_scope():
     assert result.returncode==0,result.stderr
     report=json.loads(result.stdout)
     assert report['mode']=='DISPOSABLE_FORWARD_RUNNER_DRILL' and report['cycles']==14
+def test_fault_injection_is_bounded_orderless_and_fail_closed(tmp_path):
+    result=drill._faults(tmp_path)
+    assert set(result)==drill.FAULT_PUBLIC_KEYS
+    assert result['passed'] and result['orders_created']==0
+    assert result['sessions_paused']==4 and result['ownership_released']
+    assert result['actual_provider_requests'] is result['automatic_retries'] is False
+    assert result['source_loss']['reasons']==['QUOTE_UNAVAILABLE_OR_INVALID']*3
+    assert result['stale_quote']['reasons']==['QUOTE_UNAVAILABLE_OR_INVALID']*3
+    assert result['clock_regression']['reasons']==['RUNTIME_CLOCK_DISCONTINUITY']
+    assert result['invalid_clock']['reasons']==['INVALID_RUNTIME_CLOCK']

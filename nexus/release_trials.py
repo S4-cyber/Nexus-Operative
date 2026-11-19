@@ -2746,6 +2746,7 @@ def _validate(profile, result):
         _require(reviewed['review_reasons'] == ['ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED'], 'ACTIVITY_CONSISTENCY')
     if profile == 'forward':
         from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
+            FAULT_CASE_PUBLIC_KEYS, FAULT_LIMITATIONS, FAULT_PUBLIC_KEYS,
             LATENCY_PUBLIC_KEYS, LIMITATIONS, PUBLIC_KEYS,
             RECOVERED_PUBLIC_KEYS, SESSION_PUBLIC_KEYS)
         from nexus.paper_forward import (COMMIT_DURABILITY_CHECKS,
@@ -2756,6 +2757,7 @@ def _validate(profile, result):
             'FORWARD_PROFILE_SCHEMA')
         recovered=result['recovered']
         durability=result['commit_durability']
+        faults=result['fault_injection']
         _require(type(durability) is dict and
             frozenset(durability)==COMMIT_DURABILITY_PUBLIC_KEYS and
             durability['source']==
@@ -2768,6 +2770,10 @@ def _validate(profile, result):
             'FORWARD_COMMIT_DURABILITY')
         _require(type(recovered) is dict and frozenset(recovered)==RECOVERED_PUBLIC_KEYS,
             'FORWARD_RECOVERY_SCHEMA')
+        _require(type(faults) is dict and frozenset(faults)==FAULT_PUBLIC_KEYS and
+            all(type(faults[name]) is dict and frozenset(faults[name])==FAULT_CASE_PUBLIC_KEYS
+                for name in ('source_loss','stale_quote','clock_regression','invalid_clock')),
+            'FORWARD_FAULT_SCHEMA')
         sessions=recovered['sessions'];latency=result['cycle_latency'];coverage=recovered['coverage_review']
         _require(type(sessions) is list and len(sessions)==20 and all(
             type(session) is dict and frozenset(session)==SESSION_PUBLIC_KEYS for session in sessions),
@@ -2786,6 +2792,25 @@ def _validate(profile, result):
         _require(all(result[key] is False for key in ('application_accounts_changed','broker_connected',
             'live_orders_enabled','release_approved','target_validated')),
             'FORWARD_AUTHORITY')
+        expected_faults={
+            'source_loss':(3,3,['QUOTE_UNAVAILABLE_OR_INVALID']*3),
+            'stale_quote':(3,3,['QUOTE_UNAVAILABLE_OR_INVALID']*3),
+            'clock_regression':(1,0,['RUNTIME_CLOCK_DISCONTINUITY']),
+            'invalid_clock':(1,0,['INVALID_RUNTIME_CLOCK']),
+        }
+        _require(faults['mode']=='DISPOSABLE_FORWARD_FAULT_INJECTION' and
+            faults['passed'] is True and faults['limitations']==FAULT_LIMITATIONS and
+            faults['orders_created']==0 and type(faults['orders_created']) is int and
+            faults['sessions_paused']==4 and type(faults['sessions_paused']) is int and
+            faults['ownership_released'] is True and
+            all(faults[key] is False for key in ('actual_provider_requests','automatic_retries',
+                'broker_connected','live_orders_enabled','release_approved')) and
+            all(faults[name]['cycles']==cycles and faults[name]['fetches']==fetches and
+                faults[name]['reasons']==reasons and faults[name]['paused'] is True and
+                faults[name]['orders_created']==0 and type(faults[name]['orders_created']) is int and
+                faults[name]['ownership_released'] is True
+                for name,(cycles,fetches,reasons) in expected_faults.items()),
+            'FORWARD_FAULT_EVIDENCE')
         hashes=[recovered['account_sha256']]
         session_ids=[]
         for session in sessions:

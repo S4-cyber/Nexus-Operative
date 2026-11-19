@@ -74,6 +74,15 @@ def test_invalid_clock_never_accepts_research_signal(bad):
     assert lane.offer(1,10,'BTC-USD','BUY',10)=='DUPLICATE'
 
 
+def test_clock_regression_is_not_misclassified_as_expiry():
+    lane=BoundedDecisionLane(clock=lambda:9.99)
+    lane.offer(1,10,'BTC-USD','BUY',10)
+    assert lane.decide_one()=='CLOCK_REGRESSION'
+    assert lane.metrics['clock_regressions']==1
+    assert lane.metrics['expired']==lane.metrics['accepted']==0
+    assert lane.metrics['rejected']==1
+
+
 @pytest.mark.parametrize('capacity',[0,-1,3001,True,1.5])
 def test_event_retention_configuration_is_bounded(capacity):
     with pytest.raises(ValueError,match='INVALID_EVENT_RETENTION_CAPACITY'):

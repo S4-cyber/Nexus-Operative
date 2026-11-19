@@ -1,5 +1,46 @@
 # Nexus Operative continuity instructions
 
+## v0.340.360 forward fault-injection release evidence
+
+The mandatory disposable forward release profile now drives four isolated
+M3.3 fault treatments through the actual paper-forward runner. Missing source
+and stale quote treatments each perform exactly three explicit cycles and
+three injected fetches before a durable pause. Regressed and invalid runtime
+clock treatments each pause in one cycle before any fetch. All four sessions
+release ownership and create zero orders; the exact fixed reasons, cycle/fetch
+counts and false automatic-retry/provider/broker/live/release authority are
+consumed by the saved-evidence validator.
+
+Standalone feed admission now rejects polymorphic mappings, equality-forging
+keys/scalars and invalid runtime clocks before mutating its comparison
+baseline, while preserving exact built-in canonical numeric text used by
+retained evidence. The bounded research decision lane reports a clock
+regression separately from ordinary queue expiry and retains a distinct
+counter. No control or editable parameter was added.
+
+The affected forward/feed/release/review surface passed 112 tests and the
+synchronized forward/release/version/roadmap/Windows-workflow scope passed 559
+tests, each with one existing dependency warning. Final full regression passed
+6,575 tests with two platform skips and one existing warning in 1,192.23
+seconds. All sixteen bounded offline profiles passed; saved evidence matched
+422 source files /
+`9902d75dfb2d2530a74ac5b7a3b87a58e778a0caf76b97508bf8dd33ae729bdd`
+and report SHA-256 is
+`e676ac147ef38fdd009799f2ede9701f5580e4124796da213282dee79ac1182e`.
+The 165-member v0.340.360 wheel reports the synchronized version and has
+SHA-256
+`ef33d2f275eae145dd37441d05ef7bf04646f54ac796c317da378825ffbb8e53`.
+
+This is injected local fail-closed evidence, not actual provider availability,
+clock-hardware or network-recovery evidence, sustained genuine-feed realism,
+broker-paper acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, fail-closed entries, reducing exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Rough implementation remains about 40%,
+with an exact weighted index of 38% (30-45%, low confidence), and 0/9 stages
+independently accepted. Fresh exact-source hosted CI remains mandatory.
+
 ## v0.340.359 burst measurement-window attestation
 
 Bounded linked-ledger burst percentiles now carry an exact process-local

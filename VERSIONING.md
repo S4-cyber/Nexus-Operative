@@ -1,5 +1,42 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.359 burst measurement-window attestation
+
+**Current development build: 0.340.359 (pre-release).** Bounded durable burst
+percentiles now include an exact process-local measurement-window attestation.
+Monotonic clock-sample count, elapsed duration, queue/durable/end-to-end sample
+counts and dequeued/completed/expired/flushed outcomes must reconcile with the
+public burst report, with emergency halt inside the window. A clock regression
+fails closed instead of becoming expiry. Exact release validation rejects
+schema/count drift, non-finite duration and any market/broker latency or
+throughput claim.
+
+The complete capacity/release/version scope passed 173 tests, the Windows/
+installer/browser-workflow/evidence/API scope passed 105, and final full
+regression passed 6,562 tests with two platform skips and one existing warning
+in 1,172.06 seconds. All sixteen bounded profiles passed with 422-file source
+fingerprint
+`a3cc4168a9b6ab8fe68a839e35dd89c5ef796f62c28ad41f7a8aa5ac24f62cc6`
+and report SHA-256
+`fbd4f1248e1eb5551abbe5010c2c06c5f2c66b50c93b69faefcd58ed22771bc8`.
+The two 30-offer treatments each admitted/completed eight, rejected 22
+overflow offers, retained 67 commands and attested 18 monotonic samples. Their
+215.231 ms and 117.165 ms local windows are synthetic machine-specific
+observations, not performance, market moves or broker latency. The 165-member
+wheel reports v0.340.359 and has SHA-256
+`faffb355f965363bcfe1cb5f2d0f9b08fd800ff0f6a061e6953a14fcf74af66b`.
+
+Predecessor PR #75 passed all exact-source hosted jobs. Fresh hosted execution
+is required for this increment. It does not establish sustained/native Windows
+pressure, broker-paper acceptance, genuine-feed realism, funding/live/cloud
+readiness, performance, profitability or release approval. No UI control or
+editable parameter changed. Engagement and optional AI remain OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven tabs and black/bright-purple bottom-right hover help
+remain intact. Rough implementation remains about 40%, exact weighted index
+38% (30-45%, low confidence), with 0/9 stages accepted; trading, funding and
+release permissions remain false and no launch date is established.
+
 ## v0.340.358 burst capacity-bound evidence
 
 **Current development build: 0.340.358 (pre-release).** Bounded durable burst

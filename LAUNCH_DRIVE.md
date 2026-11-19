@@ -1,5 +1,40 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.359 — burst measurement-window attestation
+
+M3.2/M5.1 burst evidence now binds each percentile set to an exact
+process-local window. Monotonic clock samples, elapsed duration, queue/durable/
+end-to-end sample counts and the dequeued/completed/expired/flushed partition
+must reconcile with the public burst counts, and emergency halt must occur
+before the window closes. Clock regression fails closed instead of appearing
+as expiry. The release validator rejects altered timing schema, counts,
+duration or any claim of market/broker latency or throughput.
+
+The capacity/release/version scope passed 173 tests, the Windows/installer/
+browser-workflow/evidence/API scope passed 105, and final full regression
+passed 6,562 tests with two platform skips and one existing warning in
+1,172.06 seconds. Sixteen offline profiles passed with 422-file source
+fingerprint
+`a3cc4168a9b6ab8fe68a839e35dd89c5ef796f62c28ad41f7a8aa5ac24f62cc6`;
+saved-report SHA-256 is
+`fbd4f1248e1eb5551abbe5010c2c06c5f2c66b50c93b69faefcd58ed22771bc8`.
+Both 30-offer treatments admitted/completed eight, rejected 22 overflow offers,
+retained 67 commands and attested 18 monotonic samples. The measured local
+windows, 215.231 ms and 117.165 ms, are synthetic machine-specific evidence,
+not performance or broker/market latency. The 165-member v0.340.359 wheel has
+SHA-256
+`faffb355f965363bcfe1cb5f2d0f9b08fd800ff0f6a061e6953a14fcf74af66b`.
+
+Predecessor PR #75 passed security, saved evidence, real-browser help and both
+Windows regression shards. This increment still requires fresh exact-head CI
+and does not close sustained pressure, native Windows, broker-paper,
+genuine-feed, funding/live/cloud or release gates. No UI control changed.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven tabs
+and black/bright-purple bottom-right hover help remain intact. Rough
+implementation remains about 40%, exact weighted index 38% (30-45%, low
+confidence), with 0/9 stages accepted.
+
 ## v0.340.358 — burst capacity-bound evidence
 
 M3.2/M5.1 now binds every bounded linked-ledger burst to the replayed durable

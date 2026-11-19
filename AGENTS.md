@@ -1,5 +1,47 @@
 # Nexus Operative continuity instructions
 
+## v0.340.359 burst measurement-window attestation
+
+Bounded linked-ledger burst percentiles now carry an exact process-local
+measurement-window attestation. The report binds monotonic clock-sample count,
+elapsed window, queue-wait/durable/end-to-end sample counts and the complete
+dequeued/completed/expired/flushed outcome partition to the public burst
+counts. The final emergency halt occurs before the window closes. Any clock
+regression now fails closed as `BURST_CLOCK_REGRESSION` instead of being
+misclassified as queue expiry. The release profile consumes the exact schema
+and rejects altered sample arithmetic, outcome counts, non-finite duration or
+market/broker latency and throughput authority.
+
+The complete affected capacity/release/version scope passed 173 tests; the
+synchronized Windows/installer/browser-workflow/evidence/API scope passed 105
+tests. Final full regression passed 6,562 tests with two platform skips and one
+existing dependency warning in 1,172.06 seconds. All sixteen bounded offline
+profiles passed; saved evidence matched 422 source files /
+`a3cc4168a9b6ab8fe68a839e35dd89c5ef796f62c28ad41f7a8aa5ac24f62cc6`
+and report SHA-256 is
+`fbd4f1248e1eb5551abbe5010c2c06c5f2c66b50c93b69faefcd58ed22771bc8`.
+Both 30-offer treatments admitted and completed eight bounded items, rejected
+22 overflow offers, retained 67 commands, and attested 18 monotonic samples
+with the emergency halt inside the window. The ordinary and atomic windows
+were 215.231 ms and 117.165 ms on this temporary runner; these are
+machine-specific synthetic observations, not performance, throughput, market
+moves or broker latency. The 165-member v0.340.359 wheel reports the
+synchronized version and has SHA-256
+`faffb355f965363bcfe1cb5f2d0f9b08fd800ff0f6a061e6953a14fcf74af66b`.
+
+Exact-source predecessor PR #75 passed public security/Gitleaks, saved
+evidence, real-browser help acceptance and both complete Windows regression
+shards. Fresh exact-source hosted execution remains mandatory for this
+increment. This is M3.2/M5.1 offline timing-evidence hardening, not sustained
+pressure, native Windows power-loss/profile acceptance, broker-paper
+acceptance, genuine-feed trial realism, funding/live/cloud readiness,
+performance, profitability or release approval. No control or editable
+parameter was added. Engagement and optional AI remain OFF by default; limits,
+account checks, fail-closed entries, reducing exits, independent emergency
+stop, seven beginner tabs and black/bright-purple bottom-right hover help
+remain intact. Rough implementation remains about 40%, with an exact weighted
+index of 38% (30-45%, low confidence), and 0/9 stages independently accepted.
+
 ## v0.340.358 burst capacity-bound evidence
 
 The bounded linked-ledger burst treatments now retain and validate their exact

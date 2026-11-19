@@ -1,5 +1,43 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.357 — admission-authority inventory
+
+M3.1 now has a source-declared, read-only inventory for twelve local authority
+surfaces. It binds each declared method/path to the running FastAPI route table
+and fails closed on drift. The inventory records safe defaults, gate families,
+automatic-start/resume posture and reducing-exit posture while keeping broker,
+live-order, money-movement, spendable-funds, release and learned-policy
+authority false. Reading it touches no credential, provider, storage or broker.
+
+The direct scope passed 186 tests. The synchronized release/Windows-workflow
+scope passed 234 tests, the ordered CI inventory passed 20 Node tests, and
+compilation, deterministic roadmap equality and diff checks passed. Sixteen
+bounded offline profiles passed;
+saved evidence matched 422 source files /
+`bdc202053733c64b8136bdd857e9b622751386845ed4344c06f197bc8c272f75`
+and report SHA-256 is
+`fc120a97664eb289540b8cc7a21466289d9ba884703cc33fa5dd0250845e7b86`.
+These are local synthetic/offline results, not broker, feed, Windows, funding,
+cloud, trading or release acceptance.
+The 165-member wheel reports v0.340.357 and has SHA-256
+`d73708c520cef3acc26f61a721bcdf4bdd715acc12fb61724daba03be96dcb9c`.
+
+Full regression also exposed an emergency-cut result-classification race. A
+SQLite-blocked fill already rolled back and cancelled after the independent
+cut, but an optional forward-session diagnostic could race closed runner
+ownership and obscure the cut as a generic storage failure. The fill boundary
+now returns the authoritative cut veto directly; durable halt/cancel and
+no-fill behavior are unchanged. The race passed five exact repetitions and 73
+related tests with one platform skip. Final full regression passed 6,553 tests
+with two platform skips and two existing warnings in 984.79 seconds.
+
+No UI control changed. Engagement and optional AI remain OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Weighted implementation remains 38% (30-45%, low
+confidence), with 0/9 stages independently accepted. Trading, funding and
+release permissions remain false; no launch date is predicted.
+
 ## v0.340.356 — deterministic vault-test isolation
 
 PR #72 passed public security, saved evidence, browser/help and regression

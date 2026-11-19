@@ -23,14 +23,24 @@ def test_installer_smoke_bounds_every_external_process_and_records_phases():
         ('prior-version-recovery','150'),('default-data-first-start','120'),
         ('default-data-restart','120'),('uninstall','180')]
     assert "Invoke-BoundedProcess $Installer" in script
-    assert "all_external_processes_bounded=$true" in script
-    assert "phase_evidence_recorded=$true" in script
-    assert "maximum_phase_timeout_seconds=300" in script
+    assert "all_external_processes_bounded = $true" in script
+    assert "phase_evidence_recorded = $true" in script
+    assert "maximum_phase_timeout_seconds = 300" in script
     assert "if (Test-Path $phaseEvidence) { throw 'Installer phase evidence already exists' }" in script
+    assert "if (Test-Path $resultEvidence) { throw 'Installer result evidence already exists' }" in script
     assert "[Guid]::NewGuid().ToString('D')" in script
     assert 'source_commit = $SourceCommit' in script
     assert 'version = $Version' in script
     assert 'installer_sha256 = $installerSha256' in script
+    assert "mode = 'INSTALLER_SMOKE_RESULT'" in script
+    assert 'session_id = $phaseSessionId' in script
+    assert 'native_windows_acceptance = $false' in script
+    assert 'actual_broker_acceptance = $false' in script
+    assert 'live_orders_enabled = $false' in script
+    assert 'money_movement_enabled = $false' in script
+    assert 'release_approved = $false' in script
+    assert '[IO.File]::Move($temporaryResult, $resultEvidence)' in script
+    assert 'Set-Content "$EvidenceDirectory/installer-result.json"' not in script
 
 
 def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagnostics():
@@ -56,13 +66,19 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert '--installer $installer --expected-version $version' in workflow
     assert '--expected-source-commit $env:NEXUS_SOURCE_COMMIT' in workflow
     assert 'installer-phase-review.json' in workflow
+    assert 'python tools/windows_installer_result_review.py --input' in workflow
+    assert '--phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json"' in workflow
+    assert 'installer-result-review.json' in workflow
     assert 'python tools/windows_distribution_binding_review.py --phase-review' in workflow
+    assert '--installer-result-review release/installer-result-review.json' in workflow
     assert '--artifact-manifest release/artifact-manifest.json' in workflow
     assert '--expected-source-commit $env:NEXUS_SOURCE_COMMIT' in workflow
     assert 'distribution-binding-review.json' in workflow
     assert 'Copy-Item tools/windows_owner_profile_probe.ps1 release/windows-owner-profile-probe.ps1' in workflow
     assert 'Copy-Item tools/windows_owner_profile_review.py release/windows-owner-profile-review.py' in workflow
     assert 'release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py' in workflow
+    assert 'release/release-trial-evidence.json release/installer-result-review.json release/windows-owner-profile-probe.ps1' in workflow
+    assert 'Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result-review.json" release/installer-result-review.json' in workflow
     assert 'Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json' in workflow
     envelope_create='python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/distribution-envelope.json release/artifact-manifest.json release/distribution-binding-review.json'
     envelope_verify='python -m nexus.artifact_manifest verify release/distribution-envelope.json release'
@@ -71,6 +87,9 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert 'release/windows-owner-profile-probe.ps1' in workflow
     assert 'release/windows-owner-profile-review.py' in workflow
     assert workflow.index('python -m nexus.artifact_manifest verify') < workflow.index('python tools/windows_distribution_binding_review.py')
+    assert workflow.index('python tools/windows_installer_phase_review.py') < workflow.index('python tools/windows_installer_result_review.py')
+    assert workflow.index('python tools/windows_installer_result_review.py') < workflow.index('Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result-review.json" release/installer-result-review.json')
+    assert workflow.index('Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result-review.json" release/installer-result-review.json') < workflow.index('python -m nexus.artifact_manifest create')
     assert workflow.index('python tools/windows_distribution_binding_review.py') < workflow.index('Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json')
     assert workflow.index('Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json') < workflow.index(envelope_create)
     assert workflow.index(envelope_create) < workflow.index(envelope_verify)
@@ -104,8 +123,19 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert 'release/artifact-manifest.json' in distribution_upload
     assert 'release/distribution-binding-review.json' in distribution_upload
     assert 'release/distribution-envelope.json' in distribution_upload
+    assert 'release/installer-result-review.json' in distribution_upload
     assert 'name: Preserve installer acceptance evidence\n        if: always()' in workflow
     assert '${{ runner.temp }}/nexus-installer-evidence' in workflow
     assert workflow.count(PRIOR_RECOVERY_FIXTURE_COMMIT)==2
     assert '09bb7280cd2e654018d491db52e19660b2b8e180' not in workflow
     assert 'trusted terminal-clock' in workflow
+
+
+def test_owner_instructions_require_the_manifest_bound_installer_result_review():
+    windows=(ROOT/'WINDOWS_ACCEPTANCE.md').read_text(encoding='utf-8')
+    owner=(ROOT/'OWNER_PAPER_ACCEPTANCE.md').read_text(encoding='utf-8')
+    for text in (windows,owner):
+        assert 'installer-result-review.json' in text
+        assert '--installer-result-review' in text
+    assert '--distribution-envelope' in windows
+    assert '--expected-source-commit' in windows

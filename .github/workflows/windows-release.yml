@@ -162,6 +162,8 @@ jobs:
           $installer = (Resolve-Path "release/NexusOperative-Setup-$version.exe").Path
           python tools/windows_installer_phase_review.py --input "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phases.jsonl" --installer $installer --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json"
           if ($LASTEXITCODE -ne 0) { throw 'Installer phase evidence validation failed' }
+          python tools/windows_installer_result_review.py --input "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result.json" --phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json" --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result-review.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Installer result evidence validation failed' }
       - name: Create distribution checksum manifest
         timeout-minutes: 20
         shell: pwsh
@@ -171,15 +173,16 @@ jobs:
           Copy-Item dist/NexusOperative.exe release/NexusOperative.exe
           Copy-Item tools/windows_owner_profile_probe.ps1 release/windows-owner-profile-probe.ps1
           Copy-Item tools/windows_owner_profile_review.py release/windows-owner-profile-review.py
+          Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result-review.json" release/installer-result-review.json
           python -m nexus.release_trials --output release/release-trial-evidence.json
           if ($LASTEXITCODE -ne 0) { throw 'Distribution offline trials failed' }
           python -m nexus.release_evidence release/release-trial-evidence.json
           if ($LASTEXITCODE -ne 0) { throw 'Distribution evidence validation failed' }
-          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe" release/release-trial-evidence.json release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py
+          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe" release/release-trial-evidence.json release/installer-result-review.json release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py
           if ($LASTEXITCODE -ne 0) { throw 'Manifest creation failed' }
           python -m nexus.artifact_manifest verify release/artifact-manifest.json release
           if ($LASTEXITCODE -ne 0) { throw 'Manifest verification failed' }
-          python tools/windows_distribution_binding_review.py --phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json" --artifact-manifest release/artifact-manifest.json --installer "release/NexusOperative-Setup-$version.exe" --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json"
+          python tools/windows_distribution_binding_review.py --phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json" --installer-result-review release/installer-result-review.json --artifact-manifest release/artifact-manifest.json --installer "release/NexusOperative-Setup-$version.exe" --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json"
           if ($LASTEXITCODE -ne 0) { throw 'Installer distribution binding validation failed' }
           Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json
           python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/distribution-envelope.json release/artifact-manifest.json release/distribution-binding-review.json
@@ -210,6 +213,7 @@ jobs:
             release/artifact-manifest.json
             release/distribution-envelope.json
             release/release-trial-evidence.json
+            release/installer-result-review.json
             release/distribution-binding-review.json
             release/windows-owner-profile-probe.ps1
             release/windows-owner-profile-review.py

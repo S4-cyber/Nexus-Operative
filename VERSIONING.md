@@ -1,5 +1,32 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.364 installer semantic-result distribution binding
+
+The installer smoke result now carries the exact pre-release version, source
+commit, installer digest and phase-session identity alongside eleven required
+semantic assertions, bounded-process evidence and false authority. Its strict
+reviewer rejects duplicate keys, linked or changed files, malformed and
+bool-as-int values, stale phase/source/session/digest metadata, promoted
+authority and output overwrite. The normalized review is manifest-bound,
+distribution-bound, uploaded with the distribution and independently consumed
+by the ordinary-user reviewer. The final strict trust-chain and documentation
+scope passed 151 tests with one existing warning. Final full regression passed
+6,665 tests with two platform skips and one existing warning in 1,297.22
+seconds. All sixteen offline profiles and saved-evidence verification passed
+against 424 source files /
+`9b44d33910b1b73a8c3ff82228426fb576bc048b1656116f6f49313e9714b1d9`;
+report SHA-256 is
+`68dd9d7fd255638ecf7daa05359a6c0487eefde500b36aa877e049a32eeee003`.
+
+This remains below 1.0 and does not grant native Windows, clean-machine,
+ordinary-profile, power-loss, broker-paper, genuine-market, funding/live/cloud,
+performance, profitability or release acceptance. Owner approval remains
+required after all independent gates. Engagement and optional AI stay OFF by
+default; no UI control or editable parameter was introduced. Implementation
+remains 38% weighted (about 40%, 30-45% uncertainty, low confidence), with 0/9
+stages independently accepted.
+
+
 ## v0.340.363 fail-closed worker cleanup and complete mutation inventory
 
 Paper-forward shutdown now has an explicit quiescence boundary. The actual

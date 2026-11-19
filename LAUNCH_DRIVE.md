@@ -1,5 +1,30 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.364 — installer semantic-result distribution binding
+
+The Windows installer result now binds its exact version, source, installer
+digest and phase session to eleven semantic assertions and explicit false
+authority. A strict no-overwrite reviewer normalizes it, the inner artifact
+manifest includes it, the distribution review binds its exact bytes and digest,
+and the ordinary-user reviewer independently revalidates the semantics and
+complete envelope chain. The final strict trust-chain and documentation scope
+passed 151 tests with one existing warning; final full regression passed 6,665
+tests with two platform skips and one existing warning in 1,297.22 seconds.
+All 16 offline profiles plus saved-evidence verification passed against 424
+source files / `9b44d33910b1b73a8c3ff82228426fb576bc048b1656116f6f49313e9714b1d9`;
+report SHA-256 is
+`68dd9d7fd255638ecf7daa05359a6c0487eefde500b36aa877e049a32eeee003`.
+
+This closes an offline M1 distribution-evidence defect only. Native Windows
+installer execution, clean-machine and ordinary-user acceptance remain
+required; no broker-paper, sustained genuine-feed, funding/live/cloud,
+performance, profitability or release acceptance is claimed. No UI control
+changed. OFF defaults, limits, account checks, exits, seven tabs and
+black/bright-purple bottom-right help remain unchanged. Progress stays 38%
+weighted (about 40%, 30-45% uncertainty, low confidence), 0/9 accepted, with no
+release permission, trading permission or launch date.
+
+
 ## v0.340.363 — worker quiescence and mutation-authority completeness
 
 Process-control exits from the actual paper-forward worker now preserve the

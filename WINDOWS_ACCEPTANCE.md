@@ -1,5 +1,26 @@
 # Windows distribution and acceptance evidence
 
+## v0.340.364 installer semantic-result evidence
+
+The distribution now includes `installer-result-review.json` alongside
+`artifact-manifest.json`, `distribution-binding-review.json`,
+`windows-owner-profile-probe.ps1` and `windows-owner-profile-review.py`. The
+inner manifest and distribution review bind the exact result-review bytes,
+digest, version, source commit, installer digest, phase session and required
+semantic assertions. Keep all files from one exact distribution together; do
+not substitute a result review from another run.
+
+After generating the private ordinary-user probe, run the bundled reviewer with
+all shipped evidence inputs:
+
+```powershell
+python .\windows-owner-profile-review.py --probe .\owner-profile-probe.json --distribution-binding .\distribution-binding-review.json --installer-result-review .\installer-result-review.json --artifact-manifest .\artifact-manifest.json --distribution-envelope .\distribution-envelope.json --probe-tool .\windows-owner-profile-probe.ps1 --review-tool .\windows-owner-profile-review.py --expected-version 0.340.364 --expected-source-commit <40-lowercase-hex-source-commit> --output .\owner-profile-review.json
+```
+
+This command validates a self-reported owner probe against the exact shipped
+chain. It does not establish clean-machine, native-window, power-loss, broker,
+market, funds, live, cloud or release acceptance.
+
 ## v0.340.50 owner ordinary-profile/ACL evidence candidate
 
 The Windows distribution now includes `windows-owner-profile-probe.ps1`, `windows-owner-profile-review.py`, `artifact-manifest.json` and `distribution-binding-review.json`. The probe refuses elevation and non-default per-user LocalAppData install/data locations, exercises inherited-ACL create/read, exclusive lock, replace, rename/delete and cleanup behavior, and emits no username, SID or path. The reviewer binds that allowlisted probe to the exact CI-reviewed installer, installed executable, source/version and both manifest-shipped tools.

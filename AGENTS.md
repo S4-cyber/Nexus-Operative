@@ -1,7 +1,31 @@
-Warning: truncated output (original token count: 190219)
-Total output lines: 3006
-
 # Nexus Operative continuity instructions
+
+## v0.340.350 reducing-exit, credential-source and final-upload boundaries
+
+Emergency cuts continue to block every new paper entry, but the local portfolio
+route no longer strands an existing long: the sell-only exit still validates a
+fresh public quote and performs one atomic reducing ledger mutation while cut
+or halt state is latched. Optional paid research resolves one credential once;
+an environment key is never selected unless its explicit opt-in is ON. Exact
+post-reconciliation review resolves journal parents without dereferencing the
+caller-selected leaf, preserving no-follow identity checks across the three
+ancillary stores. Retained injected and unknown observations now count as
+operational incidents. The public-history audit parses every bounded blob as a
+possible JSON document, including BOM-prefixed private reports. The Windows
+release lane re-verifies both the inner artifact manifest and outer envelope
+after the exact installer-set check and immediately before the sole
+executable-bearing upload.
+
+This is local injected boundary hardening, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, reducing exits, the independent
+emergency cut, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. The weighted implementation estimate remains 38% (30-45%,
+low confidence), with 0/9 stages independently accepted. Fresh exact-source
+local evidence and hosted CI are mandatory before this increment is described
+as verified; the native Windows lane remains separately undispatched.
 
 ## v0.340.349 cut-ordering, consent, open-session and release-tree boundaries
 

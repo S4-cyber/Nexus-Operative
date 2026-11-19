@@ -1267,6 +1267,46 @@ def test_ancillary_parent_aliases_are_resolved_before_component_composition(
 
 @pytest.mark.parametrize('field', (
     'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_ancillary_leaf_symlink_is_rejected(tmp_path, field):
+    options=subject._fixture(tmp_path);selected=Path(options[field])
+    link=tmp_path/f'{field}-selected-leaf.sqlite3'
+    try:link.symlink_to(selected)
+    except (OSError,NotImplementedError):
+        pytest.skip('symlink creation unavailable for this Windows profile')
+    alias=tmp_path/f'{field}-parent-alias';alias.mkdir()
+    supplied=alias/'..'/link.name
+    assert subject._frozen_path(supplied,'TEST_PATH_INVALID')==link
+    options[field]=supplied;before=files(tmp_path)
+    with pytest.raises(ValueError,match='FILE_IDENTITY_UNAVAILABLE'):
+        subject.review(**options)
+    assert files(tmp_path)==before
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
+def test_selected_ancillary_leaf_replaced_by_symlink_fails_closed(
+        tmp_path,monkeypatch,field):
+    options=subject._fixture(tmp_path);selected=Path(options[field])
+    backup=tmp_path/f'{field}-original.sqlite3'
+    staged=tmp_path/f'{field}-replacement-link.sqlite3'
+    try:staged.symlink_to(backup)
+    except (OSError,NotImplementedError):
+        pytest.skip('symlink creation unavailable for this Windows profile')
+    original_bytes=selected.read_bytes();original=subject.acceptance_status;calls=[]
+    def replace(**kwargs):
+        result=original(**kwargs);calls.append(1)
+        if len(calls)==1:
+            selected.replace(backup);staged.replace(selected)
+        return result
+    monkeypatch.setattr(subject,'acceptance_status',replace)
+    with pytest.raises(ValueError,
+            match='PAPER_PROVIDER_POST_RECONCILIATION_FILE_IDENTITY_CHANGED'):
+        subject.review(**options)
+    assert selected.is_symlink() and backup.read_bytes()==original_bytes
+
+
+@pytest.mark.parametrize('field', (
+    'pacing_path', 'activity_store_path', 'acceptance_store_path'))
 def test_ancillary_file_replacement_at_same_path_fails_closed(
         tmp_path, monkeypatch, field):
     options=subject._fixture(tmp_path);path=Path(options[field])

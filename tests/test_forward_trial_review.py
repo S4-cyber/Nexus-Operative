@@ -158,6 +158,22 @@ def test_even_complete_declared_public_coverage_cannot_accept_market_or_broker_t
     assert result['over_limit_coverage_gaps']==0
     assert result['over_limit_coverage_gap_seconds']=='0'
 
+@pytest.mark.parametrize(('source,reason'),[
+    (trial.INJECTED,'INJECTED_OBSERVATIONS_IN_WINDOW'),
+    ('UNKNOWN','UNKNOWN_SOURCE_LABELS_IN_WINDOW'),
+])
+def test_nonpublic_observation_is_classified_as_operational_incident(
+        tmp_path,monkeypatch,source,reason):
+    points=[(i,True) for i in range(0,72*3600+1,10)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED'),
+        ([(100,True)],source,'STOPPED')])
+    result=run(path,72*3600)
+    assert result['coverage_fraction']=='1.000000'
+    assert result['operational_incidents_present'] is True
+    assert result['declared_coverage_target_met'] is False
+    assert result['incident_free_coverage_target_met'] is False
+    assert reason in result['review_reasons']
+
 
 def test_empty_running_session_overlapping_window_blocks_incident_free_target(tmp_path,monkeypatch):
     points=[(i,True) for i in range(0,72*3600+1,10)]

@@ -196,6 +196,10 @@ jobs:
           if ($installers.Count -ne 1 -or $installers[0].FullName -cne $expected) {
             throw 'Distribution contains an unreviewed or ambiguous installer set'
           }
+          python -m nexus.artifact_manifest verify release/artifact-manifest.json release
+          if ($LASTEXITCODE -ne 0) { throw 'Final artifact manifest verification failed' }
+          python -m nexus.artifact_manifest verify release/distribution-envelope.json release
+          if ($LASTEXITCODE -ne 0) { throw 'Final distribution envelope verification failed' }
       - name: Upload distribution with source and checksum manifest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

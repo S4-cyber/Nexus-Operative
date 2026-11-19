@@ -128,6 +128,47 @@ def test_paper_ledger_buy_requires_selected_engaged_tier(tmp_path,monkeypatch):
     assert c.post("/api/paper/portfolio/sell",json={"product":"BTC-USD"}).status_code==200
     c.post("/api/portal",json={"enabled":False})
 
+def test_emergency_cut_keeps_reducing_paper_exit_available(tmp_path,monkeypatch):
+    from nexus import emergency_intent
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    monkeypatch.setattr(backend.observer,"start",lambda:None)
+    monkeypatch.setattr(backend.refresh_worker,"start",lambda *a,**k:None)
+    monkeypatch.setattr(backend.observer,"stop",lambda:None)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+    buy={"product":"BTC-USD","notional":10,"tier":"terrestrial"}
+    assert client.post("/api/paper/portfolio/buy",json=buy).status_code==200
+    emergency_intent.path(backend.research_order_gateway._path()).write_bytes(emergency_intent.RECORD)
+    assert client.post("/api/paper/portfolio/buy",json=buy).status_code==409
+    closed=client.post("/api/paper/portfolio/sell",json={"product":"BTC-USD"})
+    assert closed.status_code==200 and closed.json()["positions"]==[]
+    assert backend._execution_halted() is True
+
+def test_emergency_cut_exit_still_fails_closed_on_invalid_quote(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_paused",False)
+    good={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+          "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+          "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(good))
+    client=TestClient(app)
+    client.post("/api/paper/portfolio/init",json={"paper_capital":10000})
+    configure("terrestrial",True)
+    assert client.post("/api/paper/portfolio/buy",json={"product":"BTC-USD","notional":10,"tier":"terrestrial"}).status_code==200
+    monkeypatch.setattr(backend,"_halted",True)
+    monkeypatch.setattr(backend,"read_ticker",lambda product:(_ for _ in ()).throw(ValueError("QUOTE_STALE")))
+    assert client.post("/api/paper/portfolio/sell",json={"product":"BTC-USD"}).status_code==422
+    assert len(client.get("/api/paper/portfolio").json()["positions"])==1
+
 def test_ledger_ui_has_explicit_tier_selector():
     html=TestClient(app).get("/portal").text
     assert 'id="papertier"' in html

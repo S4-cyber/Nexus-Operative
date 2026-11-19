@@ -146,7 +146,11 @@ def _stable_reader(post_budget, journal, store_binding, paths,
 
 def _frozen_path(value, code):
     try:
-        return Path(value).resolve()
+        # Resolve the parent while preserving the selected leaf for the later
+        # lstat/O_NOFOLLOW identity checks. Whole-path resolution would hide a
+        # final-component symlink and certify its target instead.
+        path = Path(value).absolute()
+        return path.parent.resolve() / path.name
     except (TypeError, ValueError, OSError, RuntimeError, AttributeError):
         _fail(code)
 

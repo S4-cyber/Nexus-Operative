@@ -71,6 +71,20 @@ def test_export_renamed_as_json_is_blocked_but_offline_fixture_report_is_allowed
     commit(root,'validation/report.json',json.dumps({'mode':'BOUNDED_OFFLINE_RELEASE_TRIALS','fixture':True}).encode())
     assert not audit.audit(root,history=True)['passed']
 
+@pytest.mark.parametrize('history',[False,True])
+def test_bom_prefixed_private_json_is_blocked_when_renamed(tmp_path,history):
+    root=repository(tmp_path)
+    private='private-account-fixture'
+    raw=b'\xef\xbb\xbf'+json.dumps({
+        'mode':'PAPER_ACCOUNT_ACCEPTANCE_PROBE',
+        'account_sha256':private,
+    }).encode()
+    commit(root,'ordinary.txt',raw)
+    result=audit.audit(root,history=history)
+    assert not result['passed']
+    assert any(item['rule']=='PRIVATE_FINANCIAL_REPORT' for item in result['findings'])
+    assert private not in json.dumps(result)
+
 
 def test_private_retired_order_id_baseline_is_blocked_even_when_renamed(tmp_path):
     root=repository(tmp_path)

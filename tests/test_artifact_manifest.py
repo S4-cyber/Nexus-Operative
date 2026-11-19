@@ -146,6 +146,21 @@ def test_distribution_envelope_detects_binding_review_substitution(tmp_path):
     assert changed.returncode==1
     assert changed.stdout==b'ARTIFACT_MANIFEST_CHECK_FAILED\n'
 
+def test_inner_manifest_must_be_reverified_after_envelope_creation(tmp_path):
+    payload=tmp_path/'NexusOperative.exe';payload.write_bytes(b'application')
+    inner=tmp_path/'artifact-manifest.json'
+    subprocess.run(_command()+['create','--version',VERSION,'--commit',SOURCE,
+        '--output',str(inner),str(payload)],check=True,capture_output=True)
+    review=tmp_path/'distribution-binding-review.json';review.write_text('{"passed":true}\n')
+    envelope=tmp_path/'distribution-envelope.json'
+    subprocess.run(_command()+['create','--version',VERSION,'--commit',SOURCE,
+        '--output',str(envelope),str(inner),str(review)],check=True,capture_output=True)
+    payload.write_bytes(b'post-envelope-mutation')
+    envelope_verify=subprocess.run(_command()+['verify',str(envelope),str(tmp_path)],capture_output=True)
+    inner_verify=subprocess.run(_command()+['verify',str(inner),str(tmp_path)],capture_output=True)
+    assert envelope_verify.returncode==0
+    assert inner_verify.returncode==1 and inner_verify.stdout==b'ARTIFACT_MANIFEST_CHECK_FAILED\n'
+
 
 @pytest.mark.parametrize("raw", (
     b'{"schema":"nexus.artifacts.v1","schema":"nexus.artifacts.v1"}',

@@ -1,8 +1,30 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.350 reducing-exit, credential-source and final-upload boundaries
+
+**Current development build: 0.340.350 (pre-release).** A latched emergency cut
+continues to veto new entries while leaving only a quote-validated atomic close
+of an existing local-paper long available. Paid-provider requests select one
+authorized credential once and cannot fall back to an unopted environment key.
+Exact reconciliation preserves selected journal leaves for no-follow identity
+checks; injected and unknown retained observations are incidents; public audits
+parse bounded BOM-prefixed JSON; and the Windows lane re-verifies inner and
+outer manifests immediately before upload.
+
+This is local injected M3/M4/M7/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation remains weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted; trading, funding and
+release permissions remain false and no launch date is established. Exact
+local release evidence and fresh hosted workflows are required for this source.
+
 ## v0.340.349 cut-ordering, consent, open-session and release-tree boundaries
 
-**Current development build: 0.340.349 (pre-release).** Emergency admission is
+**Prior development build: 0.340.349 (pre-release).** Emergency admission was
 rechecked after the durable-order write lock; optional paid-provider consent is
 bounded, duplicate-free and exact before authorization; RUNNING trial sessions
 remain unresolved across later review windows; source evidence and public Git

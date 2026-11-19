@@ -208,6 +208,23 @@ def test_shutdown_worker_creation_failure_still_runs_stop_fence(lane,monkeypatch
     assert events==['drained','APPLICATION_SHUTDOWN','observer','refresh','found']
 
 
+def test_shutdown_surfaces_unquiescent_forward_worker_after_remaining_cleanup(
+        lane,monkeypatch):
+    events=[]
+    monkeypatch.setattr(api,'_drain_emergency_lane',lambda:events.append('drained'))
+    def unresolved(reason):
+        events.append(reason)
+        raise ValueError('PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT')
+    monkeypatch.setattr(api,'paper_forward_runner',SimpleNamespace(
+        stop=unresolved,request_cut=lambda:None))
+    monkeypatch.setattr(api.observer,'stop',lambda:events.append('observer'))
+    monkeypatch.setattr(api.refresh_worker,'shutdown',lambda:events.append('refresh'))
+    monkeypatch.setattr(api.found_market_worker,'shutdown',lambda:events.append('found'))
+    with pytest.raises(ValueError,match='PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT'):
+        api._shutdown_application_workers()
+    assert events==['drained','APPLICATION_SHUTDOWN','observer','refresh','found']
+
+
 @pytest.mark.parametrize('stop_failure',[False,True],ids=['preserve-cancellation','surface-stop-failure'])
 def test_cancelled_lifespan_observes_private_worker_completion(lane,monkeypatch,stop_failure):
     entered=threading.Event();release=threading.Event();errors=[]

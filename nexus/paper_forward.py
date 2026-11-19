@@ -30,6 +30,7 @@ from nexus.sqlite_journal_guard import (
     require_main_connection, sync_committed_main)
 
 INTERVAL=POLICY['interval_seconds']
+STOP_JOIN_TIMEOUT=6
 RANKING_INTERVAL=POLICY['ranking_seconds']
 PRODUCT=POLICY['product']
 CLOCK_DISCONTINUITY_TOLERANCE_SECONDS=2
@@ -384,25 +385,38 @@ class PaperForwardRunner:
             # Fence the full local order sequence before acknowledging stop.
             with self._execution_lock:pass
             worker=self._thread
-            if worker and worker.is_alive() and worker is not threading.current_thread():worker.join(timeout=6)
-            if was_enabled and self._session:
-                try:self._record('STOP',reason)
-                except (OSError,sqlite3.Error,ValueError):self._error='STOP_DIAGNOSTIC_STORAGE_FAILURE'
-            if self._cycle_lock.acquire(blocking=False):
-                try:self._release_stopped_ownership()
-                finally:self._cycle_lock.release()
+            if worker and worker.is_alive() and worker is not threading.current_thread():
+                worker.join(timeout=STOP_JOIN_TIMEOUT)
+                if worker.is_alive():
+                    self._error='STOP_QUIESCENCE_TIMEOUT'
+                    raise ValueError('PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT')
+            try:
+                if was_enabled and self._session:
+                    try:self._record('STOP',reason)
+                    except (OSError,sqlite3.Error,ValueError):self._error='STOP_DIAGNOSTIC_STORAGE_FAILURE'
+            finally:
+                # Process-control signals from the terminal diagnostic must
+                # remain visible without stranding the local ownership lease.
+                if self._cycle_lock.acquire(blocking=False):
+                    try:self._release_stopped_ownership()
+                    finally:self._cycle_lock.release()
             return self.status()
 
     def _run(self):
-        while not self._intake_stopped():
-            try:self.single_cycle()
-            except Exception as exc:
-                # Unknown worker failures pause rather than creating an unmonitored loop.
-                self._error=type(exc).__name__;self._stop.set()
-                try:self._record('PAUSED','UNHANDLED_WORKER_FAILURE',error_type=type(exc).__name__)
-                except (OSError,sqlite3.Error,ValueError):pass
-            self._stop.wait(INTERVAL)
-        self._release_stopped_ownership()
+        try:
+            while not self._intake_stopped():
+                try:self.single_cycle()
+                except Exception as exc:
+                    # Unknown worker failures pause rather than creating an unmonitored loop.
+                    self._error=type(exc).__name__;self._stop.set()
+                    try:self._record('PAUSED','UNHANDLED_WORKER_FAILURE',error_type=type(exc).__name__)
+                    except (OSError,sqlite3.Error,ValueError):pass
+                self._stop.wait(INTERVAL)
+        finally:
+            # Never leave a dead worker enabled or retaining its process
+            # owner. BaseException remains observable by threading.excepthook.
+            self._stop.set()
+            self._release_stopped_ownership()
 
     def _execute(self,*args):
         with self._execution_lock:return self._execute_locked(*args)

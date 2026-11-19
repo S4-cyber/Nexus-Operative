@@ -180,6 +180,30 @@ def test_http_trial_readiness_requires_local_owner_quiescence_check():
         trials._validate('http',result)
 
 
+def test_http_authority_inventory_rejects_unknown_mutation_and_authority_claim():
+    result=http_report()
+    result['authority_inventory']['mutating_routes'].append(dict(
+        method='POST',path='/api/funding/transfer',
+        authority_class='BANK_TRANSFER',capability='BANK_TRANSFER'))
+    result['authority_inventory']['mutating_route_count']+=1
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_INVENTORY_SCHEMA'):
+        trials._validate('http',result)
+    result=http_report()
+    result['authority_inventory']['bank_transfer_method_present']=True
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_DENIALS'):
+        trials._validate('http',result)
+
+
+def test_http_authority_inventory_consumes_exact_route_classification():
+    result=http_report()
+    result['authority_inventory']['mutating_routes'][0]['capability']='BROKER_ORDRE'
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_MUTATING_ROUTES'):
+        trials._validate('http',result)
+    result=http_report();result['authority_inventory']['unconsumed']=True
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_INVENTORY_SCHEMA'):
+        trials._validate('http',result)
+
+
 @pytest.mark.parametrize(('host_os','native_checked','tool_invocations'), [
     ('WINDOWS_NT',False,17),
     ('WINDOWS_NT',True,16),
@@ -1568,6 +1592,8 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     for target,field,code in ((result,'unconsumed','FORWARD_PROFILE_SCHEMA'),
         (result['recovered'],'unconsumed','FORWARD_RECOVERY_SCHEMA'),
         (result['fault_injection'],'unconsumed','FORWARD_FAULT_SCHEMA'),
+        (result['fault_injection']['process_control_cleanup'],'unconsumed',
+            'FORWARD_PROCESS_CONTROL_SCHEMA'),
         (result['recovered']['sessions'][0],'unconsumed','FORWARD_SESSION_SCHEMA'),
         (result['cycle_latency'],'unconsumed','FORWARD_LATENCY_SCHEMA'),
         (result['recovered']['coverage_review'],'unconsumed','FORWARD_COVERAGE_SCHEMA')):
@@ -1575,6 +1601,8 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
         if target is result:changed[field]=True
         elif target is result['recovered']:changed['recovered'][field]=True
         elif target is result['fault_injection']:changed['fault_injection'][field]=True
+        elif target is result['fault_injection']['process_control_cleanup']:
+            changed['fault_injection']['process_control_cleanup'][field]=True
         elif target is result['recovered']['sessions'][0]:changed['recovered']['sessions'][0][field]=True
         elif target is result['cycle_latency']:changed['cycle_latency'][field]=True
         else:changed['recovered']['coverage_review'][field]=True
@@ -1601,6 +1629,10 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['fault_injection']['live_orders_enabled']=True
     with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    changed['fault_injection']['process_control_cleanup']['keyboard_interrupt']['ownership_released']=False
+    with pytest.raises(ValueError,match='FORWARD_PROCESS_CONTROL_EVIDENCE'):
+        trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['sessions'][0]['session']=result['recovered']['sessions'][1]['session']
     with pytest.raises(ValueError,match='FORWARD_SESSION_BINDING'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['cycle_latency']['p50_ms']=changed['cycle_latency']['p99_ms']+1

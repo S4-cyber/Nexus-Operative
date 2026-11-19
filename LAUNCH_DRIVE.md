@@ -1,5 +1,34 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.363 — worker quiescence and mutation-authority completeness
+
+Process-control exits from the actual paper-forward worker now preserve the
+signal while disabling the runner and releasing its owner lease. Terminal stop
+recording has the same cleanup guarantee. A worker that does not quiesce within
+the bounded join cannot publish `STOP` or let application shutdown appear
+successful. Saved forward evidence covers both `KeyboardInterrupt` and
+`SystemExit` with zero orders and no automatic restart.
+
+The read-only release inventory now exactly classifies every one of the 52
+mutating API routes. Unknown, missing, duplicate, malformed or misspelled
+route classifications fail closed, and bank-transfer, broker-order and cloud
+control presence are computed from those reviewed declarations. The real HTTP
+release profile consumes the exact inventory while every funding, broker,
+live, cloud and release authority remains false.
+
+The synchronized scope passed 237 tests with one existing warning; final full
+regression passed 6,607 tests with two skips and one existing warning in
+1,392.61 seconds. All 16 offline profiles plus saved-evidence verification
+passed. This closes local
+M3.1/M7.1/M9.1 safety-evidence defects only. It is not native Windows or
+power-loss acceptance, actual broker-paper acceptance, a sustained genuine-feed
+trial, funding/live/cloud readiness, profitability or release approval. No UI
+control changed; OFF defaults, limits, account checks, exits, seven tabs and
+black/bright-purple bottom-right help remain unchanged. Progress stays 38%
+weighted (about 40%, 30-45% uncertainty, low confidence), 0/9 accepted, with no
+release permission, trading permission or launch date.
+
+
 ## v0.340.362 — actual-worker failure and cold-reopen fencing
 
 The mandatory disposable forward profile now proves its four injected failure

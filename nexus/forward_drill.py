@@ -28,8 +28,12 @@ FAULT_CASE_PUBLIC_KEYS=frozenset(('cycles','fetches','reasons','paused','orders_
     'evidence_hash_preserved','new_session_distinct','healthy_decision','healthy_reason',
     'healthy_orders_created','automatic_restart'))
 FAULT_PUBLIC_KEYS=frozenset(('mode','passed','source_loss','stale_quote','clock_regression','invalid_clock',
-    'orders_created','sessions_paused','ownership_released','actual_provider_requests','automatic_retries',
+    'process_control_cleanup','orders_created','sessions_paused','ownership_released','actual_provider_requests','automatic_retries',
     'broker_connected','live_orders_enabled','release_approved','limitations'))
+PROCESS_CONTROL_CASE_PUBLIC_KEYS=frozenset(('signal','worker_started','signal_observed','worker_stopped',
+    'runner_disabled','ownership_released','orders_created','stored_state','effective_state',
+    'automatic_restart'))
+PROCESS_CONTROL_PUBLIC_KEYS=frozenset(('keyboard_interrupt','system_exit'))
 FAULT_LIMITATIONS=('Injected local failures, accelerated worker scheduling and abrupt local child termination only; '
     'proves bounded fail-closed worker/cold-reopen behavior, not actual provider availability, operating-system power '
     'loss, clock hardware, network recovery, broker operation or sustained-market acceptance.')
@@ -206,6 +210,49 @@ def _run_fault_worker(root,name):
         if child.stderr is not None:child.stderr.close()
 
 
+def _process_control_cleanup(root,name):
+    """Prove a real worker exposes process control and releases ownership."""
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.forward_ownership import ForwardOwnership
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    root=Path(root);root.mkdir();os.environ['NEXUS_PORTABLE_DATA']=str(root)
+    configure('terrestrial',True)
+    signal=KeyboardInterrupt if name=='keyboard_interrupt' else SystemExit
+    threading=__import__('threading');observed=[];raised=threading.Event()
+    entered=threading.Event();release=threading.Event()
+    previous_hook=threading.excepthook
+    def hook(arguments):
+        observed.append(arguments.exc_type.__name__);raised.set()
+    threading.excepthook=hook
+    gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+    def fail_fetch(_product):
+        entered.set()
+        if not release.wait(10):raise ValueError('PROCESS_CONTROL_RELEASE_TIMEOUT')
+        raise signal('DISPOSABLE_PROCESS_CONTROL')
+    runner=PaperForwardRunner(gateway,fail_fetch,lambda:1000.0)
+    try:
+        started=runner.start('terrestrial')
+        if not entered.wait(10):raise ValueError('FORWARD_DRILL_PROCESS_CONTROL_ENTRY_TIMEOUT')
+        release.set()
+        if not raised.wait(10):raise ValueError('FORWARD_DRILL_PROCESS_CONTROL_TIMEOUT')
+        runner._thread.join(timeout=10)
+        if runner._thread.is_alive():raise ValueError('FORWARD_DRILL_PROCESS_CONTROL_WORKER_ALIVE')
+        status=runner.status();session=runner.sessions()['sessions'][0]
+        candidate=ForwardOwnership(root);candidate.acquire();candidate.release()
+        return dict(signal=signal.__name__,worker_started=started['worker_alive'],
+            signal_observed=observed==[signal.__name__],worker_stopped=not status['worker_alive'],
+            runner_disabled=not status['enabled'],ownership_released=not status['ownership_held'],
+            orders_created=len(gateway.recovery_report()['orders']),stored_state=session['stored_state'],
+            effective_state=session['effective_state'],automatic_restart=status['automatic_restart'])
+    finally:
+        release.set()
+        threading.excepthook=previous_hook
+        if runner._thread and runner._thread.is_alive():
+            runner._stop.set();runner._thread.join(timeout=10)
+        runner._release_stopped_ownership()
+
+
 def _faults(directory):
     """Exercise actual-worker failure, process-death and cold-reopen fences."""
     from datetime import datetime,timezone
@@ -255,12 +302,15 @@ def _faults(directory):
                 healthy_reason=healthy['reason'],
                 healthy_orders_created=len(gateway.session_orders(prepared['session'])),
                 automatic_restart=cold['automatic_restart'])
+        process_control={name:_process_control_cleanup(parent/('process-control-'+name),name)
+            for name in ('keyboard_interrupt','system_exit')}
     finally:
         if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
         else:os.environ['NEXUS_PORTABLE_DATA']=previous
     return dict(mode='DISPOSABLE_FORWARD_FAULT_INJECTION',passed=True,
         source_loss=reports['source_loss'],stale_quote=reports['stale_quote'],
         clock_regression=reports['clock_regression'],invalid_clock=reports['invalid_clock'],
+        process_control_cleanup=process_control,
         orders_created=total_orders,sessions_paused=sum(item['paused'] for item in reports.values()),
         ownership_released=all(item['ownership_released'] for item in reports.values()),
         actual_provider_requests=False,

@@ -1,5 +1,47 @@
 # Nexus Operative continuity instructions
 
+## v0.340.363 fail-closed worker cleanup and complete mutation inventory
+
+The paper-forward worker now disables itself and releases its cross-process
+owner lease in a `finally` boundary even when `KeyboardInterrupt` or
+`SystemExit` terminates the real worker thread. Those process-control signals
+remain observable through the ordinary thread exception boundary. Terminal
+stop diagnostics also release ownership in `finally`; an actual worker that
+remains alive past the bounded join now raises fixed
+`PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT`, retains ownership, and cannot record a
+false durable `STOP`. Application cleanup still runs its remaining fences but
+cannot acknowledge that unresolved shutdown as successful.
+
+The read-only admission-authority report now binds all 52 mutating API
+method/path pairs to closed, exact authority-class and capability vocabularies.
+Unexpected or missing mutation routes, duplicate declarations, malformed
+values, and misspelled or unknown classes/capabilities fail closed. Bank
+transfer, broker order, and cloud-control presence are derived from the reviewed
+classifications rather than hard-coded absence claims. The real loopback HTTP
+release profile consumes the exact inventory and retains every external
+authority flag as false.
+
+The synchronized forward/authority/release/version scope passed 237 tests with
+one existing dependency warning. Final full regression passed 6,607 tests with
+two platform skips and one existing warning in 1,392.61 seconds. All sixteen bounded offline profiles passed;
+saved evidence matched 422 source files /
+`bba41df47f726619698eae064f2008283ef7f10f2c757d3ba33d975a354b407e`
+and report SHA-256 is
+`b8a0d7e1fe06f3e76f3dc5b9a0b42001c388c94b36f52a67273c2328e204699f`.
+Fresh final exact-source regression, packaging, audit and hosted CI remain
+mandatory before promotion.
+
+This is injected local worker/source-declaration evidence, not native power-loss
+or ordinary-profile acceptance, actual provider or broker-paper acceptance,
+genuine-feed trial realism, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter was
+added. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed entries, reducing exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Rough implementation remains about 40%, exact weighted index 38% (30-45%, low
+confidence), with 0/9 stages independently accepted.
+
+
 ## v0.340.362 actual-worker fault and cold-reopen evidence
 
 The mandatory forward fault profile now drives missing-source, stale-quote,

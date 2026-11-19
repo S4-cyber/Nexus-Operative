@@ -127,6 +127,7 @@ HTTP_FAILURE_PHASES = frozenset({
     'ENDPOINT_ONBOARDING_READINESS', 'ENDPOINT_AI_STATUS',
     'ENDPOINT_PORTFOLIO', 'ENDPOINT_FORWARD_STATUS',
     'ENDPOINT_FORWARD_SESSIONS', 'ENDPOINT_FORWARD_PREFLIGHT',
+    'ENDPOINT_AUTHORITY_INVENTORY',
     'ENDPOINT_FOUND_MARKETS', 'ENDPOINT_TRIAL_READINESS',
     'ENDPOINT_EXECUTION_RECOVERY', 'ENDPOINT_FORWARD_RECOVERY',
     'ENDPOINT_ROOT_REDIRECT', 'ENDPOINT_PORTAL', 'BOUNDARY', 'DEFAULTS',
@@ -453,6 +454,7 @@ def _http_trial():
             ('ENDPOINT_FORWARD_STATUS', '/api/paper/forward'),
             ('ENDPOINT_FORWARD_SESSIONS', '/api/paper/forward/sessions'),
             ('ENDPOINT_FORWARD_PREFLIGHT', '/api/paper/forward/preflight'),
+            ('ENDPOINT_AUTHORITY_INVENTORY', '/api/authority/inventory'),
             ('ENDPOINT_FOUND_MARKETS', '/api/research/found-markets'),
             ('ENDPOINT_TRIAL_READINESS', '/api/paper/forward/trial-readiness'),
             ('ENDPOINT_EXECUTION_RECOVERY', '/api/execution/recovery'),
@@ -488,6 +490,17 @@ def _http_trial():
             responses['/api/execution/recovery']['status']=='NO_RETAINED_HISTORY' and
             responses['/api/paper/forward/recovery']['order_history_present'] is False,
             'PASSIVE_ORDER_RECOVERY_STARTUP')
+        authority_inventory=responses['/api/authority/inventory']
+        _require(authority_inventory['route_bindings_verified'] is True and
+            authority_inventory['source_declaration_complete'] is True and
+            authority_inventory['mutating_route_count']==52 and
+            all(authority_inventory[key] is False for key in (
+                'broker_order_method_present','bank_transfer_method_present',
+                'cloud_control_method_present','automatic_resume_present',
+                'learned_policy_promotion_present','broker_connected',
+                'live_orders_enabled','money_movement_enabled','release_approved',
+                'spendable_funds_verified')),
+            'HTTP_AUTHORITY_INVENTORY')
         trial=responses['/api/paper/forward/trial-readiness']
         owner=trial['local_owner_quiescence']
         _require(trial['read_only'] is True and trial['status']=='NO_RETAINED_HISTORY' and trial['review'] is None and trial['quote_capacity']['estimated_additional_observations']==51841 and all(trial[k] is False for k in ('automatic_start','strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled','money_movement_enabled')), 'HTTP_TRIAL_READINESS_PASSIVE')
@@ -515,6 +528,7 @@ def _http_trial():
         _require(not any(attempts.values()), 'HTTP_PAPER_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
+            authority_inventory=authority_inventory,
             paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,read_only_preflight_preserved_stopped_gate=True,found_markets_passive_read=True,found_markets_shared_budget_scope_checked=True,trial_readiness_passive_read=True,trial_readiness_owner_quiescence_checked=True,progress_estimate_scope_checked=True,
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only; paper credential and provider seams are injected fixtures with temporary retained pacing. No rendered browser, Windows executable, actual provider, order or sustained market test.')
@@ -1351,6 +1365,9 @@ def _validate(profile, result):
                 'CAPACITY_BURST_TIMING_ATTESTATION')
     elif profile != 'forward': _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
+        from nexus.authority_inventory import (AUTHORITY_FLAGS,
+            AUTHORITY_PUBLIC_KEYS, AUTHORITIES, MUTATING_ROUTE_PUBLIC_KEYS,
+            MUTATING_ROUTES, REPORT_PUBLIC_KEYS)
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
         tools=result['paper_tools_source']
         native_windows_required=tools['host_os']=='WINDOWS_NT'
@@ -1361,6 +1378,42 @@ def _validate(profile, result):
             all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
         _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')
+        authority=result['authority_inventory']
+        _require(type(authority) is dict and
+            frozenset(authority)==REPORT_PUBLIC_KEYS and
+            authority['mode']=='READ_ONLY_SOURCE_DECLARED_ADMISSION_AUTHORITY_INVENTORY' and
+            authority['read_only'] is True and
+            authority['route_bindings_verified'] is True and
+            authority['source_declaration_complete'] is True and
+            authority['authority_count']==len(AUTHORITIES) and
+            authority['authority_ids']==[row['id'] for row in AUTHORITIES] and
+            authority['mutating_route_count']==len(MUTATING_ROUTES)==52 and
+            authority['runtime_engagement_default']=='OFF' and
+            authority['external_ai_default']=='OFF',
+            'HTTP_AUTHORITY_INVENTORY_SCHEMA')
+        _require(type(authority['authorities']) is list and
+            len(authority['authorities'])==len(AUTHORITIES) and
+            all(type(row) is dict and frozenset(row)==AUTHORITY_PUBLIC_KEYS and
+                row['automatic_start'] is False and
+                row['automatic_resume'] is False and
+                row['learned_policy_promotion'] is False and
+                all(row[flag] is False for flag in AUTHORITY_FLAGS)
+                for row in authority['authorities']),
+            'HTTP_AUTHORITY_DECLARATIONS')
+        expected_mutating=[dict(method=method,path=path,
+            authority_class=authority_class,capability=capability)
+            for method,path,authority_class,capability in MUTATING_ROUTES]
+        _require(type(authority['mutating_routes']) is list and
+            authority['mutating_routes']==expected_mutating and
+            all(type(row) is dict and
+                frozenset(row)==MUTATING_ROUTE_PUBLIC_KEYS
+                for row in authority['mutating_routes']),
+            'HTTP_AUTHORITY_MUTATING_ROUTES')
+        _require(all(authority[key] is False for key in (
+                'broker_order_method_present','bank_transfer_method_present',
+                'cloud_control_method_present','automatic_resume_present',
+                'learned_policy_promotion_present',*AUTHORITY_FLAGS)),
+            'HTTP_AUTHORITY_DENIALS')
         _require(result['trial_readiness_passive_read'] is True and
             result['trial_readiness_owner_quiescence_checked'] is True,
             'HTTP_TRIAL_READINESS_READ')
@@ -2749,7 +2802,8 @@ def _validate(profile, result):
     if profile == 'forward':
         from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
             FAULT_CASE_PUBLIC_KEYS, FAULT_LIMITATIONS, FAULT_PUBLIC_KEYS,
-            LATENCY_PUBLIC_KEYS, LIMITATIONS, PUBLIC_KEYS,
+            LATENCY_PUBLIC_KEYS, LIMITATIONS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
+            PROCESS_CONTROL_PUBLIC_KEYS, PUBLIC_KEYS,
             RECOVERED_PUBLIC_KEYS, SESSION_PUBLIC_KEYS)
         from nexus.paper_forward import (COMMIT_DURABILITY_CHECKS,
             COMMIT_DURABILITY_PUBLIC_KEYS)
@@ -2776,6 +2830,13 @@ def _validate(profile, result):
             all(type(faults[name]) is dict and frozenset(faults[name])==FAULT_CASE_PUBLIC_KEYS
                 for name in ('source_loss','stale_quote','clock_regression','invalid_clock')),
             'FORWARD_FAULT_SCHEMA')
+        process_control=faults['process_control_cleanup']
+        _require(type(process_control) is dict and
+            frozenset(process_control)==PROCESS_CONTROL_PUBLIC_KEYS and
+            all(type(process_control[name]) is dict and
+                frozenset(process_control[name])==PROCESS_CONTROL_CASE_PUBLIC_KEYS
+                for name in PROCESS_CONTROL_PUBLIC_KEYS),
+            'FORWARD_PROCESS_CONTROL_SCHEMA')
         sessions=recovered['sessions'];latency=result['cycle_latency'];coverage=recovered['coverage_review']
         _require(type(sessions) is list and len(sessions)==20 and all(
             type(session) is dict and frozenset(session)==SESSION_PUBLIC_KEYS for session in sessions),
@@ -2837,6 +2898,20 @@ def _validate(profile, result):
                 for name,(cycles,fetches,reasons,counts,observations,review_reasons)
                     in expected_faults.items()),
             'FORWARD_FAULT_EVIDENCE')
+        _require(all(process_control[name]['signal']==signal and
+                process_control[name]['worker_started'] is True and
+                process_control[name]['signal_observed'] is True and
+                process_control[name]['worker_stopped'] is True and
+                process_control[name]['runner_disabled'] is True and
+                process_control[name]['ownership_released'] is True and
+                process_control[name]['orders_created']==0 and
+                type(process_control[name]['orders_created']) is int and
+                process_control[name]['stored_state']=='RUNNING' and
+                process_control[name]['effective_state']=='STOPPED_WITHOUT_FINAL_RECORD' and
+                process_control[name]['automatic_restart'] is False
+                for name,signal in (('keyboard_interrupt','KeyboardInterrupt'),
+                    ('system_exit','SystemExit'))),
+            'FORWARD_PROCESS_CONTROL_EVIDENCE')
         hashes=[recovered['account_sha256']]
         session_ids=[]
         for session in sessions:

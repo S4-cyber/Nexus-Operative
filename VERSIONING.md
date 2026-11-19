@@ -1,5 +1,45 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.363 fail-closed worker cleanup and complete mutation inventory
+
+Paper-forward shutdown now has an explicit quiescence boundary. The actual
+worker always disables and releases ownership on process-control exit without
+swallowing `KeyboardInterrupt` or `SystemExit`. Terminal diagnostic process
+control also releases ownership. A live worker that exceeds the bounded stop
+join raises `PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT`, retains its lease and
+leaves the session reviewable instead of recording a false `STOP`. The
+application shutdown fence propagates that failure after attempting all
+remaining cleanup.
+
+The admission-authority inventory now requires exact equality between the 52
+runtime mutating method/path bindings and a closed reviewed declaration. It
+rejects additions, removals, duplicates, malformed entries and unknown or
+misspelled classes/capabilities. Funding transfer, broker order and cloud
+control presence are derived from those exact declarations. The loopback HTTP
+release evidence consumes the full schema, route classifications and false
+authority flags.
+
+The synchronized safety/release scope passed 237 tests with one existing
+warning. Final full regression passed 6,607 tests with two platform skips and
+one existing warning in 1,392.61 seconds. All sixteen offline profiles and saved-evidence verification passed
+against source SHA-256
+`bba41df47f726619698eae064f2008283ef7f10f2c757d3ba33d975a354b407e`
+and report SHA-256
+`b8a0d7e1fe06f3e76f3dc5b9a0b42001c388c94b36f52a67273c2328e204699f`.
+Final exact-source regression, package/audit checks and hosted CI are still
+required.
+
+This is local injected and source-declared evidence only. It is not physical
+power-loss proof, native Windows ordinary-user acceptance, provider identity,
+broker/account acceptance, sustained genuine-market evidence,
+funding/live/cloud readiness, performance, profitability or release approval.
+No control or editable parameter changed. Seven tabs, black/bright-purple
+bottom-right hover help, OFF defaults, bounded risk, account checks,
+fail-closed exits and the independent emergency cut remain unchanged. Rough
+implementation stays about 40% (weighted 38%; 30-45%, low confidence), with
+0/9 stages accepted.
+
+
 ## v0.340.362 actual-worker fault and cold-reopen evidence
 
 **Current development build: 0.340.362 (pre-release).** The disposable forward

@@ -92,24 +92,27 @@ def crosscheck(quotes,orders,counts,policy):
     for item in orders:
         order=item['order']
         if Decimal(order['simulated_filled_notional'])==0:continue
-        fills[order['side']]+=1
+        fills[order['side']]+=(len(item['quote_events']) if
+            order.get('intent_scope')=='POSITION_REDUCING_EXIT' else 1)
         try:
-            cycle=int(order['id'].split('_')[2]);point=indexed[cycle]
-            if not point['quote_eligible']:raise ValueError()
+            cycle=int(order['id'].split('_')[2])
             for execution in item['quote_events']:
+                point=indexed[execution.get('evidence_cycle',cycle)]
+                if not point['quote_eligible']:raise ValueError()
                 assumptions=execution['assumptions'];quote=point['quote']
                 for model,field in (('bid','bid'),('ask','ask'),('quote_at','received_at')):
                     if Decimal(assumptions[model])!=Decimal(str(quote[field])):raise ValueError()
             if not item['quote_events']:raise ValueError()
         except (ValueError,KeyError,TypeError,ArithmeticError):reasons.append('FILL_QUOTE_EVIDENCE_DISAGREEMENT')
         try:
-            quote=indexed[int(order['id'].split('_')[2])]['quote']
-            stamp=quote['exchange_time']
-            if not isinstance(stamp,str):raise ValueError()
-            exchange=datetime.fromisoformat(stamp.replace('Z','+00:00'))
-            if exchange.tzinfo is None:raise ValueError()
-            exchange_at=Decimal(str(exchange.timestamp()))
+            cycle=int(order['id'].split('_')[2])
             for execution in item['quote_events']:
+                quote=indexed[execution.get('evidence_cycle',cycle)]['quote']
+                stamp=quote['exchange_time']
+                if not isinstance(stamp,str):raise ValueError()
+                exchange=datetime.fromisoformat(stamp.replace('Z','+00:00'))
+                if exchange.tzinfo is None:raise ValueError()
+                exchange_at=Decimal(str(exchange.timestamp()))
                 evaluated=Decimal(execution['assumptions']['evaluated_at'])
                 age=evaluated-exchange_at
                 if not age.is_finite() or not 0<=age<=Decimal(str(policy['exchange_age_seconds'])):raise ValueError()

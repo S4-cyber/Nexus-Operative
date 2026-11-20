@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.368'
+REVISION = '0.340.369'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1195,6 +1195,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; pull-request repository security now passes the immutable exact base and candidate commits into the trusted base policy, preserving complete reachable-history inspection while enforcing finite per-object and newly reachable delta limits; push and manual runs bind the exact source to itself for a zero delta without weakening the complete scan' if item.id=='M9' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the protected local-paper reducing intent is now one immutable full-position mandate across multiple fresh-quote slices and explicit runner sessions: every slice retains the $200 ceiling, exact session/cycle, monotonic fill sequence and current-position/cumulative-reduction equality; cold replay reuses exactly one valid mandate without a new ID, session review separates modeled slice costs, and the independent emergency halt terminally cancels pending work without liquidating' if item.id in ('M4','M5','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
@@ -1218,7 +1222,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.368 protects one slot inside the existing fixed durable intent-ID cap whenever the local paper account is linked. Ordinary and public simulation intake cannot consume that slot; only the internal replayable SELL command can use it, after binding the exact held product, reduction quantity and expected position and rechecking position continuity before fill. Flat, unlinked, BUY, wrong-product, oversized, stale-position, halted and independent-cut paths remain fail-closed. The total intent cap is unchanged, and cold replay preserves classification and duplicate conflicts. This is bounded local exit-capacity hardening, not broker, genuine-market, Windows, funding/live/cloud, performance, profitability or release acceptance. Broker transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default; limits, account checks, independent emergency stop and reducing exits remain intact. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.369 keeps the one protected local-paper exit intent as an immutable full-position mandate across multiple fresh-quote slices and explicit runner sessions. Every slice remains capped at $200, carries an exact session/cycle and monotonic fill sequence, and rechecks the current holding against durable cumulative reduction before application. Cold restart reuses exactly one structurally valid mandate, while ambiguous, malformed, oversized, stale-position and over-reducing states fail closed. Start/preflight/readiness admission recognizes the existing mandate without enlarging lifetime ID or command limits, exact-session reviews separate slice costs, and the independent emergency halt terminally cancels pending work without liquidating. This is bounded offline exit and reconciliation hardening, not broker, genuine-market, liquidity, Windows, funding/live/cloud, performance, profitability or release acceptance. Broker transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

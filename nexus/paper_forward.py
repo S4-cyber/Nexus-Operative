@@ -21,6 +21,7 @@ from nexus.durable_orders import gateway
 from nexus.feed_guard import FeedGuard
 from nexus.public_data import PUBLIC_PRICE_MAX, PUBLIC_PRICE_MIN, read_ticker
 from nexus.tier_permissions import require_entry, TIERS
+from nexus.execution_capacity import resumable_exit_mandate
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
 from nexus import emergency_intent,forward_evidence,forward_sessions
@@ -354,7 +355,10 @@ class PaperForwardRunner:
                     report=self.orders.recovery_report()
                 if any(p!=PRODUCT for p in report['execution_account']['account']['positions']):
                     raise ValueError('FORWARD_RUNNER_REQUIRES_BTC_ONLY_ACCOUNT')
-                if any(o['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') for o in report['orders']):
+                mandate=resumable_exit_mandate(report['orders'],
+                    report['execution_account']['account']['positions'])
+                if any(o['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') and
+                        o is not mandate for o in report['orders']):
                     raise ValueError('REVIEW_OUTSTANDING_PAPER_ORDERS_FIRST')
                 holding=bool(report['execution_account']['account']['positions'])
                 intent_capacity=(report['capacity']['exit_intents_remaining'] if holding else
@@ -362,7 +366,7 @@ class PaperForwardRunner:
                         report['capacity']['exit_intents_remaining']))
                 if (not report['capacity']['lifecycle_intake_allowed'] or
                         report['capacity']['ordinary_commands_remaining']<(4 if holding else 12) or
-                        intent_capacity<1):
+                        intent_capacity<1 and mandate is None):
                     raise ValueError('INSUFFICIENT_FORWARD_JOURNAL_CAPACITY')
                 if self._cut_active():raise ValueError('EMERGENCY_CUT_REQUESTED')
                 self._policy=selected_policy
@@ -527,10 +531,26 @@ class PaperForwardRunner:
         oid='pf_'+self._session+'_'+str(self._cycles)+'_'+side
         self._require_ownership()
         if side=='SELL':
-            self.orders.submit_reducing(oid,PRODUCT,str(notional),str(quantity),
-                str(expected_position_quantity),tier=self._tier)
+            report=self.orders.recovery_report()
+            mandate=resumable_exit_mandate(report['orders'],
+                report['execution_account']['account']['positions'])
+            if mandate is None:
+                mandate_notional=notional
+                mandate_quantity=expected_position_quantity
+                mandate_expected=expected_position_quantity
+                mandate_tier=self._tier
+                sequence=1
+            else:
+                oid=mandate['id'];mandate_notional=mandate['notional']
+                mandate_quantity=mandate['reduction_quantity']
+                mandate_expected=mandate['expected_position_quantity']
+                mandate_tier=mandate['tier']
+                sequence=mandate.get('reduction_slice_count',0)+1
+            self.orders.submit_reducing(oid,PRODUCT,str(mandate_notional),
+                str(mandate_quantity),str(mandate_expected),tier=mandate_tier)
         else:
             self.orders.submit(oid,PRODUCT,side,str(notional),tier=self._tier)
+            sequence=1
         try:
             if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_AFTER_SUBMIT')
             self._require_ownership()
@@ -541,14 +561,17 @@ class PaperForwardRunner:
             self._require_ownership()
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
-            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=lambda:self._execution_now(exchange_at))
+            event_id='slice_'+str(sequence) if side=='SELL' else 'fill'
+            result=self.orders.simulate_quote_fill(oid,event_id,sequence,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],evidence_cycle=self._cycles,evidence_session=self._session,execution_clock=lambda:self._execution_now(exchange_at))
             if result.get('expired'):
                 self._prices.clear();self._last_rank=0
                 return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
             return self._record(side,'MODELED_PUBLIC_QUOTE_FILL',order_id=oid,
                                 liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
         finally:
-            try:self.orders.cancel(oid)
+            try:
+                if side=='SELL':self.orders.cancel(oid,preserve_reducing_mandate=True)
+                else:self.orders.cancel(oid)
             except (OSError,sqlite3.Error,ValueError) as exc:
                 self._stop.set()
                 raise OrderCleanupFailure(oid,exc) from exc
@@ -595,11 +618,13 @@ class PaperForwardRunner:
                 self._stop.set();return self._record('PAUSED','HALT_OR_RECONCILIATION_VETO')
             has_position=bool(report['execution_account']['account']['positions'])
             required_writes=4 if has_position else 12
+            mandate=resumable_exit_mandate(report['orders'],
+                report['execution_account']['account']['positions'])
             id_capacity=(report['capacity']['exit_intents_remaining'] if has_position else
                 min(report['capacity']['ordinary_intents_remaining'],
                     report['capacity']['exit_intents_remaining']))
             if (report['capacity']['ordinary_commands_remaining']<required_writes or
-                    id_capacity<1 or
+                    (id_capacity<1 and mandate is None) or
                     (not has_position and not report['capacity']['new_intents_allowed'])):
                 self._stop.set();return self._record('PAUSED','JOURNAL_OR_ID_CAPACITY_VETO')
             quote=None

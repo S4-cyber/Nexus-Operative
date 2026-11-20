@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from nexus import forward_trial_review as trial,forward_evidence
 from nexus.durable_orders import DurableOrderGateway
-from nexus.execution_capacity import CONTROL_RESERVE
+from nexus.execution_capacity import CONTROL_RESERVE,resumable_exit_mandate
 from nexus.forward_ownership import ForwardOwnership
 from nexus.paper_forward import SESSION_LIMIT
 from nexus.paper_policy import POLICY
@@ -228,14 +228,15 @@ def build(path,*,hours=72,now=None,order_gateway=None):
         emergency_reserve_clear=(control_reserved==CONTROL_RESERVE)
         account=orders['execution_account']['account'] or {}
         retained_position=bool(account.get('positions'))
+        exit_mandate=resumable_exit_mandate(orders.get('orders',[]),account.get('positions',{}))
         # Mirror the runner's per-cycle admission reserve. This deliberately assumes
         # every cycle could need the larger entry/exit budget; it is a bound, not a
         # strategy forecast or a reason to delete retained history.
         writes_per_cycle=4 if retained_position else 12
-        intents_per_cycle=1 if retained_position else 2
+        intents_per_cycle=0 if retained_position and exit_mandate is not None else (1 if retained_position else 2)
         forecast_commands=needed*writes_per_cycle
         forecast_intents=needed*intents_per_cycle
-        next_intent_reserve_clear=(exit_intents_remaining>=1 if retained_position else
+        next_intent_reserve_clear=((exit_intents_remaining>=1 or exit_mandate is not None) if retained_position else
             ordinary_intents_remaining>=1 and exit_intents_remaining>=1
             if exit_reserve_active else intents_remaining>=2)
         return dict(mode='READ_ONLY_PAPER_TRIAL_READINESS',read_only=True,

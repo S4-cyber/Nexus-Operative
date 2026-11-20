@@ -15,6 +15,7 @@ import stat
 import tempfile
 from uuid import UUID
 from nexus import alpaca_paper_contract as contract
+from nexus import forward_broker_intent_review
 from nexus import broker_lookup_policy as lookup
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_existing,
@@ -323,6 +324,12 @@ def _plan(value):
                 payload=payload, payload_sha256=contract.sha(payload))
 
 
+def _prepared_plan(value):
+    if type(value) is dict and 'forward_intent_binding' in value:
+        return forward_broker_intent_review.normalize_plan(value)
+    return _plan(value)
+
+
 def _observation(response, payload):
     current = contract.normalize(response, payload)
     # Cumulative observations only; never derive an incremental execution price.
@@ -511,7 +518,7 @@ class BrokerRequestJournal:
         if not lookup_completion and kind not in ('LOOKUP_BEGIN','LOOKUP_RESULT','LOOKUP_INTERRUPTED') and any(r['lookup']['pending'] for r in requests.values()):
             raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
         if kind=='PREPARE':
-            plan=_plan(body)
+            plan=_prepared_plan(body)
             if plan!=body:raise ValueError('BROKER_JOURNAL_PAYLOAD_INVALID')
             identity=plan['payload']['client_order_id']
             if identity in requests:raise ValueError('BROKER_JOURNAL_DUPLICATE_PREPARE')
@@ -599,7 +606,10 @@ class BrokerRequestJournal:
     def _summary(self, identity, request):
         latest=request['tracker'].status()['latest']
         state=('OBSERVED_TERMINAL_RECONCILIATION_REQUIRED' if latest['terminal'] else 'OBSERVED_NONTERMINAL_REVIEW_REQUIRED') if latest else ('SUBMISSION_UNKNOWN_LOOKUP_REQUIRED' if request['uncertain'] else 'PREPARED_UNSENT_DIAGNOSTIC')
+        binding=request['plan'].get('forward_intent_binding')
         return dict(client_order_id=identity,payload_sha256=request['plan']['payload_sha256'],
+                    forward_intent_bound=binding is not None,
+                    forward_intent_sha256=binding['intent_sha256'] if binding else None,
                     recovery_state=state,snapshot=latest,lookup_by_original_client_id_required=request['uncertain'] and not latest,
                     submission_attempt_marked=request['uncertain'],submission_admission=None if request['submission_admission'] is None else dict(request['submission_admission']),lookup=dict(attempts=request['lookup']['attempts'],attempt_limit=lookup.MAX_LOOKUPS_PER_REQUEST,pending=request['lookup']['pending'] is not None,next_allowed_at=request['lookup']['next_at'],review_blocked=request['lookup']['blocked'],interruptions=request['lookup']['interruptions'],last_outcome=request['lookup']['last_outcome']),automatic_retry=False,sendable=False,
                     broker_connected=False,ledger_applied=False,broker_account_reconciled=False)
@@ -693,6 +703,17 @@ class BrokerRequestJournal:
 
     def prepare(self, plan):return self._write('PREPARE',_plan(plan))
 
+    def prepare_forward_intent(self, candidate):
+        """Persist one counterfactual binding; it can never become sendable."""
+        if (type(candidate) is not dict or
+                candidate.get('mode')!=forward_broker_intent_review.MODE or
+                candidate.get('profile')!=forward_broker_intent_review.PROFILE or
+                candidate.get('read_only') is not True or
+                candidate.get('binding')!=candidate.get('plan',{}).get('forward_intent_binding')):
+            raise ValueError('INVALID_FORWARD_BROKER_INTENT_CANDIDATE')
+        plan=forward_broker_intent_review.normalize_plan(candidate.get('plan'))
+        return self._write('PREPARE',plan)
+
     def mark_submission_uncertain(self, client_order_id):
         self._identity(client_order_id)
         return self._write('SUBMISSION_UNCERTAIN',dict(client_order_id=client_order_id))
@@ -714,6 +735,8 @@ class BrokerRequestJournal:
         deadline=max((r['lookup']['next_at'] for r in requests.values()
             if r['lookup']['last_outcome']=='RATE_LIMITED'),default=0)
         if not request:reasons.append('REQUEST_NOT_PREPARED')
+        if request and request['plan'].get('forward_intent_binding') is not None:
+            reasons.append('COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE')
         if request and request['uncertain']:reasons.append('ORIGINAL_ID_RECOVERY_REQUIRED')
         if any(r['lookup']['blocked'] for r in requests.values()):reasons.append('ACCOUNT_REVIEW_REQUIRED')
         if any(r['lookup']['pending'] for r in requests.values()):reasons.append('LOOKUP_PENDING_REVIEW_REQUIRED')
@@ -743,6 +766,9 @@ class BrokerRequestJournal:
         if not callable(admission):raise ValueError('BROKER_SUBMISSION_ADMISSION_REQUIRED')
         for value in (expected_head,expected_payload_sha256):
             if type(value) is not str or re.fullmatch('[0-9a-f]{64}',value) is None:raise ValueError('BROKER_SUBMISSION_REFERENCE_INVALID')
+        selected=self.lookup_request(client_order_id)
+        if selected['plan'].get('forward_intent_binding') is not None:
+            raise ValueError('BROKER_SUBMISSION_COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE')
         result=self._write('SUBMISSION_UNCERTAIN',dict(client_order_id=client_order_id),
             expected_head=expected_head,expected_payload_sha256=expected_payload_sha256,admission=admission)
         return dict(**result,attempt_marker_commit_observed=True,transport_invoked=False,

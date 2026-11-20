@@ -2830,6 +2830,7 @@ def _validate(profile, result):
         _require(reviewed['review_reasons'] == ['ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED'], 'ACTIVITY_CONSISTENCY')
     if profile == 'forward':
         from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
+            BROKER_INTENT_LIMITATIONS, BROKER_INTENT_PUBLIC_KEYS,
             FAULT_CASE_PUBLIC_KEYS, FAULT_LIMITATIONS, FAULT_PUBLIC_KEYS,
             LATENCY_PUBLIC_KEYS, LIMITATIONS, NO_FILL_CRASH_LIMITATIONS,
             NO_FILL_CRASH_PUBLIC_KEYS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
@@ -2849,6 +2850,7 @@ def _validate(profile, result):
         cadence=result['scheduler_cadence']
         no_fill_crash=result['no_fill_crash']
         repeated=result['repeated_interruption']
+        broker_intent=result['broker_intent_binding']
         _require(type(durability) is dict and
             frozenset(durability)==COMMIT_DURABILITY_PUBLIC_KEYS and
             durability['source']==
@@ -2903,6 +2905,29 @@ def _validate(profile, result):
                 'live_orders_enabled','release_approved')) and
             repeated['limitations']==REPEATED_INTERRUPTION_LIMITATIONS,
             'FORWARD_REPEATED_INTERRUPTION_EVIDENCE')
+        _require(type(broker_intent) is dict and
+            frozenset(broker_intent)==BROKER_INTENT_PUBLIC_KEYS,
+            'FORWARD_BROKER_INTENT_SCHEMA')
+        _require(broker_intent['mode']=='DISPOSABLE_FORWARD_BROKER_INTENT_BINDING' and
+            broker_intent['passed'] is True and broker_intent['side']=='BUY' and
+            broker_intent['binding_stable'] is True and
+            broker_intent['forward_intent_bound'] is True and
+            broker_intent['cold_replay_bound'] is True and
+            broker_intent['submission_review_blocked'] is True and
+            broker_intent['checked_attempt_blocked'] is True and
+            broker_intent['submit_once_blocked'] is True and
+            broker_intent['callbacks_invoked']==0 and
+            broker_intent['legacy_readable_unbound'] is True and
+            broker_intent['counterfactual_only'] is True and
+            all(type(broker_intent[key]) is str and len(broker_intent[key])==64 and
+                all(character in '0123456789abcdef' for character in broker_intent[key])
+                for key in ('intent_sha256','payload_sha256')) and
+            all(broker_intent[key] is False for key in (
+                'sendable','routing_authorized','source_attested','broker_connected',
+                'broker_account_reconciled','funds_reconciled','ledger_applied',
+                'live_orders_enabled','money_movement_enabled','release_approved')) and
+            broker_intent['limitations']==BROKER_INTENT_LIMITATIONS,
+            'FORWARD_BROKER_INTENT_EVIDENCE')
         _require(all(type(cadence[name]) is dict and
             frozenset(cadence[name])==SCHEDULER_CADENCE_CASE_PUBLIC_KEYS
             for name in ('nominal','overrun','invalid_clock','clock_regression','stalled_clock')),

@@ -1,5 +1,33 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.378 unsendable forward-to-broker intent binding
+
+A stopped, locally consistent paper-forward review now exposes one deterministic
+modeled-outcome source bound to the exact quote, session, cycle, local order,
+event, fill economics, event-chain head and sealed reconciliation receipt. A
+pure credential- and network-silent builder independently revalidates that
+source and binds it to one disconnected Alpaca paper preview without rounding.
+
+The request journal durably retains the compact binding, cold-replays it
+unchanged, labels legacy previews unbound and blocks submission review, checked
+attempt marking and the single-attempt transport boundary before credentials,
+clocks, permissions, the emergency stop, an opener, account reads or any
+attempt callback. The modeled fill has already changed the synthetic ledger,
+so the bound preview is counterfactual and permanently unsendable; it is never
+wired to strategy execution.
+
+This is bounded offline provenance and fail-closed integration evidence, not
+source attestation, actual broker-paper/account/funds acceptance, genuine-market
+or sustained-trial evidence, native Windows acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Engagement and
+optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45% low-confidence
+range), with 0/9 stages independently accepted and no release permission,
+trading permission or launch date.
+
 ## v0.340.377 same-history repeated-interruption recovery
 
 The mandatory disposable forward profile now kills one child after a durable

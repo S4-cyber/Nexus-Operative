@@ -6,6 +6,7 @@ payloads are stored. This is local crash recovery, not a distributed stop servic
 """
 import os
 import stat
+import hashlib
 from pathlib import Path
 
 RECORD = b'NEXUS_LOCAL_TRADING_CUT_V1\n'
@@ -40,6 +41,67 @@ def requested(order_path):
     try:path(order_path).lstat()
     except FileNotFoundError:return False
     return True
+
+
+def _validated_identity(order_path):
+    """Read one exact durable latch record without following aliases."""
+    target=path(order_path)
+    try:before=target.lstat()
+    except OSError:return None
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink!=1 or
+            before.st_size!=len(RECORD)):
+        return None
+    flags=(os.O_RDONLY | getattr(os,'O_NOFOLLOW',0) |
+        getattr(os,'O_BINARY',0) | getattr(os,'O_NONBLOCK',0))
+    try:fd=os.open(target,flags)
+    except OSError:return None
+    try:
+        with os.fdopen(fd,'rb') as stream:
+            opened=os.fstat(stream.fileno())
+            if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink!=1 or
+                    opened.st_size!=len(RECORD) or
+                    not os.path.samestat(before,opened)):
+                return None
+            record=stream.read(len(RECORD)+1)
+            after=os.fstat(stream.fileno())
+    except OSError:return None
+    try:final=target.lstat()
+    except OSError:return None
+    if (record!=RECORD or not stat.S_ISREG(final.st_mode) or
+            final.st_nlink!=1 or final.st_size!=len(RECORD) or
+            not os.path.samestat(opened,after) or
+            not os.path.samestat(after,final)):
+        return None
+    if any(getattr(opened,key)!=getattr(after,key) or
+            getattr(before,key)!=getattr(final,key)
+            for key in ('st_size','st_mtime_ns','st_ctime_ns','st_nlink')):
+        return None
+    return final
+
+
+def review_sample(order_path):
+    """Return privacy-safe latch state plus a private same-entry identity."""
+    target=path(order_path)
+    try:target.lstat()
+    except FileNotFoundError:
+        return dict(status='CLEAR',requested=False,canonical=False,
+            record_sha256=None),None
+    except OSError:
+        return dict(status='PRESENT_UNVERIFIED',requested=True,canonical=False,
+            record_sha256=None),None
+    identity=_validated_identity(order_path)
+    if identity is None:
+        return dict(status='PRESENT_UNVERIFIED',requested=True,canonical=False,
+            record_sha256=None),None
+    return dict(status='CANONICAL_REQUESTED',requested=True,canonical=True,
+        record_sha256=hashlib.sha256(RECORD).hexdigest()),identity
+
+
+def same_canonical(order_path,identity):
+    """Require one sampled canonical entry to remain the same exact object."""
+    if identity is None:return False
+    current=_validated_identity(order_path)
+    return current is not None and os.path.samestat(identity,current)
 
 
 def _sample_directory(directory):

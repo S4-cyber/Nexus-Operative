@@ -2,7 +2,7 @@ import json
 import sqlite3
 import pytest
 from test_paper_forward import setup,warmup
-from nexus import forward_evidence,forward_event_evidence
+from nexus import emergency_intent,forward_evidence,forward_event_evidence
 
 
 def event_record(**changes):
@@ -73,6 +73,17 @@ def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     assert events['quote_outcomes']==8 and events['modeled_order_outcomes']==2
     assert events['events']==10 and events['lifecycle_events']==2
     assert len(events['head_sha256'])==len(events['reconciliation_sha256'])==64
+    receipt=report['review_receipt']
+    assert receipt['profile']=='nexus.forward-session-review-receipt.v1'
+    assert receipt['local_consistency_ok'] and receipt['reason_count']==0
+    assert receipt['order_snapshot_stable_during_review']
+    assert receipt['initial_order_snapshot_sha256']==receipt['final_order_snapshot_sha256']
+    assert receipt['quote_head_sha256']==report['quote_evidence']['head_sha256']
+    assert receipt['event_head_sha256']==events['head_sha256']
+    assert receipt['event_reconciliation_sha256']==events['reconciliation_sha256']
+    assert len(receipt['session_summary_sha256'])==64
+    assert len(receipt['reason_codes_sha256'])==len(receipt['receipt_sha256'])==64
+    assert not receipt['live_orders_enabled'] and not receipt['release_approved']
 
 
 def _rewrite_event_chain(db,mutate):
@@ -115,12 +126,76 @@ def test_missing_durable_event_tables_leave_legacy_session_readable_but_incomple
     assert not report['local_consistency_ok']
 
 
-def test_independent_cut_without_terminal_session_event_is_review_required(tmp_path,monkeypatch):
+def test_generic_durable_halt_is_not_promoted_to_independent_cut(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch);r.single_cycle();g.emergency_halt()
     report=r.evidence_report(r.status()['session'])
-    assert report['durable_event_evidence']['independent_cut_observed']
+    assert not report['durable_event_evidence']['independent_cut_observed']
+    assert not report['durable_event_evidence']['cut_binding_verified']
     assert report['order_journal_snapshot']['halted']
+    assert 'DURABLE_HALT_WITHOUT_INDEPENDENT_CUT_EVIDENCE' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_canonical_independent_cut_without_terminal_event_is_bound(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle()
+    emergency_intent.persist(g._path());g.emergency_halt()
+    report=r.evidence_report(r.status()['session']);events=report['durable_event_evidence']
+    assert events['independent_cut_observed'] and events['cut_binding_verified']
+    assert events['cut_binding_source']=='CANONICAL_LATCH'
+    assert events['cut_state_before']==events['cut_state_after']=='CANONICAL_REQUESTED'
     assert 'INDEPENDENT_CUT_REQUIRES_SESSION_REVIEW' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_signal_only_cut_is_review_required_before_durable_halt(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.request_cut()
+    report=r.evidence_report(r.status()['session']);events=report['durable_event_evidence']
+    assert events['cut_binding_verified'] and events['cut_binding_source']=='PROCESS_SIGNAL'
+    assert not events['independent_cut_observed']
+    assert 'INDEPENDENT_CUT_WITHOUT_DURABLE_HALT' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_malformed_latch_is_fail_closed_but_not_verified(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle()
+    emergency_intent.path(g._path()).write_bytes(b'broken')
+    report=r.evidence_report(r.status()['session']);events=report['durable_event_evidence']
+    assert events['cut_state_before']==events['cut_state_after']=='PRESENT_UNVERIFIED'
+    assert not events['cut_evidence_stable'] and not events['cut_binding_verified']
+    assert 'INDEPENDENT_CUT_EVIDENCE_UNSTABLE' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_process_signal_cannot_sanitize_malformed_latch(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.request_cut()
+    emergency_intent.path(g._path()).write_bytes(b'broken')
+    report=r.evidence_report(r.status()['session']);events=report['durable_event_evidence']
+    assert events['cut_state_before']==events['cut_state_after']=='PRESENT_UNVERIFIED'
+    assert not events['cut_evidence_stable'] and not events['cut_binding_verified']
+    assert events['cut_binding_source']=='NONE'
+    assert 'INDEPENDENT_CUT_EVIDENCE_UNSTABLE' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_later_generic_halt_does_not_taint_stopped_history(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.stop();g.emergency_halt()
+    report=r.evidence_report(r.status()['session'])
+    assert report['local_consistency_ok']
+    assert not report['durable_event_evidence']['independent_cut_observed']
+
+
+def test_cut_transition_during_review_is_unstable(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c)
+    original=g.session_orders_snapshot;calls=0
+    def signal_after_first(value):
+        nonlocal calls
+        result=original(value);calls+=1
+        if calls==1:r.request_cut()
+        return result
+    monkeypatch.setattr(g,'session_orders_snapshot',signal_after_first)
+    report=r.evidence_report(r.status()['session'])
+    assert calls==2 and not report['durable_event_evidence']['cut_evidence_stable']
+    assert 'INDEPENDENT_CUT_EVIDENCE_UNSTABLE' in report['reasons']
     assert not report['local_consistency_ok']
 
 
@@ -138,6 +213,11 @@ def test_order_journal_change_during_review_fails_closed(tmp_path,monkeypatch):
     assert 'ORDER_JOURNAL_CHANGED_DURING_REVIEW' in report['reasons']
     assert 'LINKED_PORTFOLIO_CHANGED_DURING_REVIEW' not in report['reasons']
     assert not report['order_journal_snapshot']['stable_during_review']
+    receipt=report['review_receipt']
+    assert not receipt['local_consistency_ok'] and receipt['reason_count']>=1
+    assert not receipt['order_snapshot_stable_during_review']
+    assert receipt['initial_order_snapshot_sha256']!=receipt['final_order_snapshot_sha256']
+    assert receipt['halted_before'] is False and receipt['halted_after'] is True
 
 
 def test_linked_portfolio_change_during_review_fails_closed(tmp_path,monkeypatch):
@@ -158,6 +238,9 @@ def test_linked_portfolio_change_during_review_fails_closed(tmp_path,monkeypatch
     assert report['order_journal_snapshot']['journal_stable_during_review']
     assert not report['order_journal_snapshot']['portfolio_stable_during_review']
     assert not report['order_journal_snapshot']['stable_during_review']
+    receipt=report['review_receipt']
+    assert not receipt['order_snapshot_stable_during_review']
+    assert receipt['initial_order_snapshot_sha256']!=receipt['final_order_snapshot_sha256']
 
 
 def test_quote_payload_edit_and_tail_deletion_detected(tmp_path,monkeypatch):

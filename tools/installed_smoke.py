@@ -87,6 +87,12 @@ def verify_recovery(base,expected,fetch=request):
         assert events['events']==expected['event_records']
         assert events['head_sha256']==expected['event_head_sha256']
         assert events['reconciliation_sha256']==expected['event_reconciliation_sha256']
+        receipt=evidence['review_receipt']
+        assert receipt['receipt_sha256']==expected['review_receipt_sha256']
+        assert receipt['reason_codes_sha256']==expected['review_reason_codes_sha256']
+        assert receipt['cut_evidence_stable'] is expected['cut_evidence_stable'] is True
+        assert receipt['independent_cut_binding_verified'] is expected['cut_binding_verified'] is False
+        assert receipt['order_snapshot_stable_during_review'] is expected['order_snapshot_stable'] is True
     assert not evidence['provisional_active_session']
     assert evidence['quote_evidence']['head_sha256']==expected['quote_head_sha256']
     assert evidence['quote_evidence']['observations']==expected['quote_observations']

@@ -90,6 +90,14 @@ def test_resumable_exit_slice_expiry_is_vetoed_then_fills_on_fresh_terms(
     assert mandate['reduction_slice_count']==1
     assert Decimal(after_expiry['execution_account']['account']['positions']['BTC-USD']['quantity'])==position
     assert len(cold.order_report(mandate['id'])['quote_events'])==1
+    no_fill=cold.order_report(mandate['id'])['no_fill_events']
+    assert len(no_fill)==1
+    assert no_fill[0]['order_id']==mandate['id']
+    assert no_fill[0]['side']=='SELL'
+    assert no_fill[0]['reason']=='ORDER_EXPIRED_WITHOUT_FILL'
+    assert no_fill[0]['evidence_session']==resumed.status()['session']
+    assert no_fill[0]['evidence_cycle']==1
+    assert len(no_fill[0]['evidence_quote_sha256'])==64
 
     c.now+=5;c.price=252
     filled=resumed.single_cycle()
@@ -103,6 +111,38 @@ def test_resumable_exit_slice_expiry_is_vetoed_then_fills_on_fresh_terms(
     review=resumed.evidence_report(resumed.status()['session'])
     assert review['local_consistency_ok']
     assert review['counters']['VETO']==review['counters']['SELL']==1
+    events=review['durable_event_evidence']
+    assert events['durable_no_fill_outcomes_reconciled']
+    assert events['modeled_no_fill_outcomes']==1
+
+    # Recomputing the complete forward chain cannot disguise a changed
+    # expired-attempt order identity because the order journal is independent.
+    changed=False
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        rows=db.execute('SELECT session,sequence,payload FROM forward_events ORDER BY session,sequence').fetchall()
+        previous_by_session={};heads={}
+        from nexus import forward_event_evidence
+        for session,sequence,payload in rows:
+            data=json.loads(payload)
+            record=data['record']
+            if (not changed and record.get('decision')=='VETO' and
+                    record.get('reason')=='ORDER_EXPIRED_WITHOUT_FILL'):
+                record['order_id']='pf_'+session+'_999_SELL';changed=True
+            rewritten=forward_event_evidence.canonical(data)
+            previous=previous_by_session.get(session,forward_event_evidence.GENESIS)
+            digest=forward_event_evidence.digest(previous,rewritten)
+            db.execute('UPDATE forward_events SET payload=?,previous=?,digest=? WHERE session=? AND sequence=?',
+                (rewritten,previous,digest,session,sequence))
+            previous_by_session[session]=digest;heads[session]=(sequence,digest)
+        for session,(count,head) in heads.items():
+            db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
+                (count,head,session))
+    assert changed
+    rewritten=resumed.evidence_report(resumed.status()['session'])
+    assert rewritten['durable_event_evidence']['event_trace_complete']
+    assert not rewritten['durable_event_evidence']['durable_no_fill_outcomes_reconciled']
+    assert 'DURABLE_NO_FILL_OUTCOME_DISAGREEMENT' in rewritten['reasons']
+    assert not rewritten['local_consistency_ok']
     resumed.stop()
 
 

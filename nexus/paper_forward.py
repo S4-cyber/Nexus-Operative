@@ -567,7 +567,7 @@ class PaperForwardRunner:
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
             event_id='slice_'+str(sequence) if side=='SELL' else 'fill'
-            result=self.orders.simulate_quote_fill(oid,event_id,sequence,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],evidence_cycle=self._cycles,evidence_session=self._session,execution_clock=lambda:self._execution_now(exchange_at))
+            result=self.orders.simulate_quote_fill(oid,event_id,sequence,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],evidence_cycle=self._cycles,evidence_session=self._session,evidence_quote_sha256=self._observation_hash,execution_clock=lambda:self._execution_now(exchange_at))
             if result.get('expired'):
                 self._prices.clear();self._last_rank=0
                 return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)

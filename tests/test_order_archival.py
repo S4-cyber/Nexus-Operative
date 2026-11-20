@@ -141,6 +141,21 @@ def test_archived_order_history_read_only_api(tmp_path,monkeypatch):
     assert c.get('/api/execution/intent/missing').status_code==404
 
 
+def test_archive_binds_and_retains_terminal_no_fill_evidence(tmp_path,monkeypatch):
+    g=setup(tmp_path,monkeypatch)
+    g.submit('expired','BTC-USD','BUY',25,tier='terrestrial')
+    g.set_execution_terms('expired',1000,10)
+    result=g.simulate_quote_fill('expired','attempt',1,1,25,25.1,2,1010,1010)
+    assert result['expired'] and result['no_fill_recorded']
+    g.emergency_halt();manifest=g.archive_terminal('no_fill_batch')
+    assert manifest['order_count']==1 and len(manifest['evidence_sha256'])==64
+    cp.clear_cache();cold=DurableOrderGateway(g.path)
+    evidence=cold.order_report('expired')
+    assert evidence['archived'] and len(evidence['no_fill_events'])==1
+    assert evidence['no_fill_events'][0]['reason']=='ORDER_EXPIRED_WITHOUT_FILL'
+    assert cold.archive_terminal('no_fill_batch')['evidence_sha256']==manifest['evidence_sha256']
+
+
 def test_archive_history_edit_fails_closed(tmp_path,monkeypatch):
     g=setup(tmp_path,monkeypatch);cycle(g,0);g.emergency_halt();g.archive_terminal('batch')
     with sqlite3.connect(g.path) as db:

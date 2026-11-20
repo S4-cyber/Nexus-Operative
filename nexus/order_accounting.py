@@ -58,6 +58,7 @@ class AccountingOrderGateway(OrderGateway):
         self.portfolio_linked = False
         self.order_terms = {}
         self.quote_events = {}
+        self.no_fill_events = {}
         self._applying_quote = False
         self.archived_intents = {}
         self.archive_batches = {}
@@ -103,7 +104,7 @@ class AccountingOrderGateway(OrderGateway):
             return {**copy.deepcopy(self.epoch_lineage),'idempotent_replay':True}
         if (not self.halted or not self.portfolio_linked or self.account is None or
             self.account['positions'] or self.intents or self.archived_intents or self.executions or
-            self.quote_events or self.order_terms or self.archive_batches):
+            self.quote_events or self.no_fill_events or self.order_terms or self.archive_batches):
             raise ValueError('REPLACEMENT_EPOCH_REQUIRES_FRESH_HALTED_FLAT_ACCOUNT')
         self.epoch_lineage=lineage
         if fingerprints is not None:self.retired_order_id_fingerprints=fingerprints
@@ -166,6 +167,8 @@ class AccountingOrderGateway(OrderGateway):
                       executions=[[list(k),v] for k,v in sorted(self.executions.items()) if k[0] in self.intents],
                       quote_events=[[list(k),v] for k,v in sorted(self.quote_events.items()) if k[0] in self.intents],
                       terms={oid:self.order_terms[oid] for oid in ids if oid in self.order_terms})
+        no_fills=[[list(k),v] for k,v in sorted(self.no_fill_events.items()) if k[2] in self.intents]
+        if no_fills:evidence['no_fill_events']=no_fills
         digest=hashlib.sha256(json.dumps(evidence,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
         manifest=dict(batch_id=batch_id,sequence_boundary=sequence_boundary,order_ids=ids,order_count=len(ids),evidence_sha256=digest)
         self.archived_intents.update(self.intents)
@@ -238,7 +241,7 @@ class AccountingOrderGateway(OrderGateway):
 
     def simulate_quote_fill(self, client_order_id, event_id, sequence, quantity, bid, ask,
                             available_quantity, quote_at, evaluated_at, fee_bps=10, slippage_bps=5,
-                            evidence_cycle=None,evidence_session=None):
+                            evidence_cycle=None,evidence_session=None,evidence_quote_sha256=None):
         from nexus.quote_execution import plan
         _require_order_id(client_order_id);_require_event_id(event_id)
         if type(sequence) is not int or not 1<=sequence<=1000:raise ValueError('INVALID_EVENT_SEQUENCE')
@@ -248,7 +251,11 @@ class AccountingOrderGateway(OrderGateway):
                 (type(evidence_session) is not str or len(evidence_session)!=16 or
                  any(character not in '0123456789abcdef' for character in evidence_session))):
             raise ValueError('INVALID_FORWARD_EVIDENCE_SESSION')
-        if (evidence_cycle is None)!=(evidence_session is None):
+        if (evidence_quote_sha256 is not None and
+                (type(evidence_quote_sha256) is not str or len(evidence_quote_sha256)!=64 or
+                 any(character not in '0123456789abcdef' for character in evidence_quote_sha256))):
+            raise ValueError('INVALID_FORWARD_QUOTE_EVIDENCE_DIGEST')
+        if len({evidence_cycle is None,evidence_session is None,evidence_quote_sha256 is None})!=1:
             raise ValueError('INCOMPLETE_FORWARD_EVIDENCE_IDENTITY')
         with self.lock:
             record=self.lookup(client_order_id)
@@ -257,7 +264,21 @@ class AccountingOrderGateway(OrderGateway):
             detail=dict(sequence=sequence,**modeled)
             if evidence_cycle is not None:detail['evidence_cycle']=evidence_cycle
             if evidence_session is not None:detail['evidence_session']=evidence_session
+            if evidence_quote_sha256 is not None:detail['evidence_quote_sha256']=evidence_quote_sha256
             key=(client_order_id,event_id)
+            attempt_key=(evidence_session or '',evidence_cycle or 0,client_order_id,event_id)
+            if attempt_key in self.no_fill_events:
+                no_fill=dict(order_id=client_order_id,side=record['side'],event_id=event_id,
+                    sequence=sequence,reason='ORDER_EXPIRED_WITHOUT_FILL',
+                    evaluated_at=str(number(evaluated_at).normalize()),
+                    expires_at=self.no_fill_events[attempt_key]['expires_at'])
+                if evidence_cycle is not None:no_fill['evidence_cycle']=evidence_cycle
+                if evidence_session is not None:no_fill['evidence_session']=evidence_session
+                if evidence_quote_sha256 is not None:no_fill['evidence_quote_sha256']=evidence_quote_sha256
+                if self.no_fill_events[attempt_key]!=no_fill:
+                    raise ValueError('DUPLICATE_NO_FILL_EVENT_CONFLICT')
+                return {**copy.deepcopy(record),'expired':True,'no_fill_recorded':True,
+                        'idempotent_replay':True}
             if key in self.quote_events:
                 if self.quote_events[key]!=detail:raise ValueError('DUPLICATE_QUOTE_EVENT_CONFLICT')
                 return {**copy.deepcopy(record),'idempotent_replay':True}
@@ -265,9 +286,20 @@ class AccountingOrderGateway(OrderGateway):
             if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
             if number(quote_at)<Decimal(self.order_terms[client_order_id]['created_at']):raise ValueError('QUOTE_PRECEDES_ORDER')
             previous_times=[Decimal(v['assumptions']['evaluated_at']) for (oid,_),v in self.quote_events.items() if oid==client_order_id]
+            previous_times.extend(Decimal(v['evaluated_at']) for (_,_,oid,_),v in self.no_fill_events.items()
+                if oid==client_order_id)
             if previous_times and number(evaluated_at)<max(previous_times):raise ValueError('QUOTE_TIME_REGRESSION')
             if number(evaluated_at)>=Decimal(self.order_terms[client_order_id]['expires_at']):
-                return self.expire_order(client_order_id,evaluated_at)
+                no_fill=dict(order_id=client_order_id,side=record['side'],event_id=event_id,
+                    sequence=sequence,reason='ORDER_EXPIRED_WITHOUT_FILL',
+                    evaluated_at=str(number(evaluated_at).normalize()),
+                    expires_at=self.order_terms[client_order_id]['expires_at'])
+                if evidence_cycle is not None:no_fill['evidence_cycle']=evidence_cycle
+                if evidence_session is not None:no_fill['evidence_session']=evidence_session
+                if evidence_quote_sha256 is not None:no_fill['evidence_quote_sha256']=evidence_quote_sha256
+                self.no_fill_events[attempt_key]=no_fill
+                return {**self.expire_order(client_order_id,evaluated_at),
+                        'no_fill_recorded':True,'idempotent_replay':False}
             self._applying_quote=True
             try:
                 result=self.simulate_priced_fill(client_order_id,event_id,sequence,modeled['quantity'],modeled['price'],modeled['fee'])

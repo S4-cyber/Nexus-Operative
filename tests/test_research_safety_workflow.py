@@ -28,7 +28,7 @@ def test_long_running_safety_gates_have_independent_windows_job_budgets():
     assert "nexus.release_trials" not in regression
     assert "portal_browser_smoke.py" not in regression
 
-    assert "timeout-minutes: 15" in evidence
+    assert "timeout-minutes: 45" in evidence
     assert "python -m nexus.release_trials" in evidence
     assert "python -m nexus.release_evidence" in evidence
     assert "if: always()" in evidence

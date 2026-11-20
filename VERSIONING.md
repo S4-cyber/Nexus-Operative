@@ -1,5 +1,30 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.387 atomic simulated-entry audit and CI evidence budget
+
+Direct simulated BUY admission now obtains SQLite writer reservation before its
+integrity governor reads the ledger. The audit, exposure and cash checks, and
+new-exposure mutation execute in that same transaction, closing a cross-process
+gap where a chain mutation could land after a passing audit. Standalone
+integrity reviews hold one explicit read snapshot. Reducing SELL exits
+intentionally remain available when integrity is impaired.
+
+The exact-head Windows saved-evidence job now has a finite 45-minute outer
+budget. Exact v0.340.386 CI exhausted the former 15-minute budget while bounded
+release profiles were still running; each profile retains its own fail-closed
+child limit and fresh exact-source CI remains mandatory.
+
+This is bounded offline risk, accounting and CI-orchestration evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native installer acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
 ## v0.340.386 rejected-tick exchange-marker continuity
 
 Every structurally valid fresh paper-forward tick now consumes the monotonic
@@ -26,7 +51,7 @@ remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
 about 40%, 30–45% low-confidence range), with 0/9 stages independently
 accepted and no release permission, trading permission or launch date.
 
-**Current development build: 0.340.386 (pre-release).**
+**Current development build: 0.340.387 (pre-release).**
 
 ## v0.340.385 durable cross-session exchange continuity
 

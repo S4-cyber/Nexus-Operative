@@ -45,7 +45,10 @@ jobs:
 
   offline-release-evidence:
     runs-on: windows-latest
-    timeout-minutes: 15
+    # Exact v0.340.386 run 44804652797 exhausted the former 15-minute outer
+    # budget while its bounded profiles were still running.  The profiles keep
+    # their own fail-closed child limits; this remains a finite orchestration cap.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:

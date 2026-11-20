@@ -29,9 +29,14 @@ def _busy():raise ValueError('PAPER_PORTFOLIO_DATABASE_BUSY') from None
 
 
 @contextmanager
-def _transaction(db):
+def _transaction(db, *, immediate=False):
     """Normalize bounded statement/final-commit contention without retry."""
     try:
+        if immediate:
+            # New exposure admission must own SQLite's writer reservation
+            # before it audits any ledger state.  A deferred transaction would
+            # leave a cross-process gap between the governor and the mutation.
+            db.execute('BEGIN IMMEDIATE')
         with db:yield
     except sqlite3.OperationalError as error:
         if _database_busy(error):_busy()
@@ -157,11 +162,13 @@ def verify_ledger(db):
 def buy(product,notional,quote):
     amount=num(notional)
     _,ask=check_quote(product,quote)
-    from nexus.portfolio_governor import require_safe_ledger
-    require_safe_ledger()
     with LOCK:
         with closing(_connect()) as db:
-            with _transaction(db):
+            with _transaction(db,immediate=True):
+                # Audit the exact snapshot protected by the writer reservation.
+                # Reducing SELL exits intentionally do not use this governor.
+                from nexus.portfolio_governor import require_safe_ledger
+                require_safe_ledger(db)
                 meta=dict(db.execute("SELECT key,value FROM meta"))
                 if meta.get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
                 if "cash" not in meta:raise ValueError("Initialize first")

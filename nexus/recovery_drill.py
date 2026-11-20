@@ -14,7 +14,9 @@ PUBLIC_KEYS=frozenset(('mode','passed','verified_files','recovered','broker_conn
     'live_orders_enabled','release_approved','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('session','halted','portfolio_reconciled','forward_stopped',
     'archived_session_orders','session_order_ids','order_sha256','account_sha256','quote_head_sha256',
-    'quote_observations','policy_sha256','modeled_buy_orders','modeled_sell_orders','source_modes'))
+    'quote_observations','policy_sha256','modeled_buy_orders','modeled_sell_orders','source_modes',
+    'event_records','event_head_sha256','event_reconciliation_sha256',
+    'quote_outcome_bijection','durable_order_outcomes_reconciled'))
 
 
 def canonical(value):
@@ -43,6 +45,10 @@ def _review(session):
         raise ValueError('RECOVERY_DRILL_EVIDENCE_OR_RESUME_FAILED')
     if len(orders)!=2 or report['orders'] or report['execution_account']['account']['positions']:
         raise ValueError('RECOVERY_DRILL_ARCHIVE_OR_POSITION_FAILED')
+    events=evidence['durable_event_evidence']
+    if (not events['event_trace_complete'] or not events['quote_outcome_bijection'] or
+            not events['durable_order_outcomes_reconciled']):
+        raise ValueError('RECOVERY_DRILL_EVENT_RECONCILIATION_FAILED')
     return dict(session=session,halted=True,portfolio_reconciled=True,forward_stopped=True,
                 archived_session_orders=len(orders),session_order_ids=[item['order']['id'] for item in orders],
                 order_sha256=fingerprint(orders),account_sha256=fingerprint(report['execution_account']),
@@ -51,6 +57,9 @@ def _review(session):
                 policy_sha256=evidence['policy']['policy_sha256'],
                 modeled_buy_orders=evidence['execution_crosscheck']['modeled_buy_orders'],
                 modeled_sell_orders=evidence['execution_crosscheck']['modeled_sell_orders'],
+                event_records=events['events'],event_head_sha256=events['head_sha256'],
+                event_reconciliation_sha256=events['reconciliation_sha256'],
+                quote_outcome_bijection=True,durable_order_outcomes_reconciled=True,
                 source_modes=evidence['quote_evidence']['source_modes'])
 
 

@@ -67,7 +67,12 @@ def test_process_death_preserves_authoritative_ledger_and_requires_review(tmp_pa
     else:
         assert Decimal(pending['simulated_filled_notional'])==0
         assert not recovery['execution_account']['account']['positions']
-        assert evidence['local_consistency_ok']
+        # The quote committed before process death has no durable outcome.
+        # Keep the evidence readable, but never promote that gap to a
+        # complete per-session reconciliation.
+        assert not evidence['local_consistency_ok']
+        assert not evidence['durable_event_evidence']['quote_outcome_bijection']
+        assert 'QUOTE_OUTCOME_BIJECTION_DISAGREEMENT' in evidence['reasons']
     # Ownership was released by actual process death, but normal admission still
     # refuses the unreviewed pending order rather than resuming the old session.
     with pytest.raises(ValueError,match='REVIEW_OUTSTANDING_PAPER_ORDERS_FIRST'):

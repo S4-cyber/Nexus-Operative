@@ -441,6 +441,7 @@ class DurableOrderGateway:
             journal_sha256=journal_digest.hexdigest()
             combined=hashlib.sha256(b'nexus.order-reconciliation-snapshot.v1\n')
             combined.update(json.dumps(dict(journal_sha256=journal_sha256,
+                halted=gateway.halted,
                 portfolio_linked=gateway.portfolio_linked,
                 portfolio_sha256=portfolio_snapshot['snapshot_sha256'] if portfolio_snapshot else None),
                 sort_keys=True,separators=(',',':')).encode())
@@ -467,11 +468,18 @@ class DurableOrderGateway:
                     (Decimal(event['quantity'])*Decimal(event['price']) for event in events),Decimal(0)))
                 order['simulated_fee_total']=str(sum(
                     (Decimal(event['fee']) for event in events),Decimal(0)))
+            events.sort(key=lambda event:(event.get('evidence_cycle',-1),
+                event.get('sequence',-1),event.get('evidence_session','')))
+        selected_terms={key:copy.deepcopy(gateway.order_terms[key])
+            for key in sorted(matched) if key in gateway.order_terms}
         return dict(read_only=True,journal_present=present,commands=count,journal_sha256=journal_sha256,
+                    halted=gateway.halted,
                     portfolio_linked=gateway.portfolio_linked,
                     portfolio_rows=portfolio_snapshot['rows'] if portfolio_snapshot else 0,
                     portfolio_sha256=portfolio_snapshot['snapshot_sha256'] if portfolio_snapshot else None,
-                    snapshot_sha256=snapshot_sha256,orders=list(matched.values()),
+                    snapshot_sha256=snapshot_sha256,
+                    orders=[matched[key] for key in sorted(matched)],
+                    execution_terms=selected_terms,
                     live_orders_enabled=False,
                     note='Local replay-validated order and linked-ledger snapshot only; it grants no provider, account, funds or execution authority.')
 

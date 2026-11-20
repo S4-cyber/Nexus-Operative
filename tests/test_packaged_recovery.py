@@ -25,8 +25,20 @@ def test_installed_recovery_checker_validates_complete_fixture(tmp_path,monkeypa
     assert all(report.values())
 
 
-@pytest.mark.parametrize('field',['account_sha256','order_sha256','quote_head_sha256','policy_sha256'])
+@pytest.mark.parametrize('field',['account_sha256','order_sha256','quote_head_sha256','policy_sha256',
+    'event_head_sha256','event_reconciliation_sha256'])
 def test_installed_checker_rejects_baseline_mismatch(tmp_path,monkeypatch,field):
     expected,fetch=fixture(tmp_path,monkeypatch)
     changed=copy.deepcopy(expected);changed[field]='wrong'
     with pytest.raises(AssertionError):verify_recovery('local',changed,fetch)
+
+
+def test_installed_checker_reads_legacy_eventless_fixture_as_incomplete(tmp_path,monkeypatch):
+    import sqlite3
+    expected,fetch=fixture(tmp_path,monkeypatch)
+    for key in ('event_records','event_head_sha256','event_reconciliation_sha256',
+                'quote_outcome_bijection','durable_order_outcomes_reconciled'):
+        expected.pop(key)
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        db.execute('DROP TABLE forward_events');db.execute('DROP TABLE forward_event_heads')
+    assert all(verify_recovery('local',expected,fetch).values())

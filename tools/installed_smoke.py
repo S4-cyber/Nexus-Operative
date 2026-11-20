@@ -74,7 +74,20 @@ def verify_recovery(base,expected,fetch=request):
     assert fingerprint(recovery['execution_account'])==expected['account_sha256']
     assert fingerprint(orders)==expected['order_sha256']
     assert len(orders)==expected['archived_session_orders']
-    assert evidence['local_consistency_ok'] and not evidence['provisional_active_session']
+    legacy_event_trace='event_head_sha256' not in expected
+    events=evidence['durable_event_evidence']
+    if legacy_event_trace:
+        assert not evidence['local_consistency_ok']
+        assert not events['event_trace_complete']
+        assert 'DURABLE_EVENT_CHAIN_DISAGREEMENT' in evidence['reasons']
+    else:
+        assert evidence['local_consistency_ok']
+        assert events['event_trace_complete'] and events['quote_outcome_bijection']
+        assert events['durable_order_outcomes_reconciled']
+        assert events['events']==expected['event_records']
+        assert events['head_sha256']==expected['event_head_sha256']
+        assert events['reconciliation_sha256']==expected['event_reconciliation_sha256']
+    assert not evidence['provisional_active_session']
     assert evidence['quote_evidence']['head_sha256']==expected['quote_head_sha256']
     assert evidence['quote_evidence']['observations']==expected['quote_observations']
     assert evidence['quote_evidence']['source_modes']==expected['source_modes']
@@ -83,7 +96,7 @@ def verify_recovery(base,expected,fetch=request):
     assert evidence['execution_crosscheck']['modeled_sell_orders']==expected['modeled_sell_orders']
     assert not fetch(base,'/api/paper/forward')['enabled']
     return dict(restored_account_matches=True,archived_orders_match=True,quote_evidence_matches=True,
-                policy_matches=True,halted=True,forward_stopped=True)
+                policy_matches=True,event_trace_policy_applied=True,halted=True,forward_stopped=True)
 
 
 def verify_setup(base,profile,fetch=request):

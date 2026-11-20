@@ -25,6 +25,7 @@ from nexus.execution_capacity import resumable_exit_mandate
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
 from nexus import emergency_intent,forward_evidence,forward_event_evidence,forward_sessions
+from nexus.forward_reconciliation_review import reconcile as reconcile_forward_session
 from nexus.forward_ownership import ForwardOwnership
 from nexus.sqlite_journal_guard import (
     capture_file_identities, check_existing, committed_main_fingerprint,
@@ -756,14 +757,23 @@ class PaperForwardRunner:
             session=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(session_id,)).fetchone()
             if session is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             quotes=forward_evidence.review(db,session_id)
+            event_tables=forward_event_evidence.table_names(db)
+            if event_tables==forward_event_evidence.TABLES and forward_event_evidence.schema_valid(db):
+                events=forward_event_evidence.review(db,session_id)
+            else:
+                events=dict(integrity_ok=False,reasons=['DURABLE_EVENT_TABLES_MISSING_OR_INVALID'],
+                    events=0,head_sha256=None,points=[])
         final_order_snapshot=self.orders.session_orders_snapshot(session_id)
         orders=order_snapshot['orders']
         policy,counts,last=forward_sessions.parse(*session)
         checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
+        event_summary,event_reasons=reconcile_forward_session(session=session_id,
+            started_at=session[0],updated_at=session[1],state=session[2],counts=counts,
+            last=last,quotes=quotes,events=events,order_snapshot=order_snapshot)
         terminal=forward_sessions.binding_reasons(last,session[2],session_id,policy,
             quotes['head_sha256'],quotes['observations'],quotes['points'][-1]['cycle'] if quotes['points'] else 0,
             quotes['parent_head_sha256'])
-        reasons=quotes['reasons']+checked['reasons']+terminal
+        reasons=quotes['reasons']+checked['reasons']+terminal+event_reasons
         journal_snapshot_stable=(order_snapshot['journal_present']==final_order_snapshot['journal_present']
             and order_snapshot['commands']==final_order_snapshot['commands']
             and order_snapshot['journal_sha256']==final_order_snapshot['journal_sha256'])
@@ -771,7 +781,8 @@ class PaperForwardRunner:
             and order_snapshot['portfolio_rows']==final_order_snapshot['portfolio_rows']
             and order_snapshot['portfolio_sha256']==final_order_snapshot['portfolio_sha256'])
         order_snapshot_stable=(journal_snapshot_stable and portfolio_snapshot_stable
-            and order_snapshot['snapshot_sha256']==final_order_snapshot['snapshot_sha256'])
+            and order_snapshot['snapshot_sha256']==final_order_snapshot['snapshot_sha256']
+            and order_snapshot['halted']==final_order_snapshot['halted'])
         if not journal_snapshot_stable:reasons.append('ORDER_JOURNAL_CHANGED_DURING_REVIEW')
         if not portfolio_snapshot_stable:reasons.append('LINKED_PORTFOLIO_CHANGED_DURING_REVIEW')
         if last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':reasons.append('ORDER_CLEANUP_REQUIRES_REVIEW')
@@ -784,8 +795,10 @@ class PaperForwardRunner:
         return dict(mode='READ_ONLY_FORWARD_EVIDENCE_REVIEW',read_only=True,session=session_id,
                     started_at=session[0],updated_at=session[1],stored_state=session[2],policy=policy,
                     counters=counts,quote_evidence=summary,execution_crosscheck=checked,
+                    durable_event_evidence=event_summary,
                     order_journal_snapshot=dict(journal_present=order_snapshot['journal_present'],
                         commands=order_snapshot['commands'],portfolio_linked=order_snapshot['portfolio_linked'],
+                        halted=order_snapshot['halted'],
                         portfolio_rows=order_snapshot['portfolio_rows'],snapshot_sha256=order_snapshot['snapshot_sha256'],
                         journal_stable_during_review=journal_snapshot_stable,
                         portfolio_stable_during_review=portfolio_snapshot_stable,

@@ -1,5 +1,30 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.371 durable forward-event trace
+
+Local paper sessions now retain a separately capped, never-pruned hash chain for
+lifecycle, primary outcome and scheduler events. The 1,000-row cycle table
+remains only a short Portal diagnostic. Retained review requires the event
+chain, session counters and final state to agree and requires exactly one
+quote-digest-bound primary outcome per quote. Legacy and mixed histories stay
+readable but cannot claim a complete or incident-free trace. Capacity admission
+preserves room for the next outcome, a possible scheduler overrun and a
+fail-closed terminal record; Trial Readiness reports a conservative event-row
+forecast without reserving storage.
+
+This is bounded offline evidence-durability and sustained-trial integrity work,
+not source attestation, broker-paper acceptance, genuine-market realism, a
+completed sustained trial, Windows/installer acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Broker transport,
+engagement and optional AI remain OFF by default. No button or editable
+parameter changed; the existing Trial Readiness control explains the new
+read-only fields, while seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain intact. The read-only roadmap estimate is
+unchanged: exact weighted implementation 38% (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
 ## v0.340.370 truthful resumable-slice expiry
 
 Exact-TTL expiry of a residual local-paper reducing slice is now an explicit

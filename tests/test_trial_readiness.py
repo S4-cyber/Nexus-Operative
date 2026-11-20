@@ -33,6 +33,7 @@ def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path)
     report=ready.build(path,now=START+72*3600)
     assert report['status']=='NO_RETAINED_HISTORY' and report['review'] is None and not path.parent.exists()
     cap=report['quote_capacity'];assert cap['estimated_additional_observations']==51841 and cap['room_for_additional_requested_window']
+    event_cap=report['event_capacity'];assert event_cap['estimated_additional_events']==103685 and event_cap['room_for_additional_requested_window']
     sessions=report['session_capacity'];assert sessions['retained']==0 and sessions['remaining']==sessions['limit'] and sessions['room_for_additional_session']
     orders=report['order_capacity']
     assert not orders['journal_present'] and orders['next_cycle_reserve_clear']
@@ -45,7 +46,9 @@ def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path)
     assert owner['checked'] and owner['state']=='OWNER_PATH_ABSENCE_BOUND'
     assert owner['retained_history_requires_owner_lock'] and not owner['owner_file_created']
     assert all(report[k] is False for k in trial.FLAGS)
-    assert not ready.build(path,hours=168,now=START+168*3600)['quote_capacity']['room_for_additional_requested_window']
+    week=ready.build(path,hours=168,now=START+168*3600)
+    assert not week['quote_capacity']['room_for_additional_requested_window']
+    assert not week['event_capacity']['room_for_additional_requested_window']
 
 
 def test_owner_absence_binding_survives_windows_style_path_normalization(tmp_path,monkeypatch):

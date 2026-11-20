@@ -46,7 +46,7 @@ FAULT_LIMITATIONS=('Injected local failures, accelerated worker scheduling and a
 SCHEDULER_CADENCE_LIMITATIONS=('Injected monotonic scheduling and public-quote-shaped local observations only; proves bounded worker '
     'deadline, overrun and fail-closed behavior, not operating-system timer accuracy, actual provider cadence, sustained-market '
     'throughput, broker operation or release acceptance.')
-COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EXECUTION_OWNERSHIP_NOT_CHECKED',
+COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EVENT_INCIDENTS_RETAINED_IN_WINDOW','EXECUTION_OWNERSHIP_NOT_CHECKED',
     'INJECTED_OBSERVATIONS_IN_WINDOW','NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS',
     'ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','QUOTE_ERRORS_RETAINED_IN_WINDOW',
     'REJECTED_OBSERVATIONS_RETAINED_IN_WINDOW',

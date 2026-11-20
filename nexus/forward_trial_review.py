@@ -16,7 +16,7 @@ import sqlite3
 import os
 import time
 
-from nexus import forward_evidence, forward_sessions
+from nexus import forward_evidence, forward_event_evidence, forward_sessions
 from nexus.paper_forward import SESSION_LIMIT
 from nexus import feed_guard as feed_policy
 from nexus.feed_guard import FeedGuard
@@ -57,7 +57,9 @@ PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_secon
     'clean_manual_stop_sessions','other_stopped_sessions','paused_sessions','running_sessions',
     'sessions_with_quote_errors','quote_error_observations','over_limit_coverage_gaps',
     'over_limit_coverage_gap_seconds','operational_incidents_present',
-    'incident_free_coverage_target_met','evidence_snapshot_sha256',
+    'retained_event_records','events_in_window','legacy_unbound_observations_in_window',
+    'quote_outcome_disagreements_in_window','event_incident_records_in_window',
+    'event_trace_complete','incident_free_coverage_target_met','evidence_snapshot_sha256',
     *FLAGS,'review_reasons','limitations'))
 
 
@@ -204,11 +206,24 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         heads=db.execute('SELECT session,observations,head FROM forward_quote_heads ORDER BY session').fetchmany(SESSION_LIMIT+1)
         if len(heads)>SESSION_LIMIT or any(r[0] not in known for r in heads):_fail()
         if any(r[0] not in known for r in db.execute('SELECT DISTINCT session FROM forward_quotes')):_fail()
+        event_names={row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('forward_events','forward_event_heads')")}
+        if event_names not in (set(),{'forward_events','forward_event_heads'}):_fail()
+        event_tables=bool(event_names)
+        if event_tables and not forward_event_evidence.schema_valid(db):_fail()
+        event_count=0;event_heads=[]
+        if event_tables:
+            event_count,event_bytes,event_largest=db.execute('SELECT COUNT(*),COALESCE(SUM(length(CAST(payload AS BLOB))),0),COALESCE(MAX(length(CAST(payload AS BLOB))),0) FROM forward_events').fetchone()
+            if event_count>forward_event_evidence.LIMIT or event_bytes>512*1024*1024 or event_largest>2048:_fail()
+            event_heads=db.execute('SELECT session,events,head FROM forward_event_heads ORDER BY session').fetchmany(SESSION_LIMIT+1)
+            if len(event_heads)>SESSION_LIMIT or any(r[0] not in known for r in event_heads):_fail()
+            if any(r[0] not in known for r in db.execute('SELECT DISTINCT session FROM forward_events')):_fail()
         # append() stores canonical JSON. Reject duplicate/nonfinite/ambiguous JSON
         # before the existing chain reviewer, rather than accept parser last-wins.
         for payload, in db.execute('SELECT payload FROM forward_quotes'):
             if type(payload) is not str or forward_evidence.canonical(json.loads(payload))!=payload:_fail()
         intervals=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
+        events_in_window=legacy_unbound=outcome_disagreements=event_incidents=0
+        event_trace_complete=True
         clean_stopped=other_stopped=paused=running=quote_error_sessions=quote_errors=0
         reasons={'SOURCE_LABELS_AND_HASHES_UNATTESTED','ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','EXECUTION_OWNERSHIP_NOT_CHECKED'}
         for sid,started,updated,state,policy_raw,counts_raw,last_raw in rows:
@@ -227,6 +242,47 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 evidence['head_sha256'],len(points),points[-1]['cycle'] if points else 0,
                 evidence['parent_head_sha256'])
             if terminal_reasons:_fail()
+            session_event_complete=event_tables
+            if event_tables:
+                events=forward_event_evidence.review(db,sid)
+                event_points=events['points']
+                if not events['integrity_ok']:session_event_complete=False
+                if event_points:
+                    first_event=event_points[0]['record'];last_event=event_points[-1]['record']
+                    if first_event['decision']!='START' or first_event['cycle']!=0 or last_event!=last:
+                        session_event_complete=False
+                    event_counts={}
+                    previous_event_at=None;previous_event_cycle=-1
+                    for event in event_points:
+                        record=event['record'];event_at=_number(record['at'])
+                        event_counts[record['decision']]=event_counts.get(record['decision'],0)+1
+                        if (not session_start<=event_at<=session_end or
+                                previous_event_at is not None and event_at<previous_event_at or
+                                record['cycle']<previous_event_cycle):
+                            session_event_complete=False
+                        if start<=event_at<=end:
+                            events_in_window+=1
+                            if event['kind']=='SCHEDULER' or record['decision'] in ('PAUSED','VETO'):
+                                event_incidents+=1
+                        previous_event_at=event_at;previous_event_cycle=record['cycle']
+                    if event_counts!=counts:session_event_complete=False
+                elif lifecycle_in_window:session_event_complete=False
+                quote_digests=dict(db.execute('SELECT cycle,digest FROM forward_quotes WHERE session=?',(sid,)))
+                quote_times={point['cycle']:point['evaluated_at'] for point in points}
+                outcomes={}
+                for event in event_points:
+                    if event['kind']=='OUTCOME':outcomes.setdefault(event['cycle'],[]).append(event['record'])
+                for cycle,quote_digest in quote_digests.items():
+                    matched=outcomes.pop(cycle,[])
+                    if len(matched)!=1 or matched[0]['quote_evidence_sha256']!=quote_digest:
+                        session_event_complete=False
+                        if start<=_number(quote_times[cycle])<=end:outcome_disagreements+=1
+                if any(outcomes.values()):
+                    session_event_complete=False
+                    for records in outcomes.values():
+                        outcome_disagreements+=sum(start<=_number(record['at'])<=end for record in records)
+            else:
+                event_points=[];session_event_complete=False
             session_quote_errors=0
             guard=FeedGuard();previous_exchange=None
             for point in points:
@@ -238,6 +294,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 good=checked_eligible and source==PUBLIC
                 if start<=at<=end:
                     selected+=1;eligible+=int(point['quote_eligible'])
+                    if not event_points:legacy_unbound+=1
                     revalidated+=int(checked_eligible)
                     disagreements+=int(point['quote_eligible'] is True and not checked)
                     public+=int(source==PUBLIC);injected+=int(source==INJECTED);unknown+=int(source not in (PUBLIC,INJECTED))
@@ -255,6 +312,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                         if left<right:intervals.append((left,right))
                 previous=at,good
             if lifecycle_in_window:
+                if not session_event_complete:event_trace_complete=False
                 session_count+=1
                 quote_error_sessions+=int(session_quote_errors>0)
                 if state=='RUNNING':running+=1
@@ -290,7 +348,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             previous_global[product]=(at,sid,last)
         disagreements+=len(cross_rejected);revalidated-=len(cross_rejected)
         if seen!=count:_fail()
-        binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,quote_heads=heads,quote_rows=count)).encode()).hexdigest()
+        binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,quote_heads=heads,quote_rows=count,event_heads=event_heads,event_rows=event_count)).encode()).hexdigest()
     with localcontext() as context:
         context.prec=50
         merged=_merge(intervals);covered=sum((b-a for a,b in merged),Decimal(0));duration=end-start
@@ -304,8 +362,9 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         over_limit_gap_seconds=sum(over_limit_gaps,Decimal(0))
         target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and selected>0
         rejected=selected-eligible
-        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps)
-        incident_free_target=target and not incidents
+        trace_incomplete=not event_trace_complete or legacy_unbound or outcome_disagreements
+        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps or trace_incomplete or event_incidents)
+        incident_free_target=target and not incidents and event_trace_complete
         if duration<MINIMUM_SECONDS:reasons.add('REQUESTED_WINDOW_SHORTER_THAN_72_HOURS')
         if fraction<Decimal('.95'):reasons.add('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT')
         if injected:reasons.add('INJECTED_OBSERVATIONS_IN_WINDOW')
@@ -317,6 +376,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         if other_stopped:reasons.add('SESSION_TERMINATION_REQUIRES_REVIEW')
         if over_limit_gaps:reasons.add('COVERAGE_GAP_EXCEEDS_MAXIMUM')
         if not selected:reasons.add('NO_OBSERVATIONS_IN_WINDOW')
+        if trace_incomplete:reasons.add('DURABLE_EVENT_TRACE_INCOMPLETE')
+        if event_incidents:reasons.add('EVENT_INCIDENTS_RETAINED_IN_WINDOW')
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
             after=after,until=until,window_seconds=_text(duration),minimum_trial_seconds=MINIMUM_SECONDS,
             maximum_covered_gap_seconds=MAX_GAP_SECONDS,required_coverage_fraction='0.95',
@@ -336,6 +397,11 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             over_limit_coverage_gaps=len(over_limit_gaps),
             over_limit_coverage_gap_seconds=_text(over_limit_gap_seconds),
             operational_incidents_present=incidents,
+            retained_event_records=event_count,events_in_window=events_in_window,
+            legacy_unbound_observations_in_window=legacy_unbound,
+            quote_outcome_disagreements_in_window=outcome_disagreements,
+            event_incident_records_in_window=event_incidents,
+            event_trace_complete=event_trace_complete,
             incident_free_coverage_target_met=incident_free_target,
             evidence_snapshot_sha256=binding,
             **{flag:False for flag in FLAGS},review_reasons=sorted(reasons),

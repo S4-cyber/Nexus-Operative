@@ -24,7 +24,7 @@ from nexus.tier_permissions import require_entry, TIERS
 from nexus.execution_capacity import resumable_exit_mandate
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
-from nexus import emergency_intent,forward_evidence,forward_sessions
+from nexus import emergency_intent,forward_evidence,forward_event_evidence,forward_sessions
 from nexus.forward_ownership import ForwardOwnership
 from nexus.sqlite_journal_guard import (
     capture_file_identities, check_existing, committed_main_fingerprint,
@@ -181,6 +181,7 @@ class PaperForwardRunner:
                 id TEXT PRIMARY KEY,started_at REAL NOT NULL,updated_at REAL NOT NULL,
                 state TEXT NOT NULL,policy_json TEXT NOT NULL,counts_json TEXT NOT NULL,last_json TEXT NOT NULL)""")
             forward_evidence.schema(db)
+            forward_event_evidence.schema(db)
             return (db,new,bound_path) if _details else db
         except sqlite3.OperationalError as error:
             if db is not None:db.close()
@@ -279,6 +280,7 @@ class PaperForwardRunner:
                 elif decision=='STOP':state='STOPPED'
                 db.execute('INSERT OR REPLACE INTO sessions VALUES (?,?,?,?,?,?,?)',
                            (self._session,started,row['at'],state,json.dumps(self._policy,sort_keys=True),json.dumps(counts,sort_keys=True),json.dumps(row,allow_nan=False)))
+                forward_event_evidence.append(db,row)
                 db.execute('INSERT INTO cycles(at,detail) VALUES (?,?)',(row['at'],json.dumps(row,allow_nan=False)))
                 db.execute('DELETE FROM cycles WHERE id NOT IN (SELECT id FROM cycles ORDER BY id DESC LIMIT 1000)')
         self._require_ownership()
@@ -341,6 +343,7 @@ class PaperForwardRunner:
                 storage=self.storage_capacity()
                 if not storage['session_intake_allowed']:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
                 if not storage['quote_intake_allowed']:raise ValueError('FORWARD_QUOTE_EVIDENCE_CAP')
+                if storage['forward_events_remaining']<2:raise ValueError('FORWARD_EVENT_EVIDENCE_CAP')
                 report=self.orders.recovery_report()
                 existing_positions=(report['execution_account']['account'] or {}).get('positions',{})
                 if not existing_positions:require_entry(tier,1)
@@ -612,6 +615,11 @@ class PaperForwardRunner:
             storage=self.storage_capacity()
             if not storage['quote_intake_allowed']:
                 self._stop.set();return self._record('PAUSED','FORWARD_QUOTE_EVIDENCE_CAP')
+            # Preserve a primary outcome, possible scheduler-overrun record and
+            # one fail-closed terminal record. Capacity is never reclaimed by
+            # pruning durable evidence.
+            if storage['forward_events_remaining']<3:
+                self._stop.set();return self._record('PAUSED','FORWARD_EVENT_EVIDENCE_CAP')
             report=self.orders.recovery_report()
             self._require_ownership()
             if report['halted'] or not report['portfolio_reconciled']:
@@ -825,19 +833,26 @@ class PaperForwardRunner:
 
     @staticmethod
     def _capacity_snapshot(db):
-        sessions=quotes=0
+        sessions=quotes=events=0
         if db is not None:
             sessions=db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]
             quotes=db.execute('SELECT COUNT(*) FROM forward_quotes').fetchone()[0]
+            event_names=forward_event_evidence.table_names(db)
+            if event_names and not forward_event_evidence.schema_valid(db):
+                raise ValueError('FORWARD_EVENT_SCHEMA')
+            if event_names:
+                events=db.execute('SELECT COUNT(*) FROM forward_events').fetchone()[0]
         sessions_left=max(0,SESSION_LIMIT-sessions);quotes_left=max(0,forward_evidence.LIMIT-quotes)
+        events_left=max(0,forward_event_evidence.LIMIT-events)
         warnings=[]
-        for label,left,limit in (('SESSION_HISTORY',sessions_left,SESSION_LIMIT),('QUOTE_EVIDENCE',quotes_left,forward_evidence.LIMIT)):
+        for label,left,limit in (('SESSION_HISTORY',sessions_left,SESSION_LIMIT),('QUOTE_EVIDENCE',quotes_left,forward_evidence.LIMIT),('EVENT_EVIDENCE',events_left,forward_event_evidence.LIMIT)):
             if left==0:warnings.append(label+'_FULL')
             elif left<=max(1,limit//10):warnings.append(label+'_NEAR_LIMIT')
         return dict(read_only=True,sessions_retained=sessions,session_limit=SESSION_LIMIT,sessions_remaining=sessions_left,
                     quote_observations_retained=quotes,quote_limit=forward_evidence.LIMIT,quote_observations_remaining=quotes_left,
-                    session_intake_allowed=sessions_left>0,quote_intake_allowed=quotes_left>0,
-                    new_session_storage_available=sessions_left>0 and quotes_left>0,warnings=warnings,
+                    forward_events_retained=events,event_limit=forward_event_evidence.LIMIT,forward_events_remaining=events_left,
+                    session_intake_allowed=sessions_left>0,quote_intake_allowed=quotes_left>0,event_intake_allowed=events_left>0,
+                    new_session_storage_available=sessions_left>0 and quotes_left>0 and events_left>=2,warnings=warnings,
                     automatic_deletion=False,automatic_archival=False,
                     scope='Storage admission diagnostics only; does not grant execution permission or guarantee future exit evidence capacity. Back up and review limits; never delete retained evidence to admit a run.')
 

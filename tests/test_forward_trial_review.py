@@ -243,21 +243,71 @@ def test_nearby_cross_session_executable_prices_retain_coverage(
     assert result['uncovered_seconds']=='0'
 
 
-def test_identical_cross_session_boundary_is_valid_and_unioned_once(tmp_path,monkeypatch):
+def test_duplicate_cross_session_boundary_cannot_anchor_new_coverage(tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
         ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
     result=run(path,10)
-    assert result['recorded_eligibility_disagreements_in_window']==0
-    assert result['declared_public_covered_seconds']=='10'
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['revalidated_eligible_observations_in_window']==3
+    assert result['declared_public_covered_seconds']=='5'
+    assert result['uncovered_seconds']=='5'
+    assert result['operational_incidents_present'] is True
 
 
-def test_equal_cross_session_prices_allow_equivalent_numeric_spelling(tmp_path,monkeypatch):
+def test_cross_session_exchange_regression_does_not_advance_reference(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(6,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    with closing(sqlite3.connect(path)) as db,db:
+        sid='0000000000000002';previous=evidence.GENESIS
+        rows=db.execute('SELECT cycle,payload FROM forward_quotes WHERE session=? '
+            'ORDER BY cycle',(sid,)).fetchall()
+        for cycle,raw in rows:
+            point=json.loads(raw)
+            if cycle==1:point['quote']['exchange_time']=until(4)
+            payload=evidence.canonical(point);digest=evidence.digest(previous,payload)
+            db.execute('UPDATE forward_quotes SET payload=?,previous=?,digest=? '
+                'WHERE session=? AND cycle=?',(payload,previous,digest,sid,cycle))
+            previous=digest
+        db.execute('UPDATE forward_quote_heads SET head=? WHERE session=?',
+            (previous,sid))
+        last=json.loads(db.execute('SELECT last_json FROM sessions WHERE id=?',
+            (sid,)).fetchone()[0])
+        last['quote_evidence_sha256']=previous
+        db.execute('UPDATE sessions SET last_json=? WHERE id=?',
+            (evidence.canonical(last),sid))
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['revalidated_eligible_observations_in_window']==3
+    assert result['declared_public_covered_seconds']=='5'
+    assert result['uncovered_seconds']=='5'
+
+
+def test_rotating_sessions_cannot_reuse_boundary_ticks_for_72_hour_trial(
+        tmp_path,monkeypatch):
+    sessions=[]
+    for index in range(864):
+        start=index*300
+        sessions.append(([(offset,True) for offset in
+            range(start,start+301,10)],trial.PUBLIC,'STOPPED'))
+    path=database(tmp_path,monkeypatch,sessions)
+    result=run(path,72*3600)
+    assert result['recorded_eligibility_disagreements_in_window']==863
+    assert result['coverage_fraction']=='0.966705'
+    assert result['uncovered_seconds']=='8630'
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+
+
+def test_equal_cross_session_prices_allow_equivalent_numeric_spelling_but_not_tick_reuse(
+        tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
         ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
     reprice_sessions(path,{'0000000000000001':'100.0','0000000000000002':'100.00'})
     result=run(path,10)
-    assert result['recorded_eligibility_disagreements_in_window']==0
-    assert result['declared_public_covered_seconds']=='10'
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['declared_public_covered_seconds']=='5'
 
 
 @pytest.mark.parametrize('changes', [
@@ -475,8 +525,8 @@ def test_overlap_is_unioned_once_and_session_boundaries_never_bridged(tmp_path,m
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED'),
         ([(5,True),(10,True),(15,True)],trial.PUBLIC,'STOPPED'), ([(20,True),(25,True)],trial.PUBLIC,'STOPPED')])
     result=run(path,30)
-    assert result['declared_public_covered_seconds']=='20' and result['uncovered_seconds']=='10'
-    assert result['uncovered_intervals']==2 and result['longest_uncovered_seconds']=='5'
+    assert result['declared_public_covered_seconds']=='15' and result['uncovered_seconds']=='15'
+    assert result['uncovered_intervals']==2 and result['longest_uncovered_seconds']=='10'
     assert result['over_limit_coverage_gaps']==0 and result['over_limit_coverage_gap_seconds']=='0'
 
 

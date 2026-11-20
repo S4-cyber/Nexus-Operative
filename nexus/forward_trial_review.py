@@ -39,7 +39,8 @@ FLAGS=('source_attested','market_realism_authenticated','account_reconciled','br
 LIMITATIONS=('Private local operational evidence only. Coverage requires both a recorded eligible flag and replay of retained '
     'single-source feed, product, permission, numeric/spread/jump, receive/exchange-age and exchange-regression checks under '
     'the exact admitted policy at the recorded evaluation time. Rejected flags are never upgraded. Adjacent declared-public '
-    'valid points are clipped to the window and overlaps unioned once; every point and terminal event must remain bound '
+    'valid points are clipped to the window and overlaps unioned once; exchange time must also advance across retained '
+    'session boundaries, and a repeated or regressed point removes both adjacent candidate intervals; every point and terminal event must remain bound '
     'to its recorded session lifecycle; gaps over10 seconds, invalid points and session '
     'boundaries are not bridged, and over-limit uncovered gaps remain operational incidents even when aggregate coverage '
     'exceeds 95%. This rechecks supplied content, not independent feeds, clock authenticity, genuine market '
@@ -334,7 +335,9 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         # also need one chronological cross-session consistency pass. Otherwise
         # rapidly rotating sessions can reset the jump heuristic indefinitely.
         cross_rejected=set();equal_time={}
-        ordered=sorted(cross_session_points,key=lambda item:(item[0],item[1],item[2]))
+        session_started={sid:_number(started) for sid,started,*_ in rows}
+        ordered=sorted(cross_session_points,
+            key=lambda item:(item[0],session_started[item[1]],item[1],item[2]))
         for at,sid,cycle,quote in ordered:
             product=quote['product']
             # Compare price meaning, not JSON spelling (for example 100 vs
@@ -350,10 +353,23 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 # No supplied observation is authoritative enough to win an
                 # equal-time cross-session price conflict by lexical order.
                 cross_rejected.update((sid,cycle) for sid,cycle,_ in entries)
-        previous_global={}
+        previous_global={};highest_exchange_seen={}
         for at,sid,cycle,quote in ordered:
-            if (sid,cycle) in cross_rejected:continue
             product=quote['product']
+            stamp=quote['exchange_time']
+            try:
+                exchange=datetime.fromisoformat(stamp.replace('Z','+00:00'))
+                exchange_at=_number(exchange.timestamp())
+            except (ValueError,TypeError,ArithmeticError,OverflowError,OSError):
+                _fail()
+            # A session boundary cannot reset the freshness marker.  Track all
+            # locally eligible supplied ticks, including points rejected by the
+            # price pass, so the same exchange tick cannot be recycled later.
+            prior_exchange=highest_exchange_seen.get(product)
+            if prior_exchange is not None and exchange_at<=prior_exchange:
+                cross_rejected.add((sid,cycle))
+            else:highest_exchange_seen[product]=exchange_at
+            if (sid,cycle) in cross_rejected:continue
             prices=tuple(FeedGuard.number(quote[key])
                 for key in ('bid','ask','last'))
             previous=previous_global.get(product)

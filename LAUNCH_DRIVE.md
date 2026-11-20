@@ -1,5 +1,31 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.385 durable cross-session exchange continuity
+
+Paper-forward preparation now replays every retained per-session quote chain,
+recovers the highest accepted exchange timestamp and seeds the single-source
+price guard from that exact retained observation before START. A cold restart
+cannot reset the runtime freshness marker or immediately discard the last
+executable-price baseline. Malformed or inconsistent eligible history fails
+closed before account initialization or session creation.
+
+Retained forward-trial review separately requires exchange time to advance
+across session boundaries. Repeated and regressed points are operational
+incidents, cannot become price references, and remove both adjacent candidate
+coverage intervals. A 72-hour trial assembled from rapidly rotated sessions
+cannot reuse boundary ticks to manufacture incident-free coverage.
+
+This is bounded local supplied-history and trial-accounting evidence, not
+genuine-feed/source attestation, sustained-trial acceptance,
+broker/account/funds acceptance, native durability, performance, profitability
+or release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
 ## v0.340.384 atomic admission and evidence snapshots
 
 Simulated tier-entry admission now reads its durable permission switch and the

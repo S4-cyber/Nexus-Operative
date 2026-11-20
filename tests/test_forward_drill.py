@@ -30,6 +30,19 @@ def test_repeated_runner_drill_isolated_and_recovered(tmp_path,monkeypatch):
     assert set(report['cycle_latency'])=={'p50_ms','p95_ms','p99_ms'}
     assert set(report['scheduler_cadence'])==drill.SCHEDULER_CADENCE_PUBLIC_KEYS
     assert report['scheduler_cadence']['passed']
+    repeated=report['repeated_interruption']
+    assert set(repeated)==drill.REPEATED_INTERRUPTION_PUBLIC_KEYS
+    assert repeated['passed'] and repeated['process_exit_codes']==[77,78]
+    assert repeated['interruptions']==2 and repeated['no_fill_attempts']==1
+    assert all(repeated[key] is True for key in (
+        'first_gap_stable','no_fill_digest_stable','fill_sequence_monotonic',
+        'position_equation_preserved','explicit_review_action',
+        'old_session_review_required','no_fill_session_review_required',
+        'quote_outcome_gaps'))
+    assert all(repeated[key] is False for key in (
+        'automatic_repair','automatic_retries','automatic_restart','forward_enabled',
+        'ownership_held','actual_provider_requests','broker_connected','live_orders_enabled',
+        'release_approved'))
 
 
 @pytest.mark.parametrize('damage',['ledger','quotes','missing'])
@@ -59,6 +72,20 @@ def test_cli_reports_injected_fixture_scope():
     assert result.returncode==0,result.stderr
     report=json.loads(result.stdout)
     assert report['mode']=='DISPOSABLE_FORWARD_RUNNER_DRILL' and report['cycles']==14
+
+
+def test_repeated_interruption_uses_one_history_and_never_resumes(tmp_path):
+    result=drill._repeated_interruption(tmp_path)
+    assert set(result)==drill.REPEATED_INTERRUPTION_PUBLIC_KEYS
+    assert result['mode']=='DISPOSABLE_REPEATED_INTERRUPTION_RECOVERY'
+    assert result['process_exit_codes']==[77,78] and result['interruptions']==2
+    assert result['first_gap_stable'] and result['no_fill_digest_stable']
+    assert result['fill_sequence_monotonic'] and result['position_equation_preserved']
+    assert result['explicit_review_action'] and result['old_session_review_required']
+    assert result['no_fill_session_review_required'] and result['quote_outcome_gaps']
+    assert not result['automatic_repair'] and not result['automatic_retries']
+    assert not result['automatic_restart'] and not result['forward_enabled']
+    assert not result['ownership_held'] and not result['actual_provider_requests']
 def test_fault_injection_is_bounded_orderless_and_fail_closed(tmp_path):
     result=drill._faults(tmp_path)
     assert set(result)==drill.FAULT_PUBLIC_KEYS

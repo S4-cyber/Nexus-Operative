@@ -1,5 +1,10 @@
 from datetime import datetime,timezone
 from decimal import Decimal
+import os
+from pathlib import Path
+import sqlite3
+import subprocess
+import sys
 import threading
 import pytest
 from nexus.paper_forward import PaperForwardRunner
@@ -200,6 +205,75 @@ def test_price_rejected_tick_consumes_marker_across_restart(tmp_path,monkeypatch
     assert points[0]['quote_eligible'] is False
     assert points[0]['error_type']=='DUPLICATE_EXCHANGE_TICK'
     resumed.stop()
+
+
+def test_process_death_after_durable_admission_consumes_exchange_tick(
+        tmp_path,monkeypatch):
+    """The real child exits in FeedGuard after marker fsync, before quote append."""
+    script=r'''
+import os
+from datetime import datetime,timezone
+from nexus.durable_orders import DurableOrderGateway
+from nexus.paper_forward import PaperForwardRunner
+from nexus.tier_permissions import configure
+class Clock:
+    now=1000
+    def quote(self,product):
+        return dict(product=product,provider='coinbase_exchange_public',
+            read_only=True,orders_allowed=False,bid=100,ask=100.01,last=100,
+            received_at=self.now,
+            exchange_time=datetime.fromtimestamp(self.now,timezone.utc).isoformat())
+clock=Clock();configure('terrestrial',True)
+runner=PaperForwardRunner(DurableOrderGateway(os.path.join(
+    os.environ['NEXUS_PORTABLE_DATA'],'orders.sqlite3')),clock.quote,
+    lambda:clock.now)
+runner.prepare('terrestrial')
+runner._guard.evaluate=lambda quote,now:os._exit(79)
+runner.single_cycle()
+raise SystemExit(80)
+'''
+    env={**os.environ,'NEXUS_PORTABLE_DATA':str(tmp_path)}
+    child=subprocess.run([sys.executable,'-c',script],cwd=Path(__file__).parents[1],
+        env=env,capture_output=True,text=True,timeout=30)
+    assert child.returncode==79,(child.stdout,child.stderr)
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        assert db.execute('SELECT COUNT(*) FROM forward_exchange_admissions').fetchone()==(1,)
+        assert db.execute('SELECT COUNT(*) FROM forward_quotes').fetchone()==(0,)
+
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    configure('terrestrial',True);clock=Clock();clock.price=125
+    gateway=DurableOrderGateway(tmp_path/'orders.sqlite3')
+    resumed=PaperForwardRunner(gateway,clock.quote,lambda:clock.now)
+    resumed.prepare('terrestrial');configure('terrestrial',False)
+    assert resumed._stamp==1000
+    outcome=resumed.single_cycle()
+    assert outcome['reason']=='DUPLICATE_EXCHANGE_TICK'
+    assert gateway.recovery_report()['orders']==[]
+    with resumed._read_db() as db:
+        assert db.execute('SELECT COUNT(*) FROM forward_exchange_admissions').fetchone()==(1,)
+        points=forward_evidence.review(db,resumed._session)['points']
+    assert points[0]['quote_eligible'] is False
+    assert 'exchange_admission_sha256' not in points[0]
+    resumed.stop()
+
+
+def test_normal_and_price_rejected_quotes_bind_durable_admissions(
+        tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch)
+    assert r.single_cycle()['reason']=='WARMUP_REQUIRES_SIX_DISTINCT_TICKS'
+    c.now=1005;c.price=120
+    assert r.single_cycle()['reason']=='QUOTE_UNAVAILABLE_OR_INVALID'
+    c.now=1010;c.stamp=1005;c.price=100
+    assert r.single_cycle()['reason']=='DUPLICATE_EXCHANGE_TICK'
+    with r._read_db() as db:
+        quotes=forward_evidence.review(db,r._session)
+        admissions=forward_evidence.review_exchange_admissions(db,r._session)
+        checked=forward_evidence.crosscheck_exchange_admissions(admissions,
+            quotes,'RUNNING',r._policy['policy_sha256'])
+    assert checked['integrity_ok'] and checked['matched_quotes']==2
+    assert checked['admissions']==2 and checked['unmatched_admissions']==0
+    assert 'exchange_admission_sha256' not in quotes['points'][-1]
+    assert not g.recovery_report()['orders']
 
 
 def test_three_feed_failures_pause_without_orders(tmp_path,monkeypatch):

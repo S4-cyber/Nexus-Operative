@@ -104,6 +104,10 @@ class OrderCleanupFailure(Exception):
         super().__init__('ORDER_CLEANUP_FAILED_REVIEW_REQUIRED')
 
 
+class ExchangeAdmissionFailure(Exception):
+    """The durable timestamp marker was not acknowledged; no quote may run."""
+
+
 class PaperForwardRunner:
     def __init__(self,orders=gateway,fetcher=read_ticker,clock=time.time,monotonic_clock=None,
             scheduler_clock=None,scheduler_wait=None):
@@ -120,7 +124,7 @@ class PaperForwardRunner:
         self._guard=FeedGuard();self._stamp=None;self._last_rank=0
         self._failures=0;self._cycles=0;self._last=None;self._error=None
         self._policy=admit(POLICY["id"])
-        self._observation_hash=None
+        self._observation_hash=None;self._exchange_admission_hash=None
         self._ownership=None
 
     @staticmethod
@@ -260,12 +264,24 @@ class PaperForwardRunner:
         """
         if db is None:return None
         observations=[]
+        admission_names=forward_evidence.admission_table_names(db)
+        if (admission_names and
+                (admission_names!=forward_evidence.ADMISSION_TABLES or
+                    not forward_evidence.admission_schema_valid(db))):
+            raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
         sessions=db.execute(
-            'SELECT id,started_at FROM sessions ORDER BY started_at,id').fetchall()
-        for session,started_at in sessions:
+            'SELECT id,started_at,state FROM sessions ORDER BY started_at,id').fetchall()
+        for session,started_at,state in sessions:
             evidence=forward_evidence.review(db,session)
             if not evidence['integrity_ok']:
                 raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            admission=(forward_evidence.review_exchange_admissions(db,session)
+                if admission_names else None)
+            if admission is not None and not admission['integrity_ok']:
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            admissions={} if admission is None else {
+                point['cycle']:point for point in admission['points']}
+            quotes={point['cycle']:point for point in evidence['points']}
             for point in evidence['points']:
                 eligible=point.get('quote_eligible') is True
                 try:
@@ -296,8 +312,60 @@ class PaperForwardRunner:
                     continue
                 if eligible and point.get('error_type') is not None:
                     raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
-                observations.append((at,started_at,session,point['cycle'],stamp,
-                    quote,eligible))
+                binding=point.get('exchange_admission_sha256')
+                marker=admissions.get(point['cycle'])
+                if admission is None:
+                    observations.append((at,started_at,session,point['cycle'],
+                        stamp,quote,eligible))
+                    continue
+                if binding is None:
+                    # Duplicate/regressed, malformed and stale observations
+                    # are retained but never receive a fresh admission.
+                    if eligible or marker is not None:
+                        raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                    continue
+                if marker is None or binding!=marker.get('_digest'):
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                if (marker.get('evaluated_at')!=at or
+                        marker.get('exchange_time')!=quote['exchange_time'] or
+                        marker.get('exchange_at')!=stamp or
+                        marker.get('quote_sha256')!=forward_evidence.quote_sha256(quote) or
+                        marker.get('source_mode')!=point.get('source_mode') or
+                        marker.get('policy_sha256')!=point.get('policy_sha256')):
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            if admission is not None:
+                highest=max(admissions,default=0)
+                for cycle,marker in admissions.items():
+                    try:
+                        at=marker['evaluated_at'];stamp=marker['exchange_at']
+                        if (type(at) not in (int,float) or not math.isfinite(at) or
+                                not 0<=at<MAX_WALL_CLOCK_SECONDS or
+                                type(stamp) not in (int,float) or not math.isfinite(stamp) or
+                                not 0<=stamp<MAX_WALL_CLOCK_SECONDS or
+                                not 0<=at-stamp<=policy['exchange_age_seconds'] or
+                                marker['policy_sha256']!=policy['policy_sha256'] or
+                                marker['source_mode'] not in (
+                                    'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED',
+                                    'INJECTED_TRANSPORT_UNATTESTED')):
+                            raise ValueError()
+                        parsed=datetime.fromisoformat(
+                            marker['exchange_time'].replace('Z','+00:00'))
+                        if parsed.tzinfo is None or parsed.timestamp()!=stamp:
+                            raise ValueError()
+                    except (KeyError,TypeError,ValueError,OverflowError,OSError):
+                        raise ValueError(
+                            'FORWARD_RETAINED_FEED_BASELINE_INVALID') from None
+                    point=quotes.get(cycle)
+                    if point is None:
+                        if state!='RUNNING' or cycle!=highest:
+                            raise ValueError(
+                                'FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                        quote=None;eligible=False
+                    else:
+                        quote=point['quote'];eligible=point.get(
+                            'quote_eligible') is True
+                    observations.append((at,started_at,session,cycle,stamp,
+                        quote,eligible))
         if not observations:return None
         guard=FeedGuard();exchange_floor=None;price_baseline=None
         for at,started_at,session,cycle,stamp,quote,eligible in sorted(
@@ -310,6 +378,8 @@ class PaperForwardRunner:
             # cannot become the reference price for a later observation.
             exchange_floor=stamp
             if not eligible:continue
+            if quote is None:
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
             if guard.evaluate(quote,at)['decision']=='VETO':
                 raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
             price_baseline=(at,session,cycle,quote)
@@ -360,6 +430,8 @@ class PaperForwardRunner:
                 elif decision=='STOP':state='STOPPED'
                 db.execute('INSERT OR REPLACE INTO sessions VALUES (?,?,?,?,?,?,?)',
                            (self._session,started,row['at'],state,json.dumps(self._policy,sort_keys=True),json.dumps(counts,sort_keys=True),json.dumps(row,allow_nan=False)))
+                if decision=='START':
+                    forward_evidence.initialize_exchange_admissions(db,self._session)
                 forward_event_evidence.append(db,row)
                 db.execute('INSERT INTO cycles(at,detail) VALUES (?,?)',(row['at'],json.dumps(row,allow_nan=False)))
                 db.execute('DELETE FROM cycles WHERE id NOT IN (SELECT id FROM cycles ORDER BY id DESC LIMIT 1000)')
@@ -375,9 +447,26 @@ class PaperForwardRunner:
                 db.execute('BEGIN IMMEDIATE')
                 candidate=forward_evidence.append(db,self._session,self._cycles,self._clock_anchor[0],quote,eligible,
                     'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
-                    self._policy['policy_sha256'],error)
+                    self._policy['policy_sha256'],error,self._exchange_admission_hash)
         self._require_ownership()
         self._observation_hash=candidate
+
+    def _record_exchange_admission(self,quote,stamp):
+        """FULL-sync a consumed fresh timestamp before any price evaluation."""
+        self._require_ownership()
+        if self._clock_anchor is None:raise ExchangeAdmissionFailure()
+        try:
+            with self._write_db() as db:
+                with _transaction(db):
+                    db.execute('BEGIN IMMEDIATE')
+                    candidate=forward_evidence.append_exchange_admission(db,
+                        self._session,self._cycles,self._clock_anchor[0],quote,
+                        'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
+                        self._policy['policy_sha256'],stamp)
+        except (OSError,sqlite3.Error,ValueError):
+            raise ExchangeAdmissionFailure() from None
+        self._require_ownership()
+        self._exchange_admission_hash=candidate
 
     def request_cut(self):
         """Signal only: no locks owned by execution, IO, ownership release or acknowledgment."""
@@ -434,6 +523,8 @@ class PaperForwardRunner:
                     raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
                 if not storage['session_intake_allowed']:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
                 if not storage['quote_intake_allowed']:raise ValueError('FORWARD_QUOTE_EVIDENCE_CAP')
+                if not storage['exchange_admission_intake_allowed']:
+                    raise ValueError('FORWARD_EXCHANGE_ADMISSION_CAP')
                 if storage['forward_events_remaining']<2:raise ValueError('FORWARD_EVENT_EVIDENCE_CAP')
                 report=self.orders.recovery_report()
                 existing_positions=(report['execution_account']['account'] or {}).get('positions',{})
@@ -469,7 +560,9 @@ class PaperForwardRunner:
                 self._stamp=(None if retained_baseline is None else
                     retained_baseline['exchange_at'])
                 self._last_rank=0
-                self._cycles=0;self._failures=0;self._error=None;self._observation_hash=None;self._stop.clear()
+                self._cycles=0;self._failures=0;self._error=None
+                self._observation_hash=None;self._exchange_admission_hash=None
+                self._stop.clear()
                 try:self._record('START','EXPERIMENTAL_MOMENTUM_PAPER_POLICY')
                 except (OSError,sqlite3.Error,ValueError):
                     self._stop.set();self._error='START_DIAGNOSTIC_STORAGE_FAILURE';raise
@@ -698,7 +791,7 @@ class PaperForwardRunner:
             if self._intake_stopped():return dict(decision='HOLD',reason='PAPER_FORWARD_STOPPED')
             self._require_ownership()
             self._cycles+=1
-            self._observation_hash=None
+            self._observation_hash=None;self._exchange_admission_hash=None
             with self._read_db() as db:
                 if db is None:raise ValueError('FORWARD_SESSION_MISSING')
                 metadata=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
@@ -711,6 +804,8 @@ class PaperForwardRunner:
             storage=self.storage_capacity()
             if not storage['quote_intake_allowed']:
                 self._stop.set();return self._record('PAUSED','FORWARD_QUOTE_EVIDENCE_CAP')
+            if not storage['exchange_admission_intake_allowed']:
+                self._stop.set();return self._record('PAUSED','FORWARD_EXCHANGE_ADMISSION_CAP')
             # Preserve a primary outcome, possible scheduler-overrun record and
             # one fail-closed terminal record. Capacity is never reclaimed by
             # pruning durable evidence.
@@ -765,6 +860,7 @@ class PaperForwardRunner:
                 # A fresh tick is consumed before price/spread review. A vetoed
                 # price can never be replayed later under the same exchange
                 # timestamp with different values.
+                self._record_exchange_admission(quote,stamp)
                 self._stamp=stamp
                 feed=self._guard.evaluate(quote,now)
                 if feed['decision']=='VETO':
@@ -838,7 +934,7 @@ class PaperForwardRunner:
                 # generic storage failure even though the fill rolled back.
                 if reason=='EMERGENCY_CUT_REQUESTED':return dict(decision='VETO',reason=reason)
                 return self._record('VETO',reason)
-        except (OSError,sqlite3.Error,ValueError) as exc:
+        except (OSError,sqlite3.Error,ValueError,ExchangeAdmissionFailure) as exc:
             self._error=type(exc).__name__;self._stop.set()
             return dict(decision='PAUSED',reason='FORWARD_STORAGE_OR_INTEGRITY_FAILURE')
         finally:
@@ -868,6 +964,14 @@ class PaperForwardRunner:
             session=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(session_id,)).fetchone()
             if session is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             quotes=forward_evidence.review(db,session_id)
+            admission_tables=forward_evidence.admission_table_names(db)
+            if admission_tables and (admission_tables!=forward_evidence.ADMISSION_TABLES or
+                    not forward_evidence.admission_schema_valid(db)):
+                raise ValueError('FORWARD_EXCHANGE_ADMISSION_SCHEMA')
+            if admission_tables:
+                admissions=forward_evidence.review_exchange_admissions(
+                    db,session_id)
+            else:admissions=None
             event_tables=forward_event_evidence.table_names(db)
             if event_tables==forward_event_evidence.TABLES and forward_event_evidence.schema_valid(db):
                 events=forward_event_evidence.review(db,session_id)
@@ -901,6 +1005,8 @@ class PaperForwardRunner:
         orders=order_snapshot['orders']
         policy,counts,last=forward_sessions.parse(*session)
         checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
+        admission_checked=forward_evidence.crosscheck_exchange_admissions(
+            admissions,quotes,session[2],policy['policy_sha256'])
         event_summary,event_reasons=reconcile_forward_session(session=session_id,
             started_at=session[0],updated_at=session[1],state=session[2],counts=counts,
             last=last,quotes=quotes,events=events,order_snapshot=order_snapshot,
@@ -908,7 +1014,8 @@ class PaperForwardRunner:
         terminal=forward_sessions.binding_reasons(last,session[2],session_id,policy,
             quotes['head_sha256'],quotes['observations'],quotes['points'][-1]['cycle'] if quotes['points'] else 0,
             quotes['parent_head_sha256'])
-        reasons=quotes['reasons']+checked['reasons']+terminal+event_reasons
+        reasons=(quotes['reasons']+checked['reasons']+terminal+event_reasons+
+            admission_checked['reasons'])
         journal_snapshot_stable=(order_snapshot['journal_present']==final_order_snapshot['journal_present']
             and order_snapshot['commands']==final_order_snapshot['commands']
             and order_snapshot['journal_sha256']==final_order_snapshot['journal_sha256'])
@@ -942,6 +1049,7 @@ class PaperForwardRunner:
         return dict(mode='READ_ONLY_FORWARD_EVIDENCE_REVIEW',read_only=True,session=session_id,
                     started_at=session[0],updated_at=session[1],stored_state=session[2],policy=policy,
                     counters=counts,quote_evidence=summary,execution_crosscheck=checked,
+                    exchange_admission_evidence=admission_checked,
                     durable_event_evidence=event_summary,review_receipt=receipt,
                     order_journal_snapshot=dict(journal_present=order_snapshot['journal_present'],
                         commands=order_snapshot['commands'],portfolio_linked=order_snapshot['portfolio_linked'],
@@ -993,10 +1101,16 @@ class PaperForwardRunner:
 
     @staticmethod
     def _capacity_snapshot(db):
-        sessions=quotes=events=0
+        sessions=quotes=events=admissions=0
         if db is not None:
             sessions=db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]
             quotes=db.execute('SELECT COUNT(*) FROM forward_quotes').fetchone()[0]
+            admission_names=forward_evidence.admission_table_names(db)
+            if admission_names and not forward_evidence.admission_schema_valid(db):
+                raise ValueError('FORWARD_EXCHANGE_ADMISSION_SCHEMA')
+            if admission_names:
+                admissions=db.execute(
+                    'SELECT COUNT(*) FROM forward_exchange_admissions').fetchone()[0]
             event_names=forward_event_evidence.table_names(db)
             if event_names and not forward_event_evidence.schema_valid(db):
                 raise ValueError('FORWARD_EVENT_SCHEMA')
@@ -1004,15 +1118,20 @@ class PaperForwardRunner:
                 events=db.execute('SELECT COUNT(*) FROM forward_events').fetchone()[0]
         sessions_left=max(0,SESSION_LIMIT-sessions);quotes_left=max(0,forward_evidence.LIMIT-quotes)
         events_left=max(0,forward_event_evidence.LIMIT-events)
+        admissions_left=max(0,forward_evidence.ADMISSION_LIMIT-admissions)
         warnings=[]
-        for label,left,limit in (('SESSION_HISTORY',sessions_left,SESSION_LIMIT),('QUOTE_EVIDENCE',quotes_left,forward_evidence.LIMIT),('EVENT_EVIDENCE',events_left,forward_event_evidence.LIMIT)):
+        for label,left,limit in (('SESSION_HISTORY',sessions_left,SESSION_LIMIT),('QUOTE_EVIDENCE',quotes_left,forward_evidence.LIMIT),('EXCHANGE_ADMISSION',admissions_left,forward_evidence.ADMISSION_LIMIT),('EVENT_EVIDENCE',events_left,forward_event_evidence.LIMIT)):
             if left==0:warnings.append(label+'_FULL')
             elif left<=max(1,limit//10):warnings.append(label+'_NEAR_LIMIT')
         return dict(read_only=True,sessions_retained=sessions,session_limit=SESSION_LIMIT,sessions_remaining=sessions_left,
                     quote_observations_retained=quotes,quote_limit=forward_evidence.LIMIT,quote_observations_remaining=quotes_left,
+                    exchange_admissions_retained=admissions,exchange_admission_limit=forward_evidence.ADMISSION_LIMIT,
+                    exchange_admissions_remaining=admissions_left,
                     forward_events_retained=events,event_limit=forward_event_evidence.LIMIT,forward_events_remaining=events_left,
-                    session_intake_allowed=sessions_left>0,quote_intake_allowed=quotes_left>0,event_intake_allowed=events_left>0,
-                    new_session_storage_available=sessions_left>0 and quotes_left>0 and events_left>=2,warnings=warnings,
+                    session_intake_allowed=sessions_left>0,quote_intake_allowed=quotes_left>0,
+                    exchange_admission_intake_allowed=admissions_left>0,
+                    event_intake_allowed=events_left>0,
+                    new_session_storage_available=sessions_left>0 and quotes_left>0 and admissions_left>0 and events_left>=2,warnings=warnings,
                     automatic_deletion=False,automatic_archival=False,
                     scope='Storage admission diagnostics only; does not grant execution permission or guarantee future exit evidence capacity. Back up and review limits; never delete retained evidence to admit a run.')
 

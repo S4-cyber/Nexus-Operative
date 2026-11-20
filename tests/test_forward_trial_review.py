@@ -422,6 +422,27 @@ def test_legacy_quote_history_is_readable_but_never_event_complete(tmp_path,monk
     assert path.read_bytes()==before
 
 
+def test_crash_tail_exchange_admission_is_incident_and_zero_coverage(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([],trial.PUBLIC,'RUNNING')])
+    policy=admit('btc_momentum_experiment_v1');sid='0000000000000001'
+    quote=dict(provider='coinbase_exchange_public',product='BTC-USD',
+        bid='100',ask='100.1',last='100',received_at=START,
+        exchange_time=until(0),read_only=True,orders_allowed=False)
+    with closing(sqlite3.connect(path)) as db,db:
+        evidence.initialize_exchange_admissions(db,sid)
+        evidence.append_exchange_admission(db,sid,1,START,quote,
+            trial.PUBLIC,policy['policy_sha256'],START)
+    result=run(path,60)
+    assert result['retained_exchange_admissions']==1
+    assert result['exchange_admissions_in_window']==1
+    assert result['exchange_admission_incidents_in_window']==1
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'EXCHANGE_ADMISSION_OUTCOME_MISSING' in result['review_reasons']
+
+
 def test_missing_quote_outcome_is_reported_without_repair(tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
     with closing(sqlite3.connect(path)) as db,db:

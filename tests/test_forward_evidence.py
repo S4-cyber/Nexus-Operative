@@ -12,6 +12,73 @@ def event_record(**changes):
     row.update(changes);return row
 
 
+def admission_quote():
+    return dict(provider='coinbase_exchange_public',product='BTC-USD',
+        bid=100,ask=100.01,last=100,received_at=1000,
+        exchange_time='1970-01-01T00:16:40+00:00',read_only=True,
+        orders_allowed=False)
+
+
+def test_exchange_admission_chain_binds_exact_quote_and_session_format():
+    session='1'*16;policy='a'*64;quote=admission_quote()
+    with sqlite3.connect(':memory:') as db:
+        forward_evidence.schema(db)
+        forward_evidence.initialize_exchange_admissions(db,session)
+        marker=forward_evidence.append_exchange_admission(db,session,1,1000,
+            quote,'INJECTED_TRANSPORT_UNATTESTED',policy,1000)
+        forward_evidence.append(db,session,1,1000,quote,True,
+            'INJECTED_TRANSPORT_UNATTESTED',policy,
+            exchange_admission_sha256=marker)
+        admissions=forward_evidence.review_exchange_admissions(db,session)
+        quotes=forward_evidence.review(db,session)
+        checked=forward_evidence.crosscheck_exchange_admissions(admissions,
+            quotes,'RUNNING',policy)
+    assert checked['integrity_ok'] and checked['matched_quotes']==1
+    assert checked['admissions']==1 and checked['unmatched_admissions']==0
+
+
+def test_exchange_admission_tail_is_review_required_not_quote_authority():
+    session='1'*16;policy='a'*64
+    with sqlite3.connect(':memory:') as db:
+        forward_evidence.schema(db)
+        forward_evidence.initialize_exchange_admissions(db,session)
+        forward_evidence.append_exchange_admission(db,session,1,1000,
+            admission_quote(),'INJECTED_TRANSPORT_UNATTESTED',policy,1000)
+        admissions=forward_evidence.review_exchange_admissions(db,session)
+        quotes=forward_evidence.review(db,session)
+        checked=forward_evidence.crosscheck_exchange_admissions(admissions,
+            quotes,'RUNNING',policy)
+    assert not checked['integrity_ok'] and checked['unmatched_admissions']==1
+    assert checked['reasons']==['EXCHANGE_ADMISSION_OUTCOME_MISSING']
+
+
+def test_exchange_admission_tamper_and_partial_schema_fail_closed():
+    session='1'*16
+    with sqlite3.connect(':memory:') as db:
+        forward_evidence.schema(db)
+        forward_evidence.initialize_exchange_admissions(db,session)
+        forward_evidence.append_exchange_admission(db,session,1,1000,
+            admission_quote(),'INJECTED_TRANSPORT_UNATTESTED','a'*64,1000)
+        db.execute("UPDATE forward_exchange_admission_heads SET head='bad'")
+        assert not forward_evidence.review_exchange_admissions(
+            db,session)['integrity_ok']
+        db.execute('DROP TABLE forward_exchange_admission_heads')
+        assert not forward_evidence.admission_schema_valid(db)
+        with pytest.raises(ValueError,match='FORWARD_EXCHANGE_ADMISSION_SCHEMA'):
+            forward_evidence.append_exchange_admission(db,session,2,1005,
+                admission_quote(),'INJECTED_TRANSPORT_UNATTESTED','a'*64,1005)
+
+
+def test_session_review_rejects_partial_exchange_admission_schema(
+        tmp_path,monkeypatch):
+    runner,_,_=setup(tmp_path,monkeypatch)
+    session=runner.status()['session']
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        db.execute('DROP TABLE forward_exchange_admission_heads')
+    with pytest.raises(ValueError,match='FORWARD_EXCHANGE_ADMISSION_SCHEMA'):
+        runner.evidence_report(session)
+
+
 def test_event_chain_preserves_two_records_on_one_cycle():
     with sqlite3.connect(':memory:') as db:
         forward_event_evidence.schema(db)

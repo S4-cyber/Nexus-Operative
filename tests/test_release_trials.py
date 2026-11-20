@@ -1628,6 +1628,8 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
         (result['scheduler_cadence'],'unconsumed','FORWARD_SCHEDULER_CADENCE_SCHEMA'),
         (result['scheduler_cadence']['nominal'],'unconsumed',
             'FORWARD_SCHEDULER_CADENCE_CASE_SCHEMA'),
+        (result['exchange_admission_crash'],'unconsumed',
+            'FORWARD_EXCHANGE_ADMISSION_CRASH_SCHEMA'),
         (result['recovered']['sessions'][0],'unconsumed','FORWARD_SESSION_SCHEMA'),
         (result['cycle_latency'],'unconsumed','FORWARD_LATENCY_SCHEMA'),
         (result['recovered']['coverage_review'],'unconsumed','FORWARD_COVERAGE_SCHEMA')):
@@ -1641,6 +1643,8 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
             changed['scheduler_cadence'][field]=True
         elif target is result['scheduler_cadence']['nominal']:
             changed['scheduler_cadence']['nominal'][field]=True
+        elif target is result['exchange_admission_crash']:
+            changed['exchange_admission_crash'][field]=True
         elif target is result['recovered']['sessions'][0]:changed['recovered']['sessions'][0][field]=True
         elif target is result['cycle_latency']:changed['cycle_latency'][field]=True
         else:changed['recovered']['coverage_review'][field]=True
@@ -1666,6 +1670,14 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     changed=copy.deepcopy(result);changed['scheduler_cadence']['live_orders_enabled']=True
     with pytest.raises(ValueError,match='FORWARD_SCHEDULER_CADENCE_AUTHORITY'):
         trials._validate('forward',changed)
+    for field,value in (('process_terminated',False),
+        ('marker_count_stable',False),('tail_review_required',False),
+        ('trial_coverage_granted',True),('exit_code',80)):
+        changed=copy.deepcopy(result)
+        changed['exchange_admission_crash'][field]=value
+        with pytest.raises(ValueError,match=
+                'FORWARD_EXCHANGE_ADMISSION_CRASH_EVIDENCE'):
+            trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['fault_injection']['source_loss']['fetches']=2
     with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
     for field,value in (('post_pause_fetches',1),('worker_started',False),

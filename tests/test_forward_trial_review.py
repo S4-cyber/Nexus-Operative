@@ -115,8 +115,8 @@ def test_cross_session_boundary_conflict_is_an_incident(tmp_path,monkeypatch):
     reprice_sessions(path,{'0000000000000001':100,'0000000000000002':1000})
     result=run(path,10)
     assert result['recorded_eligibility_disagreements_in_window']>0
-    assert result['declared_public_covered_seconds']=='5'
-    assert result['uncovered_seconds']=='5'
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['uncovered_seconds']=='10'
     assert result['operational_incidents_present'] is True
     assert result['declared_coverage_target_met'] is False
 
@@ -124,13 +124,29 @@ def test_cross_session_boundary_conflict_is_an_incident(tmp_path,monkeypatch):
 def test_cross_session_rejection_outside_window_breaks_coverage_without_count_leak(
         tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True)],trial.PUBLIC,'STOPPED'),
         ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
-    reprice_sessions(path,{'0000000000000001':100,'0000000000000002':1000})
+    reprice_sessions(path,{'0000000000000001':100,
+        '0000000000000002':1000,'0000000000000003':100})
     result=trial.review(path,after=until(6),until=until(10))
     assert result['recorded_eligibility_disagreements_in_window']==0
     assert result['revalidated_eligible_observations_in_window']==1
     assert result['declared_public_covered_seconds']=='0'
     assert result['uncovered_seconds']=='4'
+
+
+def test_equal_time_conflict_rejects_every_arbitrary_session_winner(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':100,
+        '0000000000000002':1000,'0000000000000003':100})
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==5
+    assert result['revalidated_eligible_observations_in_window']==1
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['uncovered_seconds']=='10'
 
 
 def test_rotating_sessions_cannot_reset_price_jump_guard(tmp_path,monkeypatch):
@@ -141,8 +157,8 @@ def test_rotating_sessions_cannot_reset_price_jump_guard(tmp_path,monkeypatch):
         prices[f'{index+1:016x}']=100 if index%2==0 else 1000
     path=database(tmp_path,monkeypatch,sessions);reprice_sessions(path,prices)
     result=run(path,72*3600)
-    assert result['coverage_fraction']=='0.966705'
-    assert result['uncovered_seconds']=='8630'
+    assert result['coverage_fraction']=='0.667052'
+    assert result['uncovered_seconds']=='86300'
     assert result['recorded_eligibility_disagreements_in_window']>0
     assert result['operational_incidents_present'] is True
     assert result['incident_free_coverage_target_met'] is False

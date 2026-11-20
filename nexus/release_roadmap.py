@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.381'
+REVISION = '0.340.382'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1260,8 +1260,16 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; retained forward-trial coverage now defers interval eligibility until after the chronological cross-session consistency pass, removes both intervals adjacent to a conflicting boundary point, and uses retained context outside the requested window without leaking that context into in-window disagreement counts; rapidly rotating sessions can no longer report nominal full coverage by resetting price-jump state' if item.id in ('M7','M9') else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; equal-time cross-session quote disagreements now reject every supplied conflicting observation instead of granting lexical-first authority, and rejected observations cannot become the chronological reference for later coverage; requested-window disagreement counts remain scoped while every dependent interval fails closed' if item.id in ('M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Retained trial coverage now excludes intervals adjacent to cross-session-disqualified observations and validates requested-window boundaries with retained neighboring context. This is local operational-evidence correctness, not genuine-feed provenance, sustained-trial acceptance, performance or release permission.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Equal-time cross-session price disagreements now reject all conflicting supplied observations without an arbitrary session winner, and none of those rejected points can establish a later chronological reference. This remains conservative local evidence review, not source attestation or sustained-trial acceptance.')
     if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
 
 DELIVERY_STAGES = tuple((dict(stage,
@@ -1273,7 +1281,7 @@ DELIVERY_STAGES = tuple((dict(stage,
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.381 corrects retained forward-trial coverage across session boundaries. Candidate intervals are retained with both exact endpoint identities until the chronological cross-session consistency pass completes; a point rejected for an equal-time conflict or rapid cross-session price jump now removes both adjacent intervals before union and coverage calculation. The pass also receives retained public context immediately outside the requested window, while disagreement and revalidated-observation counts remain scoped to the window itself. Rapid session rotation can no longer reset price-jump state yet retain nominal 100% coverage. This is bounded read-only local operational-evidence correctness, not genuine-feed/source attestation, sustained-trial acceptance, market realism, broker/account acceptance, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.382 makes equal-time cross-session trial conflicts symmetric and fail closed. When supplied public observations disagree on price meaning for the same product and timestamp, every conflicting observation is rejected instead of granting authority to whichever session sorts first. Rejected observations cannot become the chronological reference for later price-jump validation, and both adjacent candidate intervals remain excluded while requested-window incident counts stay scoped. This is bounded read-only local operational-evidence correctness, not genuine-feed/source attestation, sustained-trial acceptance, market realism, broker/account acceptance, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

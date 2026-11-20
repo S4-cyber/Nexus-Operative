@@ -1,5 +1,30 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.382 symmetric cross-session trial conflicts
+
+Equal-time cross-session quote disagreements now fail closed without an
+arbitrary session winner. When supplied public observations for the same
+product and timestamp disagree on bid, ask or last price meaning, retained
+forward-trial review rejects every conflicting observation. A rejected point
+cannot become the chronological reference for a later cross-session jump
+check, and neither adjacent candidate interval can contribute coverage.
+
+Requested-window disagreement and revalidated-observation counts remain
+scoped even when neighboring retained context is needed to invalidate an
+interval. Focused regression evidence covers all-conflict rejection, stable
+outside-window count scoping and 72-hour rapid session rotation.
+
+This is bounded read-only local operational-evidence correctness, not
+genuine-feed/source attestation, sustained-trial acceptance, market realism,
+broker/account acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+roadmap stays 38% weighted (about 40%, 30–45% low-confidence range), with 0/9
+independently accepted stages and no release permission, trading permission or
+launch date.
+
 ## v0.340.381 cross-session trial coverage correction
 
 Retained forward-trial review now keeps candidate coverage intervals bound to

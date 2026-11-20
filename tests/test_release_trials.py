@@ -1614,6 +1614,28 @@ def test_security_policy_files_are_bound_to_source_fingerprint(tmp_path):
         path.write_text('updated policy');assert trials.source_digest(tmp_path)!=added
 
 
+def test_exchange_admission_crash_fixture_closes_windows_sensitive_connections(
+        tmp_path,monkeypatch):
+    """Temporary-directory cleanup must not inherit open SQLite handles."""
+    from contextlib import contextmanager,closing
+    import sqlite3
+    from nexus import forward_drill
+    opened=[]
+
+    @contextmanager
+    def tracking(resource):
+        opened.append(resource)
+        with closing(resource) as managed:
+            yield managed
+
+    monkeypatch.setattr(forward_drill,'closing',tracking)
+    result=forward_drill._exchange_admission_crash(tmp_path/'crash')
+    assert result['passed'] and len(opened)==2
+    for connection in opened:
+        with pytest.raises(sqlite3.ProgrammingError,match='closed'):
+            connection.execute('SELECT 1')
+
+
 def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_acceptance():
     from pathlib import Path
     from nexus.release_roadmap import REVISION

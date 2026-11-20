@@ -1,6 +1,7 @@
 """Bounded disposable exercise of the actual forward runner, never public/broker IO."""
 import argparse
 import copy
+from contextlib import closing
 import json
 import os
 from pathlib import Path
@@ -877,7 +878,7 @@ def _exchange_admission_crash(directory):
     try:
         os.environ['NEXUS_PORTABLE_DATA']=str(root)
         history=root/'paper_forward.sqlite3'
-        with sqlite3.connect(history) as db:
+        with closing(sqlite3.connect(history)) as db:
             before_admissions=db.execute(
                 'SELECT COUNT(*) FROM forward_exchange_admissions').fetchone()[0]
             before_quotes=db.execute('SELECT COUNT(*) FROM forward_quotes').fetchone()[0]
@@ -897,7 +898,7 @@ def _exchange_admission_crash(directory):
         resumed.prepare('terrestrial');configure('terrestrial',False)
         floor=resumed._stamp;outcome=resumed.single_cycle();resumed.stop(
             'DISPOSABLE_EXCHANGE_ADMISSION_RESTART')
-        with sqlite3.connect(history) as db:
+        with closing(sqlite3.connect(history)) as db:
             after_admissions=db.execute(
                 'SELECT COUNT(*) FROM forward_exchange_admissions').fetchone()[0]
             new_points=forward_evidence.review(db,resumed.status()['session'])['points']

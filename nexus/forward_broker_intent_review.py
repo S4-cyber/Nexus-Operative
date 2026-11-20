@@ -18,6 +18,8 @@ from nexus.order_accounting import modeled_fill_sha256
 
 PROFILE='nexus.forward-broker-intent.v1'
 MODE='COUNTERFACTUAL_FORWARD_BROKER_INTENT_REVIEW'
+RECONCILIATION_PROFILE='nexus.forward-broker-intent-reconciliation.v1'
+RECONCILIATION_MODE='READ_ONLY_FORWARD_BROKER_INTENT_RECONCILIATION'
 FALSE_FLAGS=('sendable','routing_authorized','source_attested','broker_connected',
     'broker_account_reconciled','funds_reconciled','ledger_applied',
     'live_orders_enabled','money_movement_enabled','release_approved')
@@ -33,6 +35,17 @@ LIMITATIONS=('Counterfactual binding only. The modeled local fill already change
     'this preview can never be submitted or applied again. Caller-supplied asset metadata is unattested. '
     'No historical execution equivalence, source, broker, account, funds, fees, holdings, routing, live, '
     'performance, profitability, sustained-trial, or release acceptance is established.')
+RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared with one exact-head retained '
+    'request plan under a same-host journal guard. Equality proves only sampled local provenance continuity; it '
+    'does not attest source, provider, broker account, funds, fees, holdings, market coverage, routing, sustained '
+    'operation, performance, profitability, or release acceptance. The counterfactual plan remains unsendable.')
+REQUEST_SUMMARY_FIELDS=frozenset(('client_order_id','payload_sha256',
+    'forward_intent_bound','forward_intent_sha256','recovery_state','snapshot',
+    'lookup_by_original_client_id_required','submission_attempt_marked',
+    'submission_admission','lookup','automatic_retry','sendable',
+    'broker_connected','ledger_applied','broker_account_reconciled'))
+LOOKUP_SUMMARY_FIELDS=frozenset(('attempts','attempt_limit','pending',
+    'next_allowed_at','review_blocked','interruptions','last_outcome'))
 
 
 def _sha(value):
@@ -230,3 +243,86 @@ def normalize_plan(value):
         raise ValueError('INVALID_FORWARD_BROKER_INTENT_PLAN')
     return dict(mode=value['mode'],sendable=False,payload=dict(tracker._payload),
         payload_sha256=value['payload_sha256'],forward_intent_binding=dict(binding))
+
+
+def reconcile_current(review,request_snapshot,*,expected_account_sha256,
+                      expected_head):
+    """Purely compare one retained plan with a fresh stopped local review."""
+    receipt,events=_receipt(review);source,fill=_source(review,events)
+    if (type(request_snapshot) is not dict or
+            set(request_snapshot)!={'account_sha256','head_sha256','plan','request'}):
+        raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_INVALID')
+    try:_plain(request_snapshot)
+    except ValueError:
+        raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_INVALID') from None
+    account=request_snapshot.get('account_sha256');head=request_snapshot.get('head_sha256')
+    request=request_snapshot.get('request')
+    if (not _digest(account) or not _digest(head) or type(request) is not dict or
+            frozenset(request)!=REQUEST_SUMMARY_FIELDS or
+            account!=expected_account_sha256 or head!=expected_head):
+        raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_INVALID')
+    lookup=request.get('lookup')
+    if (type(lookup) is not dict or frozenset(lookup)!=LOOKUP_SUMMARY_FIELDS or
+            type(lookup.get('attempt_limit')) is not int or lookup['attempt_limit']<1 or
+            lookup.get('attempts')!=0 or lookup.get('pending') is not False or
+            lookup.get('next_allowed_at')!=0 or lookup.get('review_blocked') is not False or
+            lookup.get('interruptions')!=0 or lookup.get('last_outcome') is not None):
+        raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_INVALID')
+    try:plan=normalize_plan(request_snapshot.get('plan'))
+    except (ValueError,TypeError,KeyError):
+        raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_INVALID') from None
+    binding=plan['forward_intent_binding'];payload=plan['payload']
+    if (request.get('client_order_id')!=payload.get('client_order_id') or
+            request.get('payload_sha256')!=plan['payload_sha256'] or
+            request.get('forward_intent_bound') is not True or
+            request.get('forward_intent_sha256')!=binding['intent_sha256'] or
+            request.get('recovery_state')!='PREPARED_UNSENT_DIAGNOSTIC' or
+            request.get('snapshot') is not None or
+            request.get('lookup_by_original_client_id_required') is not False or
+            request.get('submission_attempt_marked') is not False or
+            request.get('submission_admission') is not None or
+            request.get('automatic_retry') is not False or
+            request.get('sendable') is not False or
+            request.get('broker_connected') is not False or
+            request.get('ledger_applied') is not False or
+            request.get('broker_account_reconciled') is not False):
+        raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_INVALID')
+    expected=dict(session=source['session'],cycle=source['cycle'],
+        product=source['product'],side=source['side'],order_id=source['order_id'],
+        event_id=source['event_id'],sequence=source['sequence'],
+        event_sequence=source['event_sequence'],
+        quote_evidence_sha256=source['quote_evidence_sha256'],
+        modeled_fill_sha256=source['modeled_fill_sha256'],
+        forward_review_receipt_sha256=receipt['receipt_sha256'],
+        event_reconciliation_sha256=events['reconciliation_sha256'],
+        initial_order_snapshot_sha256=receipt['initial_order_snapshot_sha256'],
+        final_order_snapshot_sha256=receipt['final_order_snapshot_sha256'],
+        quantity=fill['quantity'])
+    if (any(binding.get(key)!=value for key,value in expected.items()) or
+            payload.get('qty')!=fill['quantity']):
+        raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_INVALID')
+    seal=_sha(dict(account_sha256=account,request_head_sha256=head,
+        plan=plan,forward_review_receipt_sha256=receipt['receipt_sha256'],
+        latest_modeled_outcome_sha256=events['latest_modeled_outcome_sha256']))
+    return dict(mode=RECONCILIATION_MODE,profile=RECONCILIATION_PROFILE,
+        read_only=True,matched_local_snapshot=True,prepared_unsent=True,
+        account_scope_bound=True,request_head_bound=True,plan_normalized=True,
+        forward_source_revalidated=True,receipt_bound=True,
+        event_reconciliation_bound=True,order_snapshots_bound=True,
+        modeled_fill_bound=True,payload_bound=True,
+        intent_sha256=binding['intent_sha256'],payload_sha256=plan['payload_sha256'],
+        intent_reconciliation_sha256=seal,
+        **{key:False for key in FALSE_FLAGS},limitations=RECONCILIATION_LIMITATIONS)
+
+
+def reconcile_persisted(review,journal,client_order_id,*,expected_head):
+    """Reconcile under the journal's exact-head identity/fingerprint guard."""
+    with journal.locked_request_plan_snapshot(client_order_id,
+            expected_head=expected_head) as read:
+        first=read();result=reconcile_current(review,first,
+            expected_account_sha256=journal.account_digest,
+            expected_head=expected_head)
+        if read()!=first:
+            raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
+    return dict(result,request_snapshot_replayed=True,
+        journal_file_fingerprint_rechecked=True)

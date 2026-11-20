@@ -1,5 +1,32 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.379 exact-head forward-intent reconciliation
+
+One read-only same-host composition now reconciles the retained counterfactual
+broker plan back to a fresh stopped forward review. It holds request-journal
+writer exclusion while replaying the complete plan and prepared-unsent summary,
+independently revalidates the sealed forward receipt, event reconciliation,
+order snapshots and complete modeled-fill source, then rechecks the exact
+pathname identity and bounded file bytes before releasing the guard.
+
+Stale request heads, changed forward evidence and legacy unbound previews fail
+closed without mutating the journal or invoking credentials, clocks, callbacks,
+provider IO or routing. The mandatory disposable forward profile proves cold
+equality, repeated byte-stable replay and all three denial cases. The modeled
+fill already changed the synthetic ledger, so the plan remains permanently
+unsendable and cannot be applied again.
+
+This is bounded local provenance continuity, not source attestation, actual
+broker-paper/account/funds acceptance, genuine-market or sustained-trial
+evidence, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain unchanged. No button or editable parameter
+was added; seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The roadmap stays 38% weighted (about 40%, 30–45%
+low-confidence range), with 0/9 independently accepted stages and no release
+permission, trading permission or launch date.
+
 ## v0.340.378 unsendable forward-to-broker intent binding
 
 A stopped, locally consistent paper-forward review now exposes one deterministic

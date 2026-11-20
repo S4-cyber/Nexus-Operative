@@ -1,5 +1,31 @@
 # Nexus Operative continuity instructions
 
+## v0.340.380 POST/GET/SSE uncertainty matrix
+
+The mandatory reconciliation profile now carries one strict compact matrix
+across the existing disposable paper POST, provider GET and Activity SSE
+treatments. Exact component schemas jointly require single-attempt POST safety
+windows, retained unknown outcomes and terminal original-ID recovery; GET
+authentication denial and lost recovery acknowledgement; and SSE bounded
+backoff, independent emergency-stop revocation, cursor races, lost
+acknowledgements and byte-stable cold replay.
+
+Missing cells, schema extensions, polymorphic values and promoted authority
+fail closed. The matrix returns no private component evidence and performs no
+provider, credential, retained-storage, routing or financial operation. Every
+provider, broker, funds, live and release authority remains false.
+
+This is bounded injected local coverage, not provider identity, actual
+broker-paper/account acceptance, genuine stream or market delivery,
+broker-wide pacing, native durability, sustained-trial evidence, performance,
+profitability or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain unchanged. No button or editable parameter
+was added; seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The roadmap stays 38% weighted (about 40%,
+30–45% low-confidence range), with 0/9 independently accepted stages and no
+release permission, trading permission or launch date.
+
 ## v0.340.379 exact-head forward-intent reconciliation
 
 One read-only same-host composition now reconciles the retained counterfactual

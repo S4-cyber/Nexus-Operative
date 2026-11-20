@@ -1133,6 +1133,7 @@ def _execute(profile):
         from nexus.paper_provider_post_reconciliation_review import fixture_report as post_reconciliation_fixture
         from nexus.paper_provider_post_fee_reference_review import fixture_report as post_fee_fixture
         from nexus.paper_provider_post_known_fee_reserve_review import fixture_report as post_fee_reserve_fixture
+        from nexus.paper_transport_uncertainty_matrix import fixture_report as transport_matrix_fixture
         from nexus.alpaca_activity_sse_review import fixture_report as activity_sse_fixture
         from nexus.alpaca_activity_sse_reconnect_review import fixture_report as activity_sse_reconnect_fixture
         from nexus.alpaca_activity_sse_cursor_store import fixture_report as activity_sse_cursor_fixture
@@ -1154,6 +1155,7 @@ def _execute(profile):
         result['provider_post_reconciliation']=post_reconciliation_fixture()
         result['provider_post_fee_references']=post_fee_fixture()
         result['provider_post_known_fee_reserve']=post_fee_reserve_fixture()
+        result['transport_uncertainty_matrix']=transport_matrix_fixture()
         result['supplied_activity_sse_links']=activity_sse_fixture()
         result['supplied_activity_sse_reconnect']=activity_sse_reconnect_fixture()
         result['private_activity_sse_cursor_store']=activity_sse_cursor_fixture()
@@ -2265,6 +2267,13 @@ def _validate(profile, result):
         from nexus.paper_provider_post_known_fee_reserve_review import (
             FLAGS as POST_FEE_RESERVE_FLAGS,
             PUBLIC_FIXTURE_KEYS as POST_FEE_RESERVE_PUBLIC_KEYS)
+        from nexus.paper_transport_uncertainty_matrix import (
+            AUTHORITY_FLAGS as TRANSPORT_MATRIX_AUTHORITY_FLAGS,
+            CHECKS as TRANSPORT_MATRIX_CHECKS,
+            LIMITATIONS as TRANSPORT_MATRIX_LIMITATIONS,
+            MODE as TRANSPORT_MATRIX_MODE,
+            PUBLIC_FIXTURE_KEYS as TRANSPORT_MATRIX_PUBLIC_KEYS,
+            SOURCE as TRANSPORT_MATRIX_SOURCE)
         from nexus.alpaca_activity_sse_review import FLAGS as ACTIVITY_SSE_FLAGS
         from nexus.alpaca_activity_sse_reconnect_review import FLAGS as ACTIVITY_SSE_RECONNECT_FLAGS
         from nexus.alpaca_activity_sse_cursor_store import FLAGS as ACTIVITY_SSE_CURSOR_FLAGS
@@ -2280,7 +2289,8 @@ def _validate(profile, result):
             'account_evidence_bundle', 'exact_account_response',
             'exact_activity_response', 'exact_response_bundle',
             'provider_post_reconciliation', 'provider_post_fee_references',
-            'provider_post_known_fee_reserve', 'supplied_activity_sse_links',
+            'provider_post_known_fee_reserve', 'transport_uncertainty_matrix',
+            'supplied_activity_sse_links',
             'supplied_activity_sse_reconnect',
             'private_activity_sse_cursor_store',
             'supplied_activity_sse_wire_session',
@@ -2382,6 +2392,21 @@ def _validate(profile, result):
             (*POST_FEE_RESERVE_FLAGS,'actual_provider_access',
              'actual_vault_access')),
             'PROVIDER_POST_KNOWN_FEE_RESERVE_AUTHORITY')
+        transport_matrix=result['transport_uncertainty_matrix']
+        _require(type(transport_matrix) is dict and
+            frozenset(transport_matrix)==TRANSPORT_MATRIX_PUBLIC_KEYS and
+            transport_matrix['mode']==TRANSPORT_MATRIX_MODE and
+            transport_matrix['source']==TRANSPORT_MATRIX_SOURCE and
+            transport_matrix['passed'] is True and
+            type(transport_matrix['surfaces_verified']) is int and
+            transport_matrix['surfaces_verified']==3 and
+            all(transport_matrix[key] is True
+                for key in TRANSPORT_MATRIX_CHECKS) and
+            transport_matrix['limitations']==TRANSPORT_MATRIX_LIMITATIONS,
+            'TRANSPORT_UNCERTAINTY_MATRIX')
+        _require(all(transport_matrix[key] is False
+            for key in TRANSPORT_MATRIX_AUTHORITY_FLAGS),
+            'TRANSPORT_UNCERTAINTY_MATRIX_AUTHORITY')
         activity_sse=result['supplied_activity_sse_links']
         _require(activity_sse['source']==
             'SYNTHETIC_SUPPLIED_ACTIVITY_SSE_LINK_FIXTURE' and

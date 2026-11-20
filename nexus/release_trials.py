@@ -2831,6 +2831,7 @@ def _validate(profile, result):
     if profile == 'forward':
         from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
             BROKER_INTENT_LIMITATIONS, BROKER_INTENT_PUBLIC_KEYS,
+            BROKER_INTENT_RECONCILIATION_PUBLIC_KEYS,
             FAULT_CASE_PUBLIC_KEYS, FAULT_LIMITATIONS, FAULT_PUBLIC_KEYS,
             LATENCY_PUBLIC_KEYS, LIMITATIONS, NO_FILL_CRASH_LIMITATIONS,
             NO_FILL_CRASH_PUBLIC_KEYS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
@@ -2851,6 +2852,7 @@ def _validate(profile, result):
         no_fill_crash=result['no_fill_crash']
         repeated=result['repeated_interruption']
         broker_intent=result['broker_intent_binding']
+        broker_intent_reconciliation=result['broker_intent_reconciliation']
         _require(type(durability) is dict and
             frozenset(durability)==COMMIT_DURABILITY_PUBLIC_KEYS and
             durability['source']==
@@ -2928,6 +2930,40 @@ def _validate(profile, result):
                 'live_orders_enabled','money_movement_enabled','release_approved')) and
             broker_intent['limitations']==BROKER_INTENT_LIMITATIONS,
             'FORWARD_BROKER_INTENT_EVIDENCE')
+        from nexus.forward_broker_intent_review import (
+            RECONCILIATION_LIMITATIONS,RECONCILIATION_MODE,
+            RECONCILIATION_PROFILE)
+        _require(type(broker_intent_reconciliation) is dict and
+            frozenset(broker_intent_reconciliation)==
+                BROKER_INTENT_RECONCILIATION_PUBLIC_KEYS,
+            'FORWARD_BROKER_INTENT_RECONCILIATION_SCHEMA')
+        _require(
+            broker_intent_reconciliation['mode']==RECONCILIATION_MODE and
+            broker_intent_reconciliation['profile']==RECONCILIATION_PROFILE and
+            broker_intent_reconciliation['passed'] is True and
+            broker_intent_reconciliation['read_only'] is True and
+            all(broker_intent_reconciliation[key] is True for key in (
+                'matched_local_snapshot','prepared_unsent','account_scope_bound',
+                'request_head_bound','plan_normalized','forward_source_revalidated',
+                'receipt_bound','event_reconciliation_bound','order_snapshots_bound',
+                'modeled_fill_bound','payload_bound','request_snapshot_replayed',
+                'journal_file_fingerprint_rechecked','journal_unchanged',
+                'changed_review_rejected','stale_head_rejected',
+                'legacy_unbound_rejected')) and
+            broker_intent_reconciliation['callbacks_invoked']==0 and
+            all(type(broker_intent_reconciliation[key]) is str and
+                len(broker_intent_reconciliation[key])==64 and
+                all(character in '0123456789abcdef'
+                    for character in broker_intent_reconciliation[key])
+                for key in ('intent_sha256','payload_sha256',
+                    'intent_reconciliation_sha256')) and
+            all(broker_intent_reconciliation[key] is False for key in (
+                'sendable','routing_authorized','source_attested','broker_connected',
+                'broker_account_reconciled','funds_reconciled','ledger_applied',
+                'live_orders_enabled','money_movement_enabled','release_approved')) and
+            broker_intent_reconciliation['limitations']==
+                RECONCILIATION_LIMITATIONS,
+            'FORWARD_BROKER_INTENT_RECONCILIATION_EVIDENCE')
         _require(all(type(cadence[name]) is dict and
             frozenset(cadence[name])==SCHEDULER_CADENCE_CASE_PUBLIC_KEYS
             for name in ('nominal','overrun','invalid_clock','clock_regression','stalled_clock')),

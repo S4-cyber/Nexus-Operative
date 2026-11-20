@@ -977,6 +977,67 @@ class BrokerRequestJournal:
                         raise
                     db.rollback()
 
+    @contextmanager
+    def locked_request_plan_snapshot(self, client_order_id, *, expected_head):
+        """Hold writer exclusion around one exact retained plan and summary.
+
+        Unlike :meth:`lookup_request`, this composition boundary keeps the
+        journal write lock for the caller's complete comparison and rechecks
+        the pathname identity plus bounded file fingerprint on every read and
+        during context exit.  It grants no submission, lookup, provider, or
+        reconciliation authority.
+        """
+        self._identity(client_order_id)
+        if (type(expected_head) is not str or
+                re.fullmatch(r'[0-9a-f]{64}', expected_head) is None):
+            raise ValueError('BROKER_JOURNAL_LOCKED_PLAN_HEAD_INVALID')
+        self._check_path()
+        if not self.path.exists():
+            raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        identity = capture_file_identities((self.path,),
+            'BROKER_JOURNAL_LOCKED_PLAN_')
+        fingerprint = capture_file_fingerprints((self.path,),
+            (MAX_DATABASE_BYTES,), 'BROKER_JOURNAL_LOCKED_PLAN_')
+        with self._write_connection() as db:
+            with _explicit_transaction(db):
+                def require_unchanged():
+                    require_file_identities((self.path,), identity,
+                        'BROKER_JOURNAL_LOCKED_PLAN_')
+                    require_file_fingerprints((self.path,),
+                        (MAX_DATABASE_BYTES,), fingerprint,
+                        'BROKER_JOURNAL_LOCKED_PLAN_')
+                def read():
+                    require_unchanged()
+                    try:
+                        requests, _, _, head = self._load(db)
+                    except BaseException:
+                        require_unchanged()
+                        raise
+                    require_unchanged()
+                    if head != expected_head:
+                        raise ValueError(
+                            'BROKER_JOURNAL_LOCKED_PLAN_HEAD_CHANGED')
+                    request = requests.get(client_order_id)
+                    if request is None:
+                        raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+                    return dict(account_sha256=self.account_digest,
+                        head_sha256=head,
+                        plan=json.loads(contract.canonical(request['plan'])),
+                        request=self._summary(client_order_id, request))
+                read()
+                try:
+                    yield read
+                finally:
+                    try:
+                        require_unchanged()
+                    except BaseException:
+                        try:
+                            db.rollback()
+                        except BaseException:
+                            pass
+                        raise
+                    db.rollback()
+
     def begin_lookup_checked(self, client_order_id, *, admission, expected_head=None):
         """Internal runtime hook: sample permission/time again under write admission."""
         if expected_head is not None and (type(expected_head) is not str or re.fullmatch('[0-9a-f]{64}',expected_head) is None):raise ValueError('BROKER_LOOKUP_HEAD_INVALID')

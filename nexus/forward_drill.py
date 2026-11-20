@@ -1,5 +1,6 @@
 """Bounded disposable exercise of the actual forward runner, never public/broker IO."""
 import argparse
+import copy
 import json
 import os
 from pathlib import Path
@@ -14,7 +15,7 @@ LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include 
     'actual feed, operating-system power loss, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
     'commit_durability','fault_injection','scheduler_cadence','no_fill_crash','repeated_interruption',
-    'broker_intent_binding',
+    'broker_intent_binding','broker_intent_reconciliation',
     'isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
     'ownership_released','halted','flat','portfolio_reconciled'))
@@ -64,6 +65,18 @@ BROKER_INTENT_PUBLIC_KEYS=frozenset(('mode','passed','side','binding_stable',
     'routing_authorized','source_attested','broker_connected','broker_account_reconciled',
     'funds_reconciled','ledger_applied','live_orders_enabled','money_movement_enabled',
     'release_approved','limitations'))
+BROKER_INTENT_RECONCILIATION_PUBLIC_KEYS=frozenset(('mode','profile','passed',
+    'read_only','matched_local_snapshot','prepared_unsent','account_scope_bound',
+    'request_head_bound','plan_normalized','forward_source_revalidated',
+    'receipt_bound','event_reconciliation_bound','order_snapshots_bound',
+    'modeled_fill_bound','payload_bound','intent_sha256','payload_sha256',
+    'intent_reconciliation_sha256','request_snapshot_replayed',
+    'journal_file_fingerprint_rechecked','journal_unchanged',
+    'changed_review_rejected','stale_head_rejected','legacy_unbound_rejected',
+    'callbacks_invoked','sendable','routing_authorized','source_attested',
+    'broker_connected','broker_account_reconciled','funds_reconciled',
+    'ledger_applied','live_orders_enabled','money_movement_enabled',
+    'release_approved','limitations'))
 FAULT_LIMITATIONS=('Injected local failures, accelerated worker scheduling and abrupt local child termination only; '
     'proves bounded fail-closed worker/cold-reopen behavior, not actual provider availability, operating-system power '
     'loss, clock hardware, network recovery, broker operation or sustained-market acceptance.')
@@ -97,7 +110,8 @@ def _broker_intent_binding(directory):
     from nexus import alpaca_paper_contract,alpaca_paper_submission
     from nexus.broker_request_journal import BrokerRequestJournal
     from nexus.durable_orders import DurableOrderGateway
-    from nexus.forward_broker_intent_review import build,FALSE_FLAGS
+    from nexus.forward_broker_intent_review import (build,FALSE_FLAGS,
+        reconcile_persisted)
     from nexus.paper_forward import PaperForwardRunner
     from nexus.tier_permissions import configure
     root=Path(directory);root.mkdir(parents=True,exist_ok=True)
@@ -153,10 +167,30 @@ def _broker_intent_binding(directory):
                 price_increment='.5'),metadata_at=1000,evaluated_at=1001)
         legacy.prepare(legacy_plan)
         legacy_unbound=legacy.recovery()['requests'][0]['forward_intent_bound'] is False
+        request_head=cold.lookup_request('nx_forward_intent_fixture')['head_sha256']
+        request_before=cold.path.read_bytes()
+        reconciliation=reconcile_persisted(review,cold,
+            'nx_forward_intent_fixture',expected_head=request_head)
+        journal_unchanged=cold.path.read_bytes()==request_before
+        changed=copy.deepcopy(review);changed['review_receipt']['receipt_sha256']='0'*64
+        changed_review_rejected=False
+        try:reconcile_persisted(changed,cold,'nx_forward_intent_fixture',
+            expected_head=request_head)
+        except ValueError:changed_review_rejected=True
+        legacy_head=legacy.lookup_request('nx_legacy_fixture')['head_sha256']
+        legacy_unbound_rejected=False
+        try:reconcile_persisted(review,legacy,'nx_legacy_fixture',
+            expected_head=legacy_head)
+        except ValueError:legacy_unbound_rejected=True
+        cold.prepare(legacy_plan)
+        stale_head_rejected=False
+        try:reconcile_persisted(review,cold,'nx_forward_intent_fixture',
+            expected_head=request_head)
+        except ValueError:stale_head_rejected=True
         binding=candidate['binding'];stable=(
             prepared['forward_intent_sha256']==recovered['forward_intent_sha256']==
                 binding['intent_sha256'])
-        return dict(mode='DISPOSABLE_FORWARD_BROKER_INTENT_BINDING',passed=True,
+        binding_report=dict(mode='DISPOSABLE_FORWARD_BROKER_INTENT_BINDING',passed=True,
             side=binding['side'],binding_stable=stable,intent_sha256=binding['intent_sha256'],
             payload_sha256=prepared['payload_sha256'],forward_intent_bound=prepared['forward_intent_bound'],
             cold_replay_bound=recovered['forward_intent_bound'],
@@ -165,6 +199,13 @@ def _broker_intent_binding(directory):
             callbacks_invoked=len(callbacks),legacy_readable_unbound=legacy_unbound,
             counterfactual_only=binding['counterfactual_only'],
             **{key:binding[key] for key in FALSE_FLAGS},limitations=BROKER_INTENT_LIMITATIONS)
+        reconciliation_report=dict(reconciliation,passed=True,
+            journal_unchanged=journal_unchanged,
+            changed_review_rejected=changed_review_rejected,
+            stale_head_rejected=stale_head_rejected,
+            legacy_unbound_rejected=legacy_unbound_rejected,
+            callbacks_invoked=len(callbacks))
+        return binding_report,reconciliation_report
     finally:
         if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
         else:os.environ['NEXUS_PORTABLE_DATA']=previous
@@ -808,7 +849,8 @@ def run(rounds=3):
         cadence=_scheduler_cadence(root/'cadence')
         no_fill_crash=_no_fill_crash(root/'no-fill-crash')
         repeated_interruption=_repeated_interruption(root/'repeated-interruption')
-        broker_intent_binding=_broker_intent_binding(root/'broker-intent-binding')
+        broker_intent_binding,broker_intent_reconciliation=(
+            _broker_intent_binding(root/'broker-intent-binding'))
         from nexus.paper_forward import commit_durability_fixture_report
         durability=commit_durability_fixture_report()
         _require(durability['passed'] is True,'COMMIT_DURABILITY')
@@ -817,6 +859,7 @@ def run(rounds=3):
                 fault_injection=faults,scheduler_cadence=cadence,no_fill_crash=no_fill_crash,
                 repeated_interruption=repeated_interruption,
                 broker_intent_binding=broker_intent_binding,
+                broker_intent_reconciliation=broker_intent_reconciliation,
                 application_accounts_changed=False,
                 isolated_temporary_storage=True,broker_connected=False,live_orders_enabled=False,release_approved=False,
                 target_validated=False,limitations=LIMITATIONS)

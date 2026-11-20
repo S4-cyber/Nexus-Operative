@@ -1,6 +1,7 @@
 """Counterfactual forward intent provenance and durable unsendability."""
 import copy
 import json
+import os
 import sqlite3
 
 import pytest
@@ -95,9 +96,102 @@ def test_bound_prepare_replays_exactly_and_changed_binding_conflicts(
     assert ACCOUNT not in retained and 'PRIVATE' not in retained
 
 
+def test_cold_bound_intent_reconciles_to_fresh_stopped_review_without_write(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    cold=BrokerRequestJournal(store.path,ACCOUNT)
+    head=cold.lookup_request('nx_forward_fixture')['head_sha256']
+    before=cold.path.read_bytes()
+    reconciled=intent.reconcile_persisted(review,cold,'nx_forward_fixture',
+        expected_head=head)
+    assert reconciled['mode']==intent.RECONCILIATION_MODE
+    assert reconciled['profile']==intent.RECONCILIATION_PROFILE
+    assert reconciled['matched_local_snapshot']
+    assert reconciled['request_snapshot_replayed']
+    assert reconciled['journal_file_fingerprint_rechecked']
+    assert reconciled['intent_sha256']==result['binding']['intent_sha256']
+    assert all(reconciled[key] is False for key in intent.FALSE_FLAGS)
+    assert cold.path.read_bytes()==before
+    assert intent.reconcile_persisted(review,cold,'nx_forward_fixture',
+        expected_head=head)==reconciled
+
+
+def test_reconciliation_rejects_stale_head_legacy_and_changed_source(
+        tmp_path,monkeypatch):
+    from test_alpaca_paper_contract import plan
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    changed=copy.deepcopy(review)
+    changed['review_receipt']['receipt_sha256']='0'*64
+    with pytest.raises(ValueError,match='FORWARD_BROKER_INTENT_REVIEW_INVALID'):
+        intent.reconcile_persisted(changed,store,'nx_forward_fixture',
+            expected_head=head)
+    store.prepare(plan(client_order_id='nx_unrelated'))
+    before=store.path.read_bytes()
+    with pytest.raises(ValueError,match='LOCKED_PLAN_HEAD_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head)
+    assert store.path.read_bytes()==before
+    legacy=BrokerRequestJournal(tmp_path/'legacy.sqlite3',ACCOUNT)
+    legacy.prepare(plan())
+    legacy_head=legacy.lookup_request('nx_fixture')['head_sha256']
+    with pytest.raises(ValueError,match='RECONCILIATION_INVALID'):
+        intent.reconcile_persisted(review,legacy,'nx_fixture',
+            expected_head=legacy_head)
+
+
+def test_pure_reconciliation_rejects_cross_source_and_summary_mutations(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    with store.locked_request_plan_snapshot('nx_forward_fixture',
+            expected_head=head) as read:
+        snapshot=read()
+    mutations=[]
+    changed=copy.deepcopy(snapshot);changed['account_sha256']='0'*64;mutations.append(changed)
+    changed=copy.deepcopy(snapshot);changed['request']['recovery_state']='SUBMISSION_UNKNOWN_LOOKUP_REQUIRED';mutations.append(changed)
+    changed=copy.deepcopy(snapshot);changed['request']['lookup']['attempts']=True;mutations.append(changed)
+    changed=copy.deepcopy(snapshot);changed['request']['forward_intent_bound']=False;mutations.append(changed)
+    changed=copy.deepcopy(snapshot);changed['plan']['forward_intent_binding']['session']='other';mutations.append(changed)
+    for changed in mutations:
+        with pytest.raises(ValueError,match='RECONCILIATION_INVALID'):
+            intent.reconcile_current(review,changed,
+                expected_account_sha256=snapshot['account_sha256'],
+                expected_head=snapshot['head_sha256'])
+    other_review=copy.deepcopy(review)
+    other_review['session']='other'
+    with pytest.raises(ValueError):intent.reconcile_current(other_review,snapshot,
+        expected_account_sha256=snapshot['account_sha256'],
+        expected_head=snapshot['head_sha256'])
+
+
+def test_guard_rechecks_request_file_after_final_reconciliation(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    original=intent.reconcile_current;mtime=store.path.stat().st_mtime_ns
+    def mutate_after_compare(*args,**kwargs):
+        value=original(*args,**kwargs)
+        os.utime(store.path,ns=(store.path.stat().st_atime_ns,
+            mtime+1_000_000_000))
+        return value
+    monkeypatch.setattr(intent,'reconcile_current',mutate_after_compare)
+    with pytest.raises(ValueError,match='LOCKED_PLAN_FILE_SET_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head)
+
+
 def test_lost_bound_prepare_ack_replays_once_without_resend(
         tmp_path,monkeypatch):
-    result,_=candidate(tmp_path/'forward',monkeypatch)
+    result,review=candidate(tmp_path/'forward',monkeypatch)
     store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
     original=journal_module._sync_committed_store
     def lost(*args,**kwargs):
@@ -112,6 +206,9 @@ def test_lost_bound_prepare_ack_replays_once_without_resend(
     assert before['retained_events']==2
     assert before['requests'][0]['forward_intent_bound']
     assert cold.prepare_forward_intent(result)['duplicate']
+    head=cold.lookup_request('nx_forward_fixture')['head_sha256']
+    assert intent.reconcile_persisted(review,cold,'nx_forward_fixture',
+        expected_head=head)['matched_local_snapshot']
     assert cold.recovery()==before
 
 

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from nexus import emergency_intent
 from nexus import emergency_priority
-from nexus.durable_orders import DurableOrderGateway
+from nexus.durable_orders import DurableOrderGateway,emergency_halt_replayed
 
 PUBLIC_KEYS = frozenset(('mode','passed','halted','emergency_cut_state',
     'intent_preceded_durable_halt','emergency_intent_present',
@@ -120,11 +120,6 @@ def _request_priority():
         priority_class=priority_class)
 
 
-def _halt_confirmed(result):
-    """Accept only the gateway's ordinary, explicit halt acknowledgement."""
-    return type(result) is dict and result.get('halted') is True
-
-
 def _intent_present(result):
     """Accept only the intent reader's exact boolean presence result."""
     return result is True
@@ -184,7 +179,10 @@ def activate(data_root=None):
                         intent_preceded = False
                         raise ValueError('DATA_ROOT_CHANGED')
                     result = DurableOrderGateway(order_path).emergency_halt()
-                    durable_halt = _halt_confirmed(result)
+                    # The warm return is not durable evidence.  Reopen and
+                    # replay the journal through a fresh gateway before any
+                    # public result may claim cleanup was confirmed.
+                    durable_halt = emergency_halt_replayed(order_path,result)
                     if not _same_data_root(root,root_identity):
                         durable_halt = False
                         raise ValueError('DATA_ROOT_CHANGED')

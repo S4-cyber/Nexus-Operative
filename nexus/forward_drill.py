@@ -238,7 +238,9 @@ def _review(sessions):
             receipt['cut_evidence_stable'] and not receipt['independent_cut_binding_verified'] and
             receipt['order_snapshot_stable_during_review'],'REVIEW_RECEIPT')
         _require(quotes['source_modes']==['INJECTED_TRANSPORT_UNATTESTED'],'SOURCE_MODE')
-        _require(quotes['rejected_observations']==3 and quotes['repeated_eligible_exchange_timestamps']==1,'OBSERVATION_COUNTS')
+        _require(quotes['rejected_observations']==4 and
+            quotes['repeated_eligible_exchange_timestamps']==0,
+            'OBSERVATION_COUNTS')
         reviews.append(dict(session=session,orders_sha256=fingerprint(orders),
                             evidence_sha256=fingerprint(evidence),quote_observations=quotes['observations'],
                             modeled_buy_orders=1,modeled_sell_orders=1,

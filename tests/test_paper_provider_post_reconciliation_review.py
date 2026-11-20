@@ -3,6 +3,7 @@ import copy
 import os
 import shutil
 import sqlite3
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -128,6 +129,55 @@ def test_exact_post_activity_and_guarded_balance_evidence_bind_without_writes(tm
 def test_independently_named_replay_matches_complete_primary_report(tmp_path):
     args = subject._fixture(tmp_path)
     assert subject.replay(**args) == subject.review(**args)
+
+
+def test_caller_mutation_cannot_choose_transient_observation_manifests(
+        tmp_path, monkeypatch):
+    options = subject._fixture(tmp_path)
+    fields = ('pre_opening_observation', 'opening_observation',
+        'closing_observation', 'post_closing_observation')
+    originals = {field: copy.deepcopy(options[field]) for field in fields}
+
+    def shifted(value):
+        inventory = value['observed_inventory']; timing = value['read_timing']
+        return subject.observation._fixture_observation(value['account_id'],
+            inventory['cash'], inventory['btc_total'],
+            float(Decimal(timing['started_at']) + Decimal('0.1')),
+            float(Decimal(timing['completed_at']) + Decimal('0.1')))
+
+    replacements = {field: shifted(options[field]) for field in fields}
+    original_post = subject.post_activity.review
+    original_status = subject.acceptance_status
+    mutated = False
+
+    def mutate_after_post(*args, **kwargs):
+        nonlocal mutated
+        result = original_post(*args, **kwargs)
+        if not mutated:
+            for field in fields:
+                options[field].clear(); options[field].update(
+                    copy.deepcopy(replacements[field]))
+            mutated = True
+        return result
+
+    def restore_at_final_status(**kwargs):
+        result = original_status(**kwargs)
+        if mutated:
+            for field in fields:
+                options[field].clear(); options[field].update(
+                    copy.deepcopy(originals[field]))
+        return result
+
+    monkeypatch.setattr(subject.post_activity, 'review', mutate_after_post)
+    monkeypatch.setattr(subject, 'acceptance_status', restore_at_final_status)
+    result = subject.review(**options)
+    assert all(options[field] == originals[field] for field in fields)
+    assert tuple(result[name + '_manifest_sha256'] for name in (
+        'pre_opening', 'opening', 'closing', 'post_closing')) == tuple(
+            originals[field]['manifest_sha256'] for field in fields)
+    assert all(result[name + '_manifest_sha256'] !=
+        replacements[field]['manifest_sha256'] for name, field in zip(
+            ('pre_opening', 'opening', 'closing', 'post_closing'), fields))
 
 
 def test_unresolved_post_outcome_refuses_before_balance_promotion(tmp_path):

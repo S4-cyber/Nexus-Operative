@@ -133,8 +133,7 @@ def _quote_recheck(point, policy, guard, previous_exchange):
     """
     try:
         quote=point['quote'];now=point['evaluated_at']
-        feed=guard.evaluate(quote,now)
-        if not isinstance(quote,dict) or feed['decision']=='VETO':return False,previous_exchange
+        if not isinstance(quote,dict):return False,previous_exchange
         if quote.get('product')!=policy['product'] or point.get('error_type') is not None:
             return False,previous_exchange
         received=_number(quote['received_at']);at=_number(now)
@@ -145,7 +144,13 @@ def _quote_recheck(point, policy, guard, previous_exchange):
         exchanged=_number(exchange.timestamp())
         if not (0<=at-received<=policy['receive_age_seconds'] and
             0<=at-exchanged<=policy['exchange_age_seconds']):return False,previous_exchange
-        if previous_exchange is not None and exchanged<previous_exchange:return False,previous_exchange
+        # Eligible trial observations must represent advancing exchange time.
+        # Repeated points are retained incidents, never fresh coverage, and
+        # cannot update the feed guard's decision baseline.
+        if previous_exchange is not None and exchanged<=previous_exchange:
+            return False,previous_exchange
+        feed=guard.evaluate(quote,now)
+        if feed['decision']=='VETO':return False,previous_exchange
         # Runtime advances its exchange marker only after an eligible point.
         if point['quote_eligible'] is True:previous_exchange=exchanged
         return True,previous_exchange

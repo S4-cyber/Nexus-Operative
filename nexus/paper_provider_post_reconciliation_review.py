@@ -11,6 +11,7 @@ import re
 from nexus.alpaca_paper_contract import sha
 from nexus import paper_account_evidence_review as evidence
 from nexus import paper_observation_review as observation
+from nexus import portable_paper_observation as portable
 from nexus import paper_provider_post_activity_review as post_activity
 from nexus import retained_balance_review
 from nexus.broker_activity_store import MAX_DATABASE_BYTES as ACTIVITY_DATABASE_BYTES
@@ -439,6 +440,14 @@ def _review_exact(post_budget, *, expected_post_head, account_id, journal,
         _fail('POST_BUDGET_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('REQUEST_JOURNAL_REQUIRED')
+    # Detach caller-owned evidence once. Every component and replay below must
+    # review the same validated manifests even if the caller mutates and later
+    # restores its dictionaries while this composition is running.
+    observations = tuple(portable.validate(value) for value in (
+        pre_opening_observation, opening_observation,
+        closing_observation, post_closing_observation))
+    (pre_opening_observation, opening_observation,
+        closing_observation, post_closing_observation) = observations
     pacing_path = _frozen_path(pacing_path, 'PACING_PATH_INVALID')
     activity_store_path = _frozen_path(
         activity_store_path, 'ACTIVITY_STORE_PATH_INVALID')

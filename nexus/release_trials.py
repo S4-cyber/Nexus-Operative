@@ -3149,14 +3149,14 @@ def _validate(profile, result):
         _require(all(coverage[k] is False for k in COVERAGE_FLAGS),'FORWARD_COVERAGE_AUTHORITY')
         coverage_counts={'minimum_trial_seconds':259200,'maximum_covered_gap_seconds':10,
             'retained_observations':280,'retained_sessions':20,'observations_in_window':280,
-            'eligible_observations_in_window':220,'rejected_observations_in_window':60,
-            'revalidated_eligible_observations_in_window':220,'revalidated_rejected_observations_in_window':60,
+            'eligible_observations_in_window':200,'rejected_observations_in_window':80,
+            'revalidated_eligible_observations_in_window':200,'revalidated_rejected_observations_in_window':80,
             'recorded_eligibility_disagreements_in_window':0,'declared_public_observations':0,
             'injected_observations':280,'unknown_source_observations':0,'sessions_in_window':20,
             'nonstopped_or_cleanup_review_sessions':20,'uncovered_intervals':1,
             'clean_manual_stop_sessions':0,'other_stopped_sessions':0,
             'paused_sessions':20,'running_sessions':0,
-            'sessions_with_quote_errors':20,'quote_error_observations':60,
+            'sessions_with_quote_errors':20,'quote_error_observations':80,
             'over_limit_coverage_gaps':1,'retained_event_records':300,
             'events_in_window':300,'legacy_unbound_observations_in_window':0,
             'quote_outcome_disagreements_in_window':0,'event_incident_records_in_window':80}

@@ -15,6 +15,7 @@ from nexus.paper_activity_acceptance_store import PaperActivityAcceptanceStore
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from nexus import paper_provider_post_reconciliation_review as reconciliation
 from nexus import paper_request_activity_acceptance as accepted
+from nexus import portable_paper_observation as portable
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_path_set,
     require_file_fingerprints, require_file_identities)
@@ -113,6 +114,14 @@ def _review_exact(post_budget, *, expected_post_head, account_id, journal,
         _fail('POST_BUDGET_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('REQUEST_JOURNAL_REQUIRED')
+    # Keep the primary reconciliation, independent replay and final repeat on
+    # one detached observation set. Direct callers receive the same mutation
+    # boundary as the higher-level known-fee reserve composer.
+    observations = tuple(portable.validate(value) for value in (
+        pre_opening_observation, opening_observation,
+        closing_observation, post_closing_observation))
+    (pre_opening_observation, opening_observation,
+        closing_observation, post_closing_observation) = observations
     pacing_path = _frozen_path(pacing_path, 'PACING_PATH_INVALID')
     activity_store_path = _frozen_path(
         activity_store_path, 'ACTIVITY_STORE_PATH_INVALID')

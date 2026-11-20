@@ -338,11 +338,16 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             signature=tuple(FeedGuard.number(quote[key])
                 for key in ('bid','ask','last'))
             key=(at,product)
-            prior=equal_time.get(key)
-            if prior is None:equal_time[key]=(sid,signature)
-            elif prior[0]!=sid and prior[1]!=signature:cross_rejected.add((sid,cycle))
+            equal_time.setdefault(key,[]).append((sid,cycle,signature))
+        for entries in equal_time.values():
+            if (len({sid for sid,_,_ in entries})>1 and
+                    len({signature for _,_,signature in entries})>1):
+                # No supplied observation is authoritative enough to win an
+                # equal-time cross-session price conflict by lexical order.
+                cross_rejected.update((sid,cycle) for sid,cycle,_ in entries)
         previous_global={}
         for at,sid,cycle,quote in ordered:
+            if (sid,cycle) in cross_rejected:continue
             product=quote['product'];last=FeedGuard.number(quote['last'])
             previous=previous_global.get(product)
             if previous is not None:
@@ -350,6 +355,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 if (old_sid!=sid and 0<=elapsed<=feed_policy.MAX_GAP_SECONDS and
                         abs(last-old_last)/old_last*100>feed_policy.MAX_JUMP_PCT):
                     cross_rejected.add((sid,cycle))
+                    continue
             previous_global[product]=(at,sid,last)
         cross_rejected_in_window={
             (sid,cycle) for at,sid,cycle,_ in cross_session_points

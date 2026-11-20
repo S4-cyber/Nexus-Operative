@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.380'
+REVISION = '0.340.381'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1256,6 +1256,14 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; one strict offline POST/GET/Activity-SSE uncertainty matrix now requires the exact disposable component schemas together: GET authentication denial and lost recovery acknowledgement, POST single-attempt safety and unknown-outcome windows plus terminal original-ID recovery, and SSE bounded backoff, independent emergency-stop revocation, cursor races, lost acknowledgements and byte-stable cold replay; every provider, credential, storage-retention, broker, funds, live and release authority remains false' if item.id in ('M4','M8','M9') else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; retained forward-trial coverage now defers interval eligibility until after the chronological cross-session consistency pass, removes both intervals adjacent to a conflicting boundary point, and uses retained context outside the requested window without leaking that context into in-window disagreement counts; rapidly rotating sessions can no longer report nominal full coverage by resetting price-jump state' if item.id in ('M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Retained trial coverage now excludes intervals adjacent to cross-session-disqualified observations and validates requested-window boundaries with retained neighboring context. This is local operational-evidence correctness, not genuine-feed provenance, sustained-trial acceptance, performance or release permission.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The mandatory reconciliation profile now carries one exact-schema offline matrix across the single-attempt POST, bounded GET and Activity SSE uncertainty treatments. Missing cells, polymorphic values and promoted authority fail closed. This is compact injected local coverage, not provider identity, authorized paper-account acceptance, broker-wide pacing, genuine stream delivery, sustained operation or release permission.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
@@ -1265,7 +1273,7 @@ DELIVERY_STAGES = tuple((dict(stage,
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.380 adds a strict compact uncertainty matrix across the existing disposable paper POST, provider GET and Activity SSE treatments. The mandatory reconciliation profile now requires exact component schemas covering single-attempt POST admission and safety windows, retained unknown outcomes, terminal original-ID recovery, GET authentication denial and lost recovery acknowledgement, and SSE bounded backoff, independent emergency-stop revocation, cursor races, lost acknowledgements and byte-stable replay. Missing cells, schema extensions, polymorphic values and promoted authority fail closed. The matrix returns no private component evidence and performs no provider, credential, retained-storage, routing or financial operation. This is bounded injected local coverage, not provider identity, broker-paper/account acceptance, genuine stream or market delivery, broker-wide quotas, native durability, sustained operation, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.381 corrects retained forward-trial coverage across session boundaries. Candidate intervals are retained with both exact endpoint identities until the chronological cross-session consistency pass completes; a point rejected for an equal-time conflict or rapid cross-session price jump now removes both adjacent intervals before union and coverage calculation. The pass also receives retained public context immediately outside the requested window, while disagreement and revalidated-observation counts remain scoped to the window itself. Rapid session rotation can no longer reset price-jump state yet retain nominal 100% coverage. This is bounded read-only local operational-evidence correctness, not genuine-feed/source attestation, sustained-trial acceptance, market realism, broker/account acceptance, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

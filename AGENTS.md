@@ -1,5 +1,30 @@
 # Nexus Operative continuity instructions
 
+## v0.340.381 cross-session trial coverage correction
+
+Retained forward-trial review now keeps candidate coverage intervals bound to
+both exact session/cycle endpoints until the chronological cross-session
+consistency pass completes. An observation disqualified by an equal-time
+cross-session conflict or rapid cross-session price jump removes both adjacent
+intervals before union and coverage calculation. Rapidly rotating sessions can
+no longer reset price-jump state while retaining nominal 100% coverage.
+
+The consistency pass receives retained public context immediately outside the
+requested window so a conflicting boundary point cannot establish in-window
+coverage. Disagreement and revalidated-observation counts remain scoped to the
+requested window; retained context is not reported as an in-window incident.
+
+This is bounded read-only local operational-evidence correctness, not
+genuine-feed/source attestation, sustained-trial acceptance, market realism,
+broker/account acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+roadmap stays 38% weighted (about 40%, 30–45% low-confidence range), with 0/9
+independently accepted stages and no release permission, trading permission or
+launch date.
+
 ## v0.340.380 POST/GET/SSE uncertainty matrix
 
 The mandatory reconciliation profile now carries one strict compact matrix

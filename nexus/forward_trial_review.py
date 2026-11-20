@@ -221,7 +221,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         # before the existing chain reviewer, rather than accept parser last-wins.
         for payload, in db.execute('SELECT payload FROM forward_quotes'):
             if type(payload) is not str or forward_evidence.canonical(json.loads(payload))!=payload:_fail()
-        intervals=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
+        interval_candidates=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
         events_in_window=legacy_unbound=outcome_disagreements=event_incidents=0
         event_trace_complete=True
         clean_stopped=other_stopped=paused=running=quote_error_sessions=quote_errors=0
@@ -292,6 +292,11 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 checked,previous_exchange=_quote_recheck(point,policy,guard,previous_exchange)
                 checked_eligible=point['quote_eligible'] is True and checked
                 good=checked_eligible and source==PUBLIC
+                # Cross-session boundary validation needs retained context just
+                # outside the requested window. Public counts and disagreement
+                # totals below remain scoped to the window itself.
+                if checked_eligible and source==PUBLIC:
+                    cross_session_points.append((at,sid,point['cycle'],point['quote']))
                 if start<=at<=end:
                     selected+=1;eligible+=int(point['quote_eligible'])
                     if not event_points:legacy_unbound+=1
@@ -302,15 +307,15 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                         if (type(point['error_type']) is not str or
                                 re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}',point['error_type']) is None):_fail()
                         session_quote_errors+=1;quote_errors+=1
-                    if checked_eligible and source==PUBLIC:
-                        cross_session_points.append((at,sid,point['cycle'],point['quote']))
                 if previous is not None:
-                    old,was_good=previous;gap=at-old
+                    old,was_good,old_cycle=previous;gap=at-old
                     if gap<0:_fail()
                     if good and was_good and 0<gap<=MAX_GAP_SECONDS:
                         left,right=max(start,old),min(end,at)
-                        if left<right:intervals.append((left,right))
-                previous=at,good
+                        if left<right:
+                            interval_candidates.append((left,right,
+                                (sid,old_cycle),(sid,point['cycle'])))
+                previous=at,good,point['cycle']
             if lifecycle_in_window:
                 if not session_event_complete:event_trace_complete=False
                 session_count+=1
@@ -346,7 +351,19 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                         abs(last-old_last)/old_last*100>feed_policy.MAX_JUMP_PCT):
                     cross_rejected.add((sid,cycle))
             previous_global[product]=(at,sid,last)
-        disagreements+=len(cross_rejected);revalidated-=len(cross_rejected)
+        cross_rejected_in_window={
+            (sid,cycle) for at,sid,cycle,_ in cross_session_points
+            if start<=at<=end and (sid,cycle) in cross_rejected}
+        disagreements+=len(cross_rejected_in_window)
+        revalidated-=len(cross_rejected_in_window)
+        # Session-local candidates were collected before the retained quotes
+        # could receive their cross-session consistency pass. A point rejected
+        # at that pass must break both adjacent intervals; otherwise rapidly
+        # rotating sessions can retain nominal 100% coverage even though their
+        # boundary observations are no longer eligible.
+        intervals=[(left,right) for left,right,left_point,right_point in
+            interval_candidates if left_point not in cross_rejected and
+            right_point not in cross_rejected]
         if seen!=count:_fail()
         binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,quote_heads=heads,quote_rows=count,event_heads=event_heads,event_rows=event_count)).encode()).hexdigest()
     with localcontext() as context:

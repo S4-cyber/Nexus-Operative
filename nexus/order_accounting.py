@@ -34,6 +34,53 @@ MAX_RETIRED_ORDER_ID_FINGERPRINTS=100000
 ZERO_SHA256='0'*64
 RETIRED_ID_POLICY='nexus.retired-order-id-fingerprint.v1'
 RETIRED_ID_BASELINE_KIND='OPERATOR_REVIEWED_UNATTESTED'
+NO_FILL_ATTEMPT_PROFILE='nexus.no-fill-attempt.v1'
+
+
+def no_fill_attempt_sha256(attempt):
+    """Bind every retained field of one normalized no-fill attempt.
+
+    The digest is derived evidence, not mutable accounting state. Callers
+    retain the canonical attempt in the order journal and may independently
+    carry this digest in another evidence chain.
+    """
+    if type(attempt) is not dict:
+        raise ValueError('INVALID_NO_FILL_ATTEMPT')
+    required={'order_id','side','event_id','sequence','reason','evaluated_at','expires_at'}
+    forward={'evidence_cycle','evidence_session','evidence_quote_sha256'}
+    if (not required<=set(attempt) or set(attempt)-required-forward or
+            bool(set(attempt)&forward) != (forward<=set(attempt))):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT')
+    try:
+        _require_order_id(attempt['order_id']);_require_event_id(attempt['event_id'])
+        evaluated=number(attempt['evaluated_at']);expires=number(attempt['expires_at'])
+    except (ValueError,TypeError,KeyError):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT') from None
+    if (attempt['side'] not in ('BUY','SELL') or
+            type(attempt['sequence']) is not int or not 1<=attempt['sequence']<=1000 or
+            attempt['reason']!='ORDER_EXPIRED_WITHOUT_FILL' or
+            type(attempt['evaluated_at']) is not str or
+            type(attempt['expires_at']) is not str or evaluated<expires or
+            attempt['evaluated_at']!=str(evaluated.normalize()) or
+            attempt['expires_at']!=str(expires.normalize())):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT')
+    if forward<=set(attempt) and (
+            type(attempt['evidence_cycle']) is not int or attempt['evidence_cycle']<1 or
+            type(attempt['evidence_session']) is not str or
+            len(attempt['evidence_session'])!=16 or
+            any(character not in '0123456789abcdef'
+                for character in attempt['evidence_session']) or
+            type(attempt['evidence_quote_sha256']) is not str or
+            len(attempt['evidence_quote_sha256'])!=64 or
+            any(character not in '0123456789abcdef'
+                for character in attempt['evidence_quote_sha256'])):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT')
+    payload=dict(profile=NO_FILL_ATTEMPT_PROFILE,attempt=attempt)
+    try:
+        canonical=json.dumps(payload,sort_keys=True,separators=(',',':'),allow_nan=False)
+    except (TypeError,ValueError):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT') from None
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 def order_id_fingerprint(client_order_id):
@@ -278,6 +325,7 @@ class AccountingOrderGateway(OrderGateway):
                 if self.no_fill_events[attempt_key]!=no_fill:
                     raise ValueError('DUPLICATE_NO_FILL_EVENT_CONFLICT')
                 return {**copy.deepcopy(record),'expired':True,'no_fill_recorded':True,
+                        'no_fill_attempt_sha256':no_fill_attempt_sha256(no_fill),
                         'idempotent_replay':True}
             if key in self.quote_events:
                 if self.quote_events[key]!=detail:raise ValueError('DUPLICATE_QUOTE_EVENT_CONFLICT')
@@ -299,7 +347,9 @@ class AccountingOrderGateway(OrderGateway):
                 if evidence_quote_sha256 is not None:no_fill['evidence_quote_sha256']=evidence_quote_sha256
                 self.no_fill_events[attempt_key]=no_fill
                 return {**self.expire_order(client_order_id,evaluated_at),
-                        'no_fill_recorded':True,'idempotent_replay':False}
+                        'no_fill_recorded':True,
+                        'no_fill_attempt_sha256':no_fill_attempt_sha256(no_fill),
+                        'idempotent_replay':False}
             self._applying_quote=True
             try:
                 result=self.simulate_priced_fill(client_order_id,event_id,sequence,modeled['quantity'],modeled['price'],modeled['fee'])

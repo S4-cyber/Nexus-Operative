@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.374'
+REVISION = '0.340.375'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1216,6 +1216,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; every modeled quote expiry now retains one replayable no-fill attempt bound to exact session, cycle, order, side, event and quote digest, and per-session review requires an exact matching expired-without-fill outcome before local consistency can pass' if item.id in ('M4','M7','M9') else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; each durable no-fill attempt is now cross-bound to its independent forward VETO by a canonical digest over every retained attempt field; the mandatory forward profile terminates a real child after the durable commit and before the VETO, then requires cold replay to preserve the position, fill sequence and resumable mandate while retaining an explicit review gap without automatic repair' if item.id in ('M4','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
                 branch=BRANCH, release_target='1.0.0', current_mode='OFFLINE_PAPER_PRERELEASE',
@@ -1239,7 +1243,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.374 durably retains every modeled quote expiry as a bounded no-fill attempt with exact session, cycle, order, side, event, evaluation boundary and quote-evidence digest. Checkpoints, archives, cold replay and read-only order/session views preserve the attempt without changing cash, positions, fill sequence or the resumable reducing mandate. Per-session reconciliation now requires an exact matching VETO / ORDER_EXPIRED_WITHOUT_FILL record; a recomputed forward-event chain with a changed attempt identity fails closed. This is bounded offline local reconciliation, not source attestation, broker-paper, genuine-market, sustained-operation, Windows, funding/live/cloud, performance, profitability or release acceptance. Broker transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; the existing Quote / Fill Evidence hover help covers the read-only evidence, while seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.375 cross-binds every durable no-fill attempt to its independent forward VETO with a canonical digest over the exact session, cycle, order, side, event, sequence, evaluation boundary, expiry boundary and quote-evidence digest. Missing, malformed, misplaced or changed bindings remain readable where legacy evidence permits but cannot pass local reconciliation. The mandatory forward release profile now kills a real child after the durable no-fill commit and before the VETO, then proves cold replay preserves the position, fill sequence and resumable mandate while the interrupted session remains review-required without automatic repair. This is bounded offline local reconciliation and interruption evidence, not source attestation, broker-paper, genuine-market, sustained-operation, native Windows, funding/live/cloud, performance, profitability or release acceptance. Broker transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; the existing Quote / Fill Evidence hover help covers the read-only evidence, while seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

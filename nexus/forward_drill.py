@@ -13,13 +13,15 @@ LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include 
     'Fault treatments use the actual worker loop with accelerated local scheduling and abrupt child termination, but no '
     'actual feed, operating-system power loss, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
-    'commit_durability','fault_injection','scheduler_cadence','isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
+    'commit_durability','fault_injection','scheduler_cadence','no_fill_crash',
+    'isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
     'ownership_released','halted','flat','portfolio_reconciled'))
 SESSION_PUBLIC_KEYS=frozenset(('session','orders_sha256','evidence_sha256','quote_observations','modeled_buy_orders',
     'modeled_sell_orders','durable_event_records','event_head_sha256',
     'reconciliation_sha256','review_receipt_sha256','review_reason_codes_sha256',
     'quote_outcome_bijection','durable_order_outcomes_reconciled',
+    'durable_no_fill_attempts_bound',
     'cut_evidence_stable','cut_binding_verified','order_snapshot_stable'))
 LATENCY_PUBLIC_KEYS=frozenset(('p50_ms','p95_ms','p99_ms'))
 FAULT_CASE_PUBLIC_KEYS=frozenset(('cycles','fetches','reasons','paused','orders_created','ownership_released',
@@ -43,12 +45,20 @@ SCHEDULER_CADENCE_CASE_PUBLIC_KEYS=frozenset(('cycle_starts','start_intervals','
 SCHEDULER_CADENCE_PUBLIC_KEYS=frozenset(('mode','passed','interval_seconds','nominal','overrun',
     'invalid_clock','clock_regression','stalled_clock','actual_provider_requests','automatic_retries',
     'broker_connected','live_orders_enabled','sustained_forward_accepted','release_approved','limitations'))
+NO_FILL_CRASH_PUBLIC_KEYS=frozenset(('mode','passed','process_terminated','exit_code',
+    'no_fill_attempts','attempt_digest_stable','position_preserved','fill_sequence_preserved',
+    'mandate_resumable','old_session_review_required','quote_outcome_gap',
+    'no_fill_outcome_gap','no_fill_binding_gap','automatic_repair','actual_provider_requests',
+    'broker_connected','live_orders_enabled','release_approved','limitations'))
 FAULT_LIMITATIONS=('Injected local failures, accelerated worker scheduling and abrupt local child termination only; '
     'proves bounded fail-closed worker/cold-reopen behavior, not actual provider availability, operating-system power '
     'loss, clock hardware, network recovery, broker operation or sustained-market acceptance.')
 SCHEDULER_CADENCE_LIMITATIONS=('Injected monotonic scheduling and public-quote-shaped local observations only; proves bounded worker '
     'deadline, overrun and fail-closed behavior, not operating-system timer accuracy, actual provider cadence, sustained-market '
     'throughput, broker operation or release acceptance.')
+NO_FILL_CRASH_LIMITATIONS=('Abrupt local child termination at one injected boundary after the durable no-fill commit and before its '
+    'forward VETO only; proves local replay and review-required behavior, not operating-system power loss, storage hardware durability, '
+    'actual provider or broker behavior, market liquidity, exit completion or release acceptance.')
 COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EVENT_INCIDENTS_RETAINED_IN_WINDOW','EXECUTION_OWNERSHIP_NOT_CHECKED',
     'INJECTED_OBSERVATIONS_IN_WINDOW','NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS',
     'ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','QUOTE_ERRORS_RETAINED_IN_WINDOW',
@@ -81,6 +91,7 @@ def _review(sessions):
         _require(check['modeled_buy_orders']==check['modeled_sell_orders']==1 and len(orders)==2,'FILL_COUNTS')
         _require(events['integrity_ok'] and events['event_trace_complete'] and
             events['quote_outcome_bijection'] and events['durable_order_outcomes_reconciled'] and
+            events['durable_no_fill_attempts_bound'] and
             events['quote_outcomes']==quotes['observations'],'EVENT_RECONCILIATION')
         _require(receipt['local_consistency_ok'] and receipt['reason_count']==0 and
             receipt['cut_evidence_stable'] and not receipt['independent_cut_binding_verified'] and
@@ -96,6 +107,7 @@ def _review(sessions):
                             review_receipt_sha256=receipt['receipt_sha256'],
                             review_reason_codes_sha256=receipt['reason_codes_sha256'],
                             quote_outcome_bijection=True,durable_order_outcomes_reconciled=True,
+                            durable_no_fill_attempts_bound=events['durable_no_fill_attempts_bound'],
                             cut_evidence_stable=True,cut_binding_verified=False,
                             order_snapshot_stable=True))
     from nexus.forward_trial_review import review as coverage_review
@@ -414,6 +426,111 @@ def _scheduler_cadence(directory):
         limitations=SCHEDULER_CADENCE_LIMITATIONS)
 
 
+def _no_fill_crash_worker(directory):
+    """Terminate after durable expiry and before its independent forward VETO."""
+    from datetime import datetime,timezone
+    from decimal import Decimal
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    root=Path(directory);root.mkdir(parents=True,exist_ok=True)
+    os.environ['NEXUS_PORTABLE_DATA']=str(root);configure('terrestrial',True)
+    gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+    gateway.initialize_account(10000);gateway.link_portfolio()
+    gateway.submit('entry','BTC-USD','BUY',100,tier='terrestrial')
+    gateway.simulate_priced_fill('entry','fill',1,1,100)
+    clock={'now':1000,'price':250}
+    def quote(product):
+        return dict(product=product,provider='coinbase_exchange_public',read_only=True,
+            orders_allowed=False,bid=clock['price'],ask=clock['price']+.01,
+            last=clock['price'],received_at=clock['now'],
+            exchange_time=datetime.fromtimestamp(clock['now'],timezone.utc).isoformat())
+    first=PaperForwardRunner(gateway,quote,lambda:clock['now']);first.prepare('terrestrial')
+    configure('terrestrial',False)
+    _require(first.single_cycle()['decision']=='SELL','NO_FILL_CRASH_INITIAL_SLICE')
+    first.stop('DISPOSABLE_NO_FILL_CRASH_SETUP')
+    cold=DurableOrderGateway(gateway.path)
+    resumed=PaperForwardRunner(cold,quote,lambda:clock['now'])
+    resumed.prepare('terrestrial');clock.update(now=1005,price=251)
+    original_restore=cold._restore;delayed=[False]
+    def restore(db):
+        state=original_restore(db);restored=state[0]
+        pending=next((order for order in restored.intents.values()
+            if order.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+            order['status']=='SIMULATED_REDUCTION_PENDING'),None)
+        if (pending is not None and
+                Decimal(restored.order_terms[pending['id']]['created_at'])==
+                    Decimal(str(clock['now'])) and
+                pending.get('reduction_slice_count')==1 and not delayed[0]):
+            clock['now']+=2;delayed[0]=True
+        return state
+    cold._restore=restore
+    original_record=resumed._record
+    def record(decision,reason,**extra):
+        if decision=='VETO' and reason=='ORDER_EXPIRED_WITHOUT_FILL':os._exit(76)
+        return original_record(decision,reason,**extra)
+    resumed._record=record
+    resumed.single_cycle()
+    raise ValueError('FORWARD_DRILL_NO_FILL_CRASH_HOOK_NOT_REACHED')
+
+
+def _no_fill_crash(directory):
+    """Review the exact post-death state without repairing or resuming it."""
+    from decimal import Decimal
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.order_accounting import no_fill_attempt_sha256
+    root=Path(directory);root.mkdir(parents=True,exist_ok=True)
+    expression=('import sys; from nexus.forward_drill import _no_fill_crash_worker; '
+        '_no_fill_crash_worker(sys.argv[1])')
+    child=subprocess.run([sys.executable,'-c',expression,str(root)],
+        env={**os.environ,'NEXUS_PORTABLE_DATA':str(root)},
+        stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,timeout=30)
+    _require(child.returncode==76,'NO_FILL_CRASH_CHILD')
+    previous=os.environ.get('NEXUS_PORTABLE_DATA')
+    try:
+        os.environ['NEXUS_PORTABLE_DATA']=str(root)
+        gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+        recovery=gateway.recovery_report()
+        mandate=next((order for order in recovery['orders']
+            if order.get('intent_scope')=='POSITION_REDUCING_EXIT'),None)
+        _require(mandate is not None,'NO_FILL_CRASH_MANDATE')
+        report=gateway.order_report(mandate['id']);attempts=report['no_fill_events']
+        runner=PaperForwardRunner(gateway);status=runner.status()
+        interrupted=next((session for session in runner.sessions()['sessions']
+            if session['effective_state']=='INTERRUPTED_OR_PRIOR_SESSION'),None)
+        _require(interrupted is not None,'NO_FILL_CRASH_SESSION')
+        evidence=runner.evidence_report(interrupted['session'])
+        events=evidence['durable_event_evidence']
+        replayed=DurableOrderGateway(root/'order_lifecycle.sqlite3').order_report(mandate['id'])
+        stable=(len(attempts)==len(replayed['no_fill_events'])==1 and
+            no_fill_attempt_sha256(attempts[0])==
+            no_fill_attempt_sha256(replayed['no_fill_events'][0]))
+        position=(recovery['execution_account']['account']['positions'] or {}).get('BTC-USD')
+        return dict(mode='DISPOSABLE_DURABLE_NO_FILL_CRASH',passed=True,
+            process_terminated=child.returncode==76,exit_code=child.returncode,
+            no_fill_attempts=len(attempts),attempt_digest_stable=stable,
+            position_preserved=(type(position) is dict and
+                Decimal(position.get('quantity','0'))>0 and
+                Decimal(position.get('quantity','0'))+
+                    Decimal(mandate.get('reduction_filled_quantity','0'))==
+                    Decimal(mandate.get('expected_position_quantity','-1'))),
+            fill_sequence_preserved=(mandate.get('reduction_slice_count')==1 and
+                len(report['quote_events'])==1),
+            mandate_resumable=(mandate.get('status')=='SIMULATED_REDUCTION_PENDING'),
+            old_session_review_required=(interrupted['requires_review'] is True and
+                evidence['local_consistency_ok'] is False),
+            quote_outcome_gap=events['quote_outcome_bijection'] is False,
+            no_fill_outcome_gap=events['durable_no_fill_outcomes_reconciled'] is False,
+            no_fill_binding_gap=events['durable_no_fill_attempts_bound'] is False,
+            automatic_repair=False,actual_provider_requests=False,
+            broker_connected=False,live_orders_enabled=False,release_approved=False,
+            limitations=NO_FILL_CRASH_LIMITATIONS)
+    finally:
+        if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
+        else:os.environ['NEXUS_PORTABLE_DATA']=previous
+
+
 def _child(directory,rounds,sessions=None):
     action=f'_exercise({rounds!r})' if sessions is None else f'_review({sessions!r})'
     expression='from nexus.forward_drill import _exercise,_review; import json; print(json.dumps('+action+'))'
@@ -439,12 +556,13 @@ def run(rounds=3):
         _require(baseline['recovered']==recovered,'FRESH_PROCESS_DISAGREEMENT')
         faults=_fault_child(root/'faults')
         cadence=_scheduler_cadence(root/'cadence')
+        no_fill_crash=_no_fill_crash(root/'no-fill-crash')
         from nexus.paper_forward import commit_durability_fixture_report
         durability=commit_durability_fixture_report()
         _require(durability['passed'] is True,'COMMIT_DURABILITY')
     return dict(mode='DISPOSABLE_FORWARD_RUNNER_DRILL',passed=True,rounds=rounds,cycles=baseline['cycles'],
                 cycle_latency=baseline['cycle_latency'],recovered=recovered,commit_durability=durability,
-                fault_injection=faults,scheduler_cadence=cadence,
+                fault_injection=faults,scheduler_cadence=cadence,no_fill_crash=no_fill_crash,
                 application_accounts_changed=False,
                 isolated_temporary_storage=True,broker_connected=False,live_orders_enabled=False,release_approved=False,
                 target_validated=False,limitations=LIMITATIONS)

@@ -87,6 +87,7 @@ def verify_recovery(base,expected,fetch=request):
         assert events['event_trace_complete'] and events['quote_outcome_bijection']
         assert events['durable_order_outcomes_reconciled']
         assert events['durable_no_fill_outcomes_reconciled']
+        assert events['durable_no_fill_attempts_bound']
         assert events['events']==expected['event_records']
         assert events['head_sha256']==expected['event_head_sha256']
         assert events['reconciliation_sha256']==expected['event_reconciliation_sha256']

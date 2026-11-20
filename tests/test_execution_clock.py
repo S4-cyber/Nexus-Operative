@@ -113,10 +113,11 @@ def test_resumable_exit_slice_expiry_is_vetoed_then_fills_on_fresh_terms(
     assert review['counters']['VETO']==review['counters']['SELL']==1
     events=review['durable_event_evidence']
     assert events['durable_no_fill_outcomes_reconciled']
+    assert events['durable_no_fill_attempts_bound']
     assert events['modeled_no_fill_outcomes']==1
 
     # Recomputing the complete forward chain cannot disguise a changed
-    # expired-attempt order identity because the order journal is independent.
+    # complete-attempt binding because the order journal is independent.
     changed=False
     with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
         rows=db.execute('SELECT session,sequence,payload FROM forward_events ORDER BY session,sequence').fetchall()
@@ -127,7 +128,7 @@ def test_resumable_exit_slice_expiry_is_vetoed_then_fills_on_fresh_terms(
             record=data['record']
             if (not changed and record.get('decision')=='VETO' and
                     record.get('reason')=='ORDER_EXPIRED_WITHOUT_FILL'):
-                record['order_id']='pf_'+session+'_999_SELL';changed=True
+                record['no_fill_attempt_sha256']='0'*64;changed=True
             rewritten=forward_event_evidence.canonical(data)
             previous=previous_by_session.get(session,forward_event_evidence.GENESIS)
             digest=forward_event_evidence.digest(previous,rewritten)
@@ -140,8 +141,9 @@ def test_resumable_exit_slice_expiry_is_vetoed_then_fills_on_fresh_terms(
     assert changed
     rewritten=resumed.evidence_report(resumed.status()['session'])
     assert rewritten['durable_event_evidence']['event_trace_complete']
-    assert not rewritten['durable_event_evidence']['durable_no_fill_outcomes_reconciled']
-    assert 'DURABLE_NO_FILL_OUTCOME_DISAGREEMENT' in rewritten['reasons']
+    assert rewritten['durable_event_evidence']['durable_no_fill_outcomes_reconciled']
+    assert not rewritten['durable_event_evidence']['durable_no_fill_attempts_bound']
+    assert 'DURABLE_NO_FILL_ATTEMPT_DIGEST_DISAGREEMENT' in rewritten['reasons']
     assert not rewritten['local_consistency_ok']
     resumed.stop()
 

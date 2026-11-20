@@ -22,7 +22,8 @@ EXTRA_FIELDS=frozenset(('order_id','liquidity','strategy_validated',
     'consecutive_failures','error_type','cleanup_acknowledged',
     'order_ledger_authoritative','scheduler_clock_valid',
     'scheduler_interval_seconds','scheduler_cycle_duration_seconds',
-    'scheduler_overrun_seconds','burst_catchup_allowed'))
+    'scheduler_overrun_seconds','burst_catchup_allowed',
+    'no_fill_attempt_sha256'))
 
 
 def canonical(value):
@@ -71,7 +72,7 @@ def _valid_scalar(value):
         type(value) is float and math.isfinite(value))
 
 
-def validate_record(record):
+def validate_record(record,require_no_fill_binding=False):
     if type(record) is not dict or not BASE_FIELDS<=record.keys() or not record.keys()<=BASE_FIELDS|EXTRA_FIELDS:
         raise ValueError('FORWARD_EVENT_SCHEMA')
     if any(type(key) is not str or not _valid_scalar(value) for key,value in record.items()):
@@ -103,11 +104,19 @@ def validate_record(record):
         raise ValueError('FORWARD_EVENT_SCHEMA')
     if record['decision'] in ('START','STOP') and order_id is not None:
         raise ValueError('FORWARD_EVENT_SCHEMA')
+    no_fill=(record['decision']=='VETO' and
+        record['reason']=='ORDER_EXPIRED_WITHOUT_FILL')
+    attempt=record.get('no_fill_attempt_sha256')
+    if (attempt is not None and (not no_fill or type(attempt) is not str or
+            re.fullmatch(r'[a-f0-9]{64}',attempt) is None) or
+            require_no_fill_binding and no_fill and attempt is None):
+        raise ValueError('FORWARD_EVENT_SCHEMA')
     return record
 
 
 def append(db,record,kind=None):
-    validate_record(record);kind=classify(record) if kind is None else kind
+    validate_record(record,require_no_fill_binding=True)
+    kind=classify(record) if kind is None else kind
     if kind not in KINDS:raise ValueError('FORWARD_EVENT_KIND')
     if db.execute('SELECT COALESCE(SUM(events),0) FROM forward_event_heads').fetchone()[0]>=LIMIT:
         raise ValueError('FORWARD_EVENT_EVIDENCE_CAP')

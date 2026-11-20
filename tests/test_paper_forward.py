@@ -173,7 +173,32 @@ def test_cold_restart_retains_exchange_and_price_baselines(tmp_path,monkeypatch)
         points=forward_evidence.review(db,resumed._session)['points']
     assert [point['quote_eligible'] for point in points]==[False,False]
     assert points[0]['error_type']=='DUPLICATE_EXCHANGE_TICK'
-    assert resumed._stamp==1000 and g.recovery_report()['orders']==[]
+    assert resumed._stamp==1010 and g.recovery_report()['orders']==[]
+    resumed.stop()
+
+
+def test_price_rejected_tick_consumes_marker_across_restart(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch)
+    configure('terrestrial',False)
+    assert r.single_cycle()['reason']=='WARMUP_REQUIRES_SIX_DISTINCT_TICKS'
+    c.now=1005;c.stamp=1005;c.price=120
+    rejected=r.single_cycle()
+    assert rejected['reason']=='QUOTE_UNAVAILABLE_OR_INVALID'
+    assert r._stamp==1005
+    r.stop()
+
+    c.now=1010;c.price=100.1
+    configure('terrestrial',True)
+    resumed=PaperForwardRunner(g,c.quote,lambda:c.now)
+    resumed.prepare('terrestrial')
+    configure('terrestrial',False)
+    assert resumed._stamp==1005
+    duplicate=resumed.single_cycle()
+    assert duplicate['reason']=='DUPLICATE_EXCHANGE_TICK'
+    with resumed._read_db() as db:
+        points=forward_evidence.review(db,resumed._session)['points']
+    assert points[0]['quote_eligible'] is False
+    assert points[0]['error_type']=='DUPLICATE_EXCHANGE_TICK'
     resumed.stop()
 
 

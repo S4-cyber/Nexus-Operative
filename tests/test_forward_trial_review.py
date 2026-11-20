@@ -254,6 +254,20 @@ def test_duplicate_cross_session_boundary_cannot_anchor_new_coverage(tmp_path,mo
     assert result['operational_incidents_present'] is True
 
 
+def test_rejected_cross_session_tick_cannot_be_repriced_and_reused(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(0,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,False)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['revalidated_eligible_observations_in_window']==2
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['uncovered_seconds']=='10'
+    assert result['operational_incidents_present'] is True
+
+
 def test_cross_session_exchange_regression_does_not_advance_reference(
         tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[

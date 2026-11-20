@@ -1,5 +1,31 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.386 rejected-tick exchange-marker continuity
+
+Every structurally valid fresh paper-forward tick now consumes the monotonic
+exchange marker before price/spread review. A price-vetoed observation cannot
+be replayed later under the same exchange timestamp with different values.
+Rejected prices never seed the single-source price guard; eligible quotes keep
+the independent executable-price baseline. Cold restart reconstructs those two
+baselines separately from every retained quote chain before START.
+
+Retained trial review carries locally rejected fresh ticks through the global
+cross-session exchange floor without granting them price-reference or coverage
+authority. A later eligible observation that repeats or regresses behind that
+floor is an incident and loses both adjacent coverage intervals. Rapid session
+rotation cannot launder a vetoed timestamp into incident-free trial coverage.
+
+This is bounded local supplied-history and trial-accounting evidence, not
+genuine-feed/source attestation, sustained-trial acceptance,
+broker/account/funds acceptance, native durability, performance, profitability
+or release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
 ## v0.340.385 durable cross-session exchange continuity
 
 Paper-forward preparation now replays every retained per-session quote chain,

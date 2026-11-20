@@ -247,6 +247,52 @@ class PaperForwardRunner:
         finally:
             if db is not None:db.close()
 
+    @staticmethod
+    def _retained_feed_baseline(db):
+        """Recover the strongest accepted exchange marker without trusting a tail row.
+
+        Every retained per-session chain is replayed before an eligible quote can
+        seed a later session.  The highest accepted exchange timestamp is the
+        conservative restart floor even for older histories whose sessions may
+        overlap.  This is local supplied evidence, not source attestation.
+        """
+        if db is None:return None
+        baseline=None
+        sessions=db.execute('SELECT id FROM sessions ORDER BY started_at,id').fetchall()
+        for (session,) in sessions:
+            evidence=forward_evidence.review(db,session)
+            if not evidence['integrity_ok']:
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            for point in evidence['points']:
+                if point.get('quote_eligible') is not True:continue
+                try:
+                    if (point.get('error_type') is not None or
+                            point.get('source_mode') not in (
+                                'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED',
+                                'INJECTED_TRANSPORT_UNATTESTED')):
+                        raise ValueError()
+                    quote=_require_quote(point['quote'])
+                    at=point['evaluated_at']
+                    if (type(at) not in (int,float) or
+                            type(at) is float and not math.isfinite(at) or
+                            not 0<=at<MAX_WALL_CLOCK_SECONDS):
+                        raise ValueError()
+                    exchange=datetime.fromisoformat(
+                        quote['exchange_time'].replace('Z','+00:00'))
+                    if exchange.tzinfo is None:raise ValueError()
+                    stamp=exchange.timestamp()
+                    if not math.isfinite(stamp) or not 0<=stamp<MAX_WALL_CLOCK_SECONDS:
+                        raise ValueError()
+                except (KeyError,TypeError,ValueError,OverflowError,OSError):
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID') from None
+                candidate=(stamp,at,session,point['cycle'],quote)
+                if baseline is None or candidate[:4]>baseline[:4]:
+                    baseline=candidate
+        if baseline is None:return None
+        stamp,at,session,cycle,quote=baseline
+        return dict(exchange_at=stamp,evaluated_at=at,session=session,
+            cycle=cycle,quote=quote)
+
     def _record(self,decision,reason,**extra):
         self._require_ownership()
         observed=self._clock_value(self.clock,wall=True)
@@ -346,7 +392,16 @@ class PaperForwardRunner:
                 if reason:raise ValueError(reason)
                 selected_policy=admit(policy_id)
                 if tier not in TIERS:raise ValueError('UNKNOWN_RISK_TIER')
-                storage=self.storage_capacity()
+                # Ownership serializes cooperating writers while capacity and
+                # the restart baseline are sampled from one retained snapshot.
+                with self._read_db() as db:
+                    storage=self._capacity_snapshot(db)
+                    retained_baseline=self._retained_feed_baseline(db)
+                retained_guard=FeedGuard()
+                if (retained_baseline is not None and
+                        retained_guard.evaluate(retained_baseline['quote'],
+                            retained_baseline['evaluated_at'])['decision']=='VETO'):
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
                 if not storage['session_intake_allowed']:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
                 if not storage['quote_intake_allowed']:raise ValueError('FORWARD_QUOTE_EVIDENCE_CAP')
                 if storage['forward_events_remaining']<2:raise ValueError('FORWARD_EVENT_EVIDENCE_CAP')
@@ -380,7 +435,10 @@ class PaperForwardRunner:
                 if self._cut_active():raise ValueError('EMERGENCY_CUT_REQUESTED')
                 self._policy=selected_policy
                 self._session=uuid.uuid4().hex[:16];self._tier=tier
-                self._prices.clear();self._guard=FeedGuard();self._stamp=None;self._last_rank=0
+                self._prices.clear();self._guard=retained_guard
+                self._stamp=(None if retained_baseline is None else
+                    retained_baseline['exchange_at'])
+                self._last_rank=0
                 self._cycles=0;self._failures=0;self._error=None;self._observation_hash=None;self._stop.clear()
                 try:self._record('START','EXPERIMENTAL_MOMENTUM_PAPER_POLICY')
                 except (OSError,sqlite3.Error,ValueError):

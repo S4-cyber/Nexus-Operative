@@ -151,6 +151,32 @@ def test_duplicate_exchange_tick_is_ineligible_and_does_not_poison_guard(
     assert r._stamp==1040 and g.recovery_report()['orders']==[]
 
 
+def test_cold_restart_retains_exchange_and_price_baselines(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch)
+    configure('terrestrial',False)
+    assert r.single_cycle()['reason']=='WARMUP_REQUIRES_SIX_DISTINCT_TICKS'
+    r.stop()
+
+    c.now=1005;c.stamp=1000;c.price=120
+    configure('terrestrial',True)
+    resumed=PaperForwardRunner(g,c.quote,lambda:c.now)
+    resumed.prepare('terrestrial')
+    configure('terrestrial',False)
+    assert resumed._stamp==1000
+    duplicate=resumed.single_cycle()
+    assert duplicate['reason']=='DUPLICATE_EXCHANGE_TICK'
+
+    c.now=1010;c.stamp=1010
+    jumped=resumed.single_cycle()
+    assert jumped['reason']=='QUOTE_UNAVAILABLE_OR_INVALID'
+    with resumed._read_db() as db:
+        points=forward_evidence.review(db,resumed._session)['points']
+    assert [point['quote_eligible'] for point in points]==[False,False]
+    assert points[0]['error_type']=='DUPLICATE_EXCHANGE_TICK'
+    assert resumed._stamp==1000 and g.recovery_report()['orders']==[]
+    resumed.stop()
+
+
 def test_three_feed_failures_pause_without_orders(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch)
     c.stamp=900

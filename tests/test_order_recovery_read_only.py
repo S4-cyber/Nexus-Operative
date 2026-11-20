@@ -82,7 +82,7 @@ def test_write_operation_pins_dynamic_root_before_emergency_check(tmp_path,monke
         seen.append(path);monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(second));return False
     monkeypatch.setattr(emergency_intent,'requested',retarget)
     gateway.submit('one','BTC-USD','BUY',100,tier='terrestrial')
-    assert seen==[first/'order_lifecycle.sqlite3',first/'order_lifecycle.sqlite3']
+    assert seen==[first/'order_lifecycle.sqlite3']*3
     assert (first/'order_lifecycle.sqlite3').exists()
     assert (first/'paper_portfolio.sqlite3').exists() and not second.exists()
 

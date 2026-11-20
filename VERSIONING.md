@@ -1,5 +1,21 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.376 modeled-fill binding, cut fence and strict public JSON audit
+
+This pre-1.0 increment completes full-detail cross-journal binding for modeled
+paper fills, closes emergency-cut races after runtime-clock sampling and between
+atomic quote-order steps, and makes public-repository JSON classification reject
+duplicate, non-finite and malformed JSON-shaped evidence. It changes no broker
+route, account authority, permission default, risk limit or user-editable
+parameter. All real-money, funding, live, cloud and release authorities remain
+false.
+
+Version 0.340.376 is implementation evidence only. It does not imply actual
+broker-paper acceptance, sustained-market realism, native Windows installer
+acceptance, profitability, owner approval or readiness for 1.0. The roadmap
+baseline remains exact weighted implementation 38%, displayed about 40%, with a
+30–45% low-confidence range and 0/9 independently accepted stages.
+
 ## v0.340.373 cut-aware sealed forward review
 
 Every complete per-session reconciliation now produces a privacy-safe receipt

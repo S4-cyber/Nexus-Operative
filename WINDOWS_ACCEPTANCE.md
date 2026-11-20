@@ -1,6 +1,6 @@
 # Windows distribution and acceptance evidence
 
-## v0.340.364 installer semantic-result evidence
+## Installer semantic-result evidence
 
 The distribution now includes `installer-result-review.json` alongside
 `artifact-manifest.json`, `distribution-binding-review.json`,
@@ -14,12 +14,19 @@ After generating the private ordinary-user probe, run the bundled reviewer with
 all shipped evidence inputs:
 
 ```powershell
-python .\windows-owner-profile-review.py --probe .\owner-profile-probe.json --distribution-binding .\distribution-binding-review.json --installer-result-review .\installer-result-review.json --artifact-manifest .\artifact-manifest.json --distribution-envelope .\distribution-envelope.json --probe-tool .\windows-owner-profile-probe.ps1 --review-tool .\windows-owner-profile-review.py --expected-version 0.340.364 --expected-source-commit <40-lowercase-hex-source-commit> --output .\owner-profile-review.json
+$manifest = Get-Content -Raw .\artifact-manifest.json | ConvertFrom-Json
+$expectedVersion = [string]$manifest.version
+$expectedSourceCommit = [string]$manifest.source_commit
+python .\windows-owner-profile-review.py --probe .\owner-profile-probe.json --distribution-binding .\distribution-binding-review.json --installer-result-review .\installer-result-review.json --artifact-manifest .\artifact-manifest.json --distribution-envelope .\distribution-envelope.json --probe-tool .\windows-owner-profile-probe.ps1 --review-tool .\windows-owner-profile-review.py --expected-version $expectedVersion --expected-source-commit $expectedSourceCommit --output .\owner-profile-review.json
 ```
 
 This command validates a self-reported owner probe against the exact shipped
-chain. It does not establish clean-machine, native-window, power-loss, broker,
-market, funds, live, cloud or release acceptance.
+chain. Before running it, independently compare `$expectedSourceCommit` with
+the intended GitHub Actions run and source review; the manifest is an identity
+input, not independent source authentication. Do not type a remembered version
+or commit from a different distribution. It does not establish clean-machine,
+native-window, power-loss, broker, market, funds, live, cloud or release
+acceptance.
 
 ## v0.340.50 owner ordinary-profile/ACL evidence candidate
 

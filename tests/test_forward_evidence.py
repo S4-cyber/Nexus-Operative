@@ -69,6 +69,48 @@ def test_no_fill_binding_is_forbidden_on_other_outcomes():
                 no_fill_attempt_sha256='c'*64))
 
 
+def test_modeled_fill_outcome_requires_exact_binding_on_append():
+    fill=event_record(cycle=1,quote_evidence_sha256='b'*64,
+        decision='BUY',reason='MODELED_PUBLIC_QUOTE_FILL',order_id='entry',
+        liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,fill)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,{**fill,
+                'modeled_fill_sha256':'not-a-digest'})
+        digest=forward_event_evidence.append(db,{**fill,
+            'modeled_fill_sha256':'c'*64})
+        assert len(digest)==64
+
+
+def test_modeled_fill_binding_is_forbidden_on_other_outcomes():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,event_record(
+                modeled_fill_sha256='c'*64))
+
+
+def test_legacy_unbound_modeled_fill_remains_readable_but_unbound():
+    record=event_record(cycle=1,quote_evidence_sha256='b'*64,
+        decision='BUY',reason='MODELED_PUBLIC_QUOTE_FILL',order_id='entry',
+        liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
+    payload=forward_event_evidence.canonical(dict(kind='OUTCOME',record=record))
+    digest=forward_event_evidence.digest(forward_event_evidence.GENESIS,payload)
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        db.execute('INSERT INTO forward_events VALUES (?,?,?,?,?,?,?,?)',
+            (record['session'],1,1,1,'OUTCOME',payload,
+             forward_event_evidence.GENESIS,digest))
+        db.execute('INSERT INTO forward_event_heads VALUES (?,?,?)',
+            (record['session'],1,digest))
+        report=forward_event_evidence.review(db,record['session'])
+    assert report['integrity_ok'] and report['events']==1
+    assert report['points'][0]['record'].get('modeled_fill_sha256') is None
+
+
 def test_legacy_unbound_no_fill_outcome_remains_readable():
     record=event_record(cycle=1,quote_evidence_sha256='b'*64,
         decision='VETO',reason='ORDER_EXPIRED_WITHOUT_FILL',order_id='exit')
@@ -110,6 +152,7 @@ def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     events=report['durable_event_evidence']
     assert events['integrity_ok'] and events['event_trace_complete']
     assert events['quote_outcome_bijection'] and events['durable_order_outcomes_reconciled']
+    assert events['durable_fill_attempts_bound']
     assert events['quote_outcomes']==8 and events['modeled_order_outcomes']==2
     assert events['events']==10 and events['lifecycle_events']==2
     assert len(events['head_sha256'])==len(events['reconciliation_sha256'])==64

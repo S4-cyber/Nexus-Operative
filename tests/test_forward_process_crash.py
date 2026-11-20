@@ -118,6 +118,8 @@ def test_process_death_preserves_authoritative_ledger_and_requires_review(tmp_pa
         assert Decimal(pending['simulated_filled_notional'])>0
         assert recovery['execution_account']['account']['positions']
         assert 'SESSION_COUNTER_FILL_DISAGREEMENT' in evidence['reasons']
+        assert not evidence['durable_event_evidence']['durable_fill_attempts_bound']
+        assert 'DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT' in evidence['reasons']
     else:
         assert Decimal(pending['simulated_filled_notional'])==0
         assert not recovery['execution_account']['account']['positions']

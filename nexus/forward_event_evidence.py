@@ -23,7 +23,7 @@ EXTRA_FIELDS=frozenset(('order_id','liquidity','strategy_validated',
     'order_ledger_authoritative','scheduler_clock_valid',
     'scheduler_interval_seconds','scheduler_cycle_duration_seconds',
     'scheduler_overrun_seconds','burst_catchup_allowed',
-    'no_fill_attempt_sha256'))
+    'no_fill_attempt_sha256','modeled_fill_sha256'))
 
 
 def canonical(value):
@@ -72,7 +72,7 @@ def _valid_scalar(value):
         type(value) is float and math.isfinite(value))
 
 
-def validate_record(record,require_no_fill_binding=False):
+def validate_record(record,require_no_fill_binding=False,require_fill_binding=False):
     if type(record) is not dict or not BASE_FIELDS<=record.keys() or not record.keys()<=BASE_FIELDS|EXTRA_FIELDS:
         raise ValueError('FORWARD_EVENT_SCHEMA')
     if any(type(key) is not str or not _valid_scalar(value) for key,value in record.items()):
@@ -111,11 +111,17 @@ def validate_record(record,require_no_fill_binding=False):
             re.fullmatch(r'[a-f0-9]{64}',attempt) is None) or
             require_no_fill_binding and no_fill and attempt is None):
         raise ValueError('FORWARD_EVENT_SCHEMA')
+    fill=record['decision'] in ('BUY','SELL')
+    fill_digest=record.get('modeled_fill_sha256')
+    if (fill_digest is not None and (not fill or type(fill_digest) is not str or
+            re.fullmatch(r'[a-f0-9]{64}',fill_digest) is None) or
+            require_fill_binding and fill and fill_digest is None):
+        raise ValueError('FORWARD_EVENT_SCHEMA')
     return record
 
 
 def append(db,record,kind=None):
-    validate_record(record,require_no_fill_binding=True)
+    validate_record(record,require_no_fill_binding=True,require_fill_binding=True)
     kind=classify(record) if kind is None else kind
     if kind not in KINDS:raise ValueError('FORWARD_EVENT_KIND')
     if db.execute('SELECT COALESCE(SUM(events),0) FROM forward_event_heads').fetchone()[0]>=LIMIT:

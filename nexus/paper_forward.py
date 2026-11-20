@@ -257,6 +257,7 @@ class PaperForwardRunner:
             # Outcome-specific evidence cannot be relabelled as a lifecycle
             # pause. The durable attempt remains review-required and unbound.
             extra.pop('no_fill_attempt_sha256',None)
+            extra.pop('modeled_fill_sha256',None)
             self._error=reason;self._stop.set()
         row=dict(at=recorded,clock_sample_valid=valid,session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
@@ -576,7 +577,8 @@ class PaperForwardRunner:
                 return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid,
                     no_fill_attempt_sha256=result['no_fill_attempt_sha256'])
             return self._record(side,'MODELED_PUBLIC_QUOTE_FILL',order_id=oid,
-                                liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
+                                liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False,
+                                modeled_fill_sha256=result['modeled_fill_sha256'])
         finally:
             try:
                 if side=='SELL':self.orders.cancel(oid,preserve_reducing_mandate=True)

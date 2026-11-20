@@ -17,7 +17,7 @@ RECOVERED_PUBLIC_KEYS=frozenset(('session','halted','portfolio_reconciled','forw
     'quote_observations','policy_sha256','modeled_buy_orders','modeled_sell_orders','source_modes',
     'event_records','event_head_sha256','event_reconciliation_sha256',
     'review_receipt_sha256','review_reason_codes_sha256',
-    'quote_outcome_bijection','durable_order_outcomes_reconciled',
+    'quote_outcome_bijection','durable_order_outcomes_reconciled','durable_fill_attempts_bound',
     'cut_evidence_stable','cut_binding_verified','order_snapshot_stable'))
 
 
@@ -50,7 +50,8 @@ def _review(session):
     events=evidence['durable_event_evidence']
     receipt=evidence['review_receipt']
     if (not events['event_trace_complete'] or not events['quote_outcome_bijection'] or
-            not events['durable_order_outcomes_reconciled']):
+            not events['durable_order_outcomes_reconciled'] or
+            not events['durable_fill_attempts_bound']):
         raise ValueError('RECOVERY_DRILL_EVENT_RECONCILIATION_FAILED')
     if (not receipt['local_consistency_ok'] or receipt['reason_count'] or
             not receipt['cut_evidence_stable'] or receipt['independent_cut_binding_verified'] or
@@ -69,6 +70,7 @@ def _review(session):
                 review_receipt_sha256=receipt['receipt_sha256'],
                 review_reason_codes_sha256=receipt['reason_codes_sha256'],
                 quote_outcome_bijection=True,durable_order_outcomes_reconciled=True,
+                durable_fill_attempts_bound=True,
                 cut_evidence_stable=True,cut_binding_verified=False,
                 order_snapshot_stable=True,
                 source_modes=evidence['quote_evidence']['source_modes'])

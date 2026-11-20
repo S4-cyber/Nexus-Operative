@@ -3,6 +3,7 @@ import sqlite3
 import pytest
 from test_atomic_quote_order import setup as atomic_setup,execute
 from test_paper_forward import setup
+from nexus import emergency_intent
 
 
 def test_runtime_evaluation_is_sampled_after_restore_and_journaled(tmp_path,monkeypatch):
@@ -26,6 +27,30 @@ def test_atomic_runtime_staleness_rolls_back_new_order(tmp_path,monkeypatch):
     report=g.recovery_report()
     assert report['commands']==2 and not report['orders']
     assert report['portfolio_reconciled'] and not report['execution_account']['account']['positions']
+
+
+def test_runtime_clock_callback_cut_revokes_fill_before_apply(tmp_path,monkeypatch):
+    g=atomic_setup(tmp_path,monkeypatch);before=g.recovery_report()
+    def cut_then_sample():
+        emergency_intent.persist(g._path());return 1001
+    with pytest.raises(ValueError,match='EMERGENCY_CUT_REQUESTED'):
+        execute(g,execution_clock=cut_then_sample)
+    after=g.recovery_report()
+    assert after['commands']==before['commands']==2
+    assert after['orders']==before['orders']==[]
+    assert after['execution_account']==before['execution_account']
+    assert after['quote_model_events']==0 and not after['halted']
+
+
+@pytest.mark.parametrize('control',(KeyboardInterrupt,SystemExit))
+def test_runtime_clock_process_control_remains_visible_and_rolls_back(
+        tmp_path,monkeypatch,control):
+    g=atomic_setup(tmp_path,monkeypatch);before=g.recovery_report()
+    def interrupt():raise control()
+    with pytest.raises(control):execute(g,execution_clock=interrupt)
+    after=g.recovery_report()
+    assert after['commands']==before['commands']==2
+    assert after['orders']==[] and after['execution_account']==before['execution_account']
 
 
 def test_forward_restore_delay_vetoes_stale_fill_and_cancels_pending_order(tmp_path,monkeypatch):

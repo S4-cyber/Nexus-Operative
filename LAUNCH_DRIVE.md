@@ -1,5 +1,27 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.376 modeled-fill binding, cut fence and strict public JSON audit
+
+The durable order journal and forward event chain now cross-bind each successful
+modeled BUY/SELL at full event and economic detail. Current appends require the
+canonical digest; legacy unbound outcomes stay readable but review-required.
+The same release/recovery evidence consumers require the new binding without
+granting strategy, broker, funds, live or release authority.
+
+The independent cut is rechecked after the caller-supplied execution-clock
+sample and between all steps of an atomic quote-order transaction. A cut that
+appears after submit or terms, or inside the clock callback, rolls back the
+whole transaction before a fill or linked-ledger change commits. Risk-reducing
+halt, cancellation, expiry, reset and archival paths remain usable.
+
+Public-repository JSON inspection is strict at every nesting level. Duplicate
+keys and NaN/Infinity receive an ambiguity finding; malformed JSON-shaped input
+receives a separate review finding. Findings retain only the rule and blob
+identity, never private content or repository path. This work adds no control
+or parameter, keeps all engagement OFF by default, and does not establish any
+external acceptance or permission. The roadmap baseline remains 38% weighted
+(about 40% displayed, 30–45% low confidence), with 0/9 accepted stages.
+
 ## v0.340.373 cut-aware sealed forward review
 
 Every complete per-session reconciliation now produces a privacy-safe receipt

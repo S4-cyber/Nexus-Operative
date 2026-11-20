@@ -3009,6 +3009,7 @@ def _validate(profile, result):
                 type(session['modeled_buy_orders']) is int and type(session['modeled_sell_orders']) is int and
                 session['quote_outcome_bijection'] is True and
                 session['durable_order_outcomes_reconciled'] is True and
+                session['durable_fill_attempts_bound'] is True and
                 session['durable_no_fill_attempts_bound'] is True and
                 session['cut_evidence_stable'] is True and
                 session['cut_binding_verified'] is False and
@@ -3135,6 +3136,7 @@ def _validate(profile, result):
             recovered['modeled_buy_orders']==recovered['modeled_sell_orders']==1 and
             recovered['quote_outcome_bijection'] is True and
             recovered['durable_order_outcomes_reconciled'] is True and
+            recovered['durable_fill_attempts_bound'] is True and
             recovered['cut_evidence_stable'] is True and
             recovered['cut_binding_verified'] is False and
             recovered['order_snapshot_stable'] is True and

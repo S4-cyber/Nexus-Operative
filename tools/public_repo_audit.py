@@ -41,10 +41,52 @@ def content_rule(prefix):
     return None
 
 
+class _AmbiguousJSON(ValueError):pass
+
+
+def _strict_object(pairs):
+    value={}
+    for key,item in pairs:
+        if key in value:raise _AmbiguousJSON()
+        value[key]=item
+    return value
+
+
+def _reject_constant(_value):raise _AmbiguousJSON()
+
+
+def _json_shaped(raw):
+    """Recognize a bounded JSON document prefix without exposing content."""
+    encodings=[]
+    for marker,encoding in ((b'\xef\xbb\xbf','utf-8-sig'),
+                            (b'\xff\xfe\x00\x00','utf-32'),
+                            (b'\x00\x00\xfe\xff','utf-32'),
+                            (b'\xff\xfe','utf-16'),(b'\xfe\xff','utf-16')):
+        if raw.startswith(marker):
+            encodings.append(encoding);break
+    encodings.append('utf-8')
+    for encoding in encodings:
+        try:text=raw[:4096].decode(encoding)
+        except UnicodeError:continue
+        prefix=text.lstrip()
+        if prefix.startswith('{'):return True
+        if prefix.startswith('['):
+            # A TOML section such as ``[build-system]`` is not JSON-shaped.
+            # Require the first array value to begin like a JSON token while
+            # retaining fail-closed handling for a truncated bare ``[``.
+            remainder=prefix[1:].lstrip()
+            return not remainder or remainder[0] in ']{["-0123456789tfn'
+        return False
+    return False
+
+
 def json_rule(raw):
     if len(raw)>8*1024*1024:return 'OVERSIZED_JSON_REQUIRES_REVIEW'
-    try:value=json.loads(raw)
-    except (ValueError,UnicodeError,RecursionError):return None
+    try:value=json.loads(raw,object_pairs_hook=_strict_object,
+                         parse_constant=_reject_constant)
+    except _AmbiguousJSON:return 'AMBIGUOUS_JSON_REQUIRES_REVIEW'
+    except (ValueError,UnicodeError,RecursionError):
+        return 'MALFORMED_JSON_REQUIRES_REVIEW' if _json_shaped(raw) else None
     if not isinstance(value,dict):return None
     if value.get('schema')=='nexus.order-retired-id-baseline-review.v1':
         return 'PRIVATE_ORDER_ID_BASELINE_REVIEW'
@@ -126,6 +168,14 @@ def audit(repo, *, history=False, required_refs=(), baseline_commit=None,
         rule = path_rule(name)
         if rule: findings.append(dict(rule=rule,path_sha256=hashlib.sha256(name.encode()).hexdigest()))
     delta_ids=_delta_ids(repo,baseline_commit,candidate_commit) if baseline_commit is not None else set()
+    current_ids=set()
+    if history:
+        for line in _git(repo,'ls-files','-s').splitlines():
+            fields=line.split()
+            oid=fields[1] if len(fields)>=2 else b''
+            if re.fullmatch(rb'[0-9a-f]{40,64}',oid) is None:
+                raise ValueError('INVALID_GIT_OBJECT')
+            current_ids.add(oid)
     objects = _git(repo,'rev-list','--objects','--all') if history else _git(repo,'ls-files','-s')
     ids = set()
     for line in objects.splitlines():
@@ -172,6 +222,13 @@ def audit(repo, *, history=False, required_refs=(), baseline_commit=None,
                     (prefix.lstrip().startswith(b'{') or prefix.startswith(
                         (b'\xef\xbb\xbf',b'\xff\xfe',b'\xfe\xff',b'\xff\xfe\x00\x00',b'\x00\x00\xfe\xff')))):
                 rule='OVERSIZED_JSON_REQUIRES_REVIEW'
+            # A previously repaired malformed JSON blob can remain reachable
+            # in immutable history. Continue to reject it if it is current or
+            # introduced anywhere in the reviewed delta; do not make a policy
+            # upgrade retroactively brick an otherwise clean repository.
+            if (rule=='MALFORMED_JSON_REQUIRES_REVIEW' and history and
+                    oid not in current_ids and oid not in delta_ids):
+                rule=None
             if rule:findings.append(dict(rule=rule,blob_sha=oid.decode()))
         child.stdin.close()
         if child.wait(timeout=15)!=0:raise ValueError('OBJECT_AUDIT_INCOMPLETE')

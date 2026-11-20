@@ -4,7 +4,8 @@ import sqlite3
 import subprocess
 import sys
 import pytest
-from nexus import durable_orders,order_checkpoints
+from nexus import durable_orders,emergency_intent,order_checkpoints
+from nexus.order_accounting import AccountingOrderGateway
 from nexus.durable_orders import DurableOrderGateway
 from nexus.tier_permissions import configure
 
@@ -54,6 +55,21 @@ def test_failure_rolls_back_intent_terms_fills_ledger_and_checkpoints(tmp_path,m
     assert after['commands']==baseline['commands']==2
     assert after['orders']==[] and after['execution_account']==baseline['execution_account']
     assert after['portfolio_reconciled']
+
+
+def test_cut_between_atomic_steps_rolls_back_entire_quote_order(tmp_path,monkeypatch):
+    g=setup(tmp_path,monkeypatch);before=g.recovery_report()
+    original=AccountingOrderGateway.set_execution_terms
+    def set_terms_then_cut(gateway,*args,**kwargs):
+        result=original(gateway,*args,**kwargs)
+        emergency_intent.persist(g._path())
+        return result
+    monkeypatch.setattr(AccountingOrderGateway,'set_execution_terms',set_terms_then_cut)
+    with pytest.raises(ValueError,match='EMERGENCY_CUT_REQUESTED'):execute(g)
+    after=DurableOrderGateway(g.path).recovery_report()
+    assert after['commands']==before['commands']==2
+    assert after['orders']==[] and after['execution_account']==before['execution_account']
+    assert after['quote_model_events']==0 and not after['halted']
 
 
 def test_expiry_is_durable_but_never_acknowledges_a_fill(tmp_path,monkeypatch):

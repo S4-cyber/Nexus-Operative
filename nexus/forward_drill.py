@@ -14,6 +14,7 @@ LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include 
     'actual feed, operating-system power loss, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
     'commit_durability','fault_injection','scheduler_cadence','no_fill_crash','repeated_interruption',
+    'broker_intent_binding',
     'isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
     'ownership_released','halted','flat','portfolio_reconciled'))
@@ -56,6 +57,13 @@ REPEATED_INTERRUPTION_PUBLIC_KEYS=frozenset(('mode','passed','process_exit_codes
     'no_fill_session_review_required','quote_outcome_gaps','automatic_repair','automatic_retries',
     'automatic_restart','forward_enabled','ownership_held','actual_provider_requests',
     'broker_connected','live_orders_enabled','release_approved','limitations'))
+BROKER_INTENT_PUBLIC_KEYS=frozenset(('mode','passed','side','binding_stable',
+    'intent_sha256','payload_sha256','forward_intent_bound','cold_replay_bound',
+    'submission_review_blocked','checked_attempt_blocked','submit_once_blocked',
+    'callbacks_invoked','legacy_readable_unbound','counterfactual_only','sendable',
+    'routing_authorized','source_attested','broker_connected','broker_account_reconciled',
+    'funds_reconciled','ledger_applied','live_orders_enabled','money_movement_enabled',
+    'release_approved','limitations'))
 FAULT_LIMITATIONS=('Injected local failures, accelerated worker scheduling and abrupt local child termination only; '
     'proves bounded fail-closed worker/cold-reopen behavior, not actual provider availability, operating-system power '
     'loss, clock hardware, network recovery, broker operation or sustained-market acceptance.')
@@ -69,6 +77,9 @@ REPEATED_INTERRUPTION_LIMITATIONS=('Two abrupt local child terminations on one d
     'BUY fill and before its forward outcome, then after a durable reducing-exit no-fill attempt and before its forward VETO. Proves '
     'cold replay, explicit review action and monotonic local accounting only; not operating-system power loss, storage hardware '
     'durability, actual provider or broker behavior, market liquidity, exit completion or release acceptance.')
+BROKER_INTENT_LIMITATIONS=('One stopped, locally reconciled injected modeled fill is bound to one disconnected preview and durable '
+    'request-journal PREPARE. The local modeled fill already changed the synthetic ledger, so the binding is counterfactual and '
+    'permanently unsendable. This is not source, broker, account, funds, fees, holdings, market, sustained-trial or release acceptance.')
 COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EVENT_INCIDENTS_RETAINED_IN_WINDOW','EXECUTION_OWNERSHIP_NOT_CHECKED',
     'INJECTED_OBSERVATIONS_IN_WINDOW','NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS',
     'ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','QUOTE_ERRORS_RETAINED_IN_WINDOW',
@@ -78,6 +89,85 @@ COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAG
 
 def _require(condition,reason):
     if not condition:raise ValueError('FORWARD_DRILL_'+reason)
+
+
+def _broker_intent_binding(directory):
+    """Prove one reviewed fill binding survives replay but cannot be sent."""
+    from datetime import datetime,timezone
+    from nexus import alpaca_paper_contract,alpaca_paper_submission
+    from nexus.broker_request_journal import BrokerRequestJournal
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.forward_broker_intent_review import build,FALSE_FLAGS
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    root=Path(directory);root.mkdir(parents=True,exist_ok=True)
+    previous=os.environ.get('NEXUS_PORTABLE_DATA')
+    try:
+        os.environ['NEXUS_PORTABLE_DATA']=str(root);configure('terrestrial',True)
+        clock={'now':1000,'price':100}
+        def quote(product):
+            return dict(product=product,provider='coinbase_exchange_public',read_only=True,
+                orders_allowed=False,bid=clock['price'],ask=clock['price']+.01,
+                last=clock['price'],received_at=clock['now'],
+                exchange_time=datetime.fromtimestamp(clock['now'],timezone.utc).isoformat())
+        gateway=DurableOrderGateway(root/'orders.sqlite3')
+        runner=PaperForwardRunner(gateway,quote,lambda:clock['now']);runner.prepare('terrestrial')
+        outcome=None
+        for index in range(7):
+            clock.update(now=1000+index*5,price=100+index*.1);outcome=runner.single_cycle()
+        _require(outcome['decision']=='BUY','BROKER_INTENT_FILL')
+        runner.stop('DISPOSABLE_BROKER_INTENT_BINDING')
+        review=runner.evidence_report(runner.status()['session'])
+        asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',
+            tradable=True,fractionable=True,min_order_size='0.000000000001',
+            min_trade_increment='0.000000000001',price_increment='0.000000000001')
+        candidate=build(review,'nx_forward_intent_fixture','100',asset,
+            metadata_at=1030,evaluated_at=1031)
+        account='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        store=BrokerRequestJournal(root/'requests.sqlite3',account)
+        prepared=store.prepare_forward_intent(candidate)
+        cold=BrokerRequestJournal(store.path,account);recovered=cold.recovery()['requests'][0]
+        blocked=cold.submission_review('nx_forward_intent_fixture',evaluated_at=1032)
+        callbacks=[];checked_blocked=False;submit_blocked=False
+        try:cold.begin_submission_checked('nx_forward_intent_fixture',
+            expected_head=cold.lookup_request('nx_forward_intent_fixture')['head_sha256'],
+            expected_payload_sha256=prepared['payload_sha256'],
+            admission=lambda:callbacks.append('admission'))
+        except ValueError as error:
+            checked_blocked=str(error)=='BROKER_SUBMISSION_COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE'
+        try:alpaca_paper_submission.submit_once(cold,'nx_forward_intent_fixture','bad','bad',
+            expected_account_id=account,expected_head='0'*64,
+            expected_payload_sha256=prepared['payload_sha256'],post_budget=object(),
+            expected_post_budget_head='0'*64,confirm_paper_order=True,
+            confirm_single_attempt=True,opener=lambda:callbacks.append('opener'),
+            wall_clock=lambda:callbacks.append('clock'),
+            permission_check=lambda:callbacks.append('permission'),
+            emergency_stop_check=lambda:callbacks.append('stop'),
+            credential_check=lambda:callbacks.append('credential'))
+        except alpaca_paper_submission.PaperSubmissionError as error:
+            submit_blocked=str(error)=='PAPER_SUBMISSION_COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE'
+        legacy=BrokerRequestJournal(root/'legacy.sqlite3',account)
+        legacy_plan=alpaca_paper_contract.preview('nx_legacy_fixture','BTC-USD','BUY','2','100',
+            dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,
+                fractionable=True,min_order_size='.5',min_trade_increment='.5',
+                price_increment='.5'),metadata_at=1000,evaluated_at=1001)
+        legacy.prepare(legacy_plan)
+        legacy_unbound=legacy.recovery()['requests'][0]['forward_intent_bound'] is False
+        binding=candidate['binding'];stable=(
+            prepared['forward_intent_sha256']==recovered['forward_intent_sha256']==
+                binding['intent_sha256'])
+        return dict(mode='DISPOSABLE_FORWARD_BROKER_INTENT_BINDING',passed=True,
+            side=binding['side'],binding_stable=stable,intent_sha256=binding['intent_sha256'],
+            payload_sha256=prepared['payload_sha256'],forward_intent_bound=prepared['forward_intent_bound'],
+            cold_replay_bound=recovered['forward_intent_bound'],
+            submission_review_blocked=blocked['reasons']==['COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE'],
+            checked_attempt_blocked=checked_blocked,submit_once_blocked=submit_blocked,
+            callbacks_invoked=len(callbacks),legacy_readable_unbound=legacy_unbound,
+            counterfactual_only=binding['counterfactual_only'],
+            **{key:binding[key] for key in FALSE_FLAGS},limitations=BROKER_INTENT_LIMITATIONS)
+    finally:
+        if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
+        else:os.environ['NEXUS_PORTABLE_DATA']=previous
 
 
 def _review(sessions):
@@ -718,6 +808,7 @@ def run(rounds=3):
         cadence=_scheduler_cadence(root/'cadence')
         no_fill_crash=_no_fill_crash(root/'no-fill-crash')
         repeated_interruption=_repeated_interruption(root/'repeated-interruption')
+        broker_intent_binding=_broker_intent_binding(root/'broker-intent-binding')
         from nexus.paper_forward import commit_durability_fixture_report
         durability=commit_durability_fixture_report()
         _require(durability['passed'] is True,'COMMIT_DURABILITY')
@@ -725,6 +816,7 @@ def run(rounds=3):
                 cycle_latency=baseline['cycle_latency'],recovered=recovered,commit_durability=durability,
                 fault_injection=faults,scheduler_cadence=cadence,no_fill_crash=no_fill_crash,
                 repeated_interruption=repeated_interruption,
+                broker_intent_binding=broker_intent_binding,
                 application_accounts_changed=False,
                 isolated_temporary_storage=True,broker_connected=False,live_orders_enabled=False,release_approved=False,
                 target_validated=False,limitations=LIMITATIONS)

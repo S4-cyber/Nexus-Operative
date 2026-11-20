@@ -28,6 +28,7 @@ REASONS=frozenset((
     'INDEPENDENT_CUT_EVIDENCE_UNSTABLE',
     'INDEPENDENT_CUT_REQUIRES_SESSION_REVIEW'))
 RECEIPT_PROFILE='nexus.forward-session-review-receipt.v1'
+MODELED_OUTCOME_PROFILE='nexus.forward-modeled-outcome.v1'
 
 
 def _sha(value):
@@ -37,6 +38,29 @@ def _sha(value):
 
 def _clock(value):
     return type(value) in (int,float) and math.isfinite(value)
+
+
+def reconciliation_sha256(*,session,state,quote_head_sha256,event_head_sha256,
+                          order_snapshot_sha256,final_order_snapshot_sha256,
+                          cut_evidence,reasons,summary):
+    """Rebuild the public reconciliation seal from its exact bounded fields."""
+    fields=('events','lifecycle_events','outcome_events','scheduler_events',
+        'quote_outcomes','modeled_order_outcomes','modeled_no_fill_outcomes',
+        'event_trace_complete','quote_outcome_bijection',
+        'durable_order_outcomes_reconciled','durable_fill_attempts_bound',
+        'durable_no_fill_outcomes_reconciled','durable_no_fill_attempts_bound',
+        'cut_evidence_stable','cut_binding_verified','independent_cut_observed',
+        'latest_modeled_outcome_sha256')
+    if (type(summary) is not dict or type(cut_evidence) is not dict or
+            type(reasons) is not list or reasons!=sorted(set(reasons)) or
+            any(field not in summary for field in fields)):
+        raise ValueError('FORWARD_RECONCILIATION_SEAL_INPUT_INVALID')
+    return _sha(dict(session=session,state=state,
+        quote_head_sha256=quote_head_sha256,event_head_sha256=event_head_sha256,
+        order_snapshot_sha256=order_snapshot_sha256,
+        final_order_snapshot_sha256=final_order_snapshot_sha256,
+        cut_evidence=cut_evidence,reasons=reasons,
+        **{key:summary[key] for key in fields}))
 
 
 def review_receipt(*,session,started_at,updated_at,state,policy,counts,last,
@@ -172,7 +196,7 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
         if any(outcomes.values()):
             reasons.append('QUOTE_OUTCOME_BIJECTION_DISAGREEMENT')
 
-        durable=[];durable_no_fills=[]
+        durable=[];durable_sources={};durable_no_fills=[]
         for item in order_snapshot.get('orders',[]):
             if type(item) is not dict or type(item.get('order')) is not dict or type(item.get('quote_events')) is not list:
                 raise ValueError()
@@ -188,7 +212,9 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
                             execution['evidence_quote_sha256']) is None):
                     raise ValueError()
                 fill=dict(order_id=oid,side=side,**execution)
-                durable.append((cycle,side,oid,modeled_fill_sha256(fill)))
+                fill_digest=modeled_fill_sha256(fill)
+                key=(cycle,side,oid,fill_digest)
+                durable.append(key);durable_sources.setdefault(key,[]).append(fill)
             no_fills=item.get('no_fill_events',[])
             if type(no_fills) is not list:raise ValueError()
             for attempt in no_fills:
@@ -209,13 +235,34 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             record=point['record']
             if point.get('kind')=='OUTCOME' and record.get('decision') in ('BUY','SELL'):
                 recorded.append((record.get('cycle'),record.get('decision'),
-                    record.get('order_id'),record.get('modeled_fill_sha256')))
-        order_outcomes_ok=(Counter(item[:3] for item in recorded)==
+                    record.get('order_id'),record.get('modeled_fill_sha256'),
+                    point.get('sequence'),record))
+        recorded_keys=[item[:4] for item in recorded]
+        order_outcomes_ok=(Counter(item[:3] for item in recorded_keys)==
             Counter(item[:3] for item in durable))
         if not order_outcomes_ok:reasons.append('DURABLE_ORDER_OUTCOME_DISAGREEMENT')
-        fill_attempts_bound=Counter(recorded)==Counter(durable)
+        fill_attempts_bound=Counter(recorded_keys)==Counter(durable)
         if not fill_attempts_bound:
             reasons.append('DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT')
+        modeled_sources=[]
+        if fill_attempts_bound:
+            for cycle,side,order_id,fill_digest,event_sequence,record in recorded:
+                candidates=durable_sources.get((cycle,side,order_id,fill_digest),[])
+                if len(candidates)!=1 or type(event_sequence) is not int:
+                    reasons.append('DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT')
+                    modeled_sources=[];break
+                fill=candidates[0]
+                modeled_sources.append(dict(profile=MODELED_OUTCOME_PROFILE,
+                    session=session,cycle=cycle,product=record.get('product'),side=side,
+                    order_id=order_id,event_id=fill.get('event_id'),
+                    sequence=fill.get('sequence'),event_sequence=event_sequence,
+                    quote_evidence_sha256=record.get('quote_evidence_sha256'),
+                    modeled_fill=fill,modeled_fill_sha256=fill_digest))
+        latest_modeled_outcome=(max(modeled_sources,key=lambda item:(
+            item['cycle'],item['event_sequence'],item['order_id'],item['event_id']))
+            if modeled_sources else None)
+        latest_modeled_outcome_sha256=(
+            _sha(latest_modeled_outcome) if latest_modeled_outcome is not None else None)
         recorded_no_fills=[]
         for point in event_points:
             record=point['record']
@@ -277,20 +324,15 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             cut_requested_before=requested_before,cut_requested_after=requested_after,
             cut_binding_source=binding_source,
             cut_evidence_stable=cut_stable,cut_binding_verified=cut_binding,
-            independent_cut_observed=independent_cut)
-        summary['reconciliation_sha256']=_sha(dict(session=session,state=state,
-            quote_head_sha256=quotes.get('head_sha256'),
+            independent_cut_observed=independent_cut,
+            latest_modeled_outcome=latest_modeled_outcome,
+            latest_modeled_outcome_sha256=latest_modeled_outcome_sha256)
+        summary['reconciliation_sha256']=reconciliation_sha256(
+            session=session,state=state,quote_head_sha256=quotes.get('head_sha256'),
             event_head_sha256=events.get('head_sha256'),
             order_snapshot_sha256=order_snapshot.get('snapshot_sha256'),
             final_order_snapshot_sha256=final_order_snapshot.get('snapshot_sha256'),
-            cut_evidence=cut_evidence,reasons=sorted(set(reasons)),
-            **{key:summary[key] for key in ('events','lifecycle_events','outcome_events',
-                'scheduler_events','quote_outcomes','modeled_order_outcomes','modeled_no_fill_outcomes',
-                'event_trace_complete','quote_outcome_bijection',
-                'durable_order_outcomes_reconciled','durable_fill_attempts_bound',
-                'durable_no_fill_outcomes_reconciled',
-                'durable_no_fill_attempts_bound','cut_evidence_stable',
-                'cut_binding_verified','independent_cut_observed')}))
+            cut_evidence=cut_evidence,reasons=sorted(set(reasons)),summary=summary)
         summary['integrity_ok']=not reasons
         return summary,sorted(set(reasons))
     except (ValueError,TypeError,KeyError,AttributeError,OverflowError):
@@ -304,6 +346,7 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             cut_state_before='PRESENT_UNVERIFIED',cut_state_after='PRESENT_UNVERIFIED',
             cut_requested_before=True,cut_requested_after=True,cut_binding_source='NONE',
             cut_evidence_stable=False,cut_binding_verified=False,
-            independent_cut_observed=False,reconciliation_sha256=_sha(dict(
+            independent_cut_observed=False,latest_modeled_outcome=None,
+            latest_modeled_outcome_sha256=None,reconciliation_sha256=_sha(dict(
                 session=session,state=state,invalid=True)),integrity_ok=False)
         return summary,['DURABLE_EVENT_CHAIN_DISAGREEMENT']

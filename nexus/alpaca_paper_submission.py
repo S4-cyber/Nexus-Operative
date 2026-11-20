@@ -637,6 +637,15 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         _fail('EXPLICIT_SINGLE_ATTEMPT_CONFIRMATION_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('JOURNAL_REQUIRED')
+    # Counterfactual forward bindings describe a local modeled fill that has
+    # already changed the synthetic ledger.  Reject before credentials, clocks,
+    # callbacks, transport construction, account reads, or durable attempt marks.
+    try:
+        initial_selection=journal.lookup_request(client_order_id)
+    except (OSError,ValueError,TypeError):
+        _fail('JOURNAL_INVALID')
+    if initial_selection['plan'].get('forward_intent_binding') is not None:
+        _fail('COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE')
     if type(post_budget) is not PaperProviderPostBudget:
         _fail('POST_BUDGET_REQUIRED')
     _hash(expected_post_budget_head)

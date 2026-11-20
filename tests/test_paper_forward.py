@@ -131,6 +131,26 @@ def test_disengaged_entry_and_duplicate_tick(tmp_path,monkeypatch):
     assert r.single_cycle()['reason']=='DUPLICATE_EXCHANGE_TICK'
 
 
+def test_duplicate_exchange_tick_is_ineligible_and_does_not_poison_guard(
+        tmp_path, monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch)
+    configure('terrestrial',False)
+    warmup(r,c)
+    c.now=1035;c.stamp=1030;c.price=120
+    duplicate=r.single_cycle()
+    assert duplicate['decision']=='HOLD'
+    assert duplicate['reason']=='DUPLICATE_EXCHANGE_TICK'
+    c.now=1040;c.stamp=1040;c.price=100.7
+    assert r.single_cycle()['reason']!='QUOTE_UNAVAILABLE_OR_INVALID'
+    with r._read_db() as db:
+        points=forward_evidence.review(db,r._session)['points']
+    assert points[-2]['quote_eligible'] is False
+    assert points[-2]['error_type']=='DUPLICATE_EXCHANGE_TICK'
+    assert points[-1]['quote_eligible'] is True
+    assert points[-1]['error_type'] is None
+    assert r._stamp==1040 and g.recovery_report()['orders']==[]
+
+
 def test_three_feed_failures_pause_without_orders(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch)
     c.stamp=900

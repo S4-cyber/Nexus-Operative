@@ -114,6 +114,37 @@ def reprice_sessions(path,prices):
             db.execute('UPDATE sessions SET last_json=? WHERE id=?',(evidence.canonical(last),sid))
 
 
+def repeat_exchange_pairs(path):
+    """Keep local samples fresh while repeating every prior exchange tick."""
+    with closing(sqlite3.connect(path)) as db,db:
+        sessions=[row[0] for row in db.execute(
+            'SELECT id FROM sessions ORDER BY id').fetchall()]
+        for sid in sessions:
+            previous=evidence.GENESIS;count=0;prior_exchange=None
+            rows=db.execute('SELECT cycle,payload FROM forward_quotes '
+                'WHERE session=? ORDER BY cycle',(sid,)).fetchall()
+            for cycle,raw in rows:
+                point=json.loads(raw)
+                current=point['quote']['exchange_time']
+                if cycle%2==0:
+                    point['quote']['exchange_time']=prior_exchange
+                else:
+                    prior_exchange=current
+                payload=evidence.canonical(point);digest=evidence.digest(
+                    previous,payload)
+                db.execute('UPDATE forward_quotes SET payload=?,previous=?,digest=? '
+                    'WHERE session=? AND cycle=?',
+                    (payload,previous,digest,sid,cycle))
+                previous=digest;count+=1
+            db.execute('UPDATE forward_quote_heads SET observations=?,head=? '
+                'WHERE session=?',(count,previous,sid))
+            last=json.loads(db.execute('SELECT last_json FROM sessions '
+                'WHERE id=?',(sid,)).fetchone()[0])
+            last.update(cycle=count,quote_evidence_sha256=previous)
+            db.execute('UPDATE sessions SET last_json=? WHERE id=?',
+                (evidence.canonical(last),sid))
+
+
 def test_cross_session_boundary_conflict_is_an_incident(tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
         ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
@@ -167,6 +198,20 @@ def test_rotating_sessions_cannot_reset_price_jump_guard(tmp_path,monkeypatch):
     assert result['recorded_eligibility_disagreements_in_window']>0
     assert result['operational_incidents_present'] is True
     assert result['incident_free_coverage_target_met'] is False
+
+
+def test_repeated_exchange_ticks_cannot_form_incident_free_72_hour_trial(
+        tmp_path, monkeypatch):
+    points=[(offset,True) for offset in range(0,72*3600+1,10)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
+    repeat_exchange_pairs(path)
+    result=run(path,72*3600)
+    assert result['recorded_eligibility_disagreements_in_window']==12960
+    assert result['revalidated_eligible_observations_in_window']==12961
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'RECORDED_ELIGIBILITY_FAILS_RETAINED_QUOTE_RECHECK' in result[
+        'review_reasons']
 
 
 def test_cross_session_executable_price_jump_cannot_hide_behind_last(

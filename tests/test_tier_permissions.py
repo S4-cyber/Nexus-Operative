@@ -51,6 +51,34 @@ def test_new_install_terrestrial_preset_and_caps_are_independent(tmp_path,monkey
     with pytest.raises(ValueError,match="DISENGAGED"):
         require_entry("universal",10)
 
+
+def test_entry_admission_ignores_stale_permission_read_after_disable(
+        tmp_path, monkeypatch):
+    import sqlite3
+    from nexus import tier_permissions
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA', str(tmp_path))
+    configure('terrestrial', True)
+    stale = current()
+    with sqlite3.connect(tmp_path / 'portal_settings.sqlite3') as db, db:
+        db.execute("UPDATE tier_permissions SET enabled=0 WHERE tier='terrestrial'")
+
+    # Reproduce the former split-read race: a stale enabled result is still
+    # available after the durable OFF commit. Admission must use one fresh
+    # settings-and-permission snapshot, never stale current() plus later caps.
+    monkeypatch.setattr(tier_permissions, 'current', lambda: stale)
+    original_snapshot = tier_permissions._policy_snapshot
+    calls = 0
+
+    def counted_snapshot():
+        nonlocal calls
+        calls += 1
+        return original_snapshot()
+
+    monkeypatch.setattr(tier_permissions, '_policy_snapshot', counted_snapshot)
+    with pytest.raises(ValueError, match='^RISK_TIER_DISENGAGED$'):
+        tier_permissions.require_entry('terrestrial', 10)
+    assert calls == 1
+
 def test_tier_buy_is_blocked_unless_engaged_and_portal_active(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
     monkeypatch.setattr(backend.observer,"start",lambda:None)

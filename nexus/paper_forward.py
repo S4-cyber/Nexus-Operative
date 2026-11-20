@@ -654,11 +654,24 @@ class PaperForwardRunner:
                 now=self._clock_anchor[0]
                 quote=_require_quote(quote);admitted_quote=quote
                 if self._intake_stopped():return dict(decision='HOLD',reason='STOPPED_DURING_FETCH')
-                feed=self._guard.evaluate(quote,now)
                 exchange=datetime.fromisoformat(quote['exchange_time'].replace('Z','+00:00'))
                 if exchange.tzinfo is None:raise ValueError('QUOTE_TIMEZONE_MISSING')
                 stamp=exchange.timestamp()
                 received=quote['received_at']
+                if self._stamp is not None and stamp<=self._stamp:
+                    reason=('DUPLICATE_EXCHANGE_TICK' if stamp==self._stamp else
+                        'EXCHANGE_TIME_REGRESSION')
+                    # A repeated/regressed exchange tick is retained but never
+                    # advances either the price guard or trial-coverage state.
+                    self._record_quote(quote,False,reason)
+                    if stamp==self._stamp:return self._record('HOLD',reason)
+                    self._prices.clear();self._last_rank=0
+                    self._failures+=1
+                    if self._failures>=self._policy['consecutive_failure_limit']:
+                        self._stop.set()
+                    return self._record('PAUSED' if self._stop.is_set() else
+                        'VETO',reason)
+                feed=self._guard.evaluate(quote,now)
                 if feed['decision']=='VETO' or not 0<=now-received<=self._policy['receive_age_seconds'] or not 0<=now-stamp<=self._policy['exchange_age_seconds']:
                     raise ValueError('STALE_OR_UNVERIFIED_FORWARD_QUOTE')
                 bid=Decimal(str(quote['bid']));ask=Decimal(str(quote['ask']))
@@ -669,14 +682,7 @@ class PaperForwardRunner:
                 self._failures+=1;self._error=type(exc).__name__
                 if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()
                 return self._record('PAUSED' if self._stop.is_set() else 'VETO','QUOTE_UNAVAILABLE_OR_INVALID',consecutive_failures=self._failures)
-            regressed=self._stamp is not None and stamp<self._stamp
-            self._record_quote(quote,not regressed,'EXCHANGE_TIME_REGRESSION' if regressed else None)
-            if stamp==self._stamp:return self._record('HOLD','DUPLICATE_EXCHANGE_TICK')
-            if self._stamp is not None and stamp<self._stamp:
-                self._prices.clear();self._last_rank=0
-                self._failures+=1
-                if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()
-                return self._record('PAUSED' if self._stop.is_set() else 'VETO','EXCHANGE_TIME_REGRESSION')
+            self._record_quote(quote,True)
             self._failures=0;self._error=None
             self._stamp=stamp
             if self._prices and now-self._prices[-1][0]>2*INTERVAL:self._prices.clear();self._last_rank=0

@@ -1,5 +1,31 @@
 # Nexus Operative continuity instructions
 
+## v0.340.384 atomic admission and evidence snapshots
+
+Simulated tier-entry admission now reads its durable permission switch and the
+budget/allocation inputs that define its cap from one authoritative SQLite
+snapshot. A durable disable can no longer be spliced between a stale enabled
+read and a later cap read. Fresh-install bootstrap remains Terrestrial-only;
+saved OFF choices and settings-review failures remain fail closed.
+
+Direct post-reconciliation and fee-reference compositions validate and detach
+all four supplied account observations before any component review or replay,
+preventing caller mutation from selecting transient manifests. Paper-forward
+runtime and retained trial review now require strictly advancing exchange
+timestamps. A duplicate tick is retained as an ineligible incident, does not
+advance the feed baseline and cannot create sustained-trial coverage.
+
+This is bounded offline/local integrity evidence, not genuine-feed/source
+attestation, sustained-trial acceptance, broker/account/funds acceptance,
+native durability, performance, profitability or release approval. Engagement
+and optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
 ## v0.340.383 cut, executable-price and observation fences
 
 Feed admission and retained cross-session trial review now apply the bounded

@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.383'
+REVISION = '0.340.384'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1270,6 +1270,13 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
         '; retained known-fee reserve composition now detaches all four supplied account observations before component review or balance arithmetic, preventing caller mutation from binding different manifests across the composed result' if item.id=='M8' else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; simulated tier-entry admission now reads its durable permission switch and budget/allocation cap inputs from one authoritative SQLite snapshot, preventing a stale enabled result from being combined with later settings' if item.id=='M3' else
+        '; paper-forward runtime now retains repeated exchange timestamps as ineligible incidents without advancing feed or coverage baselines, and the disposable forward drill requires the duplicate to be rejected' if item.id=='M7' else
+        '; direct post-reconciliation and fee-reference compositions now validate and detach all four supplied account observations before component review or replay, preventing caller mutation from selecting transient manifests' if item.id=='M8' else
+        '; retained forward-trial review now requires strictly advancing exchange timestamps, so repeated ticks cannot contribute eligible observations, coverage intervals or an incident-free 72-hour result' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Retained trial coverage now excludes intervals adjacent to cross-session-disqualified observations and validates requested-window boundaries with retained neighboring context. This is local operational-evidence correctness, not genuine-feed provenance, sustained-trial acceptance, performance or release permission.')
     if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
@@ -1285,6 +1292,12 @@ DELIVERY_STAGES = tuple((dict(stage,
     ) if stage['id'] in ('D3','D4','D8') else stage) for stage in DELIVERY_STAGES)
 
 DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Tier entry now derives its permission and exact cap from one durable settings snapshot, while duplicate exchange ticks remain retained but ineligible and cannot update runtime feed state. This is local fail-closed admission evidence, not genuine-market or sustained-operation acceptance.' if stage['id']=='D3' else
+        ' Direct post-reconciliation and fee-reference reviews now detach all four validated observations before component review and replay. This is caller-mutation resistance over supplied local evidence, not provider/account/fee/funds acceptance.' if stage['id']=='D4' else
+        ' Retained trial review now treats non-advancing exchange timestamps as incidents rather than coverage. A 72-hour sequence made from repeated timestamp pairs cannot satisfy the incident-free target. This is conservative local evidence review, not source attestation or sustained-trial acceptance.'),
+    ) if stage['id'] in ('D3','D4','D8') else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The mandatory reconciliation profile now carries one exact-schema offline matrix across the single-attempt POST, bounded GET and Activity SSE uncertainty treatments. Missing cells, polymorphic values and promoted authority fail closed. This is compact injected local coverage, not provider identity, authorized paper-account acceptance, broker-wide pacing, genuine stream delivery, sustained operation or release permission.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
@@ -1293,7 +1306,7 @@ DELIVERY_STAGES = tuple((dict(stage,
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.383 closes three fail-closed integrity seams. Feed admission and retained cross-session trial review now check bid, ask and last price continuity, preventing an unchanged last trade from concealing a large executable-price shift. Every cut-guarded durable order transaction rechecks the independent emergency latch after its final apply and before SQLite commit, rolling back both order-journal and linked-portfolio changes when the cut wins that boundary. Retained known-fee reserve composition validates and detaches all four supplied account observations before component review or arithmetic, preventing caller mutation from mixing manifests across the result. This is bounded offline/local integrity evidence, not genuine-feed/source attestation, sustained-trial acceptance, broker/account/funds acceptance, native durability, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.384 closes three atomic-admission and evidence-snapshot seams. Simulated tier entry now reads the permission switch and its budget/allocation cap from one authoritative SQLite snapshot, so a stale enabled read cannot be combined with later settings. Direct post-reconciliation and fee-reference compositions validate and detach all four supplied observations before any component review or replay. Paper-forward runtime and retained trial review require strictly advancing exchange timestamps: a duplicate is retained as an ineligible incident, cannot update the feed baseline and cannot manufacture coverage. This is bounded offline/local integrity evidence, not genuine-feed/source attestation, sustained-trial acceptance, broker/account/funds acceptance, native durability, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

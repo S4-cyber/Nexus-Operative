@@ -248,28 +248,30 @@ class PaperForwardRunner:
             if db is not None:db.close()
 
     @staticmethod
-    def _retained_feed_baseline(db):
-        """Recover the strongest accepted exchange marker without trusting a tail row.
+    def _retained_feed_baseline(db,policy):
+        """Recover independent exchange and accepted-price restart baselines.
 
-        Every retained per-session chain is replayed before an eligible quote can
-        seed a later session.  The highest accepted exchange timestamp is the
-        conservative restart floor even for older histories whose sessions may
-        overlap.  This is local supplied evidence, not source attestation.
+        Every structurally valid fresh tick consumes the exchange marker even
+        when its prices were rejected.  Only a recorded eligible tick may seed
+        the price guard.  This prevents a rejected exchange timestamp from being
+        replayed later with different prices while retaining the conservative
+        last accepted price reference.  This is local supplied evidence, not
+        source attestation.
         """
         if db is None:return None
-        baseline=None
-        sessions=db.execute('SELECT id FROM sessions ORDER BY started_at,id').fetchall()
-        for (session,) in sessions:
+        observations=[]
+        sessions=db.execute(
+            'SELECT id,started_at FROM sessions ORDER BY started_at,id').fetchall()
+        for session,started_at in sessions:
             evidence=forward_evidence.review(db,session)
             if not evidence['integrity_ok']:
                 raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
             for point in evidence['points']:
-                if point.get('quote_eligible') is not True:continue
+                eligible=point.get('quote_eligible') is True
                 try:
-                    if (point.get('error_type') is not None or
-                            point.get('source_mode') not in (
+                    if point.get('source_mode') not in (
                                 'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED',
-                                'INJECTED_TRANSPORT_UNATTESTED')):
+                                'INJECTED_TRANSPORT_UNATTESTED'):
                         raise ValueError()
                     quote=_require_quote(point['quote'])
                     at=point['evaluated_at']
@@ -283,15 +285,41 @@ class PaperForwardRunner:
                     stamp=exchange.timestamp()
                     if not math.isfinite(stamp) or not 0<=stamp<MAX_WALL_CLOCK_SECONDS:
                         raise ValueError()
+                    received=quote['received_at']
+                    if not (0<=at-received<=policy['receive_age_seconds'] and
+                            0<=at-stamp<=policy['exchange_age_seconds']):
+                        raise ValueError()
                 except (KeyError,TypeError,ValueError,OverflowError,OSError):
-                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID') from None
-                candidate=(stamp,at,session,point['cycle'],quote)
-                if baseline is None or candidate[:4]>baseline[:4]:
-                    baseline=candidate
-        if baseline is None:return None
-        stamp,at,session,cycle,quote=baseline
-        return dict(exchange_at=stamp,evaluated_at=at,session=session,
-            cycle=cycle,quote=quote)
+                    if eligible:
+                        raise ValueError(
+                            'FORWARD_RETAINED_FEED_BASELINE_INVALID') from None
+                    continue
+                if eligible and point.get('error_type') is not None:
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                observations.append((at,started_at,session,point['cycle'],stamp,
+                    quote,eligible))
+        if not observations:return None
+        guard=FeedGuard();exchange_floor=None;price_baseline=None
+        for at,started_at,session,cycle,stamp,quote,eligible in sorted(
+                observations,key=lambda item:item[:4]):
+            if exchange_floor is not None and stamp<=exchange_floor:
+                if eligible:
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                continue
+            # Fresh rejected observations consume only the timestamp. They
+            # cannot become the reference price for a later observation.
+            exchange_floor=stamp
+            if not eligible:continue
+            if guard.evaluate(quote,at)['decision']=='VETO':
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            price_baseline=(at,session,cycle,quote)
+        if exchange_floor is None:return None
+        if price_baseline is None:
+            return dict(exchange_at=exchange_floor,evaluated_at=None,
+                session=None,cycle=None,quote=None)
+        at,session,cycle,quote=price_baseline
+        return dict(exchange_at=exchange_floor,evaluated_at=at,
+            session=session,cycle=cycle,quote=quote)
 
     def _record(self,decision,reason,**extra):
         self._require_ownership()
@@ -396,9 +424,11 @@ class PaperForwardRunner:
                 # the restart baseline are sampled from one retained snapshot.
                 with self._read_db() as db:
                     storage=self._capacity_snapshot(db)
-                    retained_baseline=self._retained_feed_baseline(db)
+                    retained_baseline=self._retained_feed_baseline(
+                        db,selected_policy)
                 retained_guard=FeedGuard()
                 if (retained_baseline is not None and
+                        retained_baseline['quote'] is not None and
                         retained_guard.evaluate(retained_baseline['quote'],
                             retained_baseline['evaluated_at'])['decision']=='VETO'):
                     raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
@@ -729,8 +759,15 @@ class PaperForwardRunner:
                         self._stop.set()
                     return self._record('PAUSED' if self._stop.is_set() else
                         'VETO',reason)
+                if (not 0<=now-received<=self._policy['receive_age_seconds'] or
+                        not 0<=now-stamp<=self._policy['exchange_age_seconds']):
+                    raise ValueError('STALE_OR_UNVERIFIED_FORWARD_QUOTE')
+                # A fresh tick is consumed before price/spread review. A vetoed
+                # price can never be replayed later under the same exchange
+                # timestamp with different values.
+                self._stamp=stamp
                 feed=self._guard.evaluate(quote,now)
-                if feed['decision']=='VETO' or not 0<=now-received<=self._policy['receive_age_seconds'] or not 0<=now-stamp<=self._policy['exchange_age_seconds']:
+                if feed['decision']=='VETO':
                     raise ValueError('STALE_OR_UNVERIFIED_FORWARD_QUOTE')
                 bid=Decimal(str(quote['bid']));ask=Decimal(str(quote['ask']))
                 if not bid.is_finite() or not ask.is_finite():raise ValueError('INVALID_QUOTE')
@@ -742,7 +779,6 @@ class PaperForwardRunner:
                 return self._record('PAUSED' if self._stop.is_set() else 'VETO','QUOTE_UNAVAILABLE_OR_INVALID',consecutive_failures=self._failures)
             self._record_quote(quote,True)
             self._failures=0;self._error=None
-            self._stamp=stamp
             if self._prices and now-self._prices[-1][0]>2*INTERVAL:self._prices.clear();self._last_rank=0
             self._prices.append((now,(bid+ask)/2))
             account=report['execution_account']['account']

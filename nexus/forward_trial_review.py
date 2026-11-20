@@ -134,29 +134,32 @@ def _quote_recheck(point, policy, guard, previous_exchange):
     """
     try:
         quote=point['quote'];now=point['evaluated_at']
-        if not isinstance(quote,dict):return False,previous_exchange
-        if quote.get('product')!=policy['product'] or point.get('error_type') is not None:
-            return False,previous_exchange
+        if not isinstance(quote,dict):return False,previous_exchange,None
+        if quote.get('product')!=policy['product']:
+            return False,previous_exchange,None
         received=_number(quote['received_at']);at=_number(now)
         stamp=quote['exchange_time']
-        if not isinstance(stamp,str):return False,previous_exchange
+        if not isinstance(stamp,str):return False,previous_exchange,None
         exchange=datetime.fromisoformat(stamp.replace('Z','+00:00'))
-        if exchange.tzinfo is None:return False,previous_exchange
+        if exchange.tzinfo is None:return False,previous_exchange,None
         exchanged=_number(exchange.timestamp())
         if not (0<=at-received<=policy['receive_age_seconds'] and
-            0<=at-exchanged<=policy['exchange_age_seconds']):return False,previous_exchange
-        # Eligible trial observations must represent advancing exchange time.
-        # Repeated points are retained incidents, never fresh coverage, and
-        # cannot update the feed guard's decision baseline.
+            0<=at-exchanged<=policy['exchange_age_seconds']):
+            return False,previous_exchange,None
+        # Every structurally valid fresh tick consumes the marker. Rejected
+        # prices never become a guard baseline, but their exchange timestamp
+        # cannot be replayed later with altered prices.
         if previous_exchange is not None and exchanged<=previous_exchange:
-            return False,previous_exchange
+            return False,previous_exchange,exchanged
+        previous_exchange=exchanged
+        if (point['quote_eligible'] is not True or
+                point.get('error_type') is not None):
+            return False,previous_exchange,exchanged
         feed=guard.evaluate(quote,now)
-        if feed['decision']=='VETO':return False,previous_exchange
-        # Runtime advances its exchange marker only after an eligible point.
-        if point['quote_eligible'] is True:previous_exchange=exchanged
-        return True,previous_exchange
+        if feed['decision']=='VETO':return False,previous_exchange,exchanged
+        return True,previous_exchange,exchanged
     except (ValueError,TypeError,KeyError,ArithmeticError,OverflowError,OSError):
-        return False,previous_exchange
+        return False,previous_exchange,None
 
 
 def review(path, *, after, until):
@@ -295,14 +298,16 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 if point['policy_sha256']!=expected or type(point['quote_eligible']) is not bool:_fail()
                 at=_number(point['evaluated_at']);source=point['source_mode']
                 if not session_start<=at<=session_end:_fail()
-                checked,previous_exchange=_quote_recheck(point,policy,guard,previous_exchange)
+                checked,previous_exchange,exchange_at=_quote_recheck(
+                    point,policy,guard,previous_exchange)
                 checked_eligible=point['quote_eligible'] is True and checked
                 good=checked_eligible and source==PUBLIC
                 # Cross-session boundary validation needs retained context just
                 # outside the requested window. Public counts and disagreement
                 # totals below remain scoped to the window itself.
-                if checked_eligible and source==PUBLIC:
-                    cross_session_points.append((at,sid,point['cycle'],point['quote']))
+                if exchange_at is not None and source==PUBLIC:
+                    cross_session_points.append((at,sid,point['cycle'],
+                        point['quote'],checked_eligible,exchange_at))
                 if start<=at<=end:
                     selected+=1;eligible+=int(point['quote_eligible'])
                     if not event_points:legacy_unbound+=1
@@ -338,7 +343,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         session_started={sid:_number(started) for sid,started,*_ in rows}
         ordered=sorted(cross_session_points,
             key=lambda item:(item[0],session_started[item[1]],item[1],item[2]))
-        for at,sid,cycle,quote in ordered:
+        for at,sid,cycle,quote,checked_eligible,exchange_at in ordered:
+            if not checked_eligible:continue
             product=quote['product']
             # Compare price meaning, not JSON spelling (for example 100 vs
             # "100.0"); provenance and permission fields already passed the
@@ -354,22 +360,17 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 # equal-time cross-session price conflict by lexical order.
                 cross_rejected.update((sid,cycle) for sid,cycle,_ in entries)
         previous_global={};highest_exchange_seen={}
-        for at,sid,cycle,quote in ordered:
+        for at,sid,cycle,quote,checked_eligible,exchange_at in ordered:
             product=quote['product']
-            stamp=quote['exchange_time']
-            try:
-                exchange=datetime.fromisoformat(stamp.replace('Z','+00:00'))
-                exchange_at=_number(exchange.timestamp())
-            except (ValueError,TypeError,ArithmeticError,OverflowError,OSError):
-                _fail()
             # A session boundary cannot reset the freshness marker.  Track all
-            # locally eligible supplied ticks, including points rejected by the
-            # price pass, so the same exchange tick cannot be recycled later.
+            # structurally valid fresh supplied ticks, including locally
+            # rejected observations, so the same exchange tick cannot be
+            # recycled later with different prices.
             prior_exchange=highest_exchange_seen.get(product)
             if prior_exchange is not None and exchange_at<=prior_exchange:
-                cross_rejected.add((sid,cycle))
+                if checked_eligible:cross_rejected.add((sid,cycle))
             else:highest_exchange_seen[product]=exchange_at
-            if (sid,cycle) in cross_rejected:continue
+            if not checked_eligible or (sid,cycle) in cross_rejected:continue
             prices=tuple(FeedGuard.number(quote[key])
                 for key in ('bid','ask','last'))
             previous=previous_global.get(product)
@@ -382,8 +383,9 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                     continue
             previous_global[product]=(at,sid,prices)
         cross_rejected_in_window={
-            (sid,cycle) for at,sid,cycle,_ in cross_session_points
-            if start<=at<=end and (sid,cycle) in cross_rejected}
+            (sid,cycle) for at,sid,cycle,_,checked_eligible,_ in
+            cross_session_points if checked_eligible and start<=at<=end and
+            (sid,cycle) in cross_rejected}
         disagreements+=len(cross_rejected_in_window)
         revalidated-=len(cross_rejected_in_window)
         # Session-local candidates were collected before the retained quotes

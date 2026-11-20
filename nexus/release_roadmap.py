@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.382'
+REVISION = '0.340.383'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1264,6 +1264,12 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; equal-time cross-session quote disagreements now reject every supplied conflicting observation instead of granting lexical-first authority, and rejected observations cannot become the chronological reference for later coverage; requested-window disagreement counts remain scoped while every dependent interval fails closed' if item.id in ('M7','M9') else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; executable-price continuity now checks bid, ask and last across ordinary feed observations and retained cross-session trial boundaries, so an unchanged last trade cannot conceal a strategy or modeled-fill price jump' if item.id in ('M3','M7','M9') else
+        '; every cut-guarded durable order transaction now rechecks the independent emergency latch after its final apply and before SQLite commit, rolling back the order journal and linked portfolio when the cut wins that seam' if item.id=='M4' else
+        '; retained known-fee reserve composition now detaches all four supplied account observations before component review or balance arithmetic, preventing caller mutation from binding different manifests across the composed result' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Retained trial coverage now excludes intervals adjacent to cross-session-disqualified observations and validates requested-window boundaries with retained neighboring context. This is local operational-evidence correctness, not genuine-feed provenance, sustained-trial acceptance, performance or release permission.')
     if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
@@ -1271,6 +1277,12 @@ DELIVERY_STAGES = tuple((dict(stage,
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Equal-time cross-session price disagreements now reject all conflicting supplied observations without an arbitrary session winner, and none of those rejected points can establish a later chronological reference. This remains conservative local evidence review, not source attestation or sustained-trial acceptance.')
     if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Feed admission and retained cross-session trial review now apply the same bounded jump check to bid, ask and last; a stable last trade cannot conceal a large executable-price shift. Cut-guarded durable order transactions also recheck the independent latch after their final mutation and before commit, rolling back both order and linked-portfolio state when the cut wins. These are offline fail-closed controls, not genuine-market or sustained-trial acceptance.' if stage['id']=='D3' else
+        ' Known-fee reserve composition now validates and detaches every supplied account observation before any component review or arithmetic, preventing caller-owned mutation from mixing manifests. This is local supplied-evidence integrity, not provider/account/funds acceptance.' if stage['id']=='D4' else
+        ' Executable-price trial continuity and the final pre-commit emergency-cut fence now have dedicated offline regressions. This does not establish native durability, market realism, independent acceptance or release permission.'),
+    ) if stage['id'] in ('D3','D4','D8') else stage) for stage in DELIVERY_STAGES)
 
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' The mandatory reconciliation profile now carries one exact-schema offline matrix across the single-attempt POST, bounded GET and Activity SSE uncertainty treatments. Missing cells, polymorphic values and promoted authority fail closed. This is compact injected local coverage, not provider identity, authorized paper-account acceptance, broker-wide pacing, genuine stream delivery, sustained operation or release permission.')
@@ -1281,7 +1293,7 @@ DELIVERY_STAGES = tuple((dict(stage,
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.382 makes equal-time cross-session trial conflicts symmetric and fail closed. When supplied public observations disagree on price meaning for the same product and timestamp, every conflicting observation is rejected instead of granting authority to whichever session sorts first. Rejected observations cannot become the chronological reference for later price-jump validation, and both adjacent candidate intervals remain excluded while requested-window incident counts stay scoped. This is bounded read-only local operational-evidence correctness, not genuine-feed/source attestation, sustained-trial acceptance, market realism, broker/account acceptance, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.383 closes three fail-closed integrity seams. Feed admission and retained cross-session trial review now check bid, ask and last price continuity, preventing an unchanged last trade from concealing a large executable-price shift. Every cut-guarded durable order transaction rechecks the independent emergency latch after its final apply and before SQLite commit, rolling back both order-journal and linked-portfolio changes when the cut wins that boundary. Retained known-fee reserve composition validates and detaches all four supplied account observations before component review or arithmetic, preventing caller mutation from mixing manifests across the result. This is bounded offline/local integrity evidence, not genuine-feed/source attestation, sustained-trial acceptance, broker/account/funds acceptance, native durability, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

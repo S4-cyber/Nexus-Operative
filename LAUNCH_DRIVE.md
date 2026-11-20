@@ -1,5 +1,31 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.383 cut, executable-price and observation fences
+
+Feed admission and retained cross-session trial review now apply the bounded
+price-jump heuristic to bid, ask and last. A stable last trade can no longer
+conceal a large shift in the bid/ask prices used by strategy decisions and
+modeled fills. Rejected cross-session observations still cannot establish a
+later reference or coverage interval.
+
+Every cut-guarded durable order transaction now samples the independent
+emergency latch once more after its final apply and before SQLite commit. A cut
+published during the final mutation rolls back the complete order-journal and
+linked-portfolio transaction. Retained known-fee reserve composition also
+validates and detaches all four supplied account observations before component
+review or arithmetic, preventing caller mutation from mixing manifests.
+
+This is bounded offline/local integrity evidence, not genuine-feed/source
+attestation, sustained-trial acceptance, broker/account/funds acceptance,
+native durability, performance, profitability or release approval. Engagement
+and optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The roadmap
+stays 38% weighted (about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
 ## v0.340.382 symmetric cross-session trial conflicts
 
 Equal-time cross-session quote disagreements now fail closed without an

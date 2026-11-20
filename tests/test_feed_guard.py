@@ -35,6 +35,15 @@ def test_large_jump_veto_but_does_not_poison_baseline():
     assert "UNCONFIRMED_PRICE_JUMP" in d["reasons"]
     assert g.evaluate(q(last=101,bid=100.9,ask=101.1,received=1003),now=1003)["decision"]=="READ_ONLY_OBSERVATION"
 
+
+def test_executable_price_jump_cannot_hide_behind_unchanged_last():
+    g=FeedGuard()
+    assert g.evaluate(q(),now=1001)['decision']=='READ_ONLY_OBSERVATION'
+    shifted=q(last=100,bid=119.9,ask=120.1,received=1002)
+    assert g.evaluate(shifted,now=1002)['reasons']==['UNCONFIRMED_PRICE_JUMP']
+    nearby=q(last=100,bid=109.9,ask=110.1,received=1003)
+    assert g.evaluate(nearby,now=1003)['decision']=='READ_ONLY_OBSERVATION'
+
 @pytest.mark.parametrize('quote,reason',[
     (None,'MISSING_QUOTE'),
     (HostileQuote(product='BTC-USD'),'INVALID_QUOTE_FIELDS'),

@@ -293,6 +293,9 @@ class DurableOrderGateway:
                         if cut_guarded:require_cut_clear()
                     result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
                     results.append(result)
+                # A cut published by or during the final mutation must still
+                # win before SQLite can commit the order and linked portfolio.
+                if cut_guarded:require_cut_clear()
                 root_guard.require_current()
         return results
 

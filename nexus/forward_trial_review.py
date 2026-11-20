@@ -60,6 +60,8 @@ PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_secon
     'over_limit_coverage_gap_seconds','operational_incidents_present',
     'retained_event_records','events_in_window','legacy_unbound_observations_in_window',
     'quote_outcome_disagreements_in_window','event_incident_records_in_window',
+    'retained_exchange_admissions','exchange_admissions_in_window',
+    'exchange_admission_incidents_in_window',
     'event_trace_complete','incident_free_coverage_target_met','evidence_snapshot_sha256',
     *FLAGS,'review_reasons','limitations'))
 
@@ -226,12 +228,29 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             event_heads=db.execute('SELECT session,events,head FROM forward_event_heads ORDER BY session').fetchmany(SESSION_LIMIT+1)
             if len(event_heads)>SESSION_LIMIT or any(r[0] not in known for r in event_heads):_fail()
             if any(r[0] not in known for r in db.execute('SELECT DISTINCT session FROM forward_events')):_fail()
+        admission_names=forward_evidence.admission_table_names(db)
+        if (admission_names and
+                (admission_names!=forward_evidence.ADMISSION_TABLES or
+                    not forward_evidence.admission_schema_valid(db))):_fail()
+        admission_count=0;admission_heads=[]
+        if admission_names:
+            admission_count,admission_bytes,admission_largest=db.execute(
+                'SELECT COUNT(*),COALESCE(SUM(length(CAST(payload AS BLOB))),0),COALESCE(MAX(length(CAST(payload AS BLOB))),0) FROM forward_exchange_admissions').fetchone()
+            if (admission_count>forward_evidence.ADMISSION_LIMIT or
+                    admission_bytes>256*1024*1024 or admission_largest>2048):_fail()
+            admission_heads=db.execute(
+                'SELECT session,admissions,head FROM forward_exchange_admission_heads ORDER BY session').fetchmany(SESSION_LIMIT+1)
+            if (len(admission_heads)>SESSION_LIMIT or
+                    any(row[0] not in known for row in admission_heads)):_fail()
+            if any(row[0] not in known for row in db.execute(
+                    'SELECT DISTINCT session FROM forward_exchange_admissions')):_fail()
         # append() stores canonical JSON. Reject duplicate/nonfinite/ambiguous JSON
         # before the existing chain reviewer, rather than accept parser last-wins.
         for payload, in db.execute('SELECT payload FROM forward_quotes'):
             if type(payload) is not str or forward_evidence.canonical(json.loads(payload))!=payload:_fail()
         interval_candidates=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
         events_in_window=legacy_unbound=outcome_disagreements=event_incidents=0
+        admissions_in_window=admission_incidents=0;cross_session_admissions=[]
         event_trace_complete=True
         clean_stopped=other_stopped=paused=running=quote_error_sessions=quote_errors=0
         reasons={'SOURCE_LABELS_AND_HASHES_UNATTESTED','ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','EXECUTION_OWNERSHIP_NOT_CHECKED'}
@@ -244,6 +263,27 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             evidence=forward_evidence.review(db,sid)
             if not evidence['integrity_ok']:_fail()
             points=evidence['points'];seen+=len(points);previous=None
+            admission=(forward_evidence.review_exchange_admissions(db,sid)
+                if admission_names else None)
+            session_admission_incidents=0
+            if admission is not None:
+                admission_check=forward_evidence.crosscheck_exchange_admissions(
+                    admission,evidence,state,policy['policy_sha256'])
+                severe=[reason for reason in admission_check['reasons'] if
+                    reason!='EXCHANGE_ADMISSION_OUTCOME_MISSING']
+                if severe:_fail()
+                for marker in admission['points']:
+                    marker_at=_number(marker['evaluated_at'])
+                    marker_exchange=_number(marker['exchange_at'])
+                    cross_session_admissions.append((marker_at,sid,
+                        marker['cycle'],marker_exchange))
+                    if start<=marker_at<=end:
+                        admissions_in_window+=1
+                if admission_check['unmatched_admissions']:
+                    session_admission_incidents=sum(start<=_number(marker['evaluated_at'])<=end
+                        for marker in admission['points']
+                        if marker['cycle'] not in {point['cycle'] for point in points})
+                    admission_incidents+=session_admission_incidents
             # RUNNING has no terminal lifecycle end. Its last retained update
             # cannot make an unresolved session disappear from a later review.
             lifecycle_in_window=session_start<=end and (state=='RUNNING' or session_end>=start)
@@ -328,6 +368,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                                 (sid,old_cycle),(sid,point['cycle'])))
                 previous=at,good,point['cycle']
             if lifecycle_in_window:
+                if session_admission_incidents:session_event_complete=False
                 if not session_event_complete:event_trace_complete=False
                 session_count+=1
                 quote_error_sessions+=int(session_quote_errors>0)
@@ -360,6 +401,15 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                 # equal-time cross-session price conflict by lexical order.
                 cross_rejected.update((sid,cycle) for sid,cycle,_ in entries)
         previous_global={};highest_exchange_seen={}
+        # The durable marker timeline is authoritative for new-format sessions.
+        # A crash tail contributes no coverage, but it still consumes its
+        # exchange timestamp before any later session can claim it.
+        highest_admitted=None
+        for _,sid,cycle,exchange_at in sorted(cross_session_admissions,
+                key=lambda item:(item[0],session_started[item[1]],item[1],item[2])):
+            if highest_admitted is not None and exchange_at<=highest_admitted:
+                cross_rejected.add((sid,cycle))
+            else:highest_admitted=exchange_at
         for at,sid,cycle,quote,checked_eligible,exchange_at in ordered:
             product=quote['product']
             # A session boundary cannot reset the freshness marker.  Track all
@@ -397,7 +447,10 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             interval_candidates if left_point not in cross_rejected and
             right_point not in cross_rejected]
         if seen!=count:_fail()
-        binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,quote_heads=heads,quote_rows=count,event_heads=event_heads,event_rows=event_count)).encode()).hexdigest()
+        binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,
+            quote_heads=heads,quote_rows=count,event_heads=event_heads,
+            event_rows=event_count,exchange_admission_heads=admission_heads,
+            exchange_admission_rows=admission_count)).encode()).hexdigest()
     with localcontext() as context:
         context.prec=50
         merged=_merge(intervals);covered=sum((b-a for a,b in merged),Decimal(0));duration=end-start
@@ -409,10 +462,10 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         fraction=covered/duration
         over_limit_gaps=[gap for gap in gaps if gap>MAX_GAP_SECONDS]
         over_limit_gap_seconds=sum(over_limit_gaps,Decimal(0))
-        target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and selected>0
+        target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and not admission_incidents and selected>0
         rejected=selected-eligible
         trace_incomplete=not event_trace_complete or legacy_unbound or outcome_disagreements
-        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps or trace_incomplete or event_incidents)
+        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps or trace_incomplete or event_incidents or admission_incidents)
         incident_free_target=target and not incidents and event_trace_complete
         if duration<MINIMUM_SECONDS:reasons.add('REQUESTED_WINDOW_SHORTER_THAN_72_HOURS')
         if fraction<Decimal('.95'):reasons.add('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT')
@@ -427,6 +480,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         if not selected:reasons.add('NO_OBSERVATIONS_IN_WINDOW')
         if trace_incomplete:reasons.add('DURABLE_EVENT_TRACE_INCOMPLETE')
         if event_incidents:reasons.add('EVENT_INCIDENTS_RETAINED_IN_WINDOW')
+        if admission_incidents:reasons.add('EXCHANGE_ADMISSION_OUTCOME_MISSING')
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
             after=after,until=until,window_seconds=_text(duration),minimum_trial_seconds=MINIMUM_SECONDS,
             maximum_covered_gap_seconds=MAX_GAP_SECONDS,required_coverage_fraction='0.95',
@@ -450,6 +504,9 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             legacy_unbound_observations_in_window=legacy_unbound,
             quote_outcome_disagreements_in_window=outcome_disagreements,
             event_incident_records_in_window=event_incidents,
+            retained_exchange_admissions=admission_count,
+            exchange_admissions_in_window=admissions_in_window,
+            exchange_admission_incidents_in_window=admission_incidents,
             event_trace_complete=event_trace_complete,
             incident_free_coverage_target_met=incident_free_target,
             evidence_snapshot_sha256=binding,

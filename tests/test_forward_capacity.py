@@ -7,7 +7,7 @@ from nexus.tier_permissions import configure
 from test_paper_forward import setup
 
 
-@pytest.mark.parametrize('full',['sessions','quotes','events'])
+@pytest.mark.parametrize('full',['sessions','quotes','admissions','events'])
 def test_preflight_rejects_before_account_initialization(tmp_path,monkeypatch,full):
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));configure('terrestrial',True)
     r=PaperForwardRunner(DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3'))
@@ -16,6 +16,8 @@ def test_preflight_rejects_before_account_initialization(tmp_path,monkeypatch,fu
         with closing(r._db()) as db,db:
             db.execute("INSERT INTO sessions VALUES ('old',1,1,'STOPPED','{}','{}','{}')")
     elif full=='quotes':monkeypatch.setattr(forward_evidence,'LIMIT',0)
+    elif full=='admissions':monkeypatch.setattr(forward_evidence,
+        'ADMISSION_LIMIT',0)
     else:monkeypatch.setattr(forward_event_evidence,'LIMIT',0)
     with pytest.raises(ValueError,match='FORWARD_.*_CAP'):r.prepare('terrestrial')
     assert not (tmp_path/'order_lifecycle.sqlite3').exists()
@@ -31,6 +33,22 @@ def test_exhausted_quote_capacity_stops_before_fetch(tmp_path,monkeypatch):
     assert result['reason']=='FORWARD_QUOTE_EVIDENCE_CAP'
     assert not calls and not r.status()['ownership_held']
     assert r.storage_capacity()['quote_observations_retained']==1
+    assert not g.recovery_report()['orders']
+
+
+def test_exhausted_exchange_admission_capacity_stops_before_fetch(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(forward_evidence,'ADMISSION_LIMIT',1)
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle()
+    calls=[];r.fetcher=lambda product:calls.append(product)
+    result=r.single_cycle()
+    assert result['reason']=='FORWARD_EXCHANGE_ADMISSION_CAP'
+    assert not calls and not r.status()['ownership_held']
+    capacity=r.storage_capacity()
+    assert capacity['exchange_admissions_retained']==1
+    assert capacity['exchange_admissions_remaining']==0
+    assert not capacity['exchange_admission_intake_allowed']
+    assert 'EXCHANGE_ADMISSION_FULL' in capacity['warnings']
     assert not g.recovery_report()['orders']
 
 

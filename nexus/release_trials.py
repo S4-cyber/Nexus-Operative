@@ -2858,6 +2858,8 @@ def _validate(profile, result):
             BROKER_INTENT_LIMITATIONS, BROKER_INTENT_PUBLIC_KEYS,
             BROKER_INTENT_RECONCILIATION_PUBLIC_KEYS,
             FAULT_CASE_PUBLIC_KEYS, FAULT_LIMITATIONS, FAULT_PUBLIC_KEYS,
+            EXCHANGE_ADMISSION_CRASH_LIMITATIONS,
+            EXCHANGE_ADMISSION_CRASH_PUBLIC_KEYS,
             LATENCY_PUBLIC_KEYS, LIMITATIONS, NO_FILL_CRASH_LIMITATIONS,
             NO_FILL_CRASH_PUBLIC_KEYS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
             PROCESS_CONTROL_PUBLIC_KEYS, PUBLIC_KEYS, SCHEDULER_CADENCE_CASE_PUBLIC_KEYS,
@@ -2876,6 +2878,7 @@ def _validate(profile, result):
         cadence=result['scheduler_cadence']
         no_fill_crash=result['no_fill_crash']
         repeated=result['repeated_interruption']
+        exchange_admission=result['exchange_admission_crash']
         broker_intent=result['broker_intent_binding']
         broker_intent_reconciliation=result['broker_intent_reconciliation']
         _require(type(durability) is dict and
@@ -2890,6 +2893,25 @@ def _validate(profile, result):
             'FORWARD_COMMIT_DURABILITY')
         _require(type(recovered) is dict and frozenset(recovered)==RECOVERED_PUBLIC_KEYS,
             'FORWARD_RECOVERY_SCHEMA')
+        _require(type(exchange_admission) is dict and
+            frozenset(exchange_admission)==EXCHANGE_ADMISSION_CRASH_PUBLIC_KEYS,
+            'FORWARD_EXCHANGE_ADMISSION_CRASH_SCHEMA')
+        _require(exchange_admission['mode']==
+                'DISPOSABLE_EXCHANGE_ADMISSION_CRASH' and
+            exchange_admission['passed'] is True and
+            exchange_admission['exit_code']==79 and
+            type(exchange_admission['exit_code']) is int and
+            all(exchange_admission[key] is True for key in (
+                'process_terminated','admission_retained','quote_missing',
+                'restart_floor_retained','replay_rejected',
+                'marker_count_stable','altered_price_orderless',
+                'tail_review_required')) and
+            all(exchange_admission[key] is False for key in (
+                'trial_coverage_granted','actual_provider_requests',
+                'broker_connected','live_orders_enabled','release_approved')) and
+            exchange_admission['limitations']==
+                EXCHANGE_ADMISSION_CRASH_LIMITATIONS,
+            'FORWARD_EXCHANGE_ADMISSION_CRASH_EVIDENCE')
         _require(type(faults) is dict and frozenset(faults)==FAULT_PUBLIC_KEYS and
             all(type(faults[name]) is dict and frozenset(faults[name])==FAULT_CASE_PUBLIC_KEYS
                 for name in ('source_loss','stale_quote','clock_regression','invalid_clock')),

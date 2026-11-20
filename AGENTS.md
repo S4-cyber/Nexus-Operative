@@ -1,5 +1,37 @@
 # Nexus Operative continuity instructions
 
+## v0.340.388 durable pre-evaluation exchange admission
+
+Every structurally valid, fresh and advancing paper-forward tick now enters a
+dedicated append-only exchange-admission chain before price/spread evaluation.
+The marker is committed and explicitly flushed through the existing durable
+SQLite boundary, binding the exact session, cycle, evaluation and exchange
+times, sanitized quote digest, source label and admitted policy. A real child
+process exits inside feed evaluation after that commit; cold restart recovers
+the marker and rejects altered prices at the same exchange timestamp without
+creating a modeled order.
+
+New sessions receive an atomic zero-count admission head with START, which
+keeps pre-feature sessions explicitly readable as legacy history. Eligible and
+price-vetoed new-format quote rows require the exact marker digest; duplicate,
+regressed, malformed and stale rows receive none. An unmatched terminal marker
+is retained as process-death evidence: it advances the restart floor, grants no
+price baseline or trial coverage and makes session/trial review require human
+attention. Marker storage is independently bounded, reported and preflighted
+without deletion or pruning; admission heads/counts participate in the stable
+trial snapshot.
+
+This is bounded local durability and reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency stop
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
 ## v0.340.387 atomic simulated-entry audit and CI evidence budget
 
 Direct simulated BUY admission now obtains SQLite writer reservation before its

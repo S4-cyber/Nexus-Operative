@@ -12,6 +12,13 @@ Choose an engaged Terrestrial, Solar or Universal tier and review its limits. Ac
 
 Check forward status, session heartbeats, quote freshness, capacity and order reconciliation. An outage or long gap clears entry warmup; repeated feed failures pause operation. Disengage stops only the paper runner. Emergency Stop latches trading off and cancels simulated remainders while research continues. Reset preserves the research state and never engages; Start/Stop Portal controls the research engine and engine-off also stops paper. Tier disengagement prevents new entries while preserving risk-reducing exits. Stop does not liquidate held paper positions. Do not reset, archive or restart merely to hide a failed observation or veto.
 
+Fresh advancing exchange timestamps are durably admitted before price/spread
+evaluation. If the process stops after that admission but before its quote and
+outcome rows, the unmatched marker remains review-required and the timestamp
+cannot be reused after restart. It is not a price baseline, coverage interval
+or acceptance result. Preserve and investigate it; never edit or prune the
+admission, quote or event chains to make a session appear complete.
+
 For a planned validation run, record its duration and acceptance criteria before starting. Keep an external incident log of outages, restarts and observed behavior. Injected test quotes and scripted operation drills do not satisfy sustained market-feed validation. Single-source public quotes are not independently attested exchange depth or executable liquidity.
 
 ## Stop and preserve

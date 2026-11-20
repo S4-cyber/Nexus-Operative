@@ -1,6 +1,7 @@
 """Bounded disposable exercise of the actual forward runner, never public/broker IO."""
 import argparse
 import copy
+from contextlib import closing
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,7 @@ LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include 
     'actual feed, operating-system power loss, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
     'commit_durability','fault_injection','scheduler_cadence','no_fill_crash','repeated_interruption',
+    'exchange_admission_crash',
     'broker_intent_binding','broker_intent_reconciliation',
     'isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
@@ -58,6 +60,12 @@ REPEATED_INTERRUPTION_PUBLIC_KEYS=frozenset(('mode','passed','process_exit_codes
     'no_fill_session_review_required','quote_outcome_gaps','automatic_repair','automatic_retries',
     'automatic_restart','forward_enabled','ownership_held','actual_provider_requests',
     'broker_connected','live_orders_enabled','release_approved','limitations'))
+EXCHANGE_ADMISSION_CRASH_PUBLIC_KEYS=frozenset(('mode','passed',
+    'process_terminated','exit_code','admission_retained','quote_missing',
+    'restart_floor_retained','replay_rejected','marker_count_stable',
+    'altered_price_orderless','tail_review_required',
+    'trial_coverage_granted','actual_provider_requests','broker_connected',
+    'live_orders_enabled','release_approved','limitations'))
 BROKER_INTENT_PUBLIC_KEYS=frozenset(('mode','passed','side','binding_stable',
     'intent_sha256','payload_sha256','forward_intent_bound','cold_replay_bound',
     'submission_review_blocked','checked_attempt_blocked','submit_once_blocked',
@@ -90,6 +98,10 @@ REPEATED_INTERRUPTION_LIMITATIONS=('Two abrupt local child terminations on one d
     'BUY fill and before its forward outcome, then after a durable reducing-exit no-fill attempt and before its forward VETO. Proves '
     'cold replay, explicit review action and monotonic local accounting only; not operating-system power loss, storage hardware '
     'durability, actual provider or broker behavior, market liquidity, exit completion or release acceptance.')
+EXCHANGE_ADMISSION_CRASH_LIMITATIONS=('One abrupt local child termination inside price-guard evaluation after the durable exchange '
+    'admission commit and before quote/outcome retention. Proves local FULL-sync acknowledgement, cold timestamp-floor replay and '
+    'review-required zero-coverage treatment only; not operating-system power loss, storage-hardware durability, genuine-feed, '
+    'broker, sustained-market or release acceptance.')
 BROKER_INTENT_LIMITATIONS=('One stopped, locally reconciled injected modeled fill is bound to one disconnected preview and durable '
     'request-journal PREPARE. The local modeled fill already changed the synthetic ledger, so the binding is counterfactual and '
     'permanently unsendable. This is not source, broker, account, funds, fees, holdings, market, sustained-trial or release acceptance.')
@@ -824,6 +836,96 @@ def _repeated_interruption(directory):
         else:os.environ['NEXUS_PORTABLE_DATA']=previous
 
 
+def _exchange_admission_crash_worker(directory):
+    """Exit only after the fresh-tick admission is durably acknowledged."""
+    from datetime import datetime,timezone
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    root=Path(directory);root.mkdir(parents=True,exist_ok=True)
+    os.environ['NEXUS_PORTABLE_DATA']=str(root);configure('terrestrial',True)
+    now=1767225600
+    def quote(product):
+        return dict(product=product,provider='coinbase_exchange_public',
+            read_only=True,orders_allowed=False,bid=100,ask=100.01,last=100,
+            received_at=now,
+            exchange_time=datetime.fromtimestamp(now,timezone.utc).isoformat())
+    runner=PaperForwardRunner(DurableOrderGateway(root/'order_lifecycle.sqlite3'),
+        quote,lambda:now);runner.prepare('terrestrial')
+    runner._guard.evaluate=lambda supplied,evaluated_at:os._exit(79)
+    runner.single_cycle()
+    raise ValueError('FORWARD_DRILL_EXCHANGE_ADMISSION_HOOK_NOT_REACHED')
+
+
+def _exchange_admission_crash(directory):
+    """Cold-review the marker tail and prove the timestamp cannot be repriced."""
+    from datetime import datetime,timezone
+    import sqlite3
+    from nexus import forward_evidence
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.forward_trial_review import review as trial_review
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    root=Path(directory);root.mkdir(parents=True,exist_ok=True)
+    expression=('import sys; from nexus.forward_drill import '
+        '_exchange_admission_crash_worker; '
+        '_exchange_admission_crash_worker(sys.argv[1])')
+    child=subprocess.run([sys.executable,'-c',expression,str(root)],
+        env={**os.environ,'NEXUS_PORTABLE_DATA':str(root)},
+        stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,timeout=30)
+    _require(child.returncode==79,'EXCHANGE_ADMISSION_CRASH_CHILD')
+    previous=os.environ.get('NEXUS_PORTABLE_DATA')
+    try:
+        os.environ['NEXUS_PORTABLE_DATA']=str(root)
+        history=root/'paper_forward.sqlite3'
+        with closing(sqlite3.connect(history)) as db:
+            before_admissions=db.execute(
+                'SELECT COUNT(*) FROM forward_exchange_admissions').fetchone()[0]
+            before_quotes=db.execute('SELECT COUNT(*) FROM forward_quotes').fetchone()[0]
+            interrupted=db.execute(
+                "SELECT id FROM sessions WHERE state='RUNNING' ORDER BY started_at LIMIT 1").fetchone()
+        _require(interrupted is not None,'EXCHANGE_ADMISSION_CRASH_SESSION')
+        gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+        cold=PaperForwardRunner(gateway)
+        tail=cold.evidence_report(interrupted[0])
+        configure('terrestrial',True);now=1767225600
+        def altered(product):
+            return dict(product=product,provider='coinbase_exchange_public',
+                read_only=True,orders_allowed=False,bid=125,ask=125.01,last=125,
+                received_at=now,
+                exchange_time=datetime.fromtimestamp(now,timezone.utc).isoformat())
+        resumed=PaperForwardRunner(gateway,altered,lambda:now)
+        resumed.prepare('terrestrial');configure('terrestrial',False)
+        floor=resumed._stamp;outcome=resumed.single_cycle();resumed.stop(
+            'DISPOSABLE_EXCHANGE_ADMISSION_RESTART')
+        with closing(sqlite3.connect(history)) as db:
+            after_admissions=db.execute(
+                'SELECT COUNT(*) FROM forward_exchange_admissions').fetchone()[0]
+            new_points=forward_evidence.review(db,resumed.status()['session'])['points']
+        coverage=trial_review(history,after='2026-01-01T00:00:00Z',
+            until='2026-01-01T00:01:00Z')
+        return dict(mode='DISPOSABLE_EXCHANGE_ADMISSION_CRASH',passed=True,
+            process_terminated=child.returncode==79,exit_code=child.returncode,
+            admission_retained=before_admissions==1,quote_missing=before_quotes==0,
+            restart_floor_retained=floor==now,
+            replay_rejected=(outcome.get('reason')=='DUPLICATE_EXCHANGE_TICK' and
+                len(new_points)==1 and new_points[0]['quote_eligible'] is False and
+                'exchange_admission_sha256' not in new_points[0]),
+            marker_count_stable=after_admissions==before_admissions,
+            altered_price_orderless=not gateway.recovery_report()['orders'],
+            tail_review_required=(tail['local_consistency_ok'] is False and
+                tail['exchange_admission_evidence']['reasons']==
+                    ['EXCHANGE_ADMISSION_OUTCOME_MISSING']),
+            trial_coverage_granted=(coverage['declared_public_covered_seconds']!='0' or
+                coverage['exchange_admission_incidents_in_window']!=1),
+            actual_provider_requests=False,broker_connected=False,
+            live_orders_enabled=False,release_approved=False,
+            limitations=EXCHANGE_ADMISSION_CRASH_LIMITATIONS)
+    finally:
+        if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
+        else:os.environ['NEXUS_PORTABLE_DATA']=previous
+
+
 def _child(directory,rounds,sessions=None):
     action=f'_exercise({rounds!r})' if sessions is None else f'_review({sessions!r})'
     expression='from nexus.forward_drill import _exercise,_review; import json; print(json.dumps('+action+'))'
@@ -851,6 +953,8 @@ def run(rounds=3):
         cadence=_scheduler_cadence(root/'cadence')
         no_fill_crash=_no_fill_crash(root/'no-fill-crash')
         repeated_interruption=_repeated_interruption(root/'repeated-interruption')
+        exchange_admission_crash=_exchange_admission_crash(
+            root/'exchange-admission-crash')
         broker_intent_binding,broker_intent_reconciliation=(
             _broker_intent_binding(root/'broker-intent-binding'))
         from nexus.paper_forward import commit_durability_fixture_report
@@ -860,6 +964,7 @@ def run(rounds=3):
                 cycle_latency=baseline['cycle_latency'],recovered=recovered,commit_durability=durability,
                 fault_injection=faults,scheduler_cadence=cadence,no_fill_crash=no_fill_crash,
                 repeated_interruption=repeated_interruption,
+                exchange_admission_crash=exchange_admission_crash,
                 broker_intent_binding=broker_intent_binding,
                 broker_intent_reconciliation=broker_intent_reconciliation,
                 application_accounts_changed=False,

@@ -9,7 +9,8 @@ import subprocess
 import sys
 
 import pytest
-from nexus import forward_trial_review as trial, forward_evidence as evidence
+from nexus import (forward_trial_review as trial, forward_evidence as evidence,
+    forward_event_evidence as events)
 from nexus.paper_policy import admit
 from nexus.paper_forward import PaperForwardRunner
 
@@ -38,11 +39,24 @@ def database(tmp_path,monkeypatch,sessions):
             terminal=dict(at=last,decision=decision,reason=reason,session=sid,cycle=len(rows),
                 quote_evidence_sha256=previous if rows else None,policy_id=policy['id'],
                 policy_sha256=policy['policy_sha256'],product=policy['product'],
-                simulation_only=True,clock_sample_valid=True)
+                tier='terrestrial',simulation_only=True,clock_sample_valid=True)
+            records=[dict(at=first,decision='START',reason='EXPERIMENTAL_MOMENTUM_PAPER_POLICY',
+                session=sid,cycle=0,quote_evidence_sha256=None,policy_id=policy['id'],
+                policy_sha256=policy['policy_sha256'],product=policy['product'],tier='terrestrial',
+                simulation_only=True,clock_sample_valid=True)]
+            for cycle,(_,_,_,_,quote_digest) in enumerate(rows,1):
+                records.append(dict(at=START+points[cycle-1][0],decision='HOLD',reason='TEST_OUTCOME',
+                    session=sid,cycle=cycle,quote_evidence_sha256=quote_digest,policy_id=policy['id'],
+                    policy_sha256=policy['policy_sha256'],product=policy['product'],tier='terrestrial',
+                    simulation_only=True,clock_sample_valid=True))
+            records.append(terminal)
+            counts={}
+            for record in records:counts[record['decision']]=counts.get(record['decision'],0)+1
             db.execute('INSERT INTO sessions VALUES (?,?,?,?,?,?,?)',(sid,first,last,state,evidence.canonical(policy),
-                evidence.canonical({decision:1}),evidence.canonical(terminal)))
+                evidence.canonical(counts),evidence.canonical(terminal)))
             db.executemany('INSERT INTO forward_quotes VALUES (?,?,?,?,?)',rows)
             if rows:db.execute('INSERT INTO forward_quote_heads VALUES (?,?,?)',(sid,len(rows),previous))
+            for record in records:events.append(db,record)
     return tmp_path/'paper_forward.sqlite3'
 
 
@@ -214,6 +228,36 @@ def test_even_complete_declared_public_coverage_cannot_accept_market_or_broker_t
     assert result['operational_incidents_present'] is False
     assert result['over_limit_coverage_gaps']==0
     assert result['over_limit_coverage_gap_seconds']=='0'
+    assert result['event_trace_complete'] is True
+    assert result['legacy_unbound_observations_in_window']==0
+    assert result['quote_outcome_disagreements_in_window']==0
+    assert result['retained_event_records']==result['events_in_window']==25923
+
+
+def test_legacy_quote_history_is_readable_but_never_event_complete(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    with closing(sqlite3.connect(path)) as db,db:
+        db.execute('DROP TABLE forward_events');db.execute('DROP TABLE forward_event_heads')
+    before=path.read_bytes();result=run(path,10)
+    assert result['declared_public_covered_seconds']=='10'
+    assert result['event_trace_complete'] is False
+    assert result['legacy_unbound_observations_in_window']==3
+    assert result['incident_free_coverage_target_met'] is False
+    assert result['operational_incidents_present'] is True
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
+    assert path.read_bytes()==before
+
+
+def test_missing_quote_outcome_is_reported_without_repair(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    with closing(sqlite3.connect(path)) as db,db:
+        db.execute("DELETE FROM forward_events WHERE sequence=3")
+    before=path.read_bytes();result=run(path,10)
+    assert result['event_trace_complete'] is False
+    assert result['quote_outcome_disagreements_in_window']>=1
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
+    assert path.read_bytes()==before
 
 @pytest.mark.parametrize(('source,reason'),[
     (trial.INJECTED,'INJECTED_OBSERVATIONS_IN_WINDOW'),

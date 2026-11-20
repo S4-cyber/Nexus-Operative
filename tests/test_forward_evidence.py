@@ -2,7 +2,41 @@ import json
 import sqlite3
 import pytest
 from test_paper_forward import setup,warmup
-from nexus import forward_evidence
+from nexus import forward_evidence,forward_event_evidence
+
+
+def event_record(**changes):
+    row=dict(at=1,clock_sample_valid=True,session='1'*16,cycle=0,
+        quote_evidence_sha256=None,decision='START',reason='TEST',product='BTC-USD',
+        tier='terrestrial',simulation_only=True,policy_id='fixture',policy_sha256='a'*64)
+    row.update(changes);return row
+
+
+def test_event_chain_preserves_two_records_on_one_cycle():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        forward_event_evidence.append(db,event_record())
+        forward_event_evidence.append(db,event_record(decision='HOLD',reason='SCHEDULER_OVERRUN'))
+        report=forward_event_evidence.review(db,'1'*16)
+    assert report['integrity_ok'] and report['events']==2
+    assert [point['sequence'] for point in report['points']]==[1,2]
+    assert [point['ordinal'] for point in report['points']]==[1,2]
+    assert report['points'][1]['kind']=='SCHEDULER'
+
+
+def test_event_head_corruption_blocks_append():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db);forward_event_evidence.append(db,event_record())
+        db.execute("UPDATE forward_event_heads SET head='bad'")
+        with pytest.raises(ValueError,match='FORWARD_EVENT_HEAD_CORRUPT'):
+            forward_event_evidence.append(db,event_record(decision='HOLD'))
+
+
+def test_event_payload_size_is_bounded():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_(SCHEMA|PAYLOAD_TOO_LARGE)'):
+            forward_event_evidence.append(db,event_record(reason='x'*5000))
 
 
 def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):

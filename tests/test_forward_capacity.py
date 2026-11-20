@@ -1,13 +1,13 @@
 from contextlib import closing
 import pytest
-from nexus import forward_evidence,paper_forward
+from nexus import forward_evidence,forward_event_evidence,paper_forward
 from nexus.durable_orders import DurableOrderGateway
 from nexus.paper_forward import PaperForwardRunner
 from nexus.tier_permissions import configure
 from test_paper_forward import setup
 
 
-@pytest.mark.parametrize('full',['sessions','quotes'])
+@pytest.mark.parametrize('full',['sessions','quotes','events'])
 def test_preflight_rejects_before_account_initialization(tmp_path,monkeypatch,full):
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));configure('terrestrial',True)
     r=PaperForwardRunner(DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3'))
@@ -15,7 +15,8 @@ def test_preflight_rejects_before_account_initialization(tmp_path,monkeypatch,fu
         monkeypatch.setattr(paper_forward,'SESSION_LIMIT',1)
         with closing(r._db()) as db,db:
             db.execute("INSERT INTO sessions VALUES ('old',1,1,'STOPPED','{}','{}','{}')")
-    else:monkeypatch.setattr(forward_evidence,'LIMIT',0)
+    elif full=='quotes':monkeypatch.setattr(forward_evidence,'LIMIT',0)
+    else:monkeypatch.setattr(forward_event_evidence,'LIMIT',0)
     with pytest.raises(ValueError,match='FORWARD_.*_CAP'):r.prepare('terrestrial')
     assert not (tmp_path/'order_lifecycle.sqlite3').exists()
     assert not (tmp_path/'paper_portfolio.sqlite3').exists()

@@ -508,7 +508,7 @@ def _http_trial():
             'HTTP_AUTHORITY_INVENTORY')
         trial=responses['/api/paper/forward/trial-readiness']
         owner=trial['local_owner_quiescence']
-        _require(trial['read_only'] is True and trial['status']=='NO_RETAINED_HISTORY' and trial['review'] is None and trial['quote_capacity']['estimated_additional_observations']==51841 and all(trial[k] is False for k in ('automatic_start','strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled','money_movement_enabled')), 'HTTP_TRIAL_READINESS_PASSIVE')
+        _require(trial['read_only'] is True and trial['status']=='NO_RETAINED_HISTORY' and trial['review'] is None and trial['quote_capacity']['estimated_additional_observations']==51841 and trial['event_capacity']['estimated_additional_events']==103685 and trial['event_capacity']['room_for_additional_requested_window'] is True and all(trial[k] is False for k in ('automatic_start','strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled','money_movement_enabled')), 'HTTP_TRIAL_READINESS_PASSIVE')
         _require(owner['checked'] is True and owner['state']=='OWNER_PATH_ABSENCE_BOUND' and
             owner['retained_history_requires_owner_lock'] is True and
             all(owner[key] is False for key in ('active_owner_detected',
@@ -3022,13 +3022,16 @@ def _validate(profile, result):
             'clean_manual_stop_sessions':0,'other_stopped_sessions':0,
             'paused_sessions':20,'running_sessions':0,
             'sessions_with_quote_errors':20,'quote_error_observations':60,
-            'over_limit_coverage_gaps':1}
+            'over_limit_coverage_gaps':1,'retained_event_records':300,
+            'events_in_window':300,'legacy_unbound_observations_in_window':0,
+            'quote_outcome_disagreements_in_window':0,'event_incident_records_in_window':80}
         _require(all(type(coverage[key]) is int and coverage[key]==value
             for key,value in coverage_counts.items()) and
             coverage['after']=='1970-01-01T00:16:40Z' and coverage['until']=='1970-01-01T00:38:20Z' and
             coverage['window_seconds']==coverage['uncovered_seconds']==coverage['longest_uncovered_seconds']==
                 coverage['over_limit_coverage_gap_seconds']=='1300' and
             coverage['required_coverage_fraction']=='0.95' and coverage['coverage_fraction']=='0.000000' and
+            coverage['event_trace_complete'] is True and
             coverage['review_reasons']==list(COVERAGE_REVIEW_REASONS) and
             type(coverage['evidence_snapshot_sha256']) is str and
             re.fullmatch('[a-f0-9]{64}',coverage['evidence_snapshot_sha256']) is not None,

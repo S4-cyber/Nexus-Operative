@@ -6,7 +6,7 @@ import os
 import stat
 import time
 from pathlib import Path
-from nexus import forward_trial_review as trial,forward_evidence
+from nexus import forward_trial_review as trial,forward_evidence,forward_event_evidence
 from nexus.durable_orders import DurableOrderGateway
 from nexus.execution_capacity import CONTROL_RESERVE,resumable_exit_mandate
 from nexus.forward_ownership import ForwardOwnership
@@ -194,9 +194,11 @@ def build(path,*,hours=72,now=None,order_gateway=None):
         present=trial.existing_history(path)
         review=trial.review(path,after=after,until=until) if present else None
         retained=review['retained_observations'] if review else 0
+        retained_events=review['retained_event_records'] if review else 0
         sessions=review['retained_sessions'] if review else 0
         remaining=max(0,forward_evidence.LIMIT-retained)
         needed=math.ceil(seconds/POLICY['interval_seconds'])+1
+        needed_events=2*needed+3
         orders=gateway.recovery_report()
         try:
             capacity=orders['capacity']
@@ -246,6 +248,11 @@ def build(path,*,hours=72,now=None,order_gateway=None):
             estimated_additional_observations=needed,policy_interval_seconds=POLICY['interval_seconds'],
             room_for_additional_requested_window=remaining>=needed,
             scope='Quote records only, estimated at policy cadence; no reservation, uptime, order/ID/session/disk capacity or exit guarantee. No pruning or automatic repair.'),
+        event_capacity=dict(retained=retained_events,limit=forward_event_evidence.LIMIT,
+            remaining=max(0,forward_event_evidence.LIMIT-retained_events),
+            estimated_additional_events=needed_events,
+            room_for_additional_requested_window=forward_event_evidence.LIMIT-retained_events>=needed_events,
+            scope='Conservative START, outcome, scheduler-overrun and terminal event-row estimate only; no reservation, uptime, disk-space, incident-free-trial or execution guarantee. Durable event evidence is never pruned automatically.'),
         session_capacity=dict(retained=sessions,limit=SESSION_LIMIT,remaining=max(0,SESSION_LIMIT-sessions),
             additional_sessions_required=1,room_for_additional_session=sessions<SESSION_LIMIT,
             scope='One additional local session record only; no ownership, uptime, cleanup or automatic-start guarantee.'),

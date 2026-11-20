@@ -72,6 +72,22 @@ def test_cut_between_atomic_steps_rolls_back_entire_quote_order(tmp_path,monkeyp
     assert after['quote_model_events']==0 and not after['halted']
 
 
+def test_cut_during_final_atomic_apply_rolls_back_before_commit(
+        tmp_path,monkeypatch):
+    g=setup(tmp_path,monkeypatch);before=g.recovery_report()
+    original=AccountingOrderGateway.cancel
+    def cancel_then_cut(gateway,*args,**kwargs):
+        result=original(gateway,*args,**kwargs)
+        emergency_intent.persist(g._path())
+        return result
+    monkeypatch.setattr(AccountingOrderGateway,'cancel',cancel_then_cut)
+    with pytest.raises(ValueError,match='EMERGENCY_CUT_REQUESTED'):execute(g)
+    after=DurableOrderGateway(g.path).recovery_report()
+    assert after['commands']==before['commands']==2
+    assert after['orders']==[] and after['execution_account']==before['execution_account']
+    assert after['quote_model_events']==0 and after['portfolio_reconciled']
+
+
 def test_expiry_is_durable_but_never_acknowledges_a_fill(tmp_path,monkeypatch):
     g=setup(tmp_path,monkeypatch)
     result=execute(g,ttl_seconds=1)

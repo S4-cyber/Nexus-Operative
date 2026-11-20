@@ -348,15 +348,18 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         previous_global={}
         for at,sid,cycle,quote in ordered:
             if (sid,cycle) in cross_rejected:continue
-            product=quote['product'];last=FeedGuard.number(quote['last'])
+            product=quote['product']
+            prices=tuple(FeedGuard.number(quote[key])
+                for key in ('bid','ask','last'))
             previous=previous_global.get(product)
             if previous is not None:
-                old_at,old_sid,old_last=previous;elapsed=at-old_at
+                old_at,old_sid,old_prices=previous;elapsed=at-old_at
                 if (old_sid!=sid and 0<=elapsed<=feed_policy.MAX_GAP_SECONDS and
-                        abs(last-old_last)/old_last*100>feed_policy.MAX_JUMP_PCT):
+                        any(abs(current-old)/old*100>feed_policy.MAX_JUMP_PCT
+                            for current,old in zip(prices,old_prices))):
                     cross_rejected.add((sid,cycle))
                     continue
-            previous_global[product]=(at,sid,last)
+            previous_global[product]=(at,sid,prices)
         cross_rejected_in_window={
             (sid,cycle) for at,sid,cycle,_ in cross_session_points
             if start<=at<=end and (sid,cycle) in cross_rejected}

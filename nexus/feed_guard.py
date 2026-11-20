@@ -67,16 +67,17 @@ class FeedGuard:
         with self._lock:
             previous=self._previous.get(product)
             if not reasons and previous is not None:
-                prev,last_seen=previous
+                prior,last_seen=previous
                 elapsed=now-last_seen
                 if 0<=elapsed<=MAX_GAP_SECONDS:
-                    change=abs(last-prev)/prev*100
-                    if change>MAX_JUMP_PCT:
+                    prices=(bid,ask,last)
+                    if any(abs(current-prev)/prev*100>MAX_JUMP_PCT
+                            for current,prev in zip(prices,prior)):
                         reasons.append("UNCONFIRMED_PRICE_JUMP")
                 elif elapsed<0:
                     reasons.append("CLOCK_REGRESSION")
             if not reasons:
-                self._previous[product]=(last,now)
+                self._previous[product]=((bid,ask,last),now)
         return self._report(reasons,product or "UNKNOWN")
 
     @staticmethod

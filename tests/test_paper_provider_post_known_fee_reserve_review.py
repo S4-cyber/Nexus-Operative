@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import sqlite3
+from copy import deepcopy
 from decimal import Decimal
 from pathlib import Path
 
@@ -50,6 +51,36 @@ def test_known_fee_reserve_path_matches_supplied_closing_without_writes(tmp_path
 def test_independently_named_replay_matches_complete_primary_report(tmp_path):
     args = subject._fixture(tmp_path)
     assert subject.replay(**args) == subject.review(**args)
+
+
+def test_caller_observations_are_detached_before_composed_review(
+        tmp_path,monkeypatch):
+    from nexus.paper_observation_review import _fixture_observation
+    from nexus.portable_paper_observation import validate
+    args=subject._fixture(tmp_path)
+    opening=args['opening_observation'];closing=args['closing_observation']
+    original_opening=deepcopy(opening);original_closing=deepcopy(closing)
+    epoch=1792195200+18*3600
+    transient_opening=_fixture_observation(
+        args['account_id'],'2000','0',epoch-2,epoch-1)
+    transient_closing=_fixture_observation(
+        args['account_id'],'1801','2',epoch+3,epoch+4)
+    original=subject._totals
+
+    def mutate_caller_then_read(observation):
+        opening.clear();opening.update(transient_opening)
+        closing.clear();closing.update(transient_closing)
+        try:return original(observation)
+        finally:
+            opening.clear();opening.update(original_opening)
+            closing.clear();closing.update(original_closing)
+
+    monkeypatch.setattr(subject,'_totals',mutate_caller_then_read)
+    result=subject.review(**args)
+    assert result['opening_manifest_sha256']==validate(original_opening)['manifest_sha256']
+    assert result['closing_manifest_sha256']==validate(original_closing)['manifest_sha256']
+    assert result['known_fee_adjusted_closing_balances_match']
+    assert opening==original_opening and closing==original_closing
 
 
 def test_date_only_fee_is_reserved_without_inventing_posting_time(tmp_path):

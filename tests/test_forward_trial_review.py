@@ -99,7 +99,12 @@ def reprice_sessions(path,prices):
             previous=evidence.GENESIS;count=0
             rows=db.execute('SELECT cycle,payload FROM forward_quotes WHERE session=? ORDER BY cycle',(sid,)).fetchall()
             for cycle,raw in rows:
-                point=json.loads(raw);point['quote'].update(bid=str(price),ask=str(price),last=str(price))
+                point=json.loads(raw)
+                if type(price) is tuple:
+                    bid,ask,last=price
+                else:
+                    bid=ask=last=price
+                point['quote'].update(bid=str(bid),ask=str(ask),last=str(last))
                 payload=evidence.canonical(point);digest=evidence.digest(previous,payload)
                 db.execute('UPDATE forward_quotes SET payload=?,previous=?,digest=? WHERE session=? AND cycle=?',
                     (payload,previous,digest,sid,cycle));previous=digest;count+=1
@@ -162,6 +167,35 @@ def test_rotating_sessions_cannot_reset_price_jump_guard(tmp_path,monkeypatch):
     assert result['recorded_eligibility_disagreements_in_window']>0
     assert result['operational_incidents_present'] is True
     assert result['incident_free_coverage_target_met'] is False
+
+
+def test_cross_session_executable_price_jump_cannot_hide_behind_last(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(0,True),(10,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(15,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':('99.9','100.1','100'),
+        '0000000000000002':('119.9','120.1','100')})
+    result=run(path,15)
+    assert result['recorded_eligibility_disagreements_in_window']==2
+    assert result['revalidated_eligible_observations_in_window']==2
+    assert result['declared_public_covered_seconds']=='10'
+    assert result['uncovered_seconds']=='5'
+    assert result['operational_incidents_present'] is True
+
+
+def test_nearby_cross_session_executable_prices_retain_coverage(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(0,True),(10,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(15,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':('99.9','100.1','100'),
+        '0000000000000002':('109.9','110.1','100')})
+    result=run(path,15)
+    assert result['recorded_eligibility_disagreements_in_window']==0
+    assert result['revalidated_eligible_observations_in_window']==4
+    assert result['declared_public_covered_seconds']=='15'
+    assert result['uncovered_seconds']=='0'
 
 
 def test_identical_cross_session_boundary_is_valid_and_unioned_once(tmp_path,monkeypatch):

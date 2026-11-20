@@ -138,3 +138,31 @@ def test_resumable_mandate_rejects_wrong_product_and_ambiguity(tmp_path,monkeypa
         execution_capacity.resumable_exit_mandate(wrong,positions)
     with pytest.raises(ValueError,match='EXIT_MANDATE_STATE_INVALID'):
         execution_capacity.resumable_exit_mandate([*orders,dict(mandate)],positions)
+
+
+def test_reducing_slice_expiry_preserves_resumable_mandate_without_fill(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(order_gateway,'MAX_INTENTS',2)
+    path=tmp_path/'orders.sqlite3';gateway=positioned(path)
+    gateway.submit_reducing('exit','BTC-USD',200,1,1,tier='terrestrial')
+    gateway.set_execution_terms('exit',1000,10)
+    gateway.simulate_quote_fill('exit','slice_1',1,'0.5',250,250,0.5,1001,1001)
+    gateway.set_execution_terms('exit',1020,2)
+    before=gateway.recovery_report()
+    expired=gateway.simulate_quote_fill(
+        'exit','slice_2',2,'0.5',250,250,0.5,1022,1022)
+    assert expired['expired'] and expired['slice_expired']
+    assert expired['mandate_resumable'] and expired['idempotent_replay']
+    assert expired['status']=='SIMULATED_REDUCTION_PENDING'
+    after=gateway.recovery_report()
+    assert after==before
+    due=gateway.expire_due(1022)
+    assert due['expired_order_ids']==due['resumable_mandate_ids']==['exit']
+    assert due['expired_count']==1
+    assert gateway.recovery_report()==before
+    order_checkpoints.clear_cache()
+    cold=DurableOrderGateway(path).recovery_report()
+    mandate=next(order for order in cold['orders'] if order['id']=='exit')
+    assert mandate['status']=='SIMULATED_REDUCTION_PENDING'
+    assert mandate['reduction_slice_count']==1
+    assert len(cold['execution_account']['account']['positions'])==1

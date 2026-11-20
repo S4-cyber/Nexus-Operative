@@ -1,5 +1,24 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.370 truthful resumable-slice expiry
+
+Exact-TTL expiry of a residual local-paper reducing slice is now an explicit
+no-fill veto rather than a modeled SELL. The full-position mandate, position,
+fill sequence and quote events remain unchanged until a later cycle establishes
+newer terms and a fresh quote. Cold replay preserves the pending mandate, while
+the independent emergency halt remains terminal and outside the worker.
+
+This version remains below 1.0 and grants no broker-paper, genuine-market,
+liquidity, sustained-operation, Windows, funding/live/cloud, performance,
+profitability or release acceptance. Owner approval remains required after all
+independent gates. Broker transport stays OFF and unrouted. No UI control or
+editable parameter was introduced; engagement and optional AI stay OFF by
+default, and limits, account checks, reducing exits, independent emergency stop,
+seven tabs and black/bright-purple bottom-right help remain intact.
+Implementation remains 38% weighted (about 40%, 30–45% uncertainty, low
+confidence), with 0/9 stages independently accepted and no release permission,
+trading permission or launch date.
+
 ## v0.340.369 resumable bounded reducing-exit mandate
 
 The protected local-paper exit intent now remains an immutable, internal-only

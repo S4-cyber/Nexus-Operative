@@ -40,6 +40,20 @@ def test_quote_cost_or_policy_disagreement_is_reported(tmp_path,monkeypatch,fiel
     report=r.evidence_report(sid)
     assert not report['local_consistency_ok']
     assert 'FILL_MODEL_OR_POLICY_DISAGREEMENT' in report['reasons']
+    if (field,value) not in {('quantity','-1'),('quantity','NaN'),
+                             ('sequence',0),('available_quantity','0')}:
+        assert 'DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT' in report['reasons']
+
+
+def test_event_identity_change_breaks_full_fill_binding(tmp_path,monkeypatch):
+    r,g,sid,orders=fixture(tmp_path,monkeypatch);altered=copy.deepcopy(orders)
+    altered[0]['quote_events'][0]['event_id']='rewritten'
+    replace_snapshot_orders(g,monkeypatch,altered)
+    report=r.evidence_report(sid)
+    assert report['durable_event_evidence']['durable_order_outcomes_reconciled']
+    assert not report['durable_event_evidence']['durable_fill_attempts_bound']
+    assert 'DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT' in report['reasons']
+    assert not report['local_consistency_ok']
 
 
 def test_order_totals_must_match_quote_event_totals(tmp_path,monkeypatch):

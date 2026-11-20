@@ -21,7 +21,7 @@ SESSION_PUBLIC_KEYS=frozenset(('session','orders_sha256','evidence_sha256','quot
     'modeled_sell_orders','durable_event_records','event_head_sha256',
     'reconciliation_sha256','review_receipt_sha256','review_reason_codes_sha256',
     'quote_outcome_bijection','durable_order_outcomes_reconciled',
-    'durable_no_fill_attempts_bound',
+    'durable_fill_attempts_bound','durable_no_fill_attempts_bound',
     'cut_evidence_stable','cut_binding_verified','order_snapshot_stable'))
 LATENCY_PUBLIC_KEYS=frozenset(('p50_ms','p95_ms','p99_ms'))
 FAULT_CASE_PUBLIC_KEYS=frozenset(('cycles','fetches','reasons','paused','orders_created','ownership_released',
@@ -91,7 +91,7 @@ def _review(sessions):
         _require(check['modeled_buy_orders']==check['modeled_sell_orders']==1 and len(orders)==2,'FILL_COUNTS')
         _require(events['integrity_ok'] and events['event_trace_complete'] and
             events['quote_outcome_bijection'] and events['durable_order_outcomes_reconciled'] and
-            events['durable_no_fill_attempts_bound'] and
+            events['durable_fill_attempts_bound'] and events['durable_no_fill_attempts_bound'] and
             events['quote_outcomes']==quotes['observations'],'EVENT_RECONCILIATION')
         _require(receipt['local_consistency_ok'] and receipt['reason_count']==0 and
             receipt['cut_evidence_stable'] and not receipt['independent_cut_binding_verified'] and
@@ -107,6 +107,7 @@ def _review(sessions):
                             review_receipt_sha256=receipt['receipt_sha256'],
                             review_reason_codes_sha256=receipt['reason_codes_sha256'],
                             quote_outcome_bijection=True,durable_order_outcomes_reconciled=True,
+                            durable_fill_attempts_bound=events['durable_fill_attempts_bound'],
                             durable_no_fill_attempts_bound=events['durable_no_fill_attempts_bound'],
                             cut_evidence_stable=True,cut_binding_verified=False,
                             order_snapshot_stable=True))

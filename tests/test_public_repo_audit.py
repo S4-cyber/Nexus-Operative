@@ -71,6 +71,73 @@ def test_export_renamed_as_json_is_blocked_but_offline_fixture_report_is_allowed
     commit(root,'validation/report.json',json.dumps({'mode':'BOUNDED_OFFLINE_RELEASE_TRIALS','fixture':True}).encode())
     assert not audit.audit(root,history=True)['passed']
 
+
+@pytest.mark.parametrize(('raw','rule'),[
+    (b'{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE","mode":"BOUNDED_OFFLINE_RELEASE_TRIALS","account_id":"private-fixture"}',
+     'AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"mode":"BOUNDED_OFFLINE_RELEASE_TRIALS","mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE","account_id":"private-fixture"}',
+     'AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"safe":{"value":1,"value":2}}','AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"value":NaN}','AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"value":Infinity}','AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"',
+     'MALFORMED_JSON_REQUIRES_REVIEW'),
+    (b'\xef\xbb\xbf{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"',
+     'MALFORMED_JSON_REQUIRES_REVIEW'),
+    ('{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"'.encode('utf-16'),
+     'MALFORMED_JSON_REQUIRES_REVIEW'),
+])
+def test_ambiguous_or_malformed_json_shaped_blob_requires_review(raw,rule):
+    assert audit.json_rule(raw)==rule
+
+
+@pytest.mark.parametrize('raw',[
+    b'const value = {mode: "public"};',
+    b'def public():\n    return {"mode":"fixture"}\n',
+    b'not json {"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"',
+    b'[build-system]\nrequires = ["setuptools"]\n',
+])
+def test_ordinary_non_json_source_is_not_misclassified(raw):
+    assert audit.json_rule(raw) is None
+
+
+def test_malformed_json_array_still_requires_review():
+    assert audit.json_rule(b'[{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"') == (
+        'MALFORMED_JSON_REQUIRES_REVIEW')
+
+
+def test_repaired_historical_malformed_json_is_grandfathered_but_new_delta_is_not(tmp_path):
+    root=repository(tmp_path)
+    path=commit(root,'report.json',b'{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"')
+    path.write_text('{"mode":"BOUNDED_OFFLINE_RELEASE_TRIALS"}\n')
+    git(root,'add','--','report.json');git(root,'commit','-m','repair')
+    baseline=git(root,'rev-parse','HEAD').strip().decode()
+    commit(root,'source.py',b'print("public")\n')
+    candidate=git(root,'rev-parse','HEAD').strip().decode()
+    assert audit.audit(root,history=True,baseline_commit=baseline,
+        candidate_commit=candidate)['passed']
+
+    path.write_bytes(b'[{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"')
+    git(root,'add','--','report.json');git(root,'commit','-m','new malformed')
+    changed=git(root,'rev-parse','HEAD').strip().decode()
+    report=audit.audit(root,history=True,baseline_commit=candidate,
+        candidate_commit=changed)
+    assert not report['passed']
+    assert any(item['rule']=='MALFORMED_JSON_REQUIRES_REVIEW'
+               for item in report['findings'])
+
+
+def test_ambiguous_json_finding_never_echoes_private_content_or_path(tmp_path):
+    root=repository(tmp_path);private='private-account-fixture'
+    commit(root,'renamed-private-report.txt',(
+        '{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE",'
+        '"mode":"BOUNDED_OFFLINE_RELEASE_TRIALS","account_id":"'+private+'"}').encode())
+    report=audit.audit(root,history=True);encoded=json.dumps(report)
+    assert not report['passed']
+    assert any(item['rule']=='AMBIGUOUS_JSON_REQUIRES_REVIEW'
+               for item in report['findings'])
+    assert private not in encoded and 'renamed-private-report.txt' not in encoded
+
 @pytest.mark.parametrize('history',[False,True])
 def test_bom_prefixed_private_json_is_blocked_when_renamed(tmp_path,history):
     root=repository(tmp_path)

@@ -35,6 +35,7 @@ ZERO_SHA256='0'*64
 RETIRED_ID_POLICY='nexus.retired-order-id-fingerprint.v1'
 RETIRED_ID_BASELINE_KIND='OPERATOR_REVIEWED_UNATTESTED'
 NO_FILL_ATTEMPT_PROFILE='nexus.no-fill-attempt.v1'
+MODELED_FILL_PROFILE='nexus.modeled-fill.v1'
 
 
 def no_fill_attempt_sha256(attempt):
@@ -80,6 +81,64 @@ def no_fill_attempt_sha256(attempt):
         canonical=json.dumps(payload,sort_keys=True,separators=(',',':'),allow_nan=False)
     except (TypeError,ValueError):
         raise ValueError('INVALID_NO_FILL_ATTEMPT') from None
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def modeled_fill_sha256(fill):
+    """Bind the complete deterministic economics of one modeled fill.
+
+    The order journal remains authoritative. This independently reproducible
+    digest lets another evidence chain prove that it observed the exact same
+    event, model assumptions, and forward quote identity without copying those
+    private accounting details into that chain.
+    """
+    if type(fill) is not dict:
+        raise ValueError('INVALID_MODELED_FILL')
+    required={'order_id','side','event_id','sequence','quantity','price','fee','assumptions'}
+    forward={'evidence_cycle','evidence_session','evidence_quote_sha256'}
+    if (not required<=set(fill) or set(fill)-required-forward or
+            bool(set(fill)&forward) != (forward<=set(fill))):
+        raise ValueError('INVALID_MODELED_FILL')
+    assumptions=fill.get('assumptions')
+    assumption_fields={'bid','ask','available_quantity','quote_at','evaluated_at',
+                       'fee_bps','slippage_bps'}
+    if type(assumptions) is not dict or set(assumptions)!=assumption_fields:
+        raise ValueError('INVALID_MODELED_FILL')
+    try:
+        numeric=(('quantity',False),('price',False),('fee',True))
+        assumption_numeric=(('bid',False),('ask',False),('available_quantity',False),
+            ('quote_at',False),('evaluated_at',False),('fee_bps',True),
+            ('slippage_bps',True))
+        _require_order_id(fill['order_id']);_require_event_id(fill['event_id'])
+        for key,zero in numeric:
+            value=number(fill[key],zero=zero)
+            if type(fill[key]) is not str or fill[key]!=str(value.normalize()):
+                raise ValueError()
+        for key,zero in assumption_numeric:
+            value=number(assumptions[key],zero=zero)
+            if type(assumptions[key]) is not str or assumptions[key]!=str(value.normalize()):
+                raise ValueError()
+    except (ValueError,TypeError,KeyError):
+        raise ValueError('INVALID_MODELED_FILL') from None
+    if (fill['side'] not in ('BUY','SELL') or
+            type(fill['sequence']) is not int or not 1<=fill['sequence']<=1000):
+        raise ValueError('INVALID_MODELED_FILL')
+    if forward<=set(fill) and (
+            type(fill['evidence_cycle']) is not int or fill['evidence_cycle']<1 or
+            type(fill['evidence_session']) is not str or
+            len(fill['evidence_session'])!=16 or
+            any(character not in '0123456789abcdef'
+                for character in fill['evidence_session']) or
+            type(fill['evidence_quote_sha256']) is not str or
+            len(fill['evidence_quote_sha256'])!=64 or
+            any(character not in '0123456789abcdef'
+                for character in fill['evidence_quote_sha256'])):
+        raise ValueError('INVALID_MODELED_FILL')
+    payload=dict(profile=MODELED_FILL_PROFILE,fill=fill)
+    try:
+        canonical=json.dumps(payload,sort_keys=True,separators=(',',':'),allow_nan=False)
+    except (TypeError,ValueError):
+        raise ValueError('INVALID_MODELED_FILL') from None
     return hashlib.sha256(canonical.encode()).hexdigest()
 
 
@@ -329,7 +388,11 @@ class AccountingOrderGateway(OrderGateway):
                         'idempotent_replay':True}
             if key in self.quote_events:
                 if self.quote_events[key]!=detail:raise ValueError('DUPLICATE_QUOTE_EVENT_CONFLICT')
-                return {**copy.deepcopy(record),'idempotent_replay':True}
+                fill=dict(order_id=client_order_id,side=record['side'],event_id=event_id,
+                          **copy.deepcopy(detail))
+                return {**copy.deepcopy(record),
+                        'modeled_fill_sha256':modeled_fill_sha256(fill),
+                        'idempotent_replay':True}
             if client_order_id not in self.order_terms:raise ValueError('MISSING_EXECUTION_TERMS')
             if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
             if number(quote_at)<Decimal(self.order_terms[client_order_id]['created_at']):raise ValueError('QUOTE_PRECEDES_ORDER')
@@ -356,7 +419,9 @@ class AccountingOrderGateway(OrderGateway):
             finally:
                 self._applying_quote=False
             self.quote_events[key]=detail
-            return result
+            fill=dict(order_id=client_order_id,side=record['side'],event_id=event_id,
+                      **copy.deepcopy(detail))
+            return {**result,'modeled_fill_sha256':modeled_fill_sha256(fill)}
 
     def simulate_event(self, client_order_id, event_id, sequence, kind, fill_notional='0', fee='0'):
         _require_order_id(client_order_id);_require_event_id(event_id);_require_event_kind(kind)

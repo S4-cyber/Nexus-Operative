@@ -256,11 +256,14 @@ class DurableOrderGateway:
         path=root_guard.path
         root_guard.require_current()
         cut_guarded=any(step[0] in ('submit','submit_reducing','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps)
-        if cut_guarded:
+        def require_cut_clear():
+            """Revoke stale mutation authority at every transactional seam."""
+            root_guard.require_current()
             try:cut=emergency_intent.requested(path)
             except (ValueError,OSError):cut=True
             if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
             root_guard.require_current()
+        if cut_guarded:require_cut_clear()
         if len(prepared)>1:
             if [step[0] for step in prepared]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
                 raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')
@@ -273,14 +276,11 @@ class DurableOrderGateway:
                 db.execute('BEGIN IMMEDIATE')
                 # Linearize ordinary mutation against the independent latch
                 # after any SQLite wait. A cut published first must win.
-                if cut_guarded:
-                    try:cut=emergency_intent.requested(path)
-                    except (ValueError,OSError):cut=True
-                    if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
-                    root_guard.require_current()
+                if cut_guarded:require_cut_clear()
                 gateway,count=self._restore(db)
                 results=[]
                 for method,args,kwargs,payload in prepared:
+                    if cut_guarded:require_cut_clear()
                     if method=='simulate_quote_fill' and execution_clock is not None:
                         evaluated=execution_clock()
                         try:valid=type(evaluated) in (int,float) and math.isfinite(evaluated)
@@ -290,6 +290,7 @@ class DurableOrderGateway:
                         else:kwargs={**kwargs,'evaluated_at':evaluated}
                         payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
                         command=json.loads(payload);args=command['args'];kwargs=command['kwargs']
+                        if cut_guarded:require_cut_clear()
                     result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
                     results.append(result)
                 root_guard.require_current()
@@ -450,13 +451,15 @@ class DurableOrderGateway:
         records={**gateway.archived_intents,**gateway.intents}
         matched={key:dict(order=copy.deepcopy(record),quote_events=[],no_fill_events=[])
                  for key,record in records.items() if key.startswith(prefix)}
-        for (oid,_),detail in gateway.quote_events.items():
+        for (oid,eid),detail in gateway.quote_events.items():
             belongs=(detail.get('evidence_session')==session_id or
                 ('evidence_session' not in detail and oid.startswith(prefix)))
             if not belongs:continue
             if oid not in matched and oid in records:
                 matched[oid]=dict(order=copy.deepcopy(records[oid]),quote_events=[],no_fill_events=[])
-            if oid in matched:matched[oid]['quote_events'].append(copy.deepcopy(detail))
+            if oid in matched:
+                matched[oid]['quote_events'].append(dict(
+                    event_id=eid,**copy.deepcopy(detail)))
         for (_,_,oid,eid),detail in gateway.no_fill_events.items():
             if detail.get('evidence_session')!=session_id:continue
             if oid not in matched and oid in records:

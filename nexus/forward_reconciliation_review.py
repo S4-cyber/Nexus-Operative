@@ -9,7 +9,7 @@ import hashlib
 import json
 import math
 import re
-from nexus.order_accounting import no_fill_attempt_sha256
+from nexus.order_accounting import modeled_fill_sha256,no_fill_attempt_sha256
 
 
 REASONS=frozenset((
@@ -20,6 +20,7 @@ REASONS=frozenset((
     'DURABLE_EVENT_TIME_OR_CYCLE_DISAGREEMENT',
     'QUOTE_OUTCOME_BIJECTION_DISAGREEMENT',
     'DURABLE_ORDER_OUTCOME_DISAGREEMENT',
+    'DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT',
     'DURABLE_NO_FILL_OUTCOME_DISAGREEMENT',
     'DURABLE_NO_FILL_ATTEMPT_DIGEST_DISAGREEMENT',
     'DURABLE_HALT_WITHOUT_INDEPENDENT_CUT_EVIDENCE',
@@ -180,8 +181,14 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             for execution in item['quote_events']:
                 if type(execution) is not dict:raise ValueError()
                 cycle=execution.get('evidence_cycle')
-                if type(cycle) is not int or cycle<1:raise ValueError()
-                durable.append((cycle,side,oid))
+                if (type(cycle) is not int or cycle<1 or
+                        execution.get('evidence_session')!=session or
+                        type(execution.get('evidence_quote_sha256')) is not str or
+                        re.fullmatch(r'[a-f0-9]{64}',
+                            execution['evidence_quote_sha256']) is None):
+                    raise ValueError()
+                fill=dict(order_id=oid,side=side,**execution)
+                durable.append((cycle,side,oid,modeled_fill_sha256(fill)))
             no_fills=item.get('no_fill_events',[])
             if type(no_fills) is not list:raise ValueError()
             for attempt in no_fills:
@@ -201,9 +208,14 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
         for point in event_points:
             record=point['record']
             if point.get('kind')=='OUTCOME' and record.get('decision') in ('BUY','SELL'):
-                recorded.append((record.get('cycle'),record.get('decision'),record.get('order_id')))
-        order_outcomes_ok=sorted(recorded)==sorted(durable)
+                recorded.append((record.get('cycle'),record.get('decision'),
+                    record.get('order_id'),record.get('modeled_fill_sha256')))
+        order_outcomes_ok=(Counter(item[:3] for item in recorded)==
+            Counter(item[:3] for item in durable))
         if not order_outcomes_ok:reasons.append('DURABLE_ORDER_OUTCOME_DISAGREEMENT')
+        fill_attempts_bound=Counter(recorded)==Counter(durable)
+        if not fill_attempts_bound:
+            reasons.append('DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT')
         recorded_no_fills=[]
         for point in event_points:
             record=point['record']
@@ -258,6 +270,7 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             event_trace_complete=trace_ok,
             quote_outcome_bijection='QUOTE_OUTCOME_BIJECTION_DISAGREEMENT' not in reasons,
             durable_order_outcomes_reconciled=order_outcomes_ok,
+            durable_fill_attempts_bound=fill_attempts_bound,
             durable_no_fill_outcomes_reconciled=no_fill_outcomes_ok,
             durable_no_fill_attempts_bound=no_fill_attempts_bound,
             cut_state_before=before,cut_state_after=after,
@@ -274,7 +287,8 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             **{key:summary[key] for key in ('events','lifecycle_events','outcome_events',
                 'scheduler_events','quote_outcomes','modeled_order_outcomes','modeled_no_fill_outcomes',
                 'event_trace_complete','quote_outcome_bijection',
-                'durable_order_outcomes_reconciled','durable_no_fill_outcomes_reconciled',
+                'durable_order_outcomes_reconciled','durable_fill_attempts_bound',
+                'durable_no_fill_outcomes_reconciled',
                 'durable_no_fill_attempts_bound','cut_evidence_stable',
                 'cut_binding_verified','independent_cut_observed')}))
         summary['integrity_ok']=not reasons
@@ -284,6 +298,7 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             outcome_events=0,scheduler_events=0,quote_outcomes=0,
             modeled_order_outcomes=0,modeled_no_fill_outcomes=0,event_trace_complete=False,
             quote_outcome_bijection=False,durable_order_outcomes_reconciled=False,
+            durable_fill_attempts_bound=False,
             durable_no_fill_outcomes_reconciled=False,
             durable_no_fill_attempts_bound=False,
             cut_state_before='PRESENT_UNVERIFIED',cut_state_after='PRESENT_UNVERIFIED',

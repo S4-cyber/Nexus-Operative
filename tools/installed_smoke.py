@@ -69,7 +69,7 @@ def verify_recovery(base,expected,fetch=request):
         detail=fetch(base,'/api/execution/intent/'+oid)
         assert detail['archived'] and detail['read_only']
         orders.append(dict(order=detail['order'],
-            quote_events=[{k:v for k,v in event.items() if k!='event_id'} for event in detail['quote_events']],
+            quote_events=detail['quote_events'],
             no_fill_events=detail.get('no_fill_events',[])))
     assert recovery['halted'] and recovery['portfolio_reconciled']
     assert not recovery['orders'] and not recovery['execution_account']['account']['positions']
@@ -86,6 +86,7 @@ def verify_recovery(base,expected,fetch=request):
         assert evidence['local_consistency_ok']
         assert events['event_trace_complete'] and events['quote_outcome_bijection']
         assert events['durable_order_outcomes_reconciled']
+        assert events['durable_fill_attempts_bound']
         assert events['durable_no_fill_outcomes_reconciled']
         assert events['durable_no_fill_attempts_bound']
         assert events['events']==expected['event_records']

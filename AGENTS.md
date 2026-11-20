@@ -1,5 +1,34 @@
 # Nexus Operative continuity instructions
 
+## v0.340.376 modeled-fill binding, cut fence and strict public JSON audit
+
+Every new successful paper-forward BUY/SELL outcome now carries a canonical
+digest of the complete durable modeled fill: order, side, event, sequence,
+quantity, price, fee, all quote/cost assumptions, session, cycle and quote
+digest. Reconciliation independently recomputes the durable digest. Legacy
+unbound outcomes remain readable but cannot pass current local acceptance, and
+a process death after the fill commit still remains review-required without
+automatic repair.
+
+The independent emergency cut is resampled after an execution-clock callback
+and before every step of an atomic quote-order transaction. A cut published at
+either seam revokes stale mutation authority and rolls back the full local
+transaction; halt, cancel, expiry, reset and archival controls remain available.
+The trusted public-repository audit now rejects duplicate JSON keys, non-finite
+constants and malformed JSON-shaped blobs with content-free findings, so
+ambiguous last-key-wins parsing cannot hide a private operational report.
+
+This is bounded offline evidence, emergency-stop and public-artifact hardening,
+not broker-paper or account acceptance, genuine-market or sustained-trial
+evidence, native Windows/installer acceptance, funding/live/cloud readiness,
+performance, profitability or release approval. Engagement and optional AI
+remain OFF by default; limits, account checks, reducing exits and fail-closed
+behavior are unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
 ## v0.340.373 cut-aware sealed forward review
 
 Every complete per-session reconciliation now produces a privacy-safe receipt

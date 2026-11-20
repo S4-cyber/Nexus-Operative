@@ -139,3 +139,9 @@ def test_owner_instructions_require_the_manifest_bound_installer_result_review()
         assert '--installer-result-review' in text
     assert '--distribution-envelope' in windows
     assert '--expected-source-commit' in windows
+    assert '$expectedVersion = [string]$manifest.version' in windows
+    assert '$expectedSourceCommit = [string]$manifest.source_commit' in windows
+    assert '--expected-version $expectedVersion' in windows
+    assert '--expected-source-commit $expectedSourceCommit' in windows
+    assert '--expected-version 0.340.364' not in windows
+    assert 'independently compare `$expectedSourceCommit`' in windows

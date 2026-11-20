@@ -39,6 +39,13 @@ def test_event_payload_size_is_bounded():
             forward_event_evidence.append(db,event_record(reason='x'*5000))
 
 
+def test_unknown_event_decision_is_rejected():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,event_record(decision='UNKNOWN'))
+
+
 def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch)
     assert warmup(r,c)['decision']=='BUY'
@@ -60,6 +67,61 @@ def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     assert report['order_journal_snapshot']['journal_stable_during_review']
     assert report['order_journal_snapshot']['portfolio_stable_during_review']
     assert len(report['order_journal_snapshot']['snapshot_sha256'])==64
+    events=report['durable_event_evidence']
+    assert events['integrity_ok'] and events['event_trace_complete']
+    assert events['quote_outcome_bijection'] and events['durable_order_outcomes_reconciled']
+    assert events['quote_outcomes']==8 and events['modeled_order_outcomes']==2
+    assert events['events']==10 and events['lifecycle_events']==2
+    assert len(events['head_sha256'])==len(events['reconciliation_sha256'])==64
+
+
+def _rewrite_event_chain(db,mutate):
+    rows=db.execute('SELECT session,sequence,cycle,ordinal,kind,payload FROM forward_events ORDER BY session,sequence').fetchall()
+    previous_by_session={};last={}
+    for session,sequence,cycle,ordinal,kind,payload in rows:
+        data=json.loads(payload);mutate(data)
+        payload=forward_event_evidence.canonical(data)
+        previous=previous_by_session.get(session,forward_event_evidence.GENESIS)
+        digest=forward_event_evidence.digest(previous,payload)
+        db.execute('UPDATE forward_events SET payload=?,previous=?,digest=? WHERE session=? AND sequence=?',
+            (payload,previous,digest,session,sequence))
+        previous_by_session[session]=digest;last[session]=(sequence,digest)
+    for session,(events,head) in last.items():
+        db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',(events,head,session))
+
+
+def test_self_consistent_wrong_event_order_id_fails_three_way_reconciliation(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.stop();changed=False
+    def mutate(data):
+        nonlocal changed
+        if not changed and data['record']['decision']=='BUY':
+            data['record']['order_id']='pf_'+r.status()['session']+'_999_BUY';changed=True
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:_rewrite_event_chain(db,mutate)
+    assert changed
+    report=r.evidence_report(r.status()['session'])
+    assert report['durable_event_evidence']['event_trace_complete']
+    assert not report['durable_event_evidence']['durable_order_outcomes_reconciled']
+    assert 'DURABLE_ORDER_OUTCOME_DISAGREEMENT' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_missing_durable_event_tables_leave_legacy_session_readable_but_incomplete(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle();r.stop()
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        db.execute('DROP TABLE forward_events');db.execute('DROP TABLE forward_event_heads')
+    report=r.evidence_report(r.status()['session'])
+    assert report['quote_evidence']['observations']==1
+    assert not report['durable_event_evidence']['event_trace_complete']
+    assert not report['local_consistency_ok']
+
+
+def test_independent_cut_without_terminal_session_event_is_review_required(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle();g.emergency_halt()
+    report=r.evidence_report(r.status()['session'])
+    assert report['durable_event_evidence']['independent_cut_observed']
+    assert report['order_journal_snapshot']['halted']
+    assert 'INDEPENDENT_CUT_REQUIRES_SESSION_REVIEW' in report['reasons']
+    assert not report['local_consistency_ok']
 
 
 def test_order_journal_change_during_review_fails_closed(tmp_path,monkeypatch):

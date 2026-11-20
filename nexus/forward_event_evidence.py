@@ -7,11 +7,13 @@ is not an external timestamp, source attestation, or trading permission.
 import hashlib
 import json
 import math
+import re
 
 
 LIMIT=203000
 GENESIS='0'*64
 KINDS=frozenset(('LIFECYCLE','OUTCOME','SCHEDULER'))
+DECISIONS=frozenset(('START','STOP','HOLD','VETO','BUY','SELL','PAUSED'))
 TABLES=frozenset(('forward_events','forward_event_heads'))
 BASE_FIELDS=frozenset(('at','clock_sample_valid','session','cycle',
     'quote_evidence_sha256','decision','reason','product','tier',
@@ -79,7 +81,7 @@ def validate_record(record):
             type(record['cycle']) is not int or record['cycle']<0 or
             type(record['at']) not in (int,float) or not math.isfinite(record['at']) or
             not 0<=record['at']<253402300799 or
-            type(record['decision']) is not str or not record['decision'] or len(record['decision'])>32 or
+            type(record['decision']) is not str or record['decision'] not in DECISIONS or
             type(record['reason']) is not str or not record['reason'] or len(record['reason'])>128 or
             type(record['policy_sha256']) is not str or len(record['policy_sha256'])!=64 or
             any(char not in '0123456789abcdef' for char in record['policy_sha256']) or
@@ -89,6 +91,17 @@ def validate_record(record):
     quote=record['quote_evidence_sha256']
     if quote is not None and (type(quote) is not str or len(quote)!=64 or
             any(char not in '0123456789abcdef' for char in quote)):
+        raise ValueError('FORWARD_EVENT_SCHEMA')
+    order_id=record.get('order_id')
+    if order_id is not None and (type(order_id) is not str or
+            re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}',order_id) is None):
+        raise ValueError('FORWARD_EVENT_SCHEMA')
+    if record['decision'] in ('BUY','SELL') and (
+            order_id is None or
+            record.get('liquidity')!='ASSUMED_QUANTITY_NO_DEPTH' or
+            record.get('strategy_validated') is not False):
+        raise ValueError('FORWARD_EVENT_SCHEMA')
+    if record['decision'] in ('START','STOP') and order_id is not None:
         raise ValueError('FORWARD_EVENT_SCHEMA')
     return record
 

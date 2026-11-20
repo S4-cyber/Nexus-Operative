@@ -17,7 +17,8 @@ PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recove
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
     'ownership_released','halted','flat','portfolio_reconciled'))
 SESSION_PUBLIC_KEYS=frozenset(('session','orders_sha256','evidence_sha256','quote_observations','modeled_buy_orders',
-    'modeled_sell_orders'))
+    'modeled_sell_orders','durable_event_records','event_head_sha256',
+    'reconciliation_sha256','quote_outcome_bijection','durable_order_outcomes_reconciled'))
 LATENCY_PUBLIC_KEYS=frozenset(('p50_ms','p95_ms','p99_ms'))
 FAULT_CASE_PUBLIC_KEYS=frozenset(('cycles','fetches','reasons','paused','orders_created','ownership_released',
     'worker_started','worker_paused_while_alive','cleanup_blocked_before_process_death','post_pause_fetches',
@@ -72,13 +73,21 @@ def _review(sessions):
     for session in sessions:
         evidence=r.evidence_report(session);orders=g.session_orders(session)
         check=evidence['execution_crosscheck'];quotes=evidence['quote_evidence']
+        events=evidence['durable_event_evidence']
         _require(evidence['local_consistency_ok'] and evidence['stored_state']=='PAUSED','EVIDENCE_DISAGREEMENT')
         _require(check['modeled_buy_orders']==check['modeled_sell_orders']==1 and len(orders)==2,'FILL_COUNTS')
+        _require(events['integrity_ok'] and events['event_trace_complete'] and
+            events['quote_outcome_bijection'] and events['durable_order_outcomes_reconciled'] and
+            events['quote_outcomes']==quotes['observations'],'EVENT_RECONCILIATION')
         _require(quotes['source_modes']==['INJECTED_TRANSPORT_UNATTESTED'],'SOURCE_MODE')
         _require(quotes['rejected_observations']==3 and quotes['repeated_eligible_exchange_timestamps']==1,'OBSERVATION_COUNTS')
         reviews.append(dict(session=session,orders_sha256=fingerprint(orders),
                             evidence_sha256=fingerprint(evidence),quote_observations=quotes['observations'],
-                            modeled_buy_orders=1,modeled_sell_orders=1))
+                            modeled_buy_orders=1,modeled_sell_orders=1,
+                            durable_event_records=events['events'],
+                            event_head_sha256=events['head_sha256'],
+                            reconciliation_sha256=events['reconciliation_sha256'],
+                            quote_outcome_bijection=True,durable_order_outcomes_reconciled=True))
     from nexus.forward_trial_review import review as coverage_review
     from datetime import datetime,timezone
     with r._read_db() as db:

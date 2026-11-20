@@ -2985,9 +2985,13 @@ def _validate(profile, result):
             session_ids.append(session['session']);hashes.extend((session['orders_sha256'],session['evidence_sha256']))
             _require(type(session['session']) is str and re.fullmatch('[a-f0-9]{16}',session['session']) is not None and
                 session['quote_observations']==14 and type(session['quote_observations']) is int and
+                session['durable_event_records']==15 and type(session['durable_event_records']) is int and
                 session['modeled_buy_orders']==session['modeled_sell_orders']==1 and
-                type(session['modeled_buy_orders']) is int and type(session['modeled_sell_orders']) is int,
+                type(session['modeled_buy_orders']) is int and type(session['modeled_sell_orders']) is int and
+                session['quote_outcome_bijection'] is True and
+                session['durable_order_outcomes_reconciled'] is True,
                 'FORWARD_SESSION_EVIDENCE')
+            hashes.extend((session['event_head_sha256'],session['reconciliation_sha256']))
         _require(len(set(session_ids))==20 and all(type(value) is str and
             re.fullmatch('[a-f0-9]{64}',value) is not None for value in hashes),
             'FORWARD_SESSION_BINDING')
@@ -3101,13 +3105,17 @@ def _validate(profile, result):
             type(recovered['archived_session_orders']) is int and
             recovered['archived_session_orders']==2 and
             type(recovered['quote_observations']) is int and recovered['quote_observations']==8 and
+            type(recovered['event_records']) is int and recovered['event_records']==10 and
             type(recovered['modeled_buy_orders']) is int and
             type(recovered['modeled_sell_orders']) is int and
             recovered['modeled_buy_orders']==recovered['modeled_sell_orders']==1 and
+            recovered['quote_outcome_bijection'] is True and
+            recovered['durable_order_outcomes_reconciled'] is True and
             recovered['source_modes']==['INJECTED_TRANSPORT_UNATTESTED'],
             'RESTORE_ACCOUNTING')
         hashes=[recovered[key] for key in
-            ('order_sha256','account_sha256','quote_head_sha256','policy_sha256')]
+            ('order_sha256','account_sha256','quote_head_sha256','policy_sha256',
+             'event_head_sha256','event_reconciliation_sha256')]
         _require(all(type(value) is str and re.fullmatch('[a-f0-9]{64}',value) is not None
             for value in hashes) and
             recovered['policy_sha256']==admit(POLICY['id'])['policy_sha256'],

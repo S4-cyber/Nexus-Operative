@@ -65,6 +65,10 @@ def review(db,session):
         if cycle<=seen or prev!=previous or digest(previous,payload)!=sha:reasons.append('QUOTE_CHAIN_DISAGREEMENT')
         data=json.loads(payload)
         if data.get('cycle')!=cycle or data.get('session')!=session:reasons.append('QUOTE_IDENTITY_DISAGREEMENT')
+        # The retained row digest is needed by the private three-way
+        # quote/event/order reconciler.  Public evidence responses remove the
+        # complete points collection, so this never expands their payload.
+        data['_digest']=sha
         points.append(data);seen=cycle;previous=sha
     if head is None:
         if rows:reasons.append('QUOTE_HEAD_MISSING')

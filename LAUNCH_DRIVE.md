@@ -1,5 +1,41 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.372 exact per-session reconciliation envelope
+
+Per-session evidence review now consumes the retained quote chain and the
+durable lifecycle/outcome chain in the same forward-database snapshot, then
+binds them to two replay-validated order-journal and linked-portfolio snapshots.
+Every retained quote must have exactly one digest-matching outcome. Every
+modeled BUY or SELL outcome must match one durable fill by exact session, cycle,
+side and order ID. START, final tail, counters, event time/cycle order and the
+stable halt state are also required. A composite reconciliation digest exposes
+the local generation without publishing quotes, account contents or private
+paths.
+
+A process death after a quote commit but before its outcome is readable but
+incomplete. An independent cut that leaves a RUNNING session is authoritative
+and review-required; it is never rewritten into optional forward evidence.
+Unknown decisions, malformed order identifiers and fill outcomes missing the
+fixed modeled-liquidity and false strategy-authority fields fail closed. Pinned
+prior-version eventless recovery remains readable, but cannot claim the new
+trace. Current forward and recovery release fixtures require exact event heads
+and quote/outcome/order reconciliation.
+
+This is bounded offline local reconciliation, not provider/source attestation,
+broker-paper or account reconciliation, genuine-market or sustained-operation
+evidence, native Windows/installer acceptance, funding/live/cloud readiness,
+performance, profitability or release approval. Broker transport remains OFF
+and unrouted. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed entry, reducing exits and the independent emergency stop
+remain intact. No button or editable parameter was added. The existing Quote /
+Fill Evidence control has updated beginner help and retains the seven tabs plus
+black/bright-purple bottom-right hover help.
+
+The read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
 ## v0.340.371 durable forward-event trace
 
 Local paper sessions now retain a separately capped, never-pruned hash chain for

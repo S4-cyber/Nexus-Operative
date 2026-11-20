@@ -2831,7 +2831,8 @@ def _validate(profile, result):
     if profile == 'forward':
         from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
             FAULT_CASE_PUBLIC_KEYS, FAULT_LIMITATIONS, FAULT_PUBLIC_KEYS,
-            LATENCY_PUBLIC_KEYS, LIMITATIONS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
+            LATENCY_PUBLIC_KEYS, LIMITATIONS, NO_FILL_CRASH_LIMITATIONS,
+            NO_FILL_CRASH_PUBLIC_KEYS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
             PROCESS_CONTROL_PUBLIC_KEYS, PUBLIC_KEYS, SCHEDULER_CADENCE_CASE_PUBLIC_KEYS,
             SCHEDULER_CADENCE_LIMITATIONS, SCHEDULER_CADENCE_PUBLIC_KEYS,
             RECOVERED_PUBLIC_KEYS, SESSION_PUBLIC_KEYS)
@@ -2845,6 +2846,7 @@ def _validate(profile, result):
         durability=result['commit_durability']
         faults=result['fault_injection']
         cadence=result['scheduler_cadence']
+        no_fill_crash=result['no_fill_crash']
         _require(type(durability) is dict and
             frozenset(durability)==COMMIT_DURABILITY_PUBLIC_KEYS and
             durability['source']==
@@ -2864,6 +2866,23 @@ def _validate(profile, result):
         _require(type(cadence) is dict and
             frozenset(cadence)==SCHEDULER_CADENCE_PUBLIC_KEYS,
             'FORWARD_SCHEDULER_CADENCE_SCHEMA')
+        _require(type(no_fill_crash) is dict and
+            frozenset(no_fill_crash)==NO_FILL_CRASH_PUBLIC_KEYS,
+            'FORWARD_NO_FILL_CRASH_SCHEMA')
+        _require(no_fill_crash['mode']=='DISPOSABLE_DURABLE_NO_FILL_CRASH' and
+            no_fill_crash['passed'] is True and no_fill_crash['process_terminated'] is True and
+            no_fill_crash['exit_code']==76 and type(no_fill_crash['exit_code']) is int and
+            no_fill_crash['no_fill_attempts']==1 and
+            type(no_fill_crash['no_fill_attempts']) is int and
+            all(no_fill_crash[key] is True for key in (
+                'attempt_digest_stable','position_preserved','fill_sequence_preserved',
+                'mandate_resumable','old_session_review_required','quote_outcome_gap',
+                'no_fill_outcome_gap','no_fill_binding_gap')) and
+            all(no_fill_crash[key] is False for key in (
+                'automatic_repair','actual_provider_requests','broker_connected',
+                'live_orders_enabled','release_approved')) and
+            no_fill_crash['limitations']==NO_FILL_CRASH_LIMITATIONS,
+            'FORWARD_NO_FILL_CRASH_EVIDENCE')
         _require(all(type(cadence[name]) is dict and
             frozenset(cadence[name])==SCHEDULER_CADENCE_CASE_PUBLIC_KEYS
             for name in ('nominal','overrun','invalid_clock','clock_regression','stalled_clock')),
@@ -2990,6 +3009,7 @@ def _validate(profile, result):
                 type(session['modeled_buy_orders']) is int and type(session['modeled_sell_orders']) is int and
                 session['quote_outcome_bijection'] is True and
                 session['durable_order_outcomes_reconciled'] is True and
+                session['durable_no_fill_attempts_bound'] is True and
                 session['cut_evidence_stable'] is True and
                 session['cut_binding_verified'] is False and
                 session['order_snapshot_stable'] is True,

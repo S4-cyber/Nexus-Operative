@@ -9,6 +9,7 @@ import hashlib
 import json
 import math
 import re
+from nexus.order_accounting import no_fill_attempt_sha256
 
 
 REASONS=frozenset((
@@ -20,6 +21,7 @@ REASONS=frozenset((
     'QUOTE_OUTCOME_BIJECTION_DISAGREEMENT',
     'DURABLE_ORDER_OUTCOME_DISAGREEMENT',
     'DURABLE_NO_FILL_OUTCOME_DISAGREEMENT',
+    'DURABLE_NO_FILL_ATTEMPT_DIGEST_DISAGREEMENT',
     'DURABLE_HALT_WITHOUT_INDEPENDENT_CUT_EVIDENCE',
     'INDEPENDENT_CUT_WITHOUT_DURABLE_HALT',
     'INDEPENDENT_CUT_EVIDENCE_UNSTABLE',
@@ -193,7 +195,8 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
                         type(quote_sha256) is not str or
                         re.fullmatch(r'[a-f0-9]{64}',quote_sha256) is None):
                     raise ValueError()
-                durable_no_fills.append((cycle,attempt_oid,reason,quote_sha256))
+                durable_no_fills.append((cycle,attempt_oid,reason,quote_sha256,
+                    no_fill_attempt_sha256(attempt)))
         recorded=[]
         for point in event_points:
             record=point['record']
@@ -207,10 +210,15 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             if (point.get('kind')=='OUTCOME' and record.get('decision')=='VETO' and
                     record.get('reason')=='ORDER_EXPIRED_WITHOUT_FILL'):
                 recorded_no_fills.append((record.get('cycle'),record.get('order_id'),
-                    record.get('reason'),record.get('quote_evidence_sha256')))
-        no_fill_outcomes_ok=sorted(recorded_no_fills)==sorted(durable_no_fills)
+                    record.get('reason'),record.get('quote_evidence_sha256'),
+                    record.get('no_fill_attempt_sha256')))
+        no_fill_outcomes_ok=(Counter(item[:4] for item in recorded_no_fills)==
+            Counter(item[:4] for item in durable_no_fills))
         if not no_fill_outcomes_ok:
             reasons.append('DURABLE_NO_FILL_OUTCOME_DISAGREEMENT')
+        no_fill_attempts_bound=Counter(recorded_no_fills)==Counter(durable_no_fills)
+        if not no_fill_attempts_bound:
+            reasons.append('DURABLE_NO_FILL_ATTEMPT_DIGEST_DISAGREEMENT')
 
         before=cut_evidence.get('before_status');after=cut_evidence.get('after_status')
         cut_stable=cut_evidence.get('stable');cut_binding=cut_evidence.get('binding_verified')
@@ -251,6 +259,7 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             quote_outcome_bijection='QUOTE_OUTCOME_BIJECTION_DISAGREEMENT' not in reasons,
             durable_order_outcomes_reconciled=order_outcomes_ok,
             durable_no_fill_outcomes_reconciled=no_fill_outcomes_ok,
+            durable_no_fill_attempts_bound=no_fill_attempts_bound,
             cut_state_before=before,cut_state_after=after,
             cut_requested_before=requested_before,cut_requested_after=requested_after,
             cut_binding_source=binding_source,
@@ -265,7 +274,8 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             **{key:summary[key] for key in ('events','lifecycle_events','outcome_events',
                 'scheduler_events','quote_outcomes','modeled_order_outcomes','modeled_no_fill_outcomes',
                 'event_trace_complete','quote_outcome_bijection',
-                'durable_order_outcomes_reconciled','durable_no_fill_outcomes_reconciled','cut_evidence_stable',
+                'durable_order_outcomes_reconciled','durable_no_fill_outcomes_reconciled',
+                'durable_no_fill_attempts_bound','cut_evidence_stable',
                 'cut_binding_verified','independent_cut_observed')}))
         summary['integrity_ok']=not reasons
         return summary,sorted(set(reasons))
@@ -275,6 +285,7 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             modeled_order_outcomes=0,modeled_no_fill_outcomes=0,event_trace_complete=False,
             quote_outcome_bijection=False,durable_order_outcomes_reconciled=False,
             durable_no_fill_outcomes_reconciled=False,
+            durable_no_fill_attempts_bound=False,
             cut_state_before='PRESENT_UNVERIFIED',cut_state_after='PRESENT_UNVERIFIED',
             cut_requested_before=True,cut_requested_after=True,cut_binding_source='NONE',
             cut_evidence_stable=False,cut_binding_verified=False,

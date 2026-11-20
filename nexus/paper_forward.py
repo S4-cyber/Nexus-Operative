@@ -254,6 +254,9 @@ class PaperForwardRunner:
         recorded=observed if valid else (self._clock_anchor[0] if self._clock_anchor else 0)
         if not valid and decision not in ('STOP','PAUSED'):
             decision='PAUSED';reason='INVALID_RUNTIME_CLOCK'
+            # Outcome-specific evidence cannot be relabelled as a lifecycle
+            # pause. The durable attempt remains review-required and unbound.
+            extra.pop('no_fill_attempt_sha256',None)
             self._error=reason;self._stop.set()
         row=dict(at=recorded,clock_sample_valid=valid,session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
@@ -570,7 +573,8 @@ class PaperForwardRunner:
             result=self.orders.simulate_quote_fill(oid,event_id,sequence,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],evidence_cycle=self._cycles,evidence_session=self._session,evidence_quote_sha256=self._observation_hash,execution_clock=lambda:self._execution_now(exchange_at))
             if result.get('expired'):
                 self._prices.clear();self._last_rank=0
-                return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
+                return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid,
+                    no_fill_attempt_sha256=result['no_fill_attempt_sha256'])
             return self._record(side,'MODELED_PUBLIC_QUOTE_FILL',order_id=oid,
                                 liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
         finally:

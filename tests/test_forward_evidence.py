@@ -46,6 +46,46 @@ def test_unknown_event_decision_is_rejected():
             forward_event_evidence.append(db,event_record(decision='UNKNOWN'))
 
 
+def test_no_fill_outcome_requires_exact_attempt_binding_on_append():
+    no_fill=event_record(cycle=1,quote_evidence_sha256='b'*64,
+        decision='VETO',reason='ORDER_EXPIRED_WITHOUT_FILL',order_id='exit')
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,no_fill)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,{**no_fill,
+                'no_fill_attempt_sha256':'not-a-digest'})
+        digest=forward_event_evidence.append(db,{**no_fill,
+            'no_fill_attempt_sha256':'c'*64})
+        assert len(digest)==64
+
+
+def test_no_fill_binding_is_forbidden_on_other_outcomes():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,event_record(
+                no_fill_attempt_sha256='c'*64))
+
+
+def test_legacy_unbound_no_fill_outcome_remains_readable():
+    record=event_record(cycle=1,quote_evidence_sha256='b'*64,
+        decision='VETO',reason='ORDER_EXPIRED_WITHOUT_FILL',order_id='exit')
+    payload=forward_event_evidence.canonical(dict(kind='OUTCOME',record=record))
+    digest=forward_event_evidence.digest(forward_event_evidence.GENESIS,payload)
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        db.execute('INSERT INTO forward_events VALUES (?,?,?,?,?,?,?,?)',
+            (record['session'],1,1,1,'OUTCOME',payload,
+             forward_event_evidence.GENESIS,digest))
+        db.execute('INSERT INTO forward_event_heads VALUES (?,?,?)',
+            (record['session'],1,digest))
+        report=forward_event_evidence.review(db,record['session'])
+    assert report['integrity_ok'] and report['events']==1
+    assert report['points'][0]['record'].get('no_fill_attempt_sha256') is None
+
+
 def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch)
     assert warmup(r,c)['decision']=='BUY'

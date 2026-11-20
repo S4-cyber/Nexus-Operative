@@ -4,6 +4,7 @@ import pytest
 
 from nexus import execution_capacity, order_gateway, order_checkpoints
 from nexus.durable_orders import DurableOrderGateway
+from nexus.order_accounting import no_fill_attempt_sha256
 
 
 def positioned(path):
@@ -162,8 +163,11 @@ def test_reducing_slice_expiry_preserves_resumable_mandate_without_fill(
     no_fill=gateway.order_report('exit')['no_fill_events']
     assert no_fill==[dict(order_id='exit',side='SELL',event_id='slice_2',sequence=2,
         reason='ORDER_EXPIRED_WITHOUT_FILL',evaluated_at='1022',expires_at='1022')]
-    assert gateway.simulate_quote_fill(
-        'exit','slice_2',2,'0.5',250,250,0.5,1022,1022)['idempotent_replay']
+    assert expired['no_fill_attempt_sha256']==no_fill_attempt_sha256(no_fill[0])
+    replay=gateway.simulate_quote_fill(
+        'exit','slice_2',2,'0.5',250,250,0.5,1022,1022)
+    assert replay['idempotent_replay']
+    assert replay['no_fill_attempt_sha256']==expired['no_fill_attempt_sha256']
     assert gateway.recovery_report()['commands']==after['commands']
     with pytest.raises(ValueError,match='DUPLICATE_NO_FILL_EVENT_CONFLICT'):
         gateway.simulate_quote_fill('exit','slice_2',2,'0.5',250,250,0.5,1022,1023)

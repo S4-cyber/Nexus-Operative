@@ -1,4 +1,5 @@
 from datetime import datetime,timezone
+from decimal import Decimal
 import threading
 import pytest
 from nexus.paper_forward import PaperForwardRunner
@@ -237,6 +238,45 @@ def test_shared_simulation_cannot_consume_linked_exit_intent_reserve(tmp_path,mo
     assert not report['execution_account']['account']['positions']
     assert len(report['orders'])==order_gateway.MAX_INTENTS
     r.stop()
+
+
+def test_reserved_exit_mandate_resumes_bounded_slices_until_flat(tmp_path,monkeypatch):
+    from nexus import order_gateway, order_checkpoints
+    monkeypatch.setattr(order_gateway,'MAX_INTENTS',2)
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    configure('terrestrial',True)
+    clock=Clock();path=tmp_path/'orders.sqlite3';gateway=DurableOrderGateway(path)
+    gateway.initialize_account(10000);gateway.link_portfolio()
+    gateway.submit('entry','BTC-USD','BUY',100,tier='terrestrial')
+    gateway.simulate_priced_fill('entry','fill',1,1,100)
+    configure('terrestrial',False)
+    clock.price=250;clock.now=1000
+    runner=PaperForwardRunner(gateway,clock.quote,lambda:clock.now)
+    runner.prepare('terrestrial')
+    assert runner.single_cycle()['decision']=='SELL'
+    report=gateway.recovery_report();position=report['execution_account']['account']['positions']['BTC-USD']
+    assert Decimal(position['quantity'])>0
+    assert report['capacity']['intents_remaining']==0
+    mandate=next(order for order in report['orders'] if order.get('intent_scope')=='POSITION_REDUCING_EXIT')
+    assert mandate['status']=='SIMULATED_REDUCTION_PENDING'
+    assert mandate['reduction_slice_count']==1
+    runner.stop();order_checkpoints.clear_cache()
+    cold_gateway=DurableOrderGateway(path)
+    resumed=PaperForwardRunner(cold_gateway,clock.quote,lambda:clock.now)
+    resumed.prepare('terrestrial')
+    clock.now+=5;clock.price=251
+    assert resumed.single_cycle()['decision']=='SELL'
+    final=cold_gateway.recovery_report()
+    assert not final['execution_account']['account']['positions']
+    mandate=next(order for order in final['orders'] if order.get('intent_scope')=='POSITION_REDUCING_EXIT')
+    assert mandate['status']=='SIMULATED_FILLED'
+    assert mandate['reduction_slice_count']==2
+    assert len(final['orders'])==order_gateway.MAX_INTENTS
+    first_review=runner.evidence_report(runner.status()['session'])
+    second_review=resumed.evidence_report(resumed.status()['session'])
+    assert first_review['local_consistency_ok'] and second_review['local_consistency_ok']
+    assert first_review['counters']['SELL']==second_review['counters']['SELL']==1
+    resumed.stop()
 
 
 def test_failed_start_diagnostics_leave_runner_stopped(tmp_path,monkeypatch):

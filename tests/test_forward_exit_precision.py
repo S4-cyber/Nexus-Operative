@@ -35,7 +35,11 @@ def test_larger_exit_keeps_notional_cap_then_finishes_flat(tmp_path,monkeypatch)
     assert r.single_cycle()['decision']=='SELL'
     report=g.recovery_report()
     assert report['portfolio_reconciled'] and not report['execution_account']['account']['positions']
-    for order in g.session_orders(r.status()['session']):
-        assert Decimal(order['order']['simulated_filled_notional'])<=200
+    orders=g.session_orders(r.status()['session'])
+    assert len(orders)==1
+    assert Decimal(orders[0]['order']['simulated_filled_notional'])>200
+    assert len(orders[0]['quote_events'])==2
+    for event in orders[0]['quote_events']:
+        assert Decimal(event['quantity'])*Decimal(event['price'])<=200
     r.stop()
     assert r.evidence_report(r.status()['session'])['local_consistency_ok']

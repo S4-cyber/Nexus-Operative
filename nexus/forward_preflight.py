@@ -12,6 +12,7 @@ from nexus.state import DEFAULTS,read_effective_settings
 from nexus.tier_permissions import TIERS
 from nexus.sqlite_journal_guard import check_existing,check_path_set
 from nexus import execution_portfolio
+from nexus.execution_capacity import resumable_exit_mandate
 from nexus.forward_ownership import ForwardOwnership
 from nexus.portfolio_governor import require_safe_ledger
 
@@ -187,7 +188,9 @@ def build(orders,runner,*,tier,portal_active,halted):
                 if recovery['halted']:blocked.append('TRADING_CUT_ACTIVE')
                 if positions:entry_mode='RETAINED_EXIT_MONITORING'
                 if any(product!=POLICY['product'] for product in positions):blocked.append('BTC_ONLY_ACCOUNT_REQUIRED')
-                if any(order['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') for order in recovery['orders']):
+                mandate=resumable_exit_mandate(recovery['orders'],positions)
+                if any(order['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') and
+                        order is not mandate for order in recovery['orders']):
                     blocked.append('PENDING_ORDERS_REVIEW_REQUIRED')
                 storage=runner.storage_capacity()
                 if not storage['session_intake_allowed'] or not storage['quote_intake_allowed']:blocked.append('EVIDENCE_CAPACITY_REVIEW_REQUIRED')
@@ -199,7 +202,7 @@ def build(orders,runner,*,tier,portal_active,halted):
                     capacity['intents_remaining']//2)
                 if (not capacity['lifecycle_intake_allowed'] or
                     capacity['ordinary_commands_remaining']<(4 if positions else 12)+extra or
-                    id_capacity<1):blocked.append('JOURNAL_CAPACITY_REVIEW_REQUIRED')
+                    (id_capacity<1 and mandate is None)):blocked.append('JOURNAL_CAPACITY_REVIEW_REQUIRED')
                 settings=None
                 if not positions:
                     settings_path=root/'portal_settings.sqlite3'

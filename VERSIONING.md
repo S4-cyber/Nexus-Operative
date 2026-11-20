@@ -1,5 +1,36 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.369 resumable bounded reducing-exit mandate
+
+The protected local-paper exit intent now remains an immutable, internal-only
+full-position mandate across multiple fresh-quote slices and explicit runner
+sessions. Every slice keeps the existing $200 notional ceiling, uses a new
+monotonic fill sequence, binds its exact forward session and cycle, and rechecks
+that the current holding equals the original expected position minus durable
+cumulative fills. A price move can therefore no longer consume the one protected
+ID while leaving a reconciled residual holding with no path to finish flat.
+
+Cold restart discovers exactly one structurally valid pending mandate and reuses
+its original ID; ambiguous, malformed, wrong-product, over-reducing, stale
+position and oversized-slice states fail closed. Start preflight, per-cycle
+admission and trial-readiness capacity distinguish a resumable mandate from a
+new intent slot without enlarging the lifetime ID or command limits. Session
+review projects only the slices bound to that exact session while the durable
+order retains cumulative quantity, modeled notional, fees and full replay
+history. The independent emergency halt remains outside the worker and
+terminally cancels a pending mandate; it never performs liquidation.
+
+This is bounded offline exit/reconciliation hardening, not actual broker-paper,
+genuine-market or liquidity evidence, a liquidation guarantee, Windows or
+installer acceptance, funding/live/cloud readiness, performance, profitability
+or release approval. Broker transport remains OFF and unrouted; engagement and
+optional AI remain OFF by default. No button or editable parameter changed, so
+the seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate is unchanged: exact weighted
+implementation 38% (displayed about 40%, 30–45% low-confidence range), with 0/9
+stages independently accepted and no release permission, trading permission or
+launch date.
+
 ## v0.340.368 durable position-reducing exit intent reserve
 
 Linked local-paper accounts now protect exactly one slot inside the existing

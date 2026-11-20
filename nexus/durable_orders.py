@@ -447,9 +447,26 @@ class DurableOrderGateway:
             snapshot_sha256=combined.hexdigest()
             if portfolio_snapshot is not None:portfolio.require_current()
         records={**gateway.archived_intents,**gateway.intents}
-        matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
+        matched={key:dict(order=copy.deepcopy(record),quote_events=[])
+                 for key,record in records.items() if key.startswith(prefix)}
         for (oid,_),detail in gateway.quote_events.items():
+            belongs=(detail.get('evidence_session')==session_id or
+                ('evidence_session' not in detail and oid.startswith(prefix)))
+            if not belongs:continue
+            if oid not in matched and oid in records:
+                matched[oid]=dict(order=copy.deepcopy(records[oid]),quote_events=[])
             if oid in matched:matched[oid]['quote_events'].append(copy.deepcopy(detail))
+        # A durable reducing mandate may cross explicitly started sessions.
+        # Project cumulative public fields to this session's exact slices so
+        # its counters and modeled costs remain independently reviewable.
+        for item in matched.values():
+            order=item['order'];events=item['quote_events']
+            if (order.get('intent_scope')=='POSITION_REDUCING_EXIT' and events and
+                    any('evidence_session' in event for event in events)):
+                order['simulated_filled_notional']=str(sum(
+                    (Decimal(event['quantity'])*Decimal(event['price']) for event in events),Decimal(0)))
+                order['simulated_fee_total']=str(sum(
+                    (Decimal(event['fee']) for event in events),Decimal(0)))
         return dict(read_only=True,journal_present=present,commands=count,journal_sha256=journal_sha256,
                     portfolio_linked=gateway.portfolio_linked,
                     portfolio_rows=portfolio_snapshot['rows'] if portfolio_snapshot else 0,

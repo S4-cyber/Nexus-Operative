@@ -2,7 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from nexus import order_gateway, order_checkpoints
+from nexus import execution_capacity, order_gateway, order_checkpoints
 from nexus.durable_orders import DurableOrderGateway
 
 
@@ -101,3 +101,40 @@ def test_reducing_fill_rechecks_bound_position_and_declared_quantity(tmp_path,mo
     with pytest.raises(ValueError,match='REDUCING_EXIT_QUANTITY_EXCEEDED'):
         bounded.simulate_priced_fill('exit','fill',1,1,25)
     assert bounded.recovery_report()['commands']==before
+
+
+def test_reducing_mandate_enforces_each_slice_cap_and_independent_halt(tmp_path,monkeypatch):
+    monkeypatch.setattr(order_gateway,'MAX_INTENTS',2)
+    path=tmp_path/'orders.sqlite3';gateway=positioned(path)
+    gateway.submit_reducing('exit','BTC-USD',200,1,1,tier='terrestrial')
+    first=gateway.simulate_priced_fill('exit','slice_1',1,'0.5',250)
+    assert first['status']=='SIMULATED_REDUCTION_PENDING'
+    assert first['reduction_filled_quantity']=='0.5'
+    before=gateway.recovery_report()['commands']
+    with pytest.raises(ValueError,match='REDUCING_EXIT_SLICE_NOTIONAL_EXCEEDED'):
+        gateway.simulate_priced_fill('exit','slice_2',2,'0.5',500)
+    assert gateway.recovery_report()['commands']==before
+    gateway.emergency_halt()
+    halted=gateway.recovery_report()
+    mandate=next(order for order in halted['orders'] if order['id']=='exit')
+    assert halted['halted'] and mandate['status']=='SIMULATED_CANCELLED'
+    order_checkpoints.clear_cache()
+    cold=DurableOrderGateway(path).recovery_report()
+    assert cold['halted'] and next(order for order in cold['orders'] if order['id']=='exit')['status']=='SIMULATED_CANCELLED'
+
+
+def test_resumable_mandate_rejects_wrong_product_and_ambiguity(tmp_path,monkeypatch):
+    monkeypatch.setattr(order_gateway,'MAX_INTENTS',2)
+    gateway=positioned(tmp_path/'orders.sqlite3')
+    gateway.submit_reducing('exit','BTC-USD',200,1,1,tier='terrestrial')
+    gateway.simulate_priced_fill('exit','slice_1',1,'0.5',250)
+    report=gateway.recovery_report();orders=report['orders']
+    positions=report['execution_account']['account']['positions']
+    mandate=execution_capacity.resumable_exit_mandate(orders,positions)
+    assert mandate['id']=='exit'
+    wrong=[dict(order) for order in orders]
+    next(order for order in wrong if order['id']=='exit')['product']='ETH-USD'
+    with pytest.raises(ValueError,match='EXIT_MANDATE_STATE_INVALID'):
+        execution_capacity.resumable_exit_mandate(wrong,positions)
+    with pytest.raises(ValueError,match='EXIT_MANDATE_STATE_INVALID'):
+        execution_capacity.resumable_exit_mandate([*orders,dict(mandate)],positions)

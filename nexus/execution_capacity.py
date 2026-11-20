@@ -1,8 +1,52 @@
 """Read-only bounded-storage admission diagnostics; never archives or deletes."""
+from decimal import Decimal, InvalidOperation
 from nexus import order_gateway
 
 CONTROL_RESERVE=1001
 EXIT_INTENT_RESERVE=1
+
+
+def resumable_exit_mandate(orders, positions, product='BTC-USD'):
+    """Return the one exact full-position reducing mandate, if resumable."""
+    if type(orders) is not list or type(positions) is not dict or type(product) is not str:
+        raise ValueError('EXIT_MANDATE_STATE_INVALID')
+    candidates=[order for order in orders if type(order) is dict and
+        order.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+        order.get('status') in ('SIMULATED_ACK_ONLY','SIMULATED_REDUCTION_PENDING')]
+    if not candidates:return None
+    if len(candidates)!=1:raise ValueError('EXIT_MANDATE_STATE_INVALID')
+    order=candidates[0];position=positions.get(product)
+    if (type(position) is not dict or set(position)!={'quantity','entry'} or
+            type(position.get('quantity')) is not str or
+            order.get('product')!=product or order.get('side')!='SELL' or
+            order.get('provider')!='nexus_local_paper' or
+            order.get('tier') not in ('terrestrial','solar','universal') or
+            type(order.get('id')) is not str or
+            type(order.get('expected_position_quantity')) is not str or
+            type(order.get('reduction_quantity')) is not str or
+            type(order.get('notional')) is not str or
+            ('reduction_filled_quantity' in order and
+                type(order['reduction_filled_quantity']) is not str) or
+            order.get('sent_to_broker') is not False or
+            order.get('live_orders_enabled') is not False):
+        raise ValueError('EXIT_MANDATE_STATE_INVALID')
+    try:
+        expected=Decimal(order['expected_position_quantity'])
+        reduction=Decimal(order['reduction_quantity'])
+        current=Decimal(position['quantity'])
+        filled=Decimal(order.get('reduction_filled_quantity','0'))
+        slice_limit=Decimal(order['notional'])
+        slices=order.get('reduction_slice_count',0)
+    except (KeyError,InvalidOperation,TypeError,ValueError):
+        raise ValueError('EXIT_MANDATE_STATE_INVALID') from None
+    if (not all(value.is_finite() for value in (expected,reduction,current,filled,slice_limit)) or
+            expected<=0 or reduction!=expected or current<=0 or filled<0 or
+            not Decimal(0)<slice_limit<=Decimal(200) or
+            current+filled!=expected or type(slices) is not int or slices<0 or
+            (order['status']=='SIMULATED_ACK_ONLY' and (filled or slices)) or
+            (order['status']=='SIMULATED_REDUCTION_PENDING' and (not filled or slices<1))):
+        raise ValueError('EXIT_MANDATE_STATE_INVALID')
+    return order
 PUBLIC_KEYS=frozenset(('read_only','command_count','command_limit','ordinary_command_limit',
     'ordinary_commands_remaining','total_commands_remaining','control_commands_reserved',
     'intent_count','intent_limit','intents_remaining','ordinary_intent_limit',

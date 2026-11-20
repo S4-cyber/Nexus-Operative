@@ -202,10 +202,15 @@ class AccountingOrderGateway(OrderGateway):
             record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             if client_order_id in self.order_terms:
-                if self.order_terms[client_order_id]!=terms:raise ValueError('ORDER_TERMS_CONFLICT')
-                return {**copy.deepcopy(record),'idempotent_replay':True}
+                if self.order_terms[client_order_id]==terms:
+                    return {**copy.deepcopy(record),'idempotent_replay':True}
+                if (record.get('intent_scope')!='POSITION_REDUCING_EXIT' or
+                        record['status'] not in ('SIMULATED_ACK_ONLY','SIMULATED_REDUCTION_PENDING') or
+                        created<=Decimal(self.order_terms[client_order_id]['created_at'])):
+                    raise ValueError('ORDER_TERMS_CONFLICT')
             if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
-            if record['status']!='SIMULATED_ACK_ONLY' or record['lifecycle_events']:
+            if (record.get('intent_scope')!='POSITION_REDUCING_EXIT' and
+                    (record['status']!='SIMULATED_ACK_ONLY' or record['lifecycle_events'])):
                 raise ValueError('TERMS_REQUIRE_UNFILLED_ORDER')
             self.order_terms[client_order_id]=terms
             return {**copy.deepcopy(record),'idempotent_replay':False}
@@ -223,15 +228,26 @@ class AccountingOrderGateway(OrderGateway):
             return {**copy.deepcopy(record),'expired':record['status']=='SIMULATED_EXPIRED','idempotent_replay':not changed}
 
     def simulate_quote_fill(self, client_order_id, event_id, sequence, quantity, bid, ask,
-                            available_quantity, quote_at, evaluated_at, fee_bps=10, slippage_bps=5):
+                            available_quantity, quote_at, evaluated_at, fee_bps=10, slippage_bps=5,
+                            evidence_cycle=None,evidence_session=None):
         from nexus.quote_execution import plan
         _require_order_id(client_order_id);_require_event_id(event_id)
         if type(sequence) is not int or not 1<=sequence<=1000:raise ValueError('INVALID_EVENT_SEQUENCE')
+        if evidence_cycle is not None and (type(evidence_cycle) is not int or evidence_cycle<1):
+            raise ValueError('INVALID_FORWARD_EVIDENCE_CYCLE')
+        if (evidence_session is not None and
+                (type(evidence_session) is not str or len(evidence_session)!=16 or
+                 any(character not in '0123456789abcdef' for character in evidence_session))):
+            raise ValueError('INVALID_FORWARD_EVIDENCE_SESSION')
+        if (evidence_cycle is None)!=(evidence_session is None):
+            raise ValueError('INCOMPLETE_FORWARD_EVIDENCE_IDENTITY')
         with self.lock:
             record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             modeled=plan(record['side'],quantity,bid,ask,available_quantity,quote_at,evaluated_at,fee_bps,slippage_bps)
             detail=dict(sequence=sequence,**modeled)
+            if evidence_cycle is not None:detail['evidence_cycle']=evidence_cycle
+            if evidence_session is not None:detail['evidence_session']=evidence_session
             key=(client_order_id,event_id)
             if key in self.quote_events:
                 if self.quote_events[key]!=detail:raise ValueError('DUPLICATE_QUOTE_EVENT_CONFLICT')
@@ -284,7 +300,8 @@ class AccountingOrderGateway(OrderGateway):
             record = self.lookup(client_order_id)
             if record is None:
                 raise ValueError('UNKNOWN_ORDER_ID')
-            if record.get('intent_scope')=='POSITION_REDUCING_EXIT':
+            reducing=record.get('intent_scope')=='POSITION_REDUCING_EXIT'
+            if reducing:
                 filled=sum((Decimal(detail['quantity']) for (oid,_),detail in self.executions.items()
                             if oid==client_order_id),Decimal(0))
                 current=self.account['positions'].get(record['product'])
@@ -315,15 +332,68 @@ class AccountingOrderGateway(OrderGateway):
                 delta = amount - cost
                 if cash + delta < 0:
                     raise ValueError('INSUFFICIENT_SIMULATED_CASH')
-            result = super().simulate_event(client_order_id, event_id, sequence, 'FILL', str(amount), str(cost))
-            if result['idempotent_replay']:
-                raise ValueError('EVENT_ALREADY_EXISTS_WITHOUT_EXECUTION')
+            if reducing:
+                events=record['lifecycle_events']
+                if sequence!=len(events)+1:raise ValueError('OUT_OF_ORDER_EVENT')
+                if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
+                if record['status'] not in ('SIMULATED_ACK_ONLY','SIMULATED_REDUCTION_PENDING'):
+                    raise ValueError('ORDER_TERMINAL')
+                # The immutable intent notional is a per-slice ceiling. The
+                # cumulative mandate remains quantity-bound to the original
+                # reconciled holding, so a price move never relaxes $200/slice.
+                if amount>Decimal(record['notional']):
+                    raise ValueError('REDUCING_EXIT_SLICE_NOTIONAL_EXCEEDED')
+                event={'sequence':sequence,'kind':'FILL','fill_notional':str(amount.normalize()),
+                       'fee':str(cost.normalize())}
+                cumulative=filled+qty
+                record['simulated_filled_notional']=str(
+                    Decimal(record['simulated_filled_notional'])+amount)
+                record['simulated_fee_total']=str(
+                    Decimal(record['simulated_fee_total'])+cost)
+                record['reduction_filled_quantity']=str(cumulative.normalize())
+                record['reduction_slice_count']=sequence
+                record['status']=('SIMULATED_FILLED' if
+                    cumulative==Decimal(record['reduction_quantity']) else
+                    'SIMULATED_REDUCTION_PENDING')
+                events[event_id]=event
+                result={**copy.deepcopy(record),'idempotent_replay':False}
+            else:
+                result = super().simulate_event(client_order_id, event_id, sequence, 'FILL', str(amount), str(cost))
+                if result['idempotent_replay']:
+                    raise ValueError('EVENT_ALREADY_EXISTS_WITHOUT_EXECUTION')
             self.account['cash'] = str(cash + delta)
             if new_qty:
                 self.account['positions'][record['product']] = dict(quantity=str(new_qty), entry=str(entry))
             else:
                 self.account['positions'].pop(record['product'], None)
             self.executions[key] = detail
+            return result
+
+    def cancel(self,client_order_id,preserve_reducing_mandate=False):
+        if type(preserve_reducing_mandate) is not bool:
+            raise ValueError('INVALID_REDUCING_MANDATE_CANCEL_MODE')
+        with self.lock:
+            record=self.lookup(client_order_id)
+            if (preserve_reducing_mandate and record is not None and
+                    record.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+                    record['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_REDUCTION_PENDING')):
+                # Cancel the completed synthetic slice without retiring the
+                # immutable internal mandate that owns the protected intent ID.
+                return {**copy.deepcopy(record),'sent_to_broker':False,
+                        'slice_cancelled':True,'mandate_resumable':True}
+            if preserve_reducing_mandate:
+                if record is None:raise ValueError('UNKNOWN_ORDER_ID')
+                if record.get('intent_scope')!='POSITION_REDUCING_EXIT':
+                    raise ValueError('REDUCING_MANDATE_REQUIRED')
+            return super().cancel(client_order_id)
+
+    def emergency_halt(self):
+        with self.lock:
+            result=super().emergency_halt()
+            for record in self.intents.values():
+                if (record.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+                        record['status']=='SIMULATED_REDUCTION_PENDING'):
+                    record['status']='SIMULATED_CANCELLED'
             return result
 
     def account_report(self):

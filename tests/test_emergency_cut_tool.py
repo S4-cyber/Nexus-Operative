@@ -565,6 +565,42 @@ def test_unexpected_or_malformed_halt_acknowledgement_keeps_latch_unconfirmed(
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
 
 
+def test_exact_warm_halt_ack_without_journal_commit_is_unconfirmed(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',
+        lambda _self:{'halted':True})
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert report['emergency_intent_present'] and report['halted']
+    cold=DurableOrderGateway(
+        tmp_path/'order_lifecycle.sqlite3').recovery_report()
+    assert not cold['journal_present'] and not cold['halted']
+
+
+def test_journal_replacement_after_warm_halt_ack_is_unconfirmed(
+        tmp_path,monkeypatch):
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    replacement=tmp_path/'unhalted-replacement.sqlite3'
+    DurableOrderGateway(replacement).reset()
+    original=DurableOrderGateway.emergency_halt
+    def halt_then_replace(self):
+        result=original(self)
+        os.replace(replacement,order_path)
+        return result
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',halt_then_replace)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert report['emergency_intent_present'] and report['halted']
+    cold=DurableOrderGateway(order_path).recovery_report()
+    assert cold['journal_present'] and cold['commands']==0 and not cold['halted']
+
+
 def test_unexpected_intent_status_fault_never_escapes_emergency_boundary(
         tmp_path,monkeypatch):
     monkeypatch.setattr(DurableOrderGateway,'emergency_halt',

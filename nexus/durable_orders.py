@@ -542,4 +542,19 @@ class DurableOrderGateway:
                     note='Missing order history is not evidence of a flat account or absence of a separate portfolio. Reference notionals cannot establish quantities, positions or ownership. Read-only snapshots grant no execution permission.')
 
 
+def emergency_halt_replayed(path,result):
+    """Require an exact warm acknowledgement and a fresh durable replay.
+
+    The caller's gateway result is only an in-process acknowledgement.  A new
+    gateway must independently reopen the journal and reconstruct the halt
+    before any control surface may describe cleanup as confirmed.
+    """
+    if type(result) is not dict or result.get('halted') is not True:return False
+    report=DurableOrderGateway(path).recovery_report()
+    return (type(report) is dict
+        and report.get('journal_present') is True
+        and type(report.get('commands')) is int and report['commands'] >= 1
+        and report.get('halted') is True)
+
+
 gateway = DurableOrderGateway()

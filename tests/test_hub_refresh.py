@@ -215,11 +215,13 @@ def test_pause_stops_refresh_but_cut_keeps_it_and_shutdown_survives_other_cleanu
     from types import SimpleNamespace
     from fastapi.testclient import TestClient
     from nexus import app
+    from nexus.durable_orders import DurableOrderGateway
     worker,_=local;monkeypatch.setattr(app,'refresh_worker',worker)
     monkeypatch.setattr(app,'audit',lambda *_:None)
     monkeypatch.setattr(app,'paper_forward_runner',SimpleNamespace(stop=lambda *_:None,request_cut=lambda:None))
     monkeypatch.setattr(app,'observer',SimpleNamespace(stop=lambda:None))
-    monkeypatch.setattr(app,'research_order_gateway',SimpleNamespace(emergency_halt=lambda:None,_path=lambda:tmp_path/'orders.sqlite3'))
+    monkeypatch.setattr(app,'research_order_gateway',
+        DurableOrderGateway(tmp_path/'orders.sqlite3'))
     monkeypatch.setattr(app,'_paused',False);monkeypatch.setattr(app,'_halted',False)
     client=TestClient(app.app);worker._arm('BTC-USD',3600,1000)
     assert client.post('/api/portal',json=dict(enabled=False)).status_code==200

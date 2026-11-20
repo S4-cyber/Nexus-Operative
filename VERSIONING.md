@@ -1,5 +1,31 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.389 cold-replayed emergency-halt verification
+
+The standalone installed emergency cut and API emergency lane now treat the
+gateway return only as a warm acknowledgement. Before either surface reports
+durable cleanup as confirmed, a fresh gateway independently reopens and
+replays the exact order journal and requires retained history, at least one
+command and halted state. An exact-looking acknowledgement without a commit,
+an unreadable journal or a valid unhalted replacement remains UNCONFIRMED.
+
+Failure never removes the independent stop: the intent latch is reasserted,
+the paper runner is stopped, engagement remains blocked and cleanup may be
+explicitly retried. Direct regressions cover both a forged exact warm return
+with no journal mutation and replacement of a genuinely halted journal before
+the cold proof.
+
+This is bounded local emergency-control and reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer/power-loss acceptance, performance, profitability or
+release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits and fail-closed behavior remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
 ## v0.340.388 durable pre-evaluation exchange admission
 
 Every structurally valid, fresh and advancing paper-forward tick now enters a
@@ -83,7 +109,7 @@ remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
 about 40%, 30–45% low-confidence range), with 0/9 stages independently
 accepted and no release permission, trading permission or launch date.
 
-**Current development build: 0.340.388 (pre-release).**
+**Current development build: 0.340.389 (pre-release).**
 
 ## v0.340.385 durable cross-session exchange continuity
 

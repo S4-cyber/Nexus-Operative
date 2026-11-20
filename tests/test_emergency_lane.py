@@ -143,7 +143,9 @@ def test_submit_failure_discards_abandoned_queue_and_keeps_cut_latched(lane,monk
 def test_shutdown_drains_unacknowledged_cut_before_other_cleanup_and_can_reopen(lane,monkeypatch):
     c,g,r,w,starts,obs=lane;entered=threading.Event();release=threading.Event();events=[]
     original=g.emergency_halt
-    def slow_cut():entered.set();assert release.wait(5);original();events.append('cut_committed')
+    def slow_cut():
+        entered.set();assert release.wait(5);result=original()
+        events.append('cut_committed');return result
     monkeypatch.setattr(g,'emergency_halt',slow_cut)
     monkeypatch.setattr(api,'paper_forward_runner',SimpleNamespace(stop=lambda reason:events.append(reason),request_cut=lambda:None))
     async def exercise():
@@ -271,6 +273,22 @@ def test_audit_failure_reports_unconfirmed_and_retry_can_verify(lane,monkeypatch
     assert g.recovery_report()['halted'] and not r.status()['enabled'] and w.status()['enabled']
     monkeypatch.setattr(api,'audit',original)
     assert c.post('/api/simulate/halt').json()['emergency_cut_state']=='VERIFIED'
+
+
+def test_exact_warm_ack_without_durable_replay_reports_unconfirmed(
+        lane,monkeypatch):
+    c,g,r,w,starts,obs=lane
+    c.post('/api/portal',json={'enabled':True})
+    c.post('/api/paper/forward/start',json=START)
+    monkeypatch.setattr(g,'emergency_halt',lambda:{'halted':True})
+    result=c.post('/api/simulate/halt')
+    assert result.status_code==503 and 'DURABLE_HALT' not in result.text
+    state=c.get('/api/status').json()
+    assert state['halted'] and not state['emergency_cut_pending']
+    assert state['emergency_cut_state']=='UNCONFIRMED'
+    cold=g.recovery_report()
+    assert cold['journal_present'] and not cold['halted']
+    assert not r.status()['enabled'] and w.status()['enabled'] and obs==['on']
 
 
 def test_actual_thread_start_failure_discards_abandoned_work_before_retry(lane,monkeypatch):

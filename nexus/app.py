@@ -18,7 +18,7 @@ from nexus.state import load_settings, save_settings, audit
 from nexus.markets import list_markets
 from nexus.market_universe import page as market_universe_page
 from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
-from nexus.durable_orders import gateway as research_order_gateway
+from nexus.durable_orders import gateway as research_order_gateway,emergency_halt_replayed
 from nexus.paper_forward import runner as paper_forward_runner
 from nexus.hub_refresh import refresh_worker
 from nexus.hub_jobs import BUILD_LOCK
@@ -98,7 +98,7 @@ async def application_lifespan(application):
             if lifecycle_executor is not None:
                 lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.388",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.389",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -412,7 +412,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.388", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.389", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -991,9 +991,13 @@ def _complete_emergency_cut():
     with _trading_control_lock:
         try:
             # Independent intent precedes SQLite. Still halt/stop if its disk write fails.
-            try:emergency_intent.persist(research_order_gateway._path())
+            order_path=research_order_gateway._path()
+            try:emergency_intent.persist(order_path)
             finally:
-                try:research_order_gateway.emergency_halt()
+                try:
+                    result=research_order_gateway.emergency_halt()
+                    if not emergency_halt_replayed(order_path,result):
+                        raise ValueError('DURABLE_HALT_REPLAY_UNCONFIRMED')
                 finally:paper_forward_runner.stop('EMERGENCY_THROTTLE_CUT')
         except (ValueError,OSError,sqlite3.Error,RuntimeError):
             raise HTTPException(status_code=503,detail="HALTED_LOCALLY_CUT_CLEANUP_UNCONFIRMED")

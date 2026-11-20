@@ -1685,6 +1685,14 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
         trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['sessions'][0]['session']=result['recovered']['sessions'][1]['session']
     with pytest.raises(ValueError,match='FORWARD_SESSION_BINDING'):trials._validate('forward',changed)
+    for field,value,code in (
+        ('review_receipt_sha256','0'*63,'FORWARD_SESSION_BINDING'),
+        ('review_reason_codes_sha256','0'*63,'FORWARD_SESSION_BINDING'),
+        ('cut_evidence_stable',False,'FORWARD_SESSION_EVIDENCE'),
+        ('cut_binding_verified',True,'FORWARD_SESSION_EVIDENCE'),
+        ('order_snapshot_stable',False,'FORWARD_SESSION_EVIDENCE')):
+        changed=copy.deepcopy(result);changed['recovered']['sessions'][0][field]=value
+        with pytest.raises(ValueError,match=code):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['cycle_latency']['p50_ms']=changed['cycle_latency']['p99_ms']+1
     with pytest.raises(ValueError,match='FORWARD_LATENCY_SCHEMA'):trials._validate('forward',changed)
     for field,value in (('retained_observations',279),('after','1970-01-01T00:16:41Z'),
@@ -1731,6 +1739,14 @@ def test_recovery_trial_consumes_exact_restored_scope():
         ('source_modes',['PUBLIC_READER_SINGLE_SOURCE_UNATTESTED'],'RESTORE_ACCOUNTING'),
         ('policy_sha256','0'*64,'RECOVERY_EVIDENCE_BINDING'),
         ('account_sha256','0'*63,'RECOVERY_EVIDENCE_BINDING')):
+        changed=copy.deepcopy(result);changed['recovered'][field]=value
+        with pytest.raises(ValueError,match=code):trials._validate('recovery',changed)
+    for field,value,code in (
+        ('review_receipt_sha256','0'*63,'RECOVERY_EVIDENCE_BINDING'),
+        ('review_reason_codes_sha256','0'*63,'RECOVERY_EVIDENCE_BINDING'),
+        ('cut_evidence_stable',False,'RESTORE_ACCOUNTING'),
+        ('cut_binding_verified',True,'RESTORE_ACCOUNTING'),
+        ('order_snapshot_stable',False,'RESTORE_ACCOUNTING')):
         changed=copy.deepcopy(result);changed['recovered'][field]=value
         with pytest.raises(ValueError,match=code):trials._validate('recovery',changed)
 

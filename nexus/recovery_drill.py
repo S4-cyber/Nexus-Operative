@@ -16,7 +16,9 @@ RECOVERED_PUBLIC_KEYS=frozenset(('session','halted','portfolio_reconciled','forw
     'archived_session_orders','session_order_ids','order_sha256','account_sha256','quote_head_sha256',
     'quote_observations','policy_sha256','modeled_buy_orders','modeled_sell_orders','source_modes',
     'event_records','event_head_sha256','event_reconciliation_sha256',
-    'quote_outcome_bijection','durable_order_outcomes_reconciled'))
+    'review_receipt_sha256','review_reason_codes_sha256',
+    'quote_outcome_bijection','durable_order_outcomes_reconciled',
+    'cut_evidence_stable','cut_binding_verified','order_snapshot_stable'))
 
 
 def canonical(value):
@@ -46,9 +48,14 @@ def _review(session):
     if len(orders)!=2 or report['orders'] or report['execution_account']['account']['positions']:
         raise ValueError('RECOVERY_DRILL_ARCHIVE_OR_POSITION_FAILED')
     events=evidence['durable_event_evidence']
+    receipt=evidence['review_receipt']
     if (not events['event_trace_complete'] or not events['quote_outcome_bijection'] or
             not events['durable_order_outcomes_reconciled']):
         raise ValueError('RECOVERY_DRILL_EVENT_RECONCILIATION_FAILED')
+    if (not receipt['local_consistency_ok'] or receipt['reason_count'] or
+            not receipt['cut_evidence_stable'] or receipt['independent_cut_binding_verified'] or
+            not receipt['order_snapshot_stable_during_review']):
+        raise ValueError('RECOVERY_DRILL_REVIEW_RECEIPT_FAILED')
     return dict(session=session,halted=True,portfolio_reconciled=True,forward_stopped=True,
                 archived_session_orders=len(orders),session_order_ids=[item['order']['id'] for item in orders],
                 order_sha256=fingerprint(orders),account_sha256=fingerprint(report['execution_account']),
@@ -59,7 +66,11 @@ def _review(session):
                 modeled_sell_orders=evidence['execution_crosscheck']['modeled_sell_orders'],
                 event_records=events['events'],event_head_sha256=events['head_sha256'],
                 event_reconciliation_sha256=events['reconciliation_sha256'],
+                review_receipt_sha256=receipt['receipt_sha256'],
+                review_reason_codes_sha256=receipt['reason_codes_sha256'],
                 quote_outcome_bijection=True,durable_order_outcomes_reconciled=True,
+                cut_evidence_stable=True,cut_binding_verified=False,
+                order_snapshot_stable=True,
                 source_modes=evidence['quote_evidence']['source_modes'])
 
 

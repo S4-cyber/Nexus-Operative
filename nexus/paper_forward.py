@@ -25,7 +25,8 @@ from nexus.execution_capacity import resumable_exit_mandate
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
 from nexus import emergency_intent,forward_evidence,forward_event_evidence,forward_sessions
-from nexus.forward_reconciliation_review import reconcile as reconcile_forward_session
+from nexus.forward_reconciliation_review import (reconcile as reconcile_forward_session,
+    review_receipt as seal_forward_review)
 from nexus.forward_ownership import ForwardOwnership
 from nexus.sqlite_journal_guard import (
     capture_file_identities, check_existing, committed_main_fingerprint,
@@ -751,6 +752,10 @@ class PaperForwardRunner:
     def evidence_report(self,session_id):
         import re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
+        def sample_cut():
+            latch,identity=emergency_intent.review_sample(self.orders._path())
+            return dict(latch=latch,signal=self._cut_requested.is_set()),identity
+        cut_before,cut_identity=sample_cut()
         order_snapshot=self.orders.session_orders_snapshot(session_id)
         with self._read_db() as db:
             if db is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
@@ -764,12 +769,36 @@ class PaperForwardRunner:
                 events=dict(integrity_ok=False,reasons=['DURABLE_EVENT_TABLES_MISSING_OR_INVALID'],
                     events=0,head_sha256=None,points=[])
         final_order_snapshot=self.orders.session_orders_snapshot(session_id)
+        cut_after,_=sample_cut()
+        latch_unverified=('PRESENT_UNVERIFIED' in
+            (cut_before['latch']['status'],cut_after['latch']['status']))
+        # A stable in-process signal cannot sanitize a malformed independent
+        # latch.  Presence remains a cut request, but the combined review must
+        # fail closed until both observations are structurally trustworthy.
+        signal_stable=(cut_before['signal'] and cut_after['signal'] and
+            not latch_unverified)
+        canonical_stable=(cut_before['latch']['canonical'] and
+            cut_after['latch']['canonical'] and
+            emergency_intent.same_canonical(self.orders._path(),cut_identity))
+        clear_stable=(not cut_before['signal'] and not cut_after['signal'] and
+            cut_before['latch']['status']==cut_after['latch']['status']=='CLEAR')
+        cut_stable=bool(signal_stable or canonical_stable or clear_stable)
+        cut_binding_source=('PROCESS_SIGNAL' if signal_stable else
+            'CANONICAL_LATCH' if canonical_stable else 'NONE')
+        cut_evidence=dict(before_status=cut_before['latch']['status'],
+            after_status=cut_after['latch']['status'],
+            requested_before=cut_before['signal'] or cut_before['latch']['requested'],
+            requested_after=cut_after['signal'] or cut_after['latch']['requested'],
+            stable=cut_stable,binding_verified=cut_binding_source!='NONE',
+            binding_source=cut_binding_source,
+            record_sha256=cut_before['latch']['record_sha256'] if canonical_stable else None)
         orders=order_snapshot['orders']
         policy,counts,last=forward_sessions.parse(*session)
         checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
         event_summary,event_reasons=reconcile_forward_session(session=session_id,
             started_at=session[0],updated_at=session[1],state=session[2],counts=counts,
-            last=last,quotes=quotes,events=events,order_snapshot=order_snapshot)
+            last=last,quotes=quotes,events=events,order_snapshot=order_snapshot,
+            final_order_snapshot=final_order_snapshot,cut_evidence=cut_evidence)
         terminal=forward_sessions.binding_reasons(last,session[2],session_id,policy,
             quotes['head_sha256'],quotes['observations'],quotes['points'][-1]['cycle'] if quotes['points'] else 0,
             quotes['parent_head_sha256'])
@@ -785,17 +814,29 @@ class PaperForwardRunner:
             and order_snapshot['halted']==final_order_snapshot['halted'])
         if not journal_snapshot_stable:reasons.append('ORDER_JOURNAL_CHANGED_DURING_REVIEW')
         if not portfolio_snapshot_stable:reasons.append('LINKED_PORTFOLIO_CHANGED_DURING_REVIEW')
+        if order_snapshot['halted']!=final_order_snapshot['halted']:
+            reasons.append('ORDER_HALT_STATE_CHANGED_DURING_REVIEW')
+        if order_snapshot['snapshot_sha256']!=final_order_snapshot['snapshot_sha256']:
+            reasons.append('ORDER_RECONCILIATION_SNAPSHOT_CHANGED_DURING_REVIEW')
         if last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':reasons.append('ORDER_CLEANUP_REQUIRES_REVIEW')
         import hashlib
         policy_digest=hashlib.sha256(forward_evidence.canonical({k:v for k,v in policy.items() if k!='policy_sha256'}).encode()).hexdigest()
         if policy_digest!=policy.get('policy_sha256'):reasons.append('SESSION_POLICY_FINGERPRINT_DISAGREEMENT')
         if not quotes['observations']:reasons.append('NO_RECORDED_QUOTE_EVIDENCE')
         if any(p['policy_sha256']!=policy['policy_sha256'] for p in quotes['points']):reasons.append('QUOTE_POLICY_FINGERPRINT_DISAGREEMENT')
+        reasons=sorted(set(reasons))
         summary={k:v for k,v in quotes.items() if k!='points'}
+        receipt=seal_forward_review(session=session_id,started_at=session[0],updated_at=session[1],
+            state=session[2],policy=policy,counts=counts,last=last,quotes=summary,
+            events=event_summary,initial_order_snapshot=order_snapshot,
+            final_order_snapshot=final_order_snapshot,cut_evidence=cut_evidence,
+            journal_stable=journal_snapshot_stable,
+            portfolio_stable=portfolio_snapshot_stable,order_snapshot_stable=order_snapshot_stable,
+            reasons=reasons)
         return dict(mode='READ_ONLY_FORWARD_EVIDENCE_REVIEW',read_only=True,session=session_id,
                     started_at=session[0],updated_at=session[1],stored_state=session[2],policy=policy,
                     counters=counts,quote_evidence=summary,execution_crosscheck=checked,
-                    durable_event_evidence=event_summary,
+                    durable_event_evidence=event_summary,review_receipt=receipt,
                     order_journal_snapshot=dict(journal_present=order_snapshot['journal_present'],
                         commands=order_snapshot['commands'],portfolio_linked=order_snapshot['portfolio_linked'],
                         halted=order_snapshot['halted'],
@@ -804,7 +845,7 @@ class PaperForwardRunner:
                         portfolio_stable_during_review=portfolio_snapshot_stable,
                         stable_during_review=order_snapshot_stable),
                     provisional_active_session=session_id==self._session and not self._stop.is_set(),
-                    local_consistency_ok=not reasons,reasons=sorted(set(reasons)),
+                    local_consistency_ok=not reasons,reasons=reasons,
                     live_orders_enabled=False,release_approved=False,strategy_validated=False,
                     limitations='Local consistency diagnostics, not independent market attestation or sustained-run acceptance. Injected transports are labeled separately. Counters may miss a committed fill after a process crash; the order ledger is authoritative. Two replay-validated order-and-linked-ledger snapshots bracket the separate forward-database read; any observed reconciliation snapshot change fails the review closed. Local hashes cannot prevent coordinated database rewrites. Review while stopped for a stable cross-database snapshot.')
 

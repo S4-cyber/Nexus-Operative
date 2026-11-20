@@ -26,10 +26,21 @@ def test_installed_recovery_checker_validates_complete_fixture(tmp_path,monkeypa
 
 
 @pytest.mark.parametrize('field',['account_sha256','order_sha256','quote_head_sha256','policy_sha256',
-    'event_head_sha256','event_reconciliation_sha256'])
+    'event_head_sha256','event_reconciliation_sha256','review_receipt_sha256',
+    'review_reason_codes_sha256'])
 def test_installed_checker_rejects_baseline_mismatch(tmp_path,monkeypatch,field):
     expected,fetch=fixture(tmp_path,monkeypatch)
     changed=copy.deepcopy(expected);changed[field]='wrong'
+    with pytest.raises(AssertionError):verify_recovery('local',changed,fetch)
+
+
+@pytest.mark.parametrize(('field','value'),(
+    ('cut_evidence_stable',False),('cut_binding_verified',True),
+    ('order_snapshot_stable',False)))
+def test_installed_checker_rejects_unstable_review_receipt(
+        tmp_path,monkeypatch,field,value):
+    expected,fetch=fixture(tmp_path,monkeypatch)
+    changed=copy.deepcopy(expected);changed[field]=value
     with pytest.raises(AssertionError):verify_recovery('local',changed,fetch)
 
 

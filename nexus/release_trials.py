@@ -2989,9 +2989,13 @@ def _validate(profile, result):
                 session['modeled_buy_orders']==session['modeled_sell_orders']==1 and
                 type(session['modeled_buy_orders']) is int and type(session['modeled_sell_orders']) is int and
                 session['quote_outcome_bijection'] is True and
-                session['durable_order_outcomes_reconciled'] is True,
+                session['durable_order_outcomes_reconciled'] is True and
+                session['cut_evidence_stable'] is True and
+                session['cut_binding_verified'] is False and
+                session['order_snapshot_stable'] is True,
                 'FORWARD_SESSION_EVIDENCE')
-            hashes.extend((session['event_head_sha256'],session['reconciliation_sha256']))
+            hashes.extend((session['event_head_sha256'],session['reconciliation_sha256'],
+                session['review_receipt_sha256'],session['review_reason_codes_sha256']))
         _require(len(set(session_ids))==20 and all(type(value) is str and
             re.fullmatch('[a-f0-9]{64}',value) is not None for value in hashes),
             'FORWARD_SESSION_BINDING')
@@ -3111,11 +3115,16 @@ def _validate(profile, result):
             recovered['modeled_buy_orders']==recovered['modeled_sell_orders']==1 and
             recovered['quote_outcome_bijection'] is True and
             recovered['durable_order_outcomes_reconciled'] is True and
+            recovered['cut_evidence_stable'] is True and
+            recovered['cut_binding_verified'] is False and
+            recovered['order_snapshot_stable'] is True and
             recovered['source_modes']==['INJECTED_TRANSPORT_UNATTESTED'],
             'RESTORE_ACCOUNTING')
         hashes=[recovered[key] for key in
             ('order_sha256','account_sha256','quote_head_sha256','policy_sha256',
              'event_head_sha256','event_reconciliation_sha256')]
+        hashes.extend(recovered[key] for key in
+            ('review_receipt_sha256','review_reason_codes_sha256'))
         _require(all(type(value) is str and re.fullmatch('[a-f0-9]{64}',value) is not None
             for value in hashes) and
             recovered['policy_sha256']==admit(POLICY['id'])['policy_sha256'],

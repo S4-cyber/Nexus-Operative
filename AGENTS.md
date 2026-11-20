@@ -1,5 +1,31 @@
 # Nexus Operative continuity instructions
 
+## v0.340.373 cut-aware sealed forward review
+
+Every complete per-session reconciliation now produces a privacy-safe receipt
+binding the session summary, quote and durable-event heads, event
+reconciliation, both replay-validated order/portfolio snapshots, halt state,
+fixed reason set and independently sampled emergency-cut state. A generic
+durable halt is no longer described as an independent cut. Signal-only cuts,
+malformed or changing latches, and order-snapshot changes fail closed with
+fixed public reasons. Clean forward and recovery release fixtures consume the
+exact receipt and stability fields.
+
+This is bounded offline reconciliation hardening, not provider/source
+attestation, broker-paper or account acceptance, genuine-market or sustained
+trial evidence, native Windows/installer acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Broker transport,
+engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed entry, reducing exits and the independent emergency stop remain
+intact. No button or editable parameter was added. The existing Quote / Fill
+Evidence hover help explains the sealed review and retains seven
+beginner-friendly tabs plus black/bright-purple bottom-right hover help.
+
+The read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
 ## v0.340.372 exact per-session reconciliation envelope
 
 Per-session evidence review now consumes the retained quote chain and the

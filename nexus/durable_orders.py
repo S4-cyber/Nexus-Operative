@@ -305,9 +305,9 @@ class DurableOrderGateway:
                 execution_portfolio.compare(portfolio,gateway.account)
             if method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
                 raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
-        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items()), sorted((str(k), v) for k,v in gateway.no_fill_events.items())], sort_keys=True))
         result = getattr(gateway, method)(*args, **kwargs)
-        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items()), sorted((str(k), v) for k,v in gateway.no_fill_events.items())], sort_keys=True))
         if before != after:
             if method=='link_portfolio':
                 execution_portfolio.link(portfolio,gateway.account)
@@ -448,15 +448,21 @@ class DurableOrderGateway:
             snapshot_sha256=combined.hexdigest()
             if portfolio_snapshot is not None:portfolio.require_current()
         records={**gateway.archived_intents,**gateway.intents}
-        matched={key:dict(order=copy.deepcopy(record),quote_events=[])
+        matched={key:dict(order=copy.deepcopy(record),quote_events=[],no_fill_events=[])
                  for key,record in records.items() if key.startswith(prefix)}
         for (oid,_),detail in gateway.quote_events.items():
             belongs=(detail.get('evidence_session')==session_id or
                 ('evidence_session' not in detail and oid.startswith(prefix)))
             if not belongs:continue
             if oid not in matched and oid in records:
-                matched[oid]=dict(order=copy.deepcopy(records[oid]),quote_events=[])
+                matched[oid]=dict(order=copy.deepcopy(records[oid]),quote_events=[],no_fill_events=[])
             if oid in matched:matched[oid]['quote_events'].append(copy.deepcopy(detail))
+        for (_,_,oid,eid),detail in gateway.no_fill_events.items():
+            if detail.get('evidence_session')!=session_id:continue
+            if oid not in matched and oid in records:
+                matched[oid]=dict(order=copy.deepcopy(records[oid]),quote_events=[],no_fill_events=[])
+            if oid in matched:
+                matched[oid]['no_fill_events'].append(copy.deepcopy(detail))
         # A durable reducing mandate may cross explicitly started sessions.
         # Project cumulative public fields to this session's exact slices so
         # its counters and modeled costs remain independently reviewable.
@@ -470,6 +476,8 @@ class DurableOrderGateway:
                     (Decimal(event['fee']) for event in events),Decimal(0)))
             events.sort(key=lambda event:(event.get('evidence_cycle',-1),
                 event.get('sequence',-1),event.get('evidence_session','')))
+            item['no_fill_events'].sort(key=lambda event:(event.get('evidence_cycle',-1),
+                event.get('sequence',-1),event.get('event_id','')))
         selected_terms={key:copy.deepcopy(gateway.order_terms[key])
             for key in sorted(matched) if key in gateway.order_terms}
         return dict(read_only=True,journal_present=present,commands=count,journal_sha256=journal_sha256,
@@ -494,6 +502,7 @@ class DurableOrderGateway:
                         order=copy.deepcopy(record),execution_terms=copy.deepcopy(gateway.order_terms.get(client_order_id)),
                         executions=[dict(event_id=eid,**copy.deepcopy(detail)) for (oid,eid),detail in gateway.executions.items() if oid==client_order_id],
                         quote_events=[dict(event_id=eid,**copy.deepcopy(detail)) for (oid,eid),detail in gateway.quote_events.items() if oid==client_order_id],
+                        no_fill_events=[copy.deepcopy(detail) for (_,_,oid,_),detail in gateway.no_fill_events.items() if oid==client_order_id],
                         live_orders_enabled=False)
 
     def recovery_report(self):

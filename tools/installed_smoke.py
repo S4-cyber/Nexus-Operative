@@ -68,7 +68,9 @@ def verify_recovery(base,expected,fetch=request):
     for oid in expected['session_order_ids']:
         detail=fetch(base,'/api/execution/intent/'+oid)
         assert detail['archived'] and detail['read_only']
-        orders.append(dict(order=detail['order'],quote_events=[{k:v for k,v in event.items() if k!='event_id'} for event in detail['quote_events']]))
+        orders.append(dict(order=detail['order'],
+            quote_events=[{k:v for k,v in event.items() if k!='event_id'} for event in detail['quote_events']],
+            no_fill_events=detail.get('no_fill_events',[])))
     assert recovery['halted'] and recovery['portfolio_reconciled']
     assert not recovery['orders'] and not recovery['execution_account']['account']['positions']
     assert fingerprint(recovery['execution_account'])==expected['account_sha256']
@@ -84,6 +86,7 @@ def verify_recovery(base,expected,fetch=request):
         assert evidence['local_consistency_ok']
         assert events['event_trace_complete'] and events['quote_outcome_bijection']
         assert events['durable_order_outcomes_reconciled']
+        assert events['durable_no_fill_outcomes_reconciled']
         assert events['events']==expected['event_records']
         assert events['head_sha256']==expected['event_head_sha256']
         assert events['reconciliation_sha256']==expected['event_reconciliation_sha256']

@@ -152,17 +152,29 @@ def test_reducing_slice_expiry_preserves_resumable_mandate_without_fill(
     expired=gateway.simulate_quote_fill(
         'exit','slice_2',2,'0.5',250,250,0.5,1022,1022)
     assert expired['expired'] and expired['slice_expired']
-    assert expired['mandate_resumable'] and expired['idempotent_replay']
+    assert expired['mandate_resumable'] and expired['no_fill_recorded']
+    assert not expired['idempotent_replay']
     assert expired['status']=='SIMULATED_REDUCTION_PENDING'
     after=gateway.recovery_report()
-    assert after==before
+    assert after['commands']==before['commands']+1
+    assert after['orders']==before['orders']
+    assert after['execution_account']==before['execution_account']
+    no_fill=gateway.order_report('exit')['no_fill_events']
+    assert no_fill==[dict(order_id='exit',side='SELL',event_id='slice_2',sequence=2,
+        reason='ORDER_EXPIRED_WITHOUT_FILL',evaluated_at='1022',expires_at='1022')]
+    assert gateway.simulate_quote_fill(
+        'exit','slice_2',2,'0.5',250,250,0.5,1022,1022)['idempotent_replay']
+    assert gateway.recovery_report()['commands']==after['commands']
+    with pytest.raises(ValueError,match='DUPLICATE_NO_FILL_EVENT_CONFLICT'):
+        gateway.simulate_quote_fill('exit','slice_2',2,'0.5',250,250,0.5,1022,1023)
     due=gateway.expire_due(1022)
     assert due['expired_order_ids']==due['resumable_mandate_ids']==['exit']
     assert due['expired_count']==1
-    assert gateway.recovery_report()==before
+    assert gateway.recovery_report()==after
     order_checkpoints.clear_cache()
     cold=DurableOrderGateway(path).recovery_report()
     mandate=next(order for order in cold['orders'] if order['id']=='exit')
     assert mandate['status']=='SIMULATED_REDUCTION_PENDING'
     assert mandate['reduction_slice_count']==1
     assert len(cold['execution_account']['account']['positions'])==1
+    assert len(DurableOrderGateway(path).order_report('exit')['no_fill_events'])==1

@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.369'
+REVISION = '0.340.370'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -805,6 +805,15 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Reconciliation acceptance now rejects symbolic or multiply linked caller-selected pacing, activity and acceptance journal leaves before semantic reads and rebinds each canonical preflight result to the exact selected identity. The source-declared authority inventory separately reports application routes and the two exact credentialed POST transports: the paper-order transport remains OFF and unrouted, while every broker, funding, live, cloud, spend and release authority flag remains false. This is local evidence-integrity and truthful capability inventory, not provider/account connectivity, broker acceptance, genuine-market coverage, sustained operation, funding/live/cloud readiness or permission.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; exact-TTL expiry of a residual reducing-exit slice now returns an explicit no-fill result while preserving the immutable full-position mandate, so the runner durably records a veto instead of a modeled SELL and may resume only under later fresh terms and quote' if item.id=='M4' else
+        '; paper-forward execution now distinguishes per-slice expiry from terminal reducing-mandate expiry, retaining the bounded position/account binding and independent halt path across a cold restart without fabricating a fill' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Residual position-reducing mandates now treat an exact execution-term TTL boundary as a per-slice no-fill veto. The current position, durable fill count and quote-event count remain unchanged; a later cycle must establish newer terms and a fresh quote before the same bounded mandate can continue. This is local reconciliation correctness, not broker-paper, genuine-market, liquidity, sustained-operation or release acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -1222,7 +1231,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.369 keeps the one protected local-paper exit intent as an immutable full-position mandate across multiple fresh-quote slices and explicit runner sessions. Every slice remains capped at $200, carries an exact session/cycle and monotonic fill sequence, and rechecks the current holding against durable cumulative reduction before application. Cold restart reuses exactly one structurally valid mandate, while ambiguous, malformed, oversized, stale-position and over-reducing states fail closed. Start/preflight/readiness admission recognizes the existing mandate without enlarging lifetime ID or command limits, exact-session reviews separate slice costs, and the independent emergency halt terminally cancels pending work without liquidating. This is bounded offline exit and reconciliation hardening, not broker, genuine-market, liquidity, Windows, funding/live/cloud, performance, profitability or release acceptance. Broker transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.370 closes an exact-TTL reconciliation gap in resumable local-paper exits. When a residual reducing slice reaches its execution-term boundary, accounting now reports an explicit per-slice expiry without changing the durable mandate, position, fill sequence or retained quote events. The runner records VETO / ORDER_EXPIRED_WITHOUT_FILL rather than a false modeled SELL; only a later cycle with newer terms and a fresh quote may resume the same bounded mandate. Cold replay retains the pending mandate, and the independent emergency halt remains terminal and outside the worker. This is bounded offline exit/reconciliation correctness, not broker-paper, genuine-market, liquidity, sustained-operation, Windows, funding/live/cloud, performance, profitability or release acceptance. Broker transport remains OFF and unrouted; every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -1,5 +1,27 @@
 # Nexus Operative continuity instructions
 
+## v0.340.370 truthful resumable-slice expiry
+
+Exact-TTL expiry of a residual local-paper reducing slice is now classified as
+an explicit no-fill boundary. The immutable full-position mandate, current
+position, fill sequence and retained quote events remain unchanged, while the
+paper-forward runner durably records `VETO / ORDER_EXPIRED_WITHOUT_FILL`
+instead of falsely reporting a modeled SELL. A later cycle must establish newer
+execution terms and consume a fresh quote before the same bounded mandate can
+continue. Cold replay preserves the pending mandate; the independent emergency
+halt remains terminal and outside the worker.
+
+This is bounded offline exit/reconciliation correctness, not broker-paper,
+genuine-market, liquidity or sustained-operation evidence, Windows or installer
+acceptance, funding/live/cloud readiness, performance, profitability or release
+approval. Broker transport remains OFF and unrouted; engagement and optional AI
+remain OFF by default. No button or editable parameter changed, so the seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate remains exact weighted implementation
+38% (displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
 ## v0.340.369 resumable bounded reducing-exit mandate
 
 The protected local-paper exit intent now remains an immutable, internal-only

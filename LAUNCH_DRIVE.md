@@ -1,5 +1,24 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.370 truthful resumable-slice expiry
+
+Exact-TTL expiry of a residual local-paper reducing slice now produces an
+explicit no-fill veto. It does not change the immutable full-position mandate,
+current position, fill sequence or retained quote events, and the runner can no
+longer report a modeled SELL for an execution that never happened. A later
+cycle must establish newer terms and a fresh quote before resuming the same
+bounded mandate. Cold replay retains the pending mandate; the independent
+emergency halt remains terminal and outside the worker.
+
+This closes a bounded offline reconciliation defect only. It is not
+broker-paper, genuine-market, liquidity or sustained-operation evidence,
+Windows/installer acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. Broker transport, engagement and optional AI
+remain OFF by default. No button or editable parameter changed; the seven tabs
+and black/bright-purple bottom-right hover help remain unchanged. Progress stays
+38% weighted (about 40%, 30–45% uncertainty, low confidence), with 0/9 accepted
+stages and no release permission, trading permission or launch date.
+
 ## v0.340.369 resumable bounded reducing-exit mandate
 
 The protected local-paper exit intent now remains an immutable, internal-only

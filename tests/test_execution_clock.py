@@ -46,6 +46,66 @@ def test_forward_restore_delay_vetoes_stale_fill_and_cancels_pending_order(tmp_p
     r.stop()
 
 
+def test_resumable_exit_slice_expiry_is_vetoed_then_fills_on_fresh_terms(
+        tmp_path,monkeypatch):
+    from decimal import Decimal
+    from nexus import order_checkpoints
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    r,g,c=setup(tmp_path,monkeypatch)
+    g.submit('entry','BTC-USD','BUY',100,tier='terrestrial')
+    g.simulate_priced_fill('entry','fill',1,1,100)
+    configure('terrestrial',False);c.price=250;c.now=1000
+    assert r.single_cycle()['decision']=='SELL'
+    first=g.recovery_report()
+    mandate=next(order for order in first['orders']
+                 if order.get('intent_scope')=='POSITION_REDUCING_EXIT')
+    assert mandate['status']=='SIMULATED_REDUCTION_PENDING'
+    assert mandate['reduction_slice_count']==1
+    position=Decimal(first['execution_account']['account']['positions']['BTC-USD']['quantity'])
+    r.stop();order_checkpoints.clear_cache()
+
+    cold=DurableOrderGateway(g.path);resumed=PaperForwardRunner(cold,c.quote,lambda:c.now)
+    resumed.prepare('terrestrial');c.now+=5;c.price=251
+    original=cold._restore;delayed=[False]
+    def restore(db):
+        state=original(db);gateway=state[0]
+        pending=next((order for order in gateway.intents.values()
+            if order.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+            order['status']=='SIMULATED_REDUCTION_PENDING'),None)
+        if (pending is not None and
+                Decimal(gateway.order_terms[pending['id']]['created_at'])==Decimal(str(c.now)) and
+                pending.get('reduction_slice_count')==1 and not delayed[0]):
+            c.now+=2;delayed[0]=True
+        return state
+    monkeypatch.setattr(cold,'_restore',restore)
+    expired=resumed.single_cycle()
+    assert expired['decision']=='VETO'
+    assert expired['reason']=='ORDER_EXPIRED_WITHOUT_FILL'
+    after_expiry=cold.recovery_report()
+    mandate=next(order for order in after_expiry['orders']
+                 if order.get('intent_scope')=='POSITION_REDUCING_EXIT')
+    assert mandate['status']=='SIMULATED_REDUCTION_PENDING'
+    assert mandate['reduction_slice_count']==1
+    assert Decimal(after_expiry['execution_account']['account']['positions']['BTC-USD']['quantity'])==position
+    assert len(cold.order_report(mandate['id'])['quote_events'])==1
+
+    c.now+=5;c.price=252
+    filled=resumed.single_cycle()
+    assert filled['decision']=='SELL'
+    final=cold.recovery_report()
+    mandate=next(order for order in final['orders']
+                 if order.get('intent_scope')=='POSITION_REDUCING_EXIT')
+    assert mandate['status']=='SIMULATED_FILLED'
+    assert mandate['reduction_slice_count']==2
+    assert not final['execution_account']['account']['positions']
+    review=resumed.evidence_report(resumed.status()['session'])
+    assert review['local_consistency_ok']
+    assert review['counters']['VETO']==review['counters']['SELL']==1
+    resumed.stop()
+
+
 def test_stop_seen_after_restore_prevents_fill(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch);original=g._restore;stopped=[False]
     def restore(db):

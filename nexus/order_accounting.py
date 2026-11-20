@@ -223,6 +223,15 @@ class AccountingOrderGateway(OrderGateway):
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             if client_order_id not in self.order_terms:raise ValueError('MISSING_EXECUTION_TERMS')
             if now<Decimal(self.order_terms[client_order_id]['expires_at']):raise ValueError('ORDER_NOT_EXPIRED')
+            # A reducing mandate survives across bounded quote slices. Expiry
+            # applies to the current slice's terms, not to the immutable
+            # full-position exit intent. Report the no-fill boundary to the
+            # runner while retaining the mandate for a fresh later quote.
+            if (record.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+                    record['status']=='SIMULATED_REDUCTION_PENDING'):
+                return {**copy.deepcopy(record),'expired':True,
+                        'slice_expired':True,'mandate_resumable':True,
+                        'idempotent_replay':True}
             changed=record['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED')
             if changed:record['status']='SIMULATED_EXPIRED'
             return {**copy.deepcopy(record),'expired':record['status']=='SIMULATED_EXPIRED','idempotent_replay':not changed}
@@ -277,9 +286,17 @@ class AccountingOrderGateway(OrderGateway):
         now=number(evaluated_at)
         with self.lock:
             due=[oid for oid,terms in self.order_terms.items()
-                 if now>=Decimal(terms['expires_at']) and self.intents.get(oid,{}).get('status') in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED')]
+                 if now>=Decimal(terms['expires_at']) and
+                 self.intents.get(oid,{}).get('status') in
+                 ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED',
+                  'SIMULATED_REDUCTION_PENDING')]
+            resumable=[oid for oid in due if
+                self.intents[oid].get('intent_scope')=='POSITION_REDUCING_EXIT' and
+                self.intents[oid]['status']=='SIMULATED_REDUCTION_PENDING']
             for oid in due:self.expire_order(oid,evaluated_at)
-            return dict(expired_order_ids=due,expired_count=len(due),live_orders_enabled=False)
+            return dict(expired_order_ids=due,expired_count=len(due),
+                        resumable_mandate_ids=resumable,
+                        live_orders_enabled=False)
 
     def simulate_priced_fill(self, client_order_id, event_id, sequence, quantity, price, fee='0'):
         _require_order_id(client_order_id);_require_event_id(event_id)

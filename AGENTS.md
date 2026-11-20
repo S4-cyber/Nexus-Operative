@@ -1,5 +1,30 @@
 # Nexus Operative continuity instructions
 
+## v0.340.377 same-history repeated-interruption recovery
+
+The mandatory disposable forward profile now uses one linked ledger across two
+ordered abrupt child terminations. The first occurs after a durable modeled BUY
+fill and before its forward outcome. A cold reviewer must observe the retained
+gap and explicitly cancel the outstanding order. The second occurs after a
+reducing-exit no-fill attempt and before its forward VETO. Final cold replay
+requires the first gap to remain stable, both sessions to remain review-required,
+the no-fill digest to replay identically, fill sequences to remain monotonic,
+and remaining position plus cumulative reduction to equal the original mandate.
+The forward runner must remain disabled and unowned with no automatic repair,
+retry or restart.
+
+This is bounded offline process-death, recovery and reconciliation evidence,
+not operating-system power-loss proof, broker-paper/account acceptance,
+genuine-market or sustained-trial evidence, native Windows/installer acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
 ## v0.340.376 modeled-fill binding, cut fence and strict public JSON audit
 
 Every new successful paper-forward BUY/SELL outcome now carries a canonical

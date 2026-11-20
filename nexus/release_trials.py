@@ -2835,6 +2835,7 @@ def _validate(profile, result):
             NO_FILL_CRASH_PUBLIC_KEYS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
             PROCESS_CONTROL_PUBLIC_KEYS, PUBLIC_KEYS, SCHEDULER_CADENCE_CASE_PUBLIC_KEYS,
             SCHEDULER_CADENCE_LIMITATIONS, SCHEDULER_CADENCE_PUBLIC_KEYS,
+            REPEATED_INTERRUPTION_LIMITATIONS, REPEATED_INTERRUPTION_PUBLIC_KEYS,
             RECOVERED_PUBLIC_KEYS, SESSION_PUBLIC_KEYS)
         from nexus.paper_forward import (COMMIT_DURABILITY_CHECKS,
             COMMIT_DURABILITY_PUBLIC_KEYS)
@@ -2847,6 +2848,7 @@ def _validate(profile, result):
         faults=result['fault_injection']
         cadence=result['scheduler_cadence']
         no_fill_crash=result['no_fill_crash']
+        repeated=result['repeated_interruption']
         _require(type(durability) is dict and
             frozenset(durability)==COMMIT_DURABILITY_PUBLIC_KEYS and
             durability['source']==
@@ -2883,6 +2885,24 @@ def _validate(profile, result):
                 'live_orders_enabled','release_approved')) and
             no_fill_crash['limitations']==NO_FILL_CRASH_LIMITATIONS,
             'FORWARD_NO_FILL_CRASH_EVIDENCE')
+        _require(type(repeated) is dict and
+            frozenset(repeated)==REPEATED_INTERRUPTION_PUBLIC_KEYS,
+            'FORWARD_REPEATED_INTERRUPTION_SCHEMA')
+        _require(repeated['mode']=='DISPOSABLE_REPEATED_INTERRUPTION_RECOVERY' and
+            repeated['passed'] is True and repeated['process_exit_codes']==[77,78] and
+            repeated['interruptions']==2 and type(repeated['interruptions']) is int and
+            repeated['no_fill_attempts']==1 and type(repeated['no_fill_attempts']) is int and
+            all(repeated[key] is True for key in (
+                'first_gap_stable','no_fill_digest_stable','fill_sequence_monotonic',
+                'position_equation_preserved','explicit_review_action',
+                'old_session_review_required','no_fill_session_review_required',
+                'quote_outcome_gaps')) and
+            all(repeated[key] is False for key in (
+                'automatic_repair','automatic_retries','automatic_restart','forward_enabled',
+                'ownership_held','actual_provider_requests','broker_connected',
+                'live_orders_enabled','release_approved')) and
+            repeated['limitations']==REPEATED_INTERRUPTION_LIMITATIONS,
+            'FORWARD_REPEATED_INTERRUPTION_EVIDENCE')
         _require(all(type(cadence[name]) is dict and
             frozenset(cadence[name])==SCHEDULER_CADENCE_CASE_PUBLIC_KEYS
             for name in ('nominal','overrun','invalid_clock','clock_regression','stalled_clock')),

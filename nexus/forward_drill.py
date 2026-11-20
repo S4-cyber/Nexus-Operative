@@ -13,7 +13,7 @@ LIMITATIONS=('Serial injected quotes with synthetic time; cycle timings include 
     'Fault treatments use the actual worker loop with accelerated local scheduling and abrupt child termination, but no '
     'actual feed, operating-system power loss, streaming, broker or sustained-market throughput acceptance.')
 PUBLIC_KEYS=frozenset(('mode','passed','rounds','cycles','cycle_latency','recovered','application_accounts_changed',
-    'commit_durability','fault_injection','scheduler_cadence','no_fill_crash',
+    'commit_durability','fault_injection','scheduler_cadence','no_fill_crash','repeated_interruption',
     'isolated_temporary_storage','broker_connected','live_orders_enabled','release_approved','target_validated','limitations'))
 RECOVERED_PUBLIC_KEYS=frozenset(('sessions','commands','account_sha256','coverage_review','forward_stopped',
     'ownership_released','halted','flat','portfolio_reconciled'))
@@ -50,6 +50,12 @@ NO_FILL_CRASH_PUBLIC_KEYS=frozenset(('mode','passed','process_terminated','exit_
     'mandate_resumable','old_session_review_required','quote_outcome_gap',
     'no_fill_outcome_gap','no_fill_binding_gap','automatic_repair','actual_provider_requests',
     'broker_connected','live_orders_enabled','release_approved','limitations'))
+REPEATED_INTERRUPTION_PUBLIC_KEYS=frozenset(('mode','passed','process_exit_codes','interruptions',
+    'first_gap_stable','no_fill_attempts','no_fill_digest_stable','fill_sequence_monotonic',
+    'position_equation_preserved','explicit_review_action','old_session_review_required',
+    'no_fill_session_review_required','quote_outcome_gaps','automatic_repair','automatic_retries',
+    'automatic_restart','forward_enabled','ownership_held','actual_provider_requests',
+    'broker_connected','live_orders_enabled','release_approved','limitations'))
 FAULT_LIMITATIONS=('Injected local failures, accelerated worker scheduling and abrupt local child termination only; '
     'proves bounded fail-closed worker/cold-reopen behavior, not actual provider availability, operating-system power '
     'loss, clock hardware, network recovery, broker operation or sustained-market acceptance.')
@@ -59,6 +65,10 @@ SCHEDULER_CADENCE_LIMITATIONS=('Injected monotonic scheduling and public-quote-s
 NO_FILL_CRASH_LIMITATIONS=('Abrupt local child termination at one injected boundary after the durable no-fill commit and before its '
     'forward VETO only; proves local replay and review-required behavior, not operating-system power loss, storage hardware durability, '
     'actual provider or broker behavior, market liquidity, exit completion or release acceptance.')
+REPEATED_INTERRUPTION_LIMITATIONS=('Two abrupt local child terminations on one disposable linked ledger: first after a durable modeled '
+    'BUY fill and before its forward outcome, then after a durable reducing-exit no-fill attempt and before its forward VETO. Proves '
+    'cold replay, explicit review action and monotonic local accounting only; not operating-system power loss, storage hardware '
+    'durability, actual provider or broker behavior, market liquidity, exit completion or release acceptance.')
 COVERAGE_REVIEW_REASONS=('COVERAGE_GAP_EXCEEDS_MAXIMUM','DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT','EVENT_INCIDENTS_RETAINED_IN_WINDOW','EXECUTION_OWNERSHIP_NOT_CHECKED',
     'INJECTED_OBSERVATIONS_IN_WINDOW','NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS',
     'ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','QUOTE_ERRORS_RETAINED_IN_WINDOW',
@@ -532,6 +542,155 @@ def _no_fill_crash(directory):
         else:os.environ['NEXUS_PORTABLE_DATA']=previous
 
 
+def _repeated_interruption_worker(directory,phase):
+    """Create one exact crash boundary without repairing earlier history."""
+    from datetime import datetime,timezone
+    from decimal import Decimal
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.tier_permissions import configure
+    root=Path(directory);root.mkdir(parents=True,exist_ok=True)
+    os.environ['NEXUS_PORTABLE_DATA']=str(root)
+    gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+    if phase=='fill_gap':
+        configure('terrestrial',True);clock={'now':1000,'price':10}
+        def quote(product):
+            return dict(product=product,provider='coinbase_exchange_public',read_only=True,
+                orders_allowed=False,bid=clock['price'],ask=clock['price']+.01,
+                last=clock['price'],received_at=clock['now'],
+                exchange_time=datetime.fromtimestamp(clock['now'],timezone.utc).isoformat())
+        runner=PaperForwardRunner(gateway,quote,lambda:clock['now']);runner.prepare('terrestrial')
+        original_record=runner._record
+        def record(decision,reason,**extra):
+            if decision=='BUY':os._exit(77)
+            return original_record(decision,reason,**extra)
+        runner._record=record
+        for index in range(7):
+            clock.update(now=1000+index*5,price=10+index*.01);runner.single_cycle()
+        raise ValueError('FORWARD_DRILL_REPEATED_FILL_HOOK_NOT_REACHED')
+    if phase!='no_fill_gap':raise ValueError('FORWARD_DRILL_REPEATED_PHASE')
+    configure('terrestrial',False);clock={'now':2000,'price':250}
+    def quote(product):
+        return dict(product=product,provider='coinbase_exchange_public',read_only=True,
+            orders_allowed=False,bid=clock['price'],ask=clock['price']+.01,
+            last=clock['price'],received_at=clock['now'],
+            exchange_time=datetime.fromtimestamp(clock['now'],timezone.utc).isoformat())
+    first=PaperForwardRunner(gateway,quote,lambda:clock['now']);first.prepare('terrestrial')
+    _require(first.single_cycle()['decision']=='SELL','REPEATED_INITIAL_SLICE')
+    first.stop('DISPOSABLE_REPEATED_INTERRUPTION_SETUP')
+    cold=DurableOrderGateway(gateway.path)
+    resumed=PaperForwardRunner(cold,quote,lambda:clock['now'])
+    resumed.prepare('terrestrial');clock.update(now=2005,price=251)
+    original_restore=cold._restore;delayed=[False]
+    def restore(db):
+        state=original_restore(db);restored=state[0]
+        pending=next((order for order in restored.intents.values()
+            if order.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+            order['status']=='SIMULATED_REDUCTION_PENDING'),None)
+        if (pending is not None and
+                Decimal(restored.order_terms[pending['id']]['created_at'])==
+                    Decimal(str(clock['now'])) and
+                pending.get('reduction_slice_count')==1 and not delayed[0]):
+            clock['now']+=2;delayed[0]=True
+        return state
+    cold._restore=restore
+    original_record=resumed._record
+    def record(decision,reason,**extra):
+        if decision=='VETO' and reason=='ORDER_EXPIRED_WITHOUT_FILL':os._exit(78)
+        return original_record(decision,reason,**extra)
+    resumed._record=record;resumed.single_cycle()
+    raise ValueError('FORWARD_DRILL_REPEATED_NO_FILL_HOOK_NOT_REACHED')
+
+
+def _repeated_interruption(directory):
+    """Prove two crash gaps remain review-required on one ledger history."""
+    from decimal import Decimal
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.paper_forward import PaperForwardRunner
+    from nexus.order_accounting import no_fill_attempt_sha256
+    root=Path(directory);root.mkdir(parents=True,exist_ok=True)
+    expression=('import sys; from nexus.forward_drill import _repeated_interruption_worker; '
+        '_repeated_interruption_worker(sys.argv[1],sys.argv[2])')
+    def crash(phase):
+        return subprocess.run([sys.executable,'-c',expression,str(root),phase],
+            env={**os.environ,'NEXUS_PORTABLE_DATA':str(root)},stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,text=True,timeout=30)
+    first=crash('fill_gap');_require(first.returncode==77,'REPEATED_FILL_CHILD')
+    previous=os.environ.get('NEXUS_PORTABLE_DATA')
+    try:
+        os.environ['NEXUS_PORTABLE_DATA']=str(root)
+        gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+        runner=PaperForwardRunner(gateway);sessions=runner.sessions()['sessions']
+        fill_session=next((item for item in sessions
+            if item['effective_state']=='INTERRUPTED_OR_PRIOR_SESSION'),None)
+        _require(fill_session is not None,'REPEATED_FILL_SESSION')
+        before=runner.evidence_report(fill_session['session'])
+        entry=next((order for order in gateway.recovery_report()['orders']
+            if order.get('side')=='BUY'),None)
+        _require(entry is not None,'REPEATED_ENTRY')
+        cancelled=gateway.cancel(entry['id'])
+        _require(cancelled.get('status')=='SIMULATED_CANCELLED','REPEATED_EXPLICIT_CANCEL')
+        reviewed=cancelled.get('sent_to_broker') is False
+        stable_before=(tuple(before['reasons']),before['quote_evidence']['head_sha256'],
+            before['durable_event_evidence']['head_sha256'],fingerprint(gateway.order_report(entry['id'])))
+        second=crash('no_fill_gap');_require(second.returncode==78,'REPEATED_NO_FILL_CHILD')
+        gateway=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+        runner=PaperForwardRunner(gateway);status=runner.status();recovery=gateway.recovery_report()
+        after=runner.evidence_report(fill_session['session'])
+        stable_after=(tuple(after['reasons']),after['quote_evidence']['head_sha256'],
+            after['durable_event_evidence']['head_sha256'],fingerprint(gateway.order_report(entry['id'])))
+        interrupted=[]
+        for item in runner.sessions()['sessions']:
+            if item['effective_state']=='INTERRUPTED_OR_PRIOR_SESSION':
+                evidence=runner.evidence_report(item['session'])
+                interrupted.append((item,evidence))
+        no_fill_pair=next(((item,evidence) for item,evidence in interrupted
+            if evidence['quote_evidence']['observations']==1),None)
+        _require(no_fill_pair is not None,'REPEATED_NO_FILL_SESSION')
+        no_fill_session,no_fill_evidence=no_fill_pair
+        mandate=next((order for order in recovery['orders']
+            if order.get('intent_scope')=='POSITION_REDUCING_EXIT'),None)
+        _require(mandate is not None,'REPEATED_MANDATE')
+        entry_report=gateway.order_report(entry['id'])
+        report=gateway.order_report(mandate['id']);attempts=report['no_fill_events']
+        replayed=DurableOrderGateway(root/'order_lifecycle.sqlite3').order_report(mandate['id'])
+        position=(recovery['execution_account']['account']['positions'] or {}).get('BTC-USD')
+        gaps=no_fill_evidence['durable_event_evidence']
+        entry_sequences=sorted(event['sequence'] for event in
+            entry_report['order']['lifecycle_events'].values())
+        exit_sequences=sorted(event['sequence'] for event in
+            report['order']['lifecycle_events'].values())
+        return dict(mode='DISPOSABLE_REPEATED_INTERRUPTION_RECOVERY',passed=True,
+            process_exit_codes=[first.returncode,second.returncode],interruptions=len(interrupted),
+            first_gap_stable=stable_before==stable_after,no_fill_attempts=len(attempts),
+            no_fill_digest_stable=(len(attempts)==len(replayed['no_fill_events'])==1 and
+                no_fill_attempt_sha256(attempts[0])==no_fill_attempt_sha256(replayed['no_fill_events'][0])),
+            fill_sequence_monotonic=(entry['id']!=mandate['id'] and
+                entry_sequences==exit_sequences==[1] and
+                len(entry_report['quote_events'])==len(report['quote_events'])==1 and
+                mandate.get('reduction_slice_count')==1),
+            position_equation_preserved=(type(position) is dict and Decimal(position['quantity'])>0 and
+                Decimal(position['quantity'])+Decimal(mandate['reduction_filled_quantity'])==
+                    Decimal(mandate['expected_position_quantity'])),
+            explicit_review_action=reviewed,
+            old_session_review_required=(fill_session['requires_review'] is True and
+                after['local_consistency_ok'] is False and
+                'DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT' in after['reasons']),
+            no_fill_session_review_required=(no_fill_session['requires_review'] is True and
+                no_fill_evidence['local_consistency_ok'] is False and
+                'DURABLE_NO_FILL_ATTEMPT_DIGEST_DISAGREEMENT' in no_fill_evidence['reasons']),
+            quote_outcome_gaps=(gaps['quote_outcome_bijection'] is False and
+                gaps['durable_no_fill_outcomes_reconciled'] is False and
+                gaps['durable_no_fill_attempts_bound'] is False),
+            automatic_repair=False,automatic_retries=False,automatic_restart=False,
+            forward_enabled=status['enabled'],ownership_held=status['ownership_held'],
+            actual_provider_requests=False,broker_connected=False,live_orders_enabled=False,
+            release_approved=False,limitations=REPEATED_INTERRUPTION_LIMITATIONS)
+    finally:
+        if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
+        else:os.environ['NEXUS_PORTABLE_DATA']=previous
+
+
 def _child(directory,rounds,sessions=None):
     action=f'_exercise({rounds!r})' if sessions is None else f'_review({sessions!r})'
     expression='from nexus.forward_drill import _exercise,_review; import json; print(json.dumps('+action+'))'
@@ -558,12 +717,14 @@ def run(rounds=3):
         faults=_fault_child(root/'faults')
         cadence=_scheduler_cadence(root/'cadence')
         no_fill_crash=_no_fill_crash(root/'no-fill-crash')
+        repeated_interruption=_repeated_interruption(root/'repeated-interruption')
         from nexus.paper_forward import commit_durability_fixture_report
         durability=commit_durability_fixture_report()
         _require(durability['passed'] is True,'COMMIT_DURABILITY')
     return dict(mode='DISPOSABLE_FORWARD_RUNNER_DRILL',passed=True,rounds=rounds,cycles=baseline['cycles'],
                 cycle_latency=baseline['cycle_latency'],recovered=recovered,commit_durability=durability,
                 fault_injection=faults,scheduler_cadence=cadence,no_fill_crash=no_fill_crash,
+                repeated_interruption=repeated_interruption,
                 application_accounts_changed=False,
                 isolated_temporary_storage=True,broker_connected=False,live_orders_enabled=False,release_approved=False,
                 target_validated=False,limitations=LIMITATIONS)

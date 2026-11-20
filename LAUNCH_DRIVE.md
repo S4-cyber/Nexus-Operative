@@ -1,5 +1,24 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.377 same-history repeated-interruption recovery
+
+The mandatory disposable forward profile now kills one child after a durable
+modeled BUY fill but before its forward outcome, performs an explicit cold
+review/cancellation, then kills a second child on that same linked ledger after
+a reducing-exit no-fill attempt but before its VETO. Final cold replay requires
+the first gap to remain stable, both interrupted sessions to remain
+review-required, the no-fill attempt digest to replay identically, fill order to
+remain monotonic and the remaining-position equation to reconcile exactly.
+
+The runner reopens disabled with ownership released and no automatic repair,
+retry or restart. This is local injected recovery evidence, not physical
+power-loss proof, provider/source attestation, broker-paper/account acceptance,
+market realism, native Windows acceptance, funding/live/cloud readiness,
+profitability or release approval. No control or parameter was added; engagement
+remains OFF by default and existing beginner help remains unchanged. The
+roadmap baseline remains 38% weighted (about 40% displayed, 30–45% low
+confidence), with 0/9 accepted stages.
+
 ## v0.340.376 modeled-fill binding, cut fence and strict public JSON audit
 
 The durable order journal and forward event chain now cross-bind each successful

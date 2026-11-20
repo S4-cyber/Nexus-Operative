@@ -1,5 +1,23 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.377 same-history repeated-interruption recovery
+
+This pre-1.0 increment adds a mandatory two-crash treatment on one disposable
+linked ledger. It proves a durable modeled-fill/forward-outcome gap remains
+stable after explicit review and a later reducing-exit no-fill/forward-VETO gap;
+both sessions stay review-required, accounting stays monotonic and exact, and
+the cold runner stays disabled and unowned without automatic repair, retry or
+restart. It changes no broker route, account authority, permission default,
+risk limit or user-editable parameter. All real-money, funding, live, cloud and
+release authorities remain false.
+
+Version 0.340.377 is implementation evidence only. It does not imply physical
+power-loss durability, actual broker-paper acceptance, sustained-market realism,
+native Windows installer acceptance, profitability, owner approval or readiness
+for 1.0. The roadmap baseline remains exact weighted implementation 38%,
+displayed about 40%, with a 30–45% low-confidence range and 0/9 independently
+accepted stages.
+
 ## v0.340.376 modeled-fill binding, cut fence and strict public JSON audit
 
 This pre-1.0 increment completes full-detail cross-journal binding for modeled

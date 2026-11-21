@@ -80,6 +80,8 @@ BROKER_INTENT_RECONCILIATION_PUBLIC_KEYS=frozenset(('mode','profile','passed',
     'modeled_fill_bound','payload_bound','intent_sha256','payload_sha256',
     'intent_reconciliation_sha256','request_snapshot_replayed',
     'journal_file_fingerprint_rechecked','journal_unchanged',
+    'order_snapshot_replayed','order_snapshot_stable_during_reconciliation',
+    'durable_halt_clear','post_review_halt_rejected',
     'changed_review_rejected','stale_head_rejected','legacy_unbound_rejected',
     'callbacks_invoked','sendable','routing_authorized','source_attested',
     'broker_connected','broker_account_reconciled','funds_reconciled',
@@ -182,23 +184,29 @@ def _broker_intent_binding(directory):
         request_head=cold.lookup_request('nx_forward_intent_fixture')['head_sha256']
         request_before=cold.path.read_bytes()
         reconciliation=reconcile_persisted(review,cold,
-            'nx_forward_intent_fixture',expected_head=request_head)
+            'nx_forward_intent_fixture',expected_head=request_head,
+            order_gateway=gateway)
         journal_unchanged=cold.path.read_bytes()==request_before
         changed=copy.deepcopy(review);changed['review_receipt']['receipt_sha256']='0'*64
         changed_review_rejected=False
         try:reconcile_persisted(changed,cold,'nx_forward_intent_fixture',
-            expected_head=request_head)
+            expected_head=request_head,order_gateway=gateway)
         except ValueError:changed_review_rejected=True
         legacy_head=legacy.lookup_request('nx_legacy_fixture')['head_sha256']
         legacy_unbound_rejected=False
         try:reconcile_persisted(review,legacy,'nx_legacy_fixture',
-            expected_head=legacy_head)
+            expected_head=legacy_head,order_gateway=gateway)
         except ValueError:legacy_unbound_rejected=True
         cold.prepare(legacy_plan)
         stale_head_rejected=False
         try:reconcile_persisted(review,cold,'nx_forward_intent_fixture',
-            expected_head=request_head)
+            expected_head=request_head,order_gateway=gateway)
         except ValueError:stale_head_rejected=True
+        gateway.emergency_halt();post_review_halt_rejected=False
+        try:reconcile_persisted(review,cold,'nx_forward_intent_fixture',
+            expected_head=cold.lookup_request(
+                'nx_forward_intent_fixture')['head_sha256'],order_gateway=gateway)
+        except ValueError:post_review_halt_rejected=True
         binding=candidate['binding'];stable=(
             prepared['forward_intent_sha256']==recovered['forward_intent_sha256']==
                 binding['intent_sha256'])
@@ -216,6 +224,7 @@ def _broker_intent_binding(directory):
             changed_review_rejected=changed_review_rejected,
             stale_head_rejected=stale_head_rejected,
             legacy_unbound_rejected=legacy_unbound_rejected,
+            post_review_halt_rejected=post_review_halt_rejected,
             callbacks_invoked=len(callbacks))
         return binding_report,reconciliation_report
     finally:

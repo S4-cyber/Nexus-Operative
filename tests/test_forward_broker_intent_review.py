@@ -10,6 +10,7 @@ from nexus import alpaca_paper_submission
 from nexus import broker_request_journal as journal_module
 from nexus import forward_broker_intent_review as intent
 from nexus.broker_request_journal import BrokerRequestJournal
+from nexus.durable_orders import DurableOrderGateway
 from nexus.tier_permissions import configure
 from test_paper_forward import setup,warmup
 
@@ -105,17 +106,22 @@ def test_cold_bound_intent_reconciles_to_fresh_stopped_review_without_write(
     head=cold.lookup_request('nx_forward_fixture')['head_sha256']
     before=cold.path.read_bytes()
     reconciled=intent.reconcile_persisted(review,cold,'nx_forward_fixture',
-        expected_head=head)
+        expected_head=head,order_gateway=DurableOrderGateway(
+            tmp_path/'forward'/'orders.sqlite3'))
     assert reconciled['mode']==intent.RECONCILIATION_MODE
     assert reconciled['profile']==intent.RECONCILIATION_PROFILE
     assert reconciled['matched_local_snapshot']
     assert reconciled['request_snapshot_replayed']
     assert reconciled['journal_file_fingerprint_rechecked']
+    assert reconciled['order_snapshot_replayed']
+    assert reconciled['order_snapshot_stable_during_reconciliation']
+    assert reconciled['durable_halt_clear']
     assert reconciled['intent_sha256']==result['binding']['intent_sha256']
     assert all(reconciled[key] is False for key in intent.FALSE_FLAGS)
     assert cold.path.read_bytes()==before
     assert intent.reconcile_persisted(review,cold,'nx_forward_fixture',
-        expected_head=head)==reconciled
+        expected_head=head,order_gateway=DurableOrderGateway(
+            tmp_path/'forward'/'orders.sqlite3'))==reconciled
 
 
 def test_reconciliation_rejects_stale_head_legacy_and_changed_source(
@@ -129,19 +135,22 @@ def test_reconciliation_rejects_stale_head_legacy_and_changed_source(
     changed['review_receipt']['receipt_sha256']='0'*64
     with pytest.raises(ValueError,match='FORWARD_BROKER_INTENT_REVIEW_INVALID'):
         intent.reconcile_persisted(changed,store,'nx_forward_fixture',
-            expected_head=head)
+            expected_head=head,order_gateway=DurableOrderGateway(
+                tmp_path/'forward'/'orders.sqlite3'))
     store.prepare(plan(client_order_id='nx_unrelated'))
     before=store.path.read_bytes()
     with pytest.raises(ValueError,match='LOCKED_PLAN_HEAD_CHANGED'):
         intent.reconcile_persisted(review,store,'nx_forward_fixture',
-            expected_head=head)
+            expected_head=head,order_gateway=DurableOrderGateway(
+                tmp_path/'forward'/'orders.sqlite3'))
     assert store.path.read_bytes()==before
     legacy=BrokerRequestJournal(tmp_path/'legacy.sqlite3',ACCOUNT)
     legacy.prepare(plan())
     legacy_head=legacy.lookup_request('nx_fixture')['head_sha256']
     with pytest.raises(ValueError,match='RECONCILIATION_INVALID'):
         intent.reconcile_persisted(review,legacy,'nx_fixture',
-            expected_head=legacy_head)
+            expected_head=legacy_head,order_gateway=DurableOrderGateway(
+                tmp_path/'forward'/'orders.sqlite3'))
 
 
 def test_pure_reconciliation_rejects_cross_source_and_summary_mutations(
@@ -186,7 +195,8 @@ def test_guard_rechecks_request_file_after_final_reconciliation(
     monkeypatch.setattr(intent,'reconcile_current',mutate_after_compare)
     with pytest.raises(ValueError,match='LOCKED_PLAN_FILE_SET_CHANGED'):
         intent.reconcile_persisted(review,store,'nx_forward_fixture',
-            expected_head=head)
+            expected_head=head,order_gateway=DurableOrderGateway(
+                tmp_path/'forward'/'orders.sqlite3'))
 
 
 def test_lost_bound_prepare_ack_replays_once_without_resend(
@@ -208,8 +218,45 @@ def test_lost_bound_prepare_ack_replays_once_without_resend(
     assert cold.prepare_forward_intent(result)['duplicate']
     head=cold.lookup_request('nx_forward_fixture')['head_sha256']
     assert intent.reconcile_persisted(review,cold,'nx_forward_fixture',
-        expected_head=head)['matched_local_snapshot']
+        expected_head=head,order_gateway=DurableOrderGateway(
+            tmp_path/'forward'/'orders.sqlite3'))['matched_local_snapshot']
     assert cold.recovery()==before
+
+
+def test_later_emergency_halt_invalidates_retained_review_without_request_write(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    before=store.path.read_bytes()
+    assert orders.emergency_halt()['halted']
+    assert DurableOrderGateway(orders.path).recovery_report()['halted']
+    with pytest.raises(ValueError,match='ORDER_SNAPSHOT_STALE'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert store.path.read_bytes()==before
+
+
+def test_emergency_halt_remains_independent_during_request_reconciliation(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    original=intent.reconcile_current;halted=[]
+    def halt_after_compare(*args,**kwargs):
+        value=original(*args,**kwargs)
+        halted.append(orders.emergency_halt()['halted'])
+        return value
+    monkeypatch.setattr(intent,'reconcile_current',halt_after_compare)
+    with pytest.raises(ValueError,match='ORDER_SNAPSHOT_STALE'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert halted==[True]
+    assert DurableOrderGateway(orders.path).recovery_report()['halted']
 
 
 def test_legacy_prepare_remains_readable_and_unbound(tmp_path):

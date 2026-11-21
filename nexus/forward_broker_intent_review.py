@@ -8,9 +8,13 @@ from decimal import localcontext
 import hashlib
 import json
 import math
+import os
+from pathlib import Path
 import re
+import stat
 
 from nexus import alpaca_paper_contract as contract
+from nexus.durable_orders import DurableOrderGateway
 from nexus.forward_reconciliation_review import (
     MODELED_OUTCOME_PROFILE, RECEIPT_PROFILE, reconciliation_sha256)
 from nexus.order_accounting import modeled_fill_sha256
@@ -37,7 +41,8 @@ LIMITATIONS=('Counterfactual binding only. The modeled local fill already change
     'performance, profitability, sustained-trial, or release acceptance is established.')
 RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared with one exact-head retained '
     'request plan between two fresh replay-validated order-journal snapshots. The caller-owned review is validated '
-    'and detached once before journal access. The request guard spans the final order replay and a final request reread; '
+    'and detached once before journal access. One exact durable gateway plus the physical order journal and linked '
+    'portfolio identity are pinned across both replays. The request guard spans the final order replay and a final request reread; '
     'both order snapshots must equal the reviewed non-halted snapshot, without holding an order-journal lock that '
     'could delay an emergency halt. Equality proves only sampled sequential local '
     'provenance continuity; a later mutation remains possible and it '
@@ -340,7 +345,10 @@ def _replayed_order_snapshot(review,order_gateway):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_INVALID')
     try:
         _plain(snapshot)
-        current=order_gateway.session_orders_snapshot(review.get('session'))
+        if type(order_gateway) is not DurableOrderGateway:
+            raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID')
+        current=DurableOrderGateway.session_orders_snapshot(
+            order_gateway,review.get('session'))
         _plain(current)
     except (ValueError,TypeError,KeyError,AttributeError,OverflowError):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_INVALID') from None
@@ -358,11 +366,60 @@ def _replayed_order_snapshot(review,order_gateway):
     return current
 
 
+def _order_file_identity(path):
+    """Capture one canonical single-link regular-file identity."""
+    try:
+        path=Path(path);observed=path.lstat();resolved=path.resolve(strict=True)
+        after=path.lstat()
+    except (OSError,RuntimeError,TypeError,ValueError):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
+    if (stat.S_ISLNK(observed.st_mode) or not stat.S_ISREG(observed.st_mode) or
+            observed.st_nlink!=1 or stat.S_ISLNK(after.st_mode) or
+            not stat.S_ISREG(after.st_mode) or after.st_nlink!=1 or
+            not os.path.samestat(observed,after)):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED')
+    return str(resolved),observed.st_dev,observed.st_ino
+
+
+def _order_source_binding(review,order_gateway):
+    """Bind both replays to one real gateway and physical local source."""
+    if type(order_gateway) is not DurableOrderGateway:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID')
+    try:path=DurableOrderGateway._path(order_gateway)
+    except (OSError,RuntimeError,TypeError,ValueError):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
+    order_identity=_order_file_identity(path)
+    reviewed=review.get('order_journal_snapshot')
+    portfolio_identity=None
+    if type(reviewed) is dict and reviewed.get('portfolio_linked') is True:
+        portfolio_identity=_order_file_identity(
+            Path(order_identity[0]).parent/'paper_portfolio.sqlite3')
+    return order_identity,portfolio_identity
+
+
+def _require_order_source(order_gateway,binding):
+    if type(order_gateway) is not DurableOrderGateway:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID')
+    order_identity,portfolio_identity=binding
+    try:path=DurableOrderGateway._path(order_gateway)
+    except (OSError,RuntimeError,TypeError,ValueError):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
+    if _order_file_identity(path)!=order_identity:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED')
+    if (portfolio_identity is not None and _order_file_identity(
+            Path(order_identity[0]).parent/'paper_portfolio.sqlite3')!=
+            portfolio_identity):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED')
+
+
 def reconcile_persisted(review,journal,client_order_id,*,expected_head,
                         order_gateway):
     """Reconcile both journals while keeping the request head guarded."""
     frozen_review=_detached_review(review)
+    order_source=_order_source_binding(frozen_review,order_gateway)
+    _require_order_source(order_gateway,order_source)
     order_before=_replayed_order_snapshot(frozen_review,order_gateway)
+    _require_order_source(order_gateway,order_source)
     with journal.locked_request_plan_snapshot(client_order_id,
             expected_head=expected_head) as read:
         first=read();result=reconcile_current(frozen_review,first,
@@ -373,12 +430,15 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
         # Keep the exact request head and file identity guarded while the
         # independent order journal is replayed a second time.  No order lock
         # is retained, so the emergency halt remains independently writable.
+        _require_order_source(order_gateway,order_source)
         order_after=_replayed_order_snapshot(frozen_review,order_gateway)
+        _require_order_source(order_gateway,order_source)
         if order_after!=order_before:
             raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
         if read()!=first:
             raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
-    return dict(result,review_input_detached=True,
+    return dict(result,review_input_detached=True,order_gateway_exact=True,
+        order_journal_identity_rechecked=True,
         request_snapshot_replayed=True,
         journal_file_fingerprint_rechecked=True,
         request_guard_spans_final_order_replay=True,

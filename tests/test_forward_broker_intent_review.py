@@ -2,6 +2,7 @@
 import copy
 import json
 import os
+import shutil
 import sqlite3
 
 import pytest
@@ -246,6 +247,44 @@ def test_persisted_reconciliation_detaches_review_before_journal_access(
     assert intent.reconcile_persisted(review,store,'nx_forward_fixture',
         expected_head=head,order_gateway=orders)==baseline
     assert len(calls)==2
+
+
+def test_persisted_reconciliation_requires_real_durable_order_gateway(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    class MatchingFake:
+        calls=0
+        def session_orders_snapshot(self,session):
+            self.calls+=1
+            return copy.deepcopy(review['order_journal_snapshot'])
+    fake=MatchingFake()
+    with pytest.raises(ValueError,match='ORDER_GATEWAY_INVALID'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=fake)
+    assert fake.calls==0
+
+
+def test_persisted_reconciliation_rejects_byte_identical_order_path_swap(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    clone=tmp_path/'orders-clone.sqlite3';shutil.copy2(orders.path,clone)
+    original=intent._replayed_order_snapshot;calls=[]
+    def swap_after_first_replay(frozen_review,order_gateway):
+        value=original(frozen_review,order_gateway);calls.append(value)
+        if len(calls)==1:order_gateway.path=clone
+        return value
+    monkeypatch.setattr(intent,'_replayed_order_snapshot',swap_after_first_replay)
+    with pytest.raises(ValueError,match='ORDER_SOURCE_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert len(calls)==1
 
 
 def test_lost_bound_prepare_ack_replays_once_without_resend(

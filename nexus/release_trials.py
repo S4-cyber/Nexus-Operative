@@ -2994,6 +2994,7 @@ def _validate(profile, result):
                 'request_head_bound','plan_normalized','forward_source_revalidated',
                 'receipt_bound','event_reconciliation_bound','order_snapshots_bound',
                 'modeled_fill_bound','payload_bound','review_input_detached',
+                'order_gateway_exact','order_journal_identity_rechecked',
                 'request_snapshot_replayed',
                 'journal_file_fingerprint_rechecked',
                 'request_guard_spans_final_order_replay',

@@ -1,6 +1,33 @@
 # Nexus Operative versioning and launch gates
 
-+## v0.340.392 detached forward-review input
+## v0.340.393 physical order-source binding
+
+Persisted counterfactual broker-intent reconciliation now requires one exact
+durable order gateway and pins one canonical single-link order journal plus
+the linked portfolio identity across both replay windows. A matching snapshot
+returned by an ad-hoc object or a byte-identical journal pathname substitution
+fails closed instead of being accepted as durable provenance.
+
+The durable class replay implementation is invoked directly and every physical
+identity is rechecked before and after both replays. No order lock spans the
+request-journal comparison, so the independent emergency halt remains writable
+and the existing semantic replay still rejects its changed durable state.
+Direct regressions cover both fake-gateway and byte-identical path-substitution
+attacks.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.392 detached forward-review input
 
 Persisted counterfactual broker-intent reconciliation now validates and
 detaches the complete caller-owned stopped review before any durable journal
@@ -27,7 +54,7 @@ unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
 40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
 no release permission, trading permission or launch date.
 
-+## v0.340.391 request-guarded final order replay
+## v0.340.391 request-guarded final order replay
 
 Persisted counterfactual broker-intent reconciliation now retains the exact
 request-journal write guard through the final durable order replay and a final
@@ -188,7 +215,7 @@ remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
 about 40%, 30–45% low-confidence range), with 0/9 stages independently
 accepted and no release permission, trading permission or launch date.
 
-**Current development build: 0.340.392 (pre-release).**
+**Current development build: 0.340.393 (pre-release).**
 
 ## v0.340.385 durable cross-session exchange continuity
 

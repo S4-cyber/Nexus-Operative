@@ -111,6 +111,7 @@ def test_cold_bound_intent_reconciles_to_fresh_stopped_review_without_write(
     assert reconciled['mode']==intent.RECONCILIATION_MODE
     assert reconciled['profile']==intent.RECONCILIATION_PROFILE
     assert reconciled['matched_local_snapshot']
+    assert reconciled['review_input_detached']
     assert reconciled['request_snapshot_replayed']
     assert reconciled['journal_file_fingerprint_rechecked']
     assert reconciled['request_guard_spans_final_order_replay']
@@ -221,6 +222,29 @@ def test_request_guard_spans_final_order_replay_and_rechecks_after_it(
     with pytest.raises(ValueError,match='LOCKED_PLAN_FILE_SET_CHANGED'):
         intent.reconcile_persisted(review,store,'nx_forward_fixture',
             expected_head=head,order_gateway=orders)
+    assert len(calls)==2
+
+
+def test_persisted_reconciliation_detaches_review_before_journal_access(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    baseline=intent.reconcile_persisted(copy.deepcopy(review),store,
+        'nx_forward_fixture',expected_head=head,order_gateway=orders)
+    original=intent._replayed_order_snapshot;calls=[]
+    def mutate_caller_after_first_replay(frozen_review,order_gateway):
+        value=original(frozen_review,order_gateway);calls.append(value)
+        if len(calls)==1:
+            review['review_receipt']['receipt_sha256']='0'*64
+            review['stored_state']='RUNNING'
+        return value
+    monkeypatch.setattr(intent,'_replayed_order_snapshot',
+        mutate_caller_after_first_replay)
+    assert intent.reconcile_persisted(review,store,'nx_forward_fixture',
+        expected_head=head,order_gateway=orders)==baseline
     assert len(calls)==2
 
 

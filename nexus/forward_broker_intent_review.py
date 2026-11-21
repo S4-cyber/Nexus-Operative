@@ -36,9 +36,10 @@ LIMITATIONS=('Counterfactual binding only. The modeled local fill already change
     'No historical execution equivalence, source, broker, account, funds, fees, holdings, routing, live, '
     'performance, profitability, sustained-trial, or release acceptance is established.')
 RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared with one exact-head retained '
-    'request plan between two fresh replay-validated order-journal snapshots. The request guard spans the final order '
-    'replay and a final request reread; both order snapshots must equal the reviewed non-halted snapshot, without '
-    'holding an order-journal lock that could delay an emergency halt. Equality proves only sampled sequential local '
+    'request plan between two fresh replay-validated order-journal snapshots. The caller-owned review is validated '
+    'and detached once before journal access. The request guard spans the final order replay and a final request reread; '
+    'both order snapshots must equal the reviewed non-halted snapshot, without holding an order-journal lock that '
+    'could delay an emergency halt. Equality proves only sampled sequential local '
     'provenance continuity; a later mutation remains possible and it '
     'does not attest source, provider, broker account, funds, fees, holdings, market coverage, routing, sustained '
     'operation, performance, profitability, or release acceptance. The counterfactual plan remains unsendable.')
@@ -73,6 +74,20 @@ def _plain(value):
         for item in value.values():_plain(item)
         return
     raise ValueError
+
+
+def _detached_review(review):
+    """Validate and detach one caller-owned review before durable reads."""
+    if type(review) is not dict:
+        raise ValueError('FORWARD_BROKER_INTENT_REVIEW_INVALID')
+    try:
+        _plain(review)
+        detached=json.loads(json.dumps(review,sort_keys=True,
+            separators=(',',':'),allow_nan=False))
+        _plain(detached)
+    except (ValueError,TypeError,OverflowError,RecursionError):
+        raise ValueError('FORWARD_BROKER_INTENT_REVIEW_INVALID') from None
+    return detached
 
 
 def _asset_digest(asset,metadata_at,evaluated_at):
@@ -346,10 +361,11 @@ def _replayed_order_snapshot(review,order_gateway):
 def reconcile_persisted(review,journal,client_order_id,*,expected_head,
                         order_gateway):
     """Reconcile both journals while keeping the request head guarded."""
-    order_before=_replayed_order_snapshot(review,order_gateway)
+    frozen_review=_detached_review(review)
+    order_before=_replayed_order_snapshot(frozen_review,order_gateway)
     with journal.locked_request_plan_snapshot(client_order_id,
             expected_head=expected_head) as read:
-        first=read();result=reconcile_current(review,first,
+        first=read();result=reconcile_current(frozen_review,first,
             expected_account_sha256=journal.account_digest,
             expected_head=expected_head)
         if read()!=first:
@@ -357,12 +373,13 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
         # Keep the exact request head and file identity guarded while the
         # independent order journal is replayed a second time.  No order lock
         # is retained, so the emergency halt remains independently writable.
-        order_after=_replayed_order_snapshot(review,order_gateway)
+        order_after=_replayed_order_snapshot(frozen_review,order_gateway)
         if order_after!=order_before:
             raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
         if read()!=first:
             raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
-    return dict(result,request_snapshot_replayed=True,
+    return dict(result,review_input_detached=True,
+        request_snapshot_replayed=True,
         journal_file_fingerprint_rechecked=True,
         request_guard_spans_final_order_replay=True,
         final_request_snapshot_replayed=True,

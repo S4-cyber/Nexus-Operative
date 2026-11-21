@@ -80,14 +80,17 @@ BROKER_INTENT_RECONCILIATION_PUBLIC_KEYS=frozenset(('mode','profile','passed',
     'modeled_fill_bound','payload_bound','intent_sha256','payload_sha256',
     'intent_reconciliation_sha256','review_input_detached',
     'order_gateway_exact','order_gateway_policy_bound',
+    'order_replay_implementation_bound',
     'order_journal_identity_rechecked','order_file_set_bound',
     'order_file_fingerprints_rechecked','request_journal_exact',
+    'request_guard_implementation_bound',
     'request_journal_identity_rechecked_from_entry',
     'request_snapshot_replayed',
     'journal_file_fingerprint_rechecked','journal_unchanged',
     'request_guard_spans_final_order_replay','final_request_snapshot_replayed',
     'order_snapshot_replayed','order_snapshot_stable_during_reconciliation',
-    'durable_halt_clear','post_review_halt_rejected',
+    'durable_halt_clear','emergency_cut_latch_clear_rechecked',
+    'pending_emergency_cut_rejected','post_review_halt_rejected',
     'changed_review_rejected','stale_head_rejected','legacy_unbound_rejected',
     'callbacks_invoked','sendable','routing_authorized','source_attested',
     'broker_connected','broker_account_reconciled','funds_reconciled',
@@ -127,7 +130,8 @@ def _require(condition,reason):
 def _broker_intent_binding(directory):
     """Prove one reviewed fill binding survives replay but cannot be sent."""
     from datetime import datetime,timezone
-    from nexus import alpaca_paper_contract,alpaca_paper_submission
+    from nexus import (alpaca_paper_contract,alpaca_paper_submission,
+        emergency_intent)
     from nexus.broker_request_journal import BrokerRequestJournal
     from nexus.durable_orders import DurableOrderGateway
     from nexus.forward_broker_intent_review import (build,FALSE_FLAGS,
@@ -208,6 +212,16 @@ def _broker_intent_binding(directory):
         try:reconcile_persisted(review,cold,'nx_forward_intent_fixture',
             expected_head=request_head,order_gateway=gateway)
         except ValueError:stale_head_rejected=True
+        current_head=cold.lookup_request(
+            'nx_forward_intent_fixture')['head_sha256']
+        emergency_intent.persist(gateway.path)
+        pending_emergency_cut_rejected=False
+        try:reconcile_persisted(review,cold,'nx_forward_intent_fixture',
+            expected_head=current_head,order_gateway=gateway)
+        except ValueError as error:
+            pending_emergency_cut_rejected=(str(error)==
+                'FORWARD_BROKER_INTENT_EMERGENCY_CUT_ACTIVE')
+        emergency_intent.clear(gateway.path)
         gateway.emergency_halt();post_review_halt_rejected=False
         try:reconcile_persisted(review,cold,'nx_forward_intent_fixture',
             expected_head=cold.lookup_request(
@@ -230,6 +244,7 @@ def _broker_intent_binding(directory):
             changed_review_rejected=changed_review_rejected,
             stale_head_rejected=stale_head_rejected,
             legacy_unbound_rejected=legacy_unbound_rejected,
+            pending_emergency_cut_rejected=pending_emergency_cut_rejected,
             post_review_halt_rejected=post_review_halt_rejected,
             callbacks_invoked=len(callbacks))
         return binding_report,reconciliation_report

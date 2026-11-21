@@ -1,5 +1,31 @@
 # Nexus Operative — Main Launch Drive: v1.0
 
+## v0.340.390 post-review order-journal reconciliation
+
+Persisted counterfactual broker-intent reconciliation now brackets its exact
+request-head check with two fresh replay-validated session-order snapshots.
+Both must match the reviewed non-halted order snapshot. A later emergency
+halt, journal replacement, mutation or replay fault therefore invalidates the
+retained review instead of accepting stale local provenance.
+
+The order journal is not locked across request reconciliation. A direct
+regression performs a real durable emergency halt while the independent
+request-journal guard is active; the halt completes and the second order replay
+rejects the stale review. The request journal remains unchanged. The
+counterfactual plan stays permanently unsendable and no credential, provider,
+network, account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer/power-loss acceptance, performance, profitability or
+release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
 ## v0.340.389 cold-replayed emergency-halt verification
 
 The standalone installed emergency cut and API emergency lane now treat the

@@ -36,7 +36,9 @@ LIMITATIONS=('Counterfactual binding only. The modeled local fill already change
     'No historical execution equivalence, source, broker, account, funds, fees, holdings, routing, live, '
     'performance, profitability, sustained-trial, or release acceptance is established.')
 RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared with one exact-head retained '
-    'request plan under a same-host journal guard. Equality proves only sampled local provenance continuity; it '
+    'request plan between two fresh replay-validated order-journal snapshots. Both order snapshots must equal the '
+    'reviewed non-halted snapshot, without holding an order-journal lock that could delay an emergency halt. Equality '
+    'proves only sampled sequential local provenance continuity; a later mutation remains possible and it '
     'does not attest source, provider, broker account, funds, fees, holdings, market coverage, routing, sustained '
     'operation, performance, profitability, or release acceptance. The counterfactual plan remains unsendable.')
 REQUEST_SUMMARY_FIELDS=frozenset(('client_order_id','payload_sha256',
@@ -315,8 +317,35 @@ def reconcile_current(review,request_snapshot,*,expected_account_sha256,
         **{key:False for key in FALSE_FLAGS},limitations=RECONCILIATION_LIMITATIONS)
 
 
-def reconcile_persisted(review,journal,client_order_id,*,expected_head):
-    """Reconcile under the journal's exact-head identity/fingerprint guard."""
+def _replayed_order_snapshot(review,order_gateway):
+    """Require a fresh durable replay of the exact reviewed order snapshot."""
+    snapshot=review.get('order_journal_snapshot') if type(review) is dict else None
+    if type(snapshot) is not dict:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_INVALID')
+    try:
+        _plain(snapshot)
+        current=order_gateway.session_orders_snapshot(review.get('session'))
+        _plain(current)
+    except (ValueError,TypeError,KeyError,AttributeError,OverflowError):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_INVALID') from None
+    fields=('journal_present','commands','portfolio_linked','halted',
+        'portfolio_rows','snapshot_sha256')
+    if (type(current) is not dict or current.get('read_only') is not True or
+            current.get('live_orders_enabled') is not False or
+            current.get('journal_present') is not True or
+            type(current.get('commands')) is not int or current['commands']<1 or
+            current.get('halted') is not False or
+            not _digest(current.get('journal_sha256')) or
+            not _digest(current.get('snapshot_sha256')) or
+            any(current.get(key)!=snapshot.get(key) for key in fields)):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_STALE')
+    return current
+
+
+def reconcile_persisted(review,journal,client_order_id,*,expected_head,
+                        order_gateway):
+    """Reconcile between fresh order replays under the request head guard."""
+    order_before=_replayed_order_snapshot(review,order_gateway)
     with journal.locked_request_plan_snapshot(client_order_id,
             expected_head=expected_head) as read:
         first=read();result=reconcile_current(review,first,
@@ -324,5 +353,11 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head):
             expected_head=expected_head)
         if read()!=first:
             raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
+    order_after=_replayed_order_snapshot(review,order_gateway)
+    if order_after!=order_before:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
     return dict(result,request_snapshot_replayed=True,
-        journal_file_fingerprint_rechecked=True)
+        journal_file_fingerprint_rechecked=True,
+        order_snapshot_replayed=True,
+        order_snapshot_stable_during_reconciliation=True,
+        durable_halt_clear=True)

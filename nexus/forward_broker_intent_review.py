@@ -41,8 +41,9 @@ LIMITATIONS=('Counterfactual binding only. The modeled local fill already change
     'performance, profitability, sustained-trial, or release acceptance is established.')
 RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared with one exact-head retained '
     'request plan between two fresh replay-validated order-journal snapshots. The caller-owned review is validated '
-    'and detached once before journal access. One exact durable gateway plus the physical order journal and linked '
-    'portfolio identity are pinned across both replays. The request guard spans the final order replay and a final request reread; '
+    'and detached once before journal access. One exact production-policy durable gateway plus the physical order '
+    'journal and linked portfolio identity are pinned across both replays. One exact request journal, account scope, '
+    'physical identity and bounded bytes are pinned from composition entry. The request guard spans the final order replay and a final request reread; '
     'both order snapshots must equal the reviewed non-halted snapshot, without holding an order-journal lock that '
     'could delay an emergency halt. Equality proves only sampled sequential local '
     'provenance continuity; a later mutation remains possible and it '
@@ -366,6 +367,21 @@ def _replayed_order_snapshot(review,order_gateway):
     return current
 
 
+def _require_order_gateway_policy(order_gateway):
+    """Reject recovery-only modes and per-instance method substitution."""
+    if type(order_gateway) is not DurableOrderGateway:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID')
+    try:state=vars(order_gateway)
+    except TypeError:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID') from None
+    if (set(state)!={'path','checkpoints_enabled','rotation_recovery',
+            'restore_diagnostics'} or
+            state.get('checkpoints_enabled') is not True or
+            state.get('rotation_recovery') is not False or
+            type(state.get('restore_diagnostics')) is not dict):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_POLICY_INVALID')
+
+
 def _order_file_identity(path):
     """Capture one canonical single-link regular-file identity."""
     try:
@@ -383,8 +399,7 @@ def _order_file_identity(path):
 
 def _order_source_binding(review,order_gateway):
     """Bind both replays to one real gateway and physical local source."""
-    if type(order_gateway) is not DurableOrderGateway:
-        raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID')
+    _require_order_gateway_policy(order_gateway)
     try:path=DurableOrderGateway._path(order_gateway)
     except (OSError,RuntimeError,TypeError,ValueError):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
@@ -398,8 +413,7 @@ def _order_source_binding(review,order_gateway):
 
 
 def _require_order_source(order_gateway,binding):
-    if type(order_gateway) is not DurableOrderGateway:
-        raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID')
+    _require_order_gateway_policy(order_gateway)
     order_identity,portfolio_identity=binding
     try:path=DurableOrderGateway._path(order_gateway)
     except (OSError,RuntimeError,TypeError,ValueError):
@@ -412,18 +426,52 @@ def _require_order_source(order_gateway,binding):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED')
 
 
+def _capture_request_source(journal,*,initial=False):
+    """Capture one exact production request journal and its bounded bytes."""
+    from nexus.broker_request_journal import BrokerRequestJournal, _main_fingerprint
+    if type(journal) is not BrokerRequestJournal:
+        raise ValueError('FORWARD_BROKER_INTENT_REQUEST_JOURNAL_INVALID')
+    try:state=vars(journal)
+    except TypeError:
+        raise ValueError('FORWARD_BROKER_INTENT_REQUEST_JOURNAL_INVALID') from None
+    if (set(state)!={'path','account_digest','_connection_contexts'} or
+            type(state.get('_connection_contexts')) is not dict or
+            (initial and state['_connection_contexts']) or
+            not _digest(state.get('account_digest'))):
+        raise ValueError('FORWARD_BROKER_INTENT_REQUEST_JOURNAL_INVALID')
+    try:
+        identity=_order_file_identity(state['path'])
+        fingerprint=_main_fingerprint(state['path'])
+    except (ValueError,OSError,RuntimeError,TypeError):
+        raise ValueError('FORWARD_BROKER_INTENT_REQUEST_SOURCE_CHANGED') from None
+    if (fingerprint[0]!=identity[0] or fingerprint[1]!=identity[1] or
+            fingerprint[2]!=identity[2]):
+        raise ValueError('FORWARD_BROKER_INTENT_REQUEST_SOURCE_CHANGED')
+    return identity,fingerprint,state['account_digest']
+
+
+def _require_request_source(journal,binding):
+    if _capture_request_source(journal)!=binding:
+        raise ValueError('FORWARD_BROKER_INTENT_REQUEST_SOURCE_CHANGED')
+
+
 def reconcile_persisted(review,journal,client_order_id,*,expected_head,
                         order_gateway):
     """Reconcile both journals while keeping the request head guarded."""
+    from nexus.broker_request_journal import BrokerRequestJournal
     frozen_review=_detached_review(review)
+    request_source=_capture_request_source(journal,initial=True)
     order_source=_order_source_binding(frozen_review,order_gateway)
+    _require_request_source(journal,request_source)
     _require_order_source(order_gateway,order_source)
     order_before=_replayed_order_snapshot(frozen_review,order_gateway)
+    _require_request_source(journal,request_source)
     _require_order_source(order_gateway,order_source)
-    with journal.locked_request_plan_snapshot(client_order_id,
+    with BrokerRequestJournal.locked_request_plan_snapshot(journal,client_order_id,
             expected_head=expected_head) as read:
+        _require_request_source(journal,request_source)
         first=read();result=reconcile_current(frozen_review,first,
-            expected_account_sha256=journal.account_digest,
+            expected_account_sha256=request_source[2],
             expected_head=expected_head)
         if read()!=first:
             raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
@@ -433,12 +481,16 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
         _require_order_source(order_gateway,order_source)
         order_after=_replayed_order_snapshot(frozen_review,order_gateway)
         _require_order_source(order_gateway,order_source)
+        _require_request_source(journal,request_source)
         if order_after!=order_before:
             raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
         if read()!=first:
             raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
+    _require_request_source(journal,request_source)
     return dict(result,review_input_detached=True,order_gateway_exact=True,
-        order_journal_identity_rechecked=True,
+        order_gateway_policy_bound=True,order_journal_identity_rechecked=True,
+        request_journal_exact=True,
+        request_journal_identity_rechecked_from_entry=True,
         request_snapshot_replayed=True,
         journal_file_fingerprint_rechecked=True,
         request_guard_spans_final_order_replay=True,

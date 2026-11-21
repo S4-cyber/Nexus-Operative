@@ -113,6 +113,11 @@ def test_cold_bound_intent_reconciles_to_fresh_stopped_review_without_write(
     assert reconciled['profile']==intent.RECONCILIATION_PROFILE
     assert reconciled['matched_local_snapshot']
     assert reconciled['review_input_detached']
+    assert reconciled['order_gateway_exact']
+    assert reconciled['order_gateway_policy_bound']
+    assert reconciled['order_journal_identity_rechecked']
+    assert reconciled['request_journal_exact']
+    assert reconciled['request_journal_identity_rechecked_from_entry']
     assert reconciled['request_snapshot_replayed']
     assert reconciled['journal_file_fingerprint_rechecked']
     assert reconciled['request_guard_spans_final_order_replay']
@@ -267,6 +272,40 @@ def test_persisted_reconciliation_requires_real_durable_order_gateway(
     assert fake.calls==0
 
 
+def test_persisted_reconciliation_rejects_recovery_only_order_gateway(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3',
+        rotation_recovery=True)
+    (orders.path.parent/'nexus-order-rotation.intent').write_text('{}')
+    with pytest.raises(ValueError,match='ORDER_GATEWAY_POLICY_INVALID'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+
+
+def test_persisted_reconciliation_rejects_order_gateway_policy_change(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    original=intent._replayed_order_snapshot;calls=[]
+    def disable_checkpoints_after_first_replay(frozen_review,order_gateway):
+        value=original(frozen_review,order_gateway);calls.append(value)
+        if len(calls)==1:order_gateway.checkpoints_enabled=False
+        return value
+    monkeypatch.setattr(intent,'_replayed_order_snapshot',
+        disable_checkpoints_after_first_replay)
+    with pytest.raises(ValueError,match='ORDER_GATEWAY_POLICY_INVALID'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert len(calls)==1
+
+
 def test_persisted_reconciliation_rejects_byte_identical_order_path_swap(
         tmp_path,monkeypatch):
     result,review=candidate(tmp_path/'forward',monkeypatch)
@@ -282,6 +321,53 @@ def test_persisted_reconciliation_rejects_byte_identical_order_path_swap(
         return value
     monkeypatch.setattr(intent,'_replayed_order_snapshot',swap_after_first_replay)
     with pytest.raises(ValueError,match='ORDER_SOURCE_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert len(calls)==1
+
+
+def test_persisted_reconciliation_requires_real_request_journal(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    with store.locked_request_plan_snapshot('nx_forward_fixture',
+            expected_head=head) as read:
+        snapshot=read()
+    class MatchingFake:
+        account_digest=store.account_digest
+        calls=0
+        def locked_request_plan_snapshot(self,*args,**kwargs):
+            self.calls+=1
+            class Guard:
+                def __enter__(inner):return lambda:copy.deepcopy(snapshot)
+                def __exit__(inner,*exc):return False
+            return Guard()
+    fake=MatchingFake()
+    with pytest.raises(ValueError,match='REQUEST_JOURNAL_INVALID'):
+        intent.reconcile_persisted(review,fake,'nx_forward_fixture',
+            expected_head=head,order_gateway=DurableOrderGateway(
+                tmp_path/'forward'/'orders.sqlite3'))
+    assert fake.calls==0
+
+
+def test_persisted_reconciliation_rejects_byte_identical_request_path_swap(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    clone=tmp_path/'requests-clone.sqlite3';shutil.copy2(store.path,clone)
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    original=intent._replayed_order_snapshot;calls=[]
+    def swap_request_after_first_replay(frozen_review,order_gateway):
+        value=original(frozen_review,order_gateway);calls.append(value)
+        if len(calls)==1:store.path=clone
+        return value
+    monkeypatch.setattr(intent,'_replayed_order_snapshot',
+        swap_request_after_first_replay)
+    with pytest.raises(ValueError,match='REQUEST_SOURCE_CHANGED'):
         intent.reconcile_persisted(review,store,'nx_forward_fixture',
             expected_head=head,order_gateway=orders)
     assert len(calls)==1

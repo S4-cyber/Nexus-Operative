@@ -113,6 +113,8 @@ def test_cold_bound_intent_reconciles_to_fresh_stopped_review_without_write(
     assert reconciled['matched_local_snapshot']
     assert reconciled['request_snapshot_replayed']
     assert reconciled['journal_file_fingerprint_rechecked']
+    assert reconciled['request_guard_spans_final_order_replay']
+    assert reconciled['final_request_snapshot_replayed']
     assert reconciled['order_snapshot_replayed']
     assert reconciled['order_snapshot_stable_during_reconciliation']
     assert reconciled['durable_halt_clear']
@@ -197,6 +199,29 @@ def test_guard_rechecks_request_file_after_final_reconciliation(
         intent.reconcile_persisted(review,store,'nx_forward_fixture',
             expected_head=head,order_gateway=DurableOrderGateway(
                 tmp_path/'forward'/'orders.sqlite3'))
+
+
+def test_request_guard_spans_final_order_replay_and_rechecks_after_it(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    original=intent._replayed_order_snapshot;calls=[]
+    mtime=store.path.stat().st_mtime_ns
+    def mutate_during_final_order_replay(*args,**kwargs):
+        value=original(*args,**kwargs);calls.append(value['snapshot_sha256'])
+        if len(calls)==2:
+            os.utime(store.path,ns=(store.path.stat().st_atime_ns,
+                mtime+1_000_000_000))
+        return value
+    monkeypatch.setattr(intent,'_replayed_order_snapshot',
+        mutate_during_final_order_replay)
+    with pytest.raises(ValueError,match='LOCKED_PLAN_FILE_SET_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert len(calls)==2
 
 
 def test_lost_bound_prepare_ack_replays_once_without_resend(

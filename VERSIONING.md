@@ -1,5 +1,31 @@
 # Nexus Operative versioning and launch gates
 
++## v0.340.391 request-guarded final order replay
+
+Persisted counterfactual broker-intent reconciliation now retains the exact
+request-journal write guard through the final durable order replay and a final
+request snapshot reread. A request path identity, bounded fingerprint or exact
+head change during that replay fails closed before reconciliation can return.
+The order journal remains unlocked throughout, so the independent emergency
+halt can still commit and the final replay rejects its changed state.
+
+A direct regression changes the guarded request-file fingerprint during the
+second order replay and proves the late change is rejected. Existing
+halt-during-request reconciliation still completes independently. The request
+plan remains permanently unsendable and no credential, provider, network,
+account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
 ## v0.340.390 post-review order-journal reconciliation
 
 Persisted counterfactual broker-intent reconciliation now brackets its exact
@@ -135,7 +161,7 @@ remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
 about 40%, 30–45% low-confidence range), with 0/9 stages independently
 accepted and no release permission, trading permission or launch date.
 
-**Current development build: 0.340.390 (pre-release).**
+**Current development build: 0.340.391 (pre-release).**
 
 ## v0.340.385 durable cross-session exchange continuity
 

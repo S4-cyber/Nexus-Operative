@@ -1174,6 +1174,14 @@ class BrokerRequestJournal:
                     scope='Caller-supplied paper account and order observations only. Hash-chain replay is local consistency, not broker attestation, encryption, account reconciliation or proof against tail deletion.')
 
 
+# Export immutable in-process references for composition boundaries that must
+# reject class- or module-level reader substitution.  Callers still recheck the
+# public attributes before and after use; these references grant no authority.
+_TRUSTED_MAIN_FINGERPRINT = _main_fingerprint
+_TRUSTED_LOCKED_REQUEST_PLAN_SNAPSHOT = (
+    BrokerRequestJournal.locked_request_plan_snapshot)
+
+
 def submission_admission_fixture():
     """Disposable composition; no transport, credentials or runtime path."""
     asset=dict(symbol='BTC/USD',**{'class':'crypto'},status='active',tradable=True,fractionable=True,

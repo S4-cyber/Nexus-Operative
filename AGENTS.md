@@ -1,4 +1,31 @@
 # Nexus Operative continuity instructions
+## v0.340.396 emergency-latch and implementation binding
+
+Persisted counterfactual broker-intent reconciliation now fails closed while
+the independent emergency-cut latch is present, including the crash-safe
+interval before its SQLite halt commits. The latch is sampled before, inside
+and after the exact request guard without locking or delaying the stop writer.
+A cut requested during reconciliation is rejected while the request journal
+remains unchanged and the order journal may still be non-halted.
+
+The composition also binds the exact production durable-order replay,
+request-plan guard and request-file fingerprint implementations. Class-level
+substitution is rejected before a matching fake reader executes, and each
+implementation is rechecked through the final guarded replay. Existing
+physical identities, bounded fingerprints and semantic replay checks remain.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
 ## v0.340.395 bounded order file-set reconciliation
 
 Persisted counterfactual broker-intent reconciliation now binds bounded,

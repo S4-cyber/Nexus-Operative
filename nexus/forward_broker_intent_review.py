@@ -13,13 +13,17 @@ from pathlib import Path
 import re
 import stat
 
-from nexus import alpaca_paper_contract as contract
+from nexus import alpaca_paper_contract as contract, emergency_intent
 from nexus.durable_orders import DurableOrderGateway
 from nexus.forward_reconciliation_review import (
     MODELED_OUTCOME_PROFILE, RECEIPT_PROFILE, reconciliation_sha256)
 from nexus.order_accounting import modeled_fill_sha256
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, require_file_fingerprints)
+
+
+_TRUSTED_ORDER_PATH=DurableOrderGateway._path
+_TRUSTED_ORDER_SNAPSHOT=DurableOrderGateway.session_orders_snapshot
 
 
 PROFILE='nexus.forward-broker-intent.v1'
@@ -44,7 +48,7 @@ LIMITATIONS=('Counterfactual binding only. The modeled local fill already change
 RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared with one exact-head retained '
     'request plan between two fresh replay-validated order-journal snapshots. The caller-owned review is validated '
     'and detached once before journal access. One exact production-policy durable gateway plus the physical order '
-    'journal and linked portfolio identity, bounded bytes and stable metadata are pinned across both replays. One exact request journal, account scope, '
+    'journal and linked portfolio identity, bounded bytes and stable metadata are pinned across both replays. The exact production replay, fingerprint and request-guard implementations are rechecked throughout. The independent emergency-cut latch must remain canonically clear before, inside and after the guarded comparison. One exact request journal, account scope, '
     'physical identity and bounded bytes are pinned from composition entry. The request guard spans the final order replay and a final request reread; '
     'both order snapshots must equal the reviewed non-halted snapshot and the sidecar-free order file set must remain unchanged, without holding an order-journal lock that '
     'could delay an emergency halt. Equality proves only sampled sequential local '
@@ -348,12 +352,12 @@ def _replayed_order_snapshot(review,order_gateway):
     snapshot=review.get('order_journal_snapshot') if type(review) is dict else None
     if type(snapshot) is not dict:
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_INVALID')
+    _require_order_implementations()
     try:
         _plain(snapshot)
         if type(order_gateway) is not DurableOrderGateway:
             raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID')
-        current=DurableOrderGateway.session_orders_snapshot(
-            order_gateway,review.get('session'))
+        current=_TRUSTED_ORDER_SNAPSHOT(order_gateway,review.get('session'))
         _plain(current)
     except (ValueError,TypeError,KeyError,AttributeError,OverflowError):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_INVALID') from None
@@ -371,10 +375,19 @@ def _replayed_order_snapshot(review,order_gateway):
     return current
 
 
+def _require_order_implementations():
+    """Reject process-local substitution of either durable replay primitive."""
+    if (DurableOrderGateway._path is not _TRUSTED_ORDER_PATH or
+            DurableOrderGateway.session_orders_snapshot is not
+            _TRUSTED_ORDER_SNAPSHOT):
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_IMPLEMENTATION_CHANGED')
+
+
 def _require_order_gateway_policy(order_gateway):
     """Reject recovery-only modes and per-instance method substitution."""
     if type(order_gateway) is not DurableOrderGateway:
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID')
+    _require_order_implementations()
     try:state=vars(order_gateway)
     except TypeError:
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_GATEWAY_INVALID') from None
@@ -404,7 +417,7 @@ def _order_file_identity(path):
 def _order_source_binding(review,order_gateway):
     """Bind both replays to one real gateway and bounded local file set."""
     _require_order_gateway_policy(order_gateway)
-    try:path=DurableOrderGateway._path(order_gateway)
+    try:path=_TRUSTED_ORDER_PATH(order_gateway)
     except (OSError,RuntimeError,TypeError,ValueError):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
     order_identity=_order_file_identity(path)
@@ -427,7 +440,7 @@ def _require_order_identity(order_gateway,binding):
     """Require the configured gateway to retain the entry physical sources."""
     _require_order_gateway_policy(order_gateway)
     order_identity,portfolio_identity,_,_,_=binding
-    try:path=DurableOrderGateway._path(order_gateway)
+    try:path=_TRUSTED_ORDER_PATH(order_gateway)
     except (OSError,RuntimeError,TypeError,ValueError):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
     if _order_file_identity(path)!=order_identity:
@@ -447,9 +460,34 @@ def _require_order_source(order_gateway,binding):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
 
 
+def _require_emergency_cut_clear(binding):
+    """Sample the independent latch without locking or delaying its writer."""
+    order_identity=binding[0]
+    try:sample,identity=emergency_intent.review_sample(order_identity[0])
+    except (OSError,RuntimeError,TypeError,ValueError):
+        raise ValueError('FORWARD_BROKER_INTENT_EMERGENCY_CUT_ACTIVE') from None
+    expected=dict(status='CLEAR',requested=False,canonical=False,
+        record_sha256=None)
+    if type(sample) is not dict or sample!=expected or identity is not None:
+        raise ValueError('FORWARD_BROKER_INTENT_EMERGENCY_CUT_ACTIVE')
+
+
+def _request_implementations():
+    """Return exact request primitives only while their public slots agree."""
+    from nexus import broker_request_journal as request_module
+    journal_type=request_module.BrokerRequestJournal
+    trusted_guard=request_module._TRUSTED_LOCKED_REQUEST_PLAN_SNAPSHOT
+    trusted_fingerprint=request_module._TRUSTED_MAIN_FINGERPRINT
+    if (journal_type.locked_request_plan_snapshot is not trusted_guard or
+            request_module._main_fingerprint is not trusted_fingerprint):
+        raise ValueError(
+            'FORWARD_BROKER_INTENT_REQUEST_IMPLEMENTATION_CHANGED')
+    return journal_type,trusted_guard,trusted_fingerprint
+
+
 def _capture_request_source(journal,*,initial=False):
     """Capture one exact production request journal and its bounded bytes."""
-    from nexus.broker_request_journal import BrokerRequestJournal, _main_fingerprint
+    BrokerRequestJournal,_,main_fingerprint=_request_implementations()
     if type(journal) is not BrokerRequestJournal:
         raise ValueError('FORWARD_BROKER_INTENT_REQUEST_JOURNAL_INVALID')
     try:state=vars(journal)
@@ -462,7 +500,7 @@ def _capture_request_source(journal,*,initial=False):
         raise ValueError('FORWARD_BROKER_INTENT_REQUEST_JOURNAL_INVALID')
     try:
         identity=_order_file_identity(state['path'])
-        fingerprint=_main_fingerprint(state['path'])
+        fingerprint=main_fingerprint(state['path'])
     except (ValueError,OSError,RuntimeError,TypeError):
         raise ValueError('FORWARD_BROKER_INTENT_REQUEST_SOURCE_CHANGED') from None
     if (fingerprint[0]!=identity[0] or fingerprint[1]!=identity[1] or
@@ -479,39 +517,54 @@ def _require_request_source(journal,binding):
 def reconcile_persisted(review,journal,client_order_id,*,expected_head,
                         order_gateway):
     """Reconcile both journals while keeping the request head guarded."""
-    from nexus.broker_request_journal import BrokerRequestJournal
+    BrokerRequestJournal,trusted_request_guard,_=_request_implementations()
     frozen_review=_detached_review(review)
     request_source=_capture_request_source(journal,initial=True)
     order_source=_order_source_binding(frozen_review,order_gateway)
     _require_request_source(journal,request_source)
     _require_order_source(order_gateway,order_source)
+    _require_emergency_cut_clear(order_source)
     order_before=_replayed_order_snapshot(frozen_review,order_gateway)
     _require_request_source(journal,request_source)
     _require_order_source(order_gateway,order_source)
-    with BrokerRequestJournal.locked_request_plan_snapshot(journal,client_order_id,
+    _require_emergency_cut_clear(order_source)
+    _request_implementations()
+    with trusted_request_guard(journal,client_order_id,
             expected_head=expected_head) as read:
+        _request_implementations()
         _require_request_source(journal,request_source)
+        _require_emergency_cut_clear(order_source)
         first=read();result=reconcile_current(frozen_review,first,
             expected_account_sha256=request_source[2],
             expected_head=expected_head)
         if read()!=first:
             raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
+        _request_implementations()
         # Keep the exact request head and file identity guarded while the
         # independent order journal is replayed a second time.  No order lock
         # is retained, so the emergency halt remains independently writable.
+        _require_emergency_cut_clear(order_source)
         _require_order_identity(order_gateway,order_source)
         order_after=_replayed_order_snapshot(frozen_review,order_gateway)
         _require_order_source(order_gateway,order_source)
+        _require_emergency_cut_clear(order_source)
         _require_request_source(journal,request_source)
+        _request_implementations()
         if order_after!=order_before:
             raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
         if read()!=first:
             raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
+        _request_implementations()
+    _request_implementations()
     _require_request_source(journal,request_source)
+    _require_emergency_cut_clear(order_source)
     return dict(result,review_input_detached=True,order_gateway_exact=True,
         order_gateway_policy_bound=True,order_journal_identity_rechecked=True,
+        order_replay_implementation_bound=True,
         order_file_set_bound=True,order_file_fingerprints_rechecked=True,
+        emergency_cut_latch_clear_rechecked=True,
         request_journal_exact=True,
+        request_guard_implementation_bound=True,
         request_journal_identity_rechecked_from_entry=True,
         request_snapshot_replayed=True,
         journal_file_fingerprint_rechecked=True,

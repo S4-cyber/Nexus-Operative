@@ -1,5 +1,32 @@
 # Nexus Operative continuity instructions
 
+## v0.340.394 request-journal and gateway-policy binding
+
+Persisted counterfactual broker-intent reconciliation now binds one exact
+request-journal implementation, account scope, canonical single-link file and
+bounded byte fingerprint before the first durable order replay. The built-in
+guard is invoked class-qualified and the binding is rechecked before, inside
+and after its final guarded replay. A matching snapshot returned by an ad-hoc
+object or a byte-identical request pathname substitution fails closed.
+
+The durable order gateway must also retain its production policy: checkpoint
+validation enabled, rotation recovery disabled and no per-instance method
+substitution. A recovery-only gateway cannot reconcile through an interrupted
+rotation marker, and a policy change after the first replay is rejected. The
+order journal remains unlocked, preserving independent emergency-halt access.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
 ## v0.340.393 physical order-source binding
 
 Persisted counterfactual broker-intent reconciliation now requires one exact

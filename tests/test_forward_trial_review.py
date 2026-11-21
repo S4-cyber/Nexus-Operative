@@ -23,15 +23,25 @@ def until(seconds):
     return datetime.fromtimestamp(START+seconds,timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-def database(tmp_path,monkeypatch,sessions):
+def database(tmp_path,monkeypatch,sessions,*,admissions=False):
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));runner=PaperForwardRunner();policy=admit('btc_momentum_experiment_v1')
     with closing(runner._db()) as db,db:
         for index,(points,source,state) in enumerate(sessions):
             sid=f'{index+1:016x}';previous=evidence.GENESIS;rows=[]
-            for cycle,(offset,eligible) in enumerate(points,1):
-                payload=evidence.canonical(dict(session=sid,cycle=cycle,evaluated_at=START+offset,
-                    quote=dict(provider='coinbase_exchange_public',product='BTC-USD',bid='100',ask='100.1',last='100',received_at=START+offset,exchange_time=until(offset),read_only=True,orders_allowed=False),quote_eligible=eligible,source_mode=source,
-                    policy_sha256=policy['policy_sha256'],error_type=None))
+            if admissions:evidence.initialize_exchange_admissions(db,sid)
+            for cycle,point in enumerate(points,1):
+                offset,eligible=point[:2];error_type=point[2] if len(point)>2 else None
+                quote=dict(provider='coinbase_exchange_public',product='BTC-USD',
+                    bid='100',ask='100.1',last='100',received_at=START+offset,
+                    exchange_time=until(offset),read_only=True,orders_allowed=False)
+                marker=(evidence.append_exchange_admission(db,sid,cycle,
+                    START+offset,quote,source,policy['policy_sha256'],START+offset)
+                    if admissions else None)
+                data=dict(session=sid,cycle=cycle,evaluated_at=START+offset,
+                    quote=quote,quote_eligible=eligible,source_mode=source,
+                    policy_sha256=policy['policy_sha256'],error_type=error_type)
+                if marker is not None:data['exchange_admission_sha256']=marker
+                payload=evidence.canonical(data)
                 digest=evidence.digest(previous,payload);rows.append((sid,cycle,payload,previous,digest));previous=digest
             first=START+points[0][0] if points else START;last=START+points[-1][0] if points else START
             decision='STOP' if state=='STOPPED' else 'PAUSED' if state=='PAUSED' else 'HOLD'
@@ -392,20 +402,23 @@ def test_sparse_endpoints_never_turn_calendar_span_into_covered_uptime(tmp_path,
     assert path.read_bytes()==before
 
 
-def test_even_complete_declared_public_coverage_cannot_accept_market_or_broker_trial(tmp_path,monkeypatch):
+def test_complete_legacy_declared_public_coverage_cannot_pass_trial_gate(
+        tmp_path,monkeypatch):
     points=[(i,True) for i in range(0,72*3600+1,10)]
     path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')]);result=run(path,72*3600)
-    assert result['coverage_fraction']=='1.000000' and result['declared_coverage_target_met']
+    assert result['coverage_fraction']=='1.000000' and not result['declared_coverage_target_met']
     assert result['status']=='REVIEW_REQUIRED' and all(result[k] is False for k in trial.FLAGS)
     assert result['observations_in_window']==25921
-    assert result['incident_free_coverage_target_met'] is True
-    assert result['operational_incidents_present'] is False
+    assert result['exchange_admission_incidents_in_window']==25921
+    assert result['incident_free_coverage_target_met'] is False
+    assert result['operational_incidents_present'] is True
     assert result['over_limit_coverage_gaps']==0
     assert result['over_limit_coverage_gap_seconds']=='0'
-    assert result['event_trace_complete'] is True
+    assert result['event_trace_complete'] is False
     assert result['legacy_unbound_observations_in_window']==0
     assert result['quote_outcome_disagreements_in_window']==0
     assert result['retained_event_records']==result['events_in_window']==25923
+    assert 'LEGACY_EXCHANGE_ADMISSIONS_UNBOUND' in result['review_reasons']
 
 
 def test_legacy_quote_history_is_readable_but_never_event_complete(tmp_path,monkeypatch):
@@ -504,11 +517,15 @@ def test_running_session_started_before_window_remains_open_and_blocks_target(tm
 
 
 def test_high_aggregate_coverage_does_not_hide_over_limit_feed_gap(tmp_path,monkeypatch):
-    points=[(i,True) for i in range(0,72*3600+1,5) if i not in (105,110)]
-    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
-    result=run(path,72*3600)
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5) if i not in (105,110)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    result=run(path,600)
     assert result['declared_coverage_target_met'] is True
-    assert result['coverage_fraction']=='0.999942'
+    assert result['exchange_admission_incidents_in_window']==0
+    assert 'LEGACY_EXCHANGE_ADMISSIONS_UNBOUND' not in result['review_reasons']
+    assert result['coverage_fraction']=='0.975000'
     assert result['over_limit_coverage_gaps']==1
     assert result['over_limit_coverage_gap_seconds']=='15'
     assert result['operational_incidents_present'] is True
@@ -517,11 +534,13 @@ def test_high_aggregate_coverage_does_not_hide_over_limit_feed_gap(tmp_path,monk
 
 
 def test_high_aggregate_coverage_does_not_hide_retained_rejection(tmp_path,monkeypatch):
-    points=[(i,i!=100) for i in range(0,72*3600+1,5)]
-    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
-    result=run(path,72*3600)
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,i!=100) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    result=run(path,600)
     assert result['declared_coverage_target_met'] is True
-    assert result['coverage_fraction']=='0.999961'
+    assert result['coverage_fraction']=='0.983333'
     assert result['rejected_observations_in_window']==1
     assert result['quote_error_observations']==0
     assert result['over_limit_coverage_gaps']==0
@@ -531,10 +550,12 @@ def test_high_aggregate_coverage_does_not_hide_retained_rejection(tmp_path,monke
 
 
 def test_coverage_target_does_not_hide_retained_quote_incidents(tmp_path,monkeypatch):
-    points=[(i,True) for i in range(0,72*3600+1,5)]
-    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
-    rewrite(path,lambda p:p.update(error_type='TimeoutError',quote_eligible=False))
-    result=run(path,72*3600)
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,i!=5,'TimeoutError' if i==5 else None)
+        for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    result=run(path,600)
     assert result['declared_coverage_target_met'] is True
     assert result['incident_free_coverage_target_met'] is False
     assert result['operational_incidents_present'] is True
@@ -544,12 +565,14 @@ def test_coverage_target_does_not_hide_retained_quote_incidents(tmp_path,monkeyp
 
 
 def test_coverage_target_does_not_hide_nonmanual_termination(tmp_path,monkeypatch):
-    points=[(i,True) for i in range(0,72*3600+1,5)]
-    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
     with closing(sqlite3.connect(path)) as db,db:
         last=json.loads(db.execute('SELECT last_json FROM sessions').fetchone()[0])
         last['reason']='EMERGENCY_STOP';db.execute('UPDATE sessions SET last_json=?',(evidence.canonical(last),))
-    result=run(path,72*3600)
+    result=run(path,600)
     assert result['declared_coverage_target_met'] is True
     assert result['incident_free_coverage_target_met'] is False
     assert result['other_stopped_sessions']==1 and result['clean_manual_stop_sessions']==0

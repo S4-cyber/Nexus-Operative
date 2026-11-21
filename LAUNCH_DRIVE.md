@@ -1,4 +1,29 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.398 legacy admission trial gate
+
+Sustained forward-trial review now treats every retained in-window quote from
+a legacy session without a durable pre-evaluation exchange-admission chain as
+an explicit operational incident. Readable legacy coverage remains diagnostic,
+but it can no longer satisfy declared or incident-free 72-hour coverage, and
+the review reports `LEGACY_EXCHANGE_ADMISSIONS_UNBOUND` rather than silently
+accepting the missing chain.
+
+Existing quote, event, admission, cross-session, policy and lifecycle checks
+remain in force. This is bounded local evidence validation, not broker/account/
+funds acceptance, genuine-feed or sustained-market-trial acceptance, native
+Windows/installer/power-loss acceptance, performance, profitability or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
 ## v0.340.397 post-guard order replay
 
 Persisted counterfactual broker-intent reconciliation now performs a third

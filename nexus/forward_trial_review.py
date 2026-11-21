@@ -39,7 +39,8 @@ FLAGS=('source_attested','market_realism_authenticated','account_reconciled','br
 LIMITATIONS=('Private local operational evidence only. Coverage requires both a recorded eligible flag and replay of retained '
     'single-source feed, product, permission, numeric/spread/jump, receive/exchange-age and exchange-regression checks under '
     'the exact admitted policy at the recorded evaluation time. Rejected flags are never upgraded. Adjacent declared-public '
-    'valid points are clipped to the window and overlaps unioned once; exchange time must also advance across retained '
+    'valid points are clipped to the window and overlaps unioned once; every in-window quote must retain a matching durable '
+    'pre-evaluation exchange-admission chain, and exchange time must also advance across retained '
     'session boundaries, and a repeated or regressed point removes both adjacent candidate intervals; every point and terminal event must remain bound '
     'to its recorded session lifecycle; gaps over10 seconds, invalid points and session '
     'boundaries are not bridged, and over-limit uncovered gaps remain operational incidents even when aggregate coverage '
@@ -251,6 +252,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         interval_candidates=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
         events_in_window=legacy_unbound=outcome_disagreements=event_incidents=0
         admissions_in_window=admission_incidents=0;cross_session_admissions=[]
+        legacy_admission_incidents=unmatched_admission_incidents=0
         event_trace_complete=True
         clean_stopped=other_stopped=paused=running=quote_error_sessions=quote_errors=0
         reasons={'SOURCE_LABELS_AND_HASHES_UNATTESTED','ORDER_ACCOUNT_AND_STRATEGY_ACCEPTANCE_NOT_REVIEWED','EXECUTION_OWNERSHIP_NOT_CHECKED'}
@@ -266,7 +268,12 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             admission=(forward_evidence.review_exchange_admissions(db,sid)
                 if admission_names else None)
             session_admission_incidents=0
-            if admission is not None:
+            if admission is None:
+                session_admission_incidents=sum(
+                    start<=_number(point['evaluated_at'])<=end for point in points)
+                legacy_admission_incidents+=session_admission_incidents
+                admission_incidents+=session_admission_incidents
+            else:
                 admission_check=forward_evidence.crosscheck_exchange_admissions(
                     admission,evidence,state,policy['policy_sha256'])
                 severe=[reason for reason in admission_check['reasons'] if
@@ -283,6 +290,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                     session_admission_incidents=sum(start<=_number(marker['evaluated_at'])<=end
                         for marker in admission['points']
                         if marker['cycle'] not in {point['cycle'] for point in points})
+                    unmatched_admission_incidents+=session_admission_incidents
                     admission_incidents+=session_admission_incidents
             # RUNNING has no terminal lifecycle end. Its last retained update
             # cannot make an unresolved session disappear from a later review.
@@ -480,7 +488,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         if not selected:reasons.add('NO_OBSERVATIONS_IN_WINDOW')
         if trace_incomplete:reasons.add('DURABLE_EVENT_TRACE_INCOMPLETE')
         if event_incidents:reasons.add('EVENT_INCIDENTS_RETAINED_IN_WINDOW')
-        if admission_incidents:reasons.add('EXCHANGE_ADMISSION_OUTCOME_MISSING')
+        if legacy_admission_incidents:reasons.add('LEGACY_EXCHANGE_ADMISSIONS_UNBOUND')
+        if unmatched_admission_incidents:reasons.add('EXCHANGE_ADMISSION_OUTCOME_MISSING')
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
             after=after,until=until,window_seconds=_text(duration),minimum_trial_seconds=MINIMUM_SECONDS,
             maximum_covered_gap_seconds=MAX_GAP_SECONDS,required_coverage_fraction='0.95',

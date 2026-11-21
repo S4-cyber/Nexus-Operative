@@ -36,9 +36,10 @@ LIMITATIONS=('Counterfactual binding only. The modeled local fill already change
     'No historical execution equivalence, source, broker, account, funds, fees, holdings, routing, live, '
     'performance, profitability, sustained-trial, or release acceptance is established.')
 RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared with one exact-head retained '
-    'request plan between two fresh replay-validated order-journal snapshots. Both order snapshots must equal the '
-    'reviewed non-halted snapshot, without holding an order-journal lock that could delay an emergency halt. Equality '
-    'proves only sampled sequential local provenance continuity; a later mutation remains possible and it '
+    'request plan between two fresh replay-validated order-journal snapshots. The request guard spans the final order '
+    'replay and a final request reread; both order snapshots must equal the reviewed non-halted snapshot, without '
+    'holding an order-journal lock that could delay an emergency halt. Equality proves only sampled sequential local '
+    'provenance continuity; a later mutation remains possible and it '
     'does not attest source, provider, broker account, funds, fees, holdings, market coverage, routing, sustained '
     'operation, performance, profitability, or release acceptance. The counterfactual plan remains unsendable.')
 REQUEST_SUMMARY_FIELDS=frozenset(('client_order_id','payload_sha256',
@@ -344,7 +345,7 @@ def _replayed_order_snapshot(review,order_gateway):
 
 def reconcile_persisted(review,journal,client_order_id,*,expected_head,
                         order_gateway):
-    """Reconcile between fresh order replays under the request head guard."""
+    """Reconcile both journals while keeping the request head guarded."""
     order_before=_replayed_order_snapshot(review,order_gateway)
     with journal.locked_request_plan_snapshot(client_order_id,
             expected_head=expected_head) as read:
@@ -353,11 +354,18 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
             expected_head=expected_head)
         if read()!=first:
             raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
-    order_after=_replayed_order_snapshot(review,order_gateway)
-    if order_after!=order_before:
-        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
+        # Keep the exact request head and file identity guarded while the
+        # independent order journal is replayed a second time.  No order lock
+        # is retained, so the emergency halt remains independently writable.
+        order_after=_replayed_order_snapshot(review,order_gateway)
+        if order_after!=order_before:
+            raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
+        if read()!=first:
+            raise ValueError('FORWARD_BROKER_INTENT_RECONCILIATION_CHANGED')
     return dict(result,request_snapshot_replayed=True,
         journal_file_fingerprint_rechecked=True,
+        request_guard_spans_final_order_replay=True,
+        final_request_snapshot_replayed=True,
         order_snapshot_replayed=True,
         order_snapshot_stable_during_reconciliation=True,
         durable_halt_clear=True)

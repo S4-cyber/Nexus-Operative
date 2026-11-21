@@ -116,6 +116,8 @@ def test_cold_bound_intent_reconciles_to_fresh_stopped_review_without_write(
     assert reconciled['order_gateway_exact']
     assert reconciled['order_gateway_policy_bound']
     assert reconciled['order_journal_identity_rechecked']
+    assert reconciled['order_file_set_bound']
+    assert reconciled['order_file_fingerprints_rechecked']
     assert reconciled['request_journal_exact']
     assert reconciled['request_journal_identity_rechecked_from_entry']
     assert reconciled['request_snapshot_replayed']
@@ -320,6 +322,31 @@ def test_persisted_reconciliation_rejects_byte_identical_order_path_swap(
         if len(calls)==1:order_gateway.path=clone
         return value
     monkeypatch.setattr(intent,'_replayed_order_snapshot',swap_after_first_replay)
+    with pytest.raises(ValueError,match='ORDER_SOURCE_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert len(calls)==1
+
+
+@pytest.mark.parametrize('target',('orders','portfolio'))
+def test_persisted_reconciliation_rejects_order_file_set_change(
+        tmp_path,monkeypatch,target):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    path=(orders.path if target=='orders' else
+        orders.path.parent/'paper_portfolio.sqlite3')
+    original=intent._replayed_order_snapshot;calls=[]
+    def mutate_after_first_replay(frozen_review,order_gateway):
+        value=original(frozen_review,order_gateway);calls.append(value)
+        if len(calls)==1:
+            with sqlite3.connect(path) as db:
+                db.execute('PRAGMA user_version=1')
+        return value
+    monkeypatch.setattr(intent,'_replayed_order_snapshot',
+        mutate_after_first_replay)
     with pytest.raises(ValueError,match='ORDER_SOURCE_CHANGED'):
         intent.reconcile_persisted(review,store,'nx_forward_fixture',
             expected_head=head,order_gateway=orders)

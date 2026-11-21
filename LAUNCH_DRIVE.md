@@ -1,4 +1,30 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.395 bounded order file-set reconciliation
+
+Persisted counterfactual broker-intent reconciliation now binds bounded,
+sidecar-free fingerprints for both the exact order journal and its linked
+portfolio before the first semantic replay. Physical identity, size, stable
+metadata and bytes are rechecked after each successful replay and across the
+guarded request comparison. A same-inode metadata or byte change now fails
+closed even if the replayed order snapshot would otherwise remain equal.
+
+The production gateway policy and physical identities remain pinned. The order
+journal remains unlocked, so the independent emergency halt can still commit;
+a halt during the guarded request comparison is rejected by the second
+semantic replay before a fingerprint result can mask its changed durable
+state. Direct regressions cover both the order and linked-portfolio files.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
 
 ## v0.340.394 request-journal and gateway-policy binding
 

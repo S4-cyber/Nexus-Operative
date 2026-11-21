@@ -18,6 +18,8 @@ from nexus.durable_orders import DurableOrderGateway
 from nexus.forward_reconciliation_review import (
     MODELED_OUTCOME_PROFILE, RECEIPT_PROFILE, reconciliation_sha256)
 from nexus.order_accounting import modeled_fill_sha256
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints, require_file_fingerprints)
 
 
 PROFILE='nexus.forward-broker-intent.v1'
@@ -42,9 +44,9 @@ LIMITATIONS=('Counterfactual binding only. The modeled local fill already change
 RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared with one exact-head retained '
     'request plan between two fresh replay-validated order-journal snapshots. The caller-owned review is validated '
     'and detached once before journal access. One exact production-policy durable gateway plus the physical order '
-    'journal and linked portfolio identity are pinned across both replays. One exact request journal, account scope, '
+    'journal and linked portfolio identity, bounded bytes and stable metadata are pinned across both replays. One exact request journal, account scope, '
     'physical identity and bounded bytes are pinned from composition entry. The request guard spans the final order replay and a final request reread; '
-    'both order snapshots must equal the reviewed non-halted snapshot, without holding an order-journal lock that '
+    'both order snapshots must equal the reviewed non-halted snapshot and the sidecar-free order file set must remain unchanged, without holding an order-journal lock that '
     'could delay an emergency halt. Equality proves only sampled sequential local '
     'provenance continuity; a later mutation remains possible and it '
     'does not attest source, provider, broker account, funds, fees, holdings, market coverage, routing, sustained '
@@ -56,6 +58,8 @@ REQUEST_SUMMARY_FIELDS=frozenset(('client_order_id','payload_sha256',
     'broker_connected','ledger_applied','broker_account_reconciled'))
 LOOKUP_SUMMARY_FIELDS=frozenset(('attempts','attempt_limit','pending',
     'next_allowed_at','review_blocked','interruptions','last_outcome'))
+ORDER_SOURCE_MAX_BYTES=1024*1024*1024
+ORDER_SOURCE_PREFIX='FORWARD_BROKER_INTENT_ORDER_'
 
 
 def _sha(value):
@@ -398,7 +402,7 @@ def _order_file_identity(path):
 
 
 def _order_source_binding(review,order_gateway):
-    """Bind both replays to one real gateway and physical local source."""
+    """Bind both replays to one real gateway and bounded local file set."""
     _require_order_gateway_policy(order_gateway)
     try:path=DurableOrderGateway._path(order_gateway)
     except (OSError,RuntimeError,TypeError,ValueError):
@@ -409,12 +413,20 @@ def _order_source_binding(review,order_gateway):
     if type(reviewed) is dict and reviewed.get('portfolio_linked') is True:
         portfolio_identity=_order_file_identity(
             Path(order_identity[0]).parent/'paper_portfolio.sqlite3')
-    return order_identity,portfolio_identity
+    identities=tuple(item for item in (order_identity,portfolio_identity)
+        if item is not None)
+    paths=tuple(item[0] for item in identities)
+    limits=(ORDER_SOURCE_MAX_BYTES,)*len(paths)
+    try:fingerprints=capture_file_fingerprints(paths,limits,ORDER_SOURCE_PREFIX)
+    except ValueError:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
+    return order_identity,portfolio_identity,paths,limits,fingerprints
 
 
-def _require_order_source(order_gateway,binding):
+def _require_order_identity(order_gateway,binding):
+    """Require the configured gateway to retain the entry physical sources."""
     _require_order_gateway_policy(order_gateway)
-    order_identity,portfolio_identity=binding
+    order_identity,portfolio_identity,_,_,_=binding
     try:path=DurableOrderGateway._path(order_gateway)
     except (OSError,RuntimeError,TypeError,ValueError):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
@@ -424,6 +436,15 @@ def _require_order_source(order_gateway,binding):
             Path(order_identity[0]).parent/'paper_portfolio.sqlite3')!=
             portfolio_identity):
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED')
+
+
+def _require_order_source(order_gateway,binding):
+    """Require entry identities plus bounded sidecar-free bytes and metadata."""
+    _require_order_identity(order_gateway,binding)
+    _,_,paths,limits,fingerprints=binding
+    try:require_file_fingerprints(paths,limits,fingerprints,ORDER_SOURCE_PREFIX)
+    except ValueError:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SOURCE_CHANGED') from None
 
 
 def _capture_request_source(journal,*,initial=False):
@@ -478,7 +499,7 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
         # Keep the exact request head and file identity guarded while the
         # independent order journal is replayed a second time.  No order lock
         # is retained, so the emergency halt remains independently writable.
-        _require_order_source(order_gateway,order_source)
+        _require_order_identity(order_gateway,order_source)
         order_after=_replayed_order_snapshot(frozen_review,order_gateway)
         _require_order_source(order_gateway,order_source)
         _require_request_source(journal,request_source)
@@ -489,6 +510,7 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
     _require_request_source(journal,request_source)
     return dict(result,review_input_detached=True,order_gateway_exact=True,
         order_gateway_policy_bound=True,order_journal_identity_rechecked=True,
+        order_file_set_bound=True,order_file_fingerprints_rechecked=True,
         request_journal_exact=True,
         request_journal_identity_rechecked_from_entry=True,
         request_snapshot_replayed=True,

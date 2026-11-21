@@ -49,8 +49,8 @@ RECONCILIATION_LIMITATIONS=('One exact stopped local forward review is compared 
     'request plan between two fresh replay-validated order-journal snapshots. The caller-owned review is validated '
     'and detached once before journal access. One exact production-policy durable gateway plus the physical order '
     'journal and linked portfolio identity, bounded bytes and stable metadata are pinned across both replays. The exact production replay, fingerprint and request-guard implementations are rechecked throughout. The independent emergency-cut latch must remain canonically clear before, inside and after the guarded comparison. One exact request journal, account scope, '
-    'physical identity and bounded bytes are pinned from composition entry. The request guard spans the final order replay and a final request reread; '
-    'both order snapshots must equal the reviewed non-halted snapshot and the sidecar-free order file set must remain unchanged, without holding an order-journal lock that '
+    'physical identity and bounded bytes are pinned from composition entry. The request guard spans a second order replay and a final request reread; after that guard exits, a third order replay and request-source recheck close the guard-finalization window. '
+    'All order snapshots must equal the reviewed non-halted snapshot and the sidecar-free order file set must remain unchanged, without holding an order-journal lock that '
     'could delay an emergency halt. Equality proves only sampled sequential local '
     'provenance continuity; a later mutation remains possible and it '
     'does not attest source, provider, broker account, funds, fees, holdings, market coverage, routing, sustained '
@@ -558,6 +558,18 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
     _request_implementations()
     _require_request_source(journal,request_source)
     _require_emergency_cut_clear(order_source)
+    # The request guard finalizes its own SQLite connection after the guarded
+    # body returns.  Re-sample the independently writable order source after
+    # that exit so a halt or file mutation in the finalization window cannot
+    # inherit the earlier non-halted result.  A final request fingerprint then
+    # rejects a request change that races this unlocked order replay.
+    _require_order_identity(order_gateway,order_source)
+    order_final=_replayed_order_snapshot(frozen_review,order_gateway)
+    _require_order_source(order_gateway,order_source)
+    _require_emergency_cut_clear(order_source)
+    _require_request_source(journal,request_source)
+    if order_final!=order_before:
+        raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
     return dict(result,review_input_detached=True,order_gateway_exact=True,
         order_gateway_policy_bound=True,order_journal_identity_rechecked=True,
         order_replay_implementation_bound=True,
@@ -568,8 +580,10 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
         request_journal_identity_rechecked_from_entry=True,
         request_snapshot_replayed=True,
         journal_file_fingerprint_rechecked=True,
-        request_guard_spans_final_order_replay=True,
+        request_guard_spans_second_order_replay=True,
         final_request_snapshot_replayed=True,
+        post_guard_order_snapshot_replayed=True,
+        post_guard_request_source_rechecked=True,
         order_snapshot_replayed=True,
         order_snapshot_stable_during_reconciliation=True,
         durable_halt_clear=True)

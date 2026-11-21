@@ -1,5 +1,6 @@
 """Counterfactual forward intent provenance and durable unsendability."""
 import copy
+from contextlib import contextmanager
 import json
 import os
 import shutil
@@ -126,8 +127,10 @@ def test_cold_bound_intent_reconciles_to_fresh_stopped_review_without_write(
     assert reconciled['request_journal_identity_rechecked_from_entry']
     assert reconciled['request_snapshot_replayed']
     assert reconciled['journal_file_fingerprint_rechecked']
-    assert reconciled['request_guard_spans_final_order_replay']
+    assert reconciled['request_guard_spans_second_order_replay']
     assert reconciled['final_request_snapshot_replayed']
+    assert reconciled['post_guard_order_snapshot_replayed']
+    assert reconciled['post_guard_request_source_rechecked']
     assert reconciled['order_snapshot_replayed']
     assert reconciled['order_snapshot_stable_during_reconciliation']
     assert reconciled['durable_halt_clear']
@@ -214,7 +217,7 @@ def test_guard_rechecks_request_file_after_final_reconciliation(
                 tmp_path/'forward'/'orders.sqlite3'))
 
 
-def test_request_guard_spans_final_order_replay_and_rechecks_after_it(
+def test_request_guard_spans_second_order_replay_and_rechecks_after_it(
         tmp_path,monkeypatch):
     result,review=candidate(tmp_path/'forward',monkeypatch)
     store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
@@ -257,7 +260,7 @@ def test_persisted_reconciliation_detaches_review_before_journal_access(
         mutate_caller_after_first_replay)
     assert intent.reconcile_persisted(review,store,'nx_forward_fixture',
         expected_head=head,order_gateway=orders)==baseline
-    assert len(calls)==2
+    assert len(calls)==3
 
 
 def test_persisted_reconciliation_requires_real_durable_order_gateway(
@@ -572,6 +575,79 @@ def test_emergency_cut_latch_remains_independent_during_request_reconciliation(
             expected_head=head,order_gateway=orders)
     assert requested==[True] and store.path.read_bytes()==before
     assert not DurableOrderGateway(orders.path).recovery_report()['halted']
+
+
+def test_halt_during_request_guard_exit_invalidates_reconciliation(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    before=store.path.read_bytes()
+    original=BrokerRequestJournal._write_connection;halted=[]
+    @contextmanager
+    def halt_after_guard_body(self):
+        with original(self) as db:
+            yield db
+        halted.append(orders.emergency_halt()['halted'])
+    monkeypatch.setattr(BrokerRequestJournal,'_write_connection',
+        halt_after_guard_body)
+    with pytest.raises(ValueError,match='ORDER_SNAPSHOT_STALE'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert halted==[True] and store.path.read_bytes()==before
+    assert DurableOrderGateway(orders.path).recovery_report()['halted']
+    assert not emergency_intent.requested(orders.path)
+
+
+@pytest.mark.parametrize('target',('orders','portfolio'))
+def test_order_file_change_during_request_guard_exit_is_rejected(
+        tmp_path,monkeypatch,target):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    path=(orders.path if target=='orders' else
+        orders.path.parent/'paper_portfolio.sqlite3')
+    original=BrokerRequestJournal._write_connection;mutated=[]
+    @contextmanager
+    def mutate_after_guard_body(self):
+        with original(self) as db:
+            yield db
+        with sqlite3.connect(path) as changed:
+            changed.execute('PRAGMA user_version=2')
+        mutated.append(target)
+    monkeypatch.setattr(BrokerRequestJournal,'_write_connection',
+        mutate_after_guard_body)
+    with pytest.raises(ValueError,match='ORDER_SOURCE_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert mutated==[target]
+
+
+def test_request_change_during_post_guard_order_replay_is_rejected(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    original=intent._replayed_order_snapshot;calls=[]
+    mtime=store.path.stat().st_mtime_ns
+    def mutate_request_during_post_guard_replay(*args,**kwargs):
+        value=original(*args,**kwargs);calls.append(value['snapshot_sha256'])
+        if len(calls)==3:
+            os.utime(store.path,ns=(store.path.stat().st_atime_ns,
+                mtime+1_000_000_000))
+        return value
+    monkeypatch.setattr(intent,'_replayed_order_snapshot',
+        mutate_request_during_post_guard_replay)
+    with pytest.raises(ValueError,match='REQUEST_SOURCE_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert len(calls)==3
 
 
 def test_legacy_prepare_remains_readable_and_unbound(tmp_path):

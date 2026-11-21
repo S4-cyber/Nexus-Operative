@@ -1,4 +1,30 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.397 post-guard order replay
+
+Persisted counterfactual broker-intent reconciliation now performs a third
+fresh semantic order replay only after the request guard has fully exited.
+That replay closes the guard-connection finalization window, then rechecks the
+exact order and linked-portfolio identities, bounded sidecar-free
+fingerprints, independent emergency-cut latch and request source.
+
+A durable halt or order-file mutation committed during guard finalization, or
+a request-file change during the unlocked post-guard replay, fails closed.
+The order journal remains unlocked throughout, so the independent emergency
+stop is never delayed by reconciliation. Existing exact implementation,
+policy, account-scope and reviewed-snapshot bindings remain in force.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
 ## v0.340.396 emergency-latch and implementation binding
 
 Persisted counterfactual broker-intent reconciliation now fails closed while

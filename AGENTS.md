@@ -1,5 +1,32 @@
 # Nexus Operative continuity instructions
 
++## v0.340.392 detached forward-review input
+
+Persisted counterfactual broker-intent reconciliation now validates and
+detaches the complete caller-owned stopped review before any durable journal
+access. Both replay-validated order snapshots and the exact-head request-plan
+comparison consume that one immutable plain-data copy. Concurrent mutation of
+the caller's nested review cannot splice different review states into one
+reconciliation result.
+
+A direct regression changes the original receipt and stopped state after the
+first order replay and proves that the result remains exactly bound to the
+initial detached input. Request-head locking through the final order replay,
+the final request reread and unlocked independent emergency-halt access remain
+intact. The request plan stays permanently unsendable and no credential,
+provider, network, account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
 +## v0.340.391 request-guarded final order replay
 
 Persisted counterfactual broker-intent reconciliation now retains the exact

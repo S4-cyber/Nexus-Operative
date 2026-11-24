@@ -62,6 +62,13 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 </nav>
 <div id="panel-portal" class="tab-panel" role="tabpanel" aria-labelledby="tab-portal"><h2 class="workspace-title">Portal</h2><p class="sub">Observe account movement and control the experimental paper session.</p>
 <section class="card"><div class="label">Your command center</div><h2>Your automated trading command center</h2><p>Nexus is built toward a simple workflow: connect an account, choose risk allowances and Engage. Open To Do to see how each component supports automated trading. This build runs local paper trades; account funding and live execution are still being built. Changing tabs never starts a session.</p><button data-open-tab="todo" data-help="Open the automatic startup checklist and read the next setup steps. This changes the visible tab without linking accounts or activating trading.">Open Startup Checklist</button></section>
+<section class="card" id="portal-tier-controls" aria-label="Risk tier engagement on Portal">
+<div class="label">Active risk permissions // paper simulation</div><h2>Engage Terrestrial, Solar & Universal</h2>
+<p class="sub">Engage each risk allowance separately. Enabled tiers permit only new simulated BUY entry intents within their individual caps, subject to stricter global limits. DISENGAGE blocks new entries immediately but does not liquidate holdings or block risk-reducing SELL exits. These switches do not start the paper runner or authorize brokers.</p>
+<div class="actions" id="portal-tier-engagement" role="group" aria-label="Individual paper risk-tier permissions"></div>
+<p class="sub" id="portal-tier-permission-status" role="status" aria-live="polite">Loading saved risk allowances…</p>
+<button data-open-tab="risk" data-help="Review or change saved paper budget and allocation percentages. This does not engage a tier or start trading.">Review Full Risk Settings</button>
+</section>
 <section id="matrix-hangar" hidden aria-label="Account Matrix and public telemetry" aria-hidden="true"><div class="matrix-head"><span>◈ MATRIX STREAM // TELEMETRY</span><span id="matrix-state">STANDBY</span></div><div class="matrix-account">
 <div class="actions" aria-label="Account graph mode"><button id="matrix-singularity" aria-pressed="true" aria-controls="matrix-account-chart" data-help="Show the whole local paper account as one value line: available cash plus estimated sale value of holdings. This is observed paper data, not a connected brokerage balance.">Singularity</button><button id="matrix-fractal" aria-pressed="false" aria-controls="matrix-account-chart" data-help="Track all observed paper holdings together as moving points and individual history lines. Points move outward for gains and inward for losses on a shared dollar scale. Missing marks leave gaps; connecting edges are a layout, not measured correlations. These are unrealized values, not lifetime returns.">Fractal</button>
 <label>Time range <select id="matrix-range" data-help="Choose how much retained account history to display. Day and year windows are rolling; year to date begins January 1 UTC. Earlier history is not invented when tracking has just begun."><option value="1m">One minute</option><option value="1h">One hour</option><option value="1d" selected>One day</option><option value="1mo">One month (30 days)</option><option value="1y">One year (365 days)</option><option value="ytd">Year to date (UTC)</option><option value="all">All retained</option></select></label></div>
@@ -307,19 +314,31 @@ async function update(){
     catch(_){tierStudy=null}
   }
   const data=await api('/api/tiers');const root=byId('tiers');root.replaceChildren();
-  const switches=byId('tier-engagement');switches.replaceChildren();
-  for(const policy of data.tier_permissions){
-    const button=helpButton('Allow or block new '+policy.tier+' paper buys within the displayed cap. Disengaging this tier does not sell existing holdings or prevent risk-reducing exits. Other safety checks still apply.');
-    button.textContent=(policy.enabled?'DISENGAGE ':'ENGAGE ')+policy.tier.toUpperCase()+' / $'+policy.maximum_intent_usd+' cap';
-    button.setAttribute('aria-pressed',String(policy.enabled));
-    button.disabled=halted&&!policy.enabled;
-    button.onclick=async()=>{
-      if(!policy.enabled&&!window.confirm('Engage '+policy.tier+' simulated BUY risk? No broker orders.'))return;
-      try{await api('/api/tiers/'+policy.tier+'/permission',{method:'PUT',headers:jsonHeaders,body:JSON.stringify({enabled:!policy.enabled})});await update()}
-      catch(error){show('tier-permission-status','Risk control unavailable: '+error.message)}
-    };switches.append(button);
+  const riskTargets=[['tier-engagement','tier-permission-status'],['portal-tier-engagement','portal-tier-permission-status']];
+  for(const [buttonsId,statusId] of riskTargets){
+    const switches=byId(buttonsId);switches.replaceChildren();
+    for(const policy of data.tier_permissions){
+      const button=helpButton('Control new '+policy.tier+' simulated BUY intents. The current limit is $'+policy.maximum_intent_usd+'. Disengaging does not sell existing holdings or block risk-reducing SELL exits. Global risk vetoes and the emergency cut remain in force.');
+      button.textContent=(policy.enabled?'DISENGAGE ':'ENGAGE ')+policy.tier.toUpperCase()+' / $'+policy.maximum_intent_usd+' cap';
+      button.setAttribute('aria-pressed',String(policy.enabled));
+      button.setAttribute('aria-label',(policy.enabled?'Disengage ':'Engage ')+policy.tier+' new paper BUY entries');
+      button.disabled=halted&&!policy.enabled;
+      button.onclick=async()=>{
+        button.disabled=true;
+        if(!policy.enabled&&!window.confirm('Engage '+policy.tier+' simulated BUY risk up to $'+policy.maximum_intent_usd+' per intent? This will not connect a broker or start a paper session.')){button.disabled=false;return}
+        try{
+          await api('/api/tiers/'+policy.tier+'/permission',{method:'PUT',headers:jsonHeaders,body:JSON.stringify({enabled:!policy.enabled})});
+          await update();
+        }catch(error){
+          show(statusId,'Risk control unavailable: '+error.message+'. No permission change confirmed.');
+          button.disabled=false;
+        }
+      };
+      switches.append(button);
+    }
+    const selected=data.tier_permissions.filter(p=>p.enabled).map(p=>p.tier.toUpperCase()+' ($'+p.maximum_intent_usd+' max)');
+    show(statusId,selected.length?'Enabled for new simulated BUY entries: '+selected.join(', '):'ALL TIERS OFF — new simulated BUY entries blocked. Risk-reducing exits remain possible.');
   }
-  show('tier-permission-status',data.tier_permissions.filter(p=>p.enabled).map(p=>p.tier).join(', ')||'ALL TIERS OFF');
 
   for(const t of data.tiers){
    const card=document.createElement('article');card.className='card';

@@ -38,5 +38,9 @@ const cases=[
  ['accessor step status',b=>Object.defineProperty(b.runs[1].jobs[0].steps[0],'status',{enumerable:true,get(){throw Error('accessor executed')}})],
  ['sparse steps despite sufficient length',b=>{b.runs[1].jobs[0].steps.length++;}],
  ['array subclass',b=>Object.setPrototypeOf(b.runs,Object.create(Array.prototype))],
+ ['non-enumerable bundle field',b=>Object.defineProperty(b,'hidden',{value:true})],
+ ['symbol bundle field',b=>b[Symbol('hidden')]=true],
+ ['non-enumerable step field',b=>Object.defineProperty(b.runs[1].jobs[0].steps[0],'hidden',{value:true})],
+ ['symbol job-array field',b=>b.runs[1].jobs[Symbol('hidden')]=true],
 ];
 for(const [name,mutate] of cases)test('rejects '+name,()=>{let b=fixture();mutate(b);assert.throws(()=>review(b),/CI_STEP_/)});

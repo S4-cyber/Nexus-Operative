@@ -12,6 +12,23 @@ const stepsFor={
 const spec=[['Public repository security',['reachable-history-and-secrets']],['Nexus research safety regression',['offline-regression-0-of-2','offline-regression-1-of-2','offline-release-evidence','portal-browser-help']],['Windows simulated-research build',['test-and-build']]];
 function fixture(){let id=1;return {expected_commit:SHA,runs:spec.map(([name,jobs])=>{let runId=id++;return {run:{id:runId,name,head_sha:SHA,checked_out_sha:SHA,status:'completed',conclusion:'success',run_attempt:1,event:name==='Windows simulated-research build'?'push':'pull_request'},jobs:jobs.map(j=>({id:id++,run_id:runId,run_attempt:1,name:j,status:'completed',conclusion:'success',steps:stepsFor[j].map(name=>({name,status:'completed',conclusion:'success'}))}))}})}}
 test('valid inventory is never release approval',()=>{let r=review(fixture());assert.equal(r.release_approved,false);assert.equal(r.workflows_reviewed,3)});
+test('JSON round-trip inventory remains fully inspected',()=>{let r=review(JSON.parse(JSON.stringify(fixture())));assert.equal(r.workflows_reviewed,3);assert.equal(r.steps_inspected>0,true)});
+test('review never invokes a replaced array iterator',()=>{
+ const original=Array.prototype[Symbol.iterator],calls=[];let result;
+ try{
+  Object.defineProperty(Array.prototype,Symbol.iterator,{configurable:true,writable:true,value:function*(){calls.push(this)}});
+  result=review(fixture());
+ }finally{Object.defineProperty(Array.prototype,Symbol.iterator,{configurable:true,writable:true,value:original})}
+ assert.equal(calls.length,0);assert.equal(result.steps_inspected>0,true);
+});
+test('review never invokes a replaced array every method',()=>{
+ const original=Array.prototype.every,calls=[];let result;
+ try{
+  Object.defineProperty(Array.prototype,'every',{configurable:true,writable:true,value:function(){calls.push(this);return true}});
+  result=review(fixture());
+ }finally{Object.defineProperty(Array.prototype,'every',{configurable:true,writable:true,value:original})}
+ assert.equal(calls.length,0);assert.equal(result.steps_inspected>0,true);
+});
 const cases=[
  ['wrong sha', b=>b.runs[1].run.checked_out_sha='b'.repeat(40)],
  ['cancelled installer',b=>b.runs[2].run.conclusion='cancelled'],

@@ -114,13 +114,15 @@ def test_key_removal_during_asset_read_suppresses_ack_and_keeps_pending(setup,va
     assert PaperReadPacing(path,ACCOUNT).inspect()['pending_token'] is not None
 
 
-def test_final_saved_pair_readback_rejects_external_replacement(setup,vault,monkeypatch):
+def test_saved_pair_replacement_stops_before_final_account_request(setup,vault,monkeypatch):
     client,path,opener=setup;save();original=opener.open
     def replace(req,timeout):
+        result=original(req,timeout)
         if len(opener.requests)==2:
             key=(credentials.SERVICE,credentials.ACCOUNT)
             vault.data[key]=vault.data[key].replace(KEY,KEY.upper())
-        return original(req,timeout)
+        return result
     monkeypatch.setattr(opener,'open',replace)
     assert post(client).status_code==503
-    assert PaperReadPacing(path,ACCOUNT).inspect()['last_outcome']=='SUCCESS'
+    assert len(opener.requests)==2
+    assert PaperReadPacing(path,ACCOUNT).inspect()['pending_token'] is not None

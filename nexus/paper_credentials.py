@@ -3,6 +3,7 @@
 One OS entry keeps the pair together. It is not a transactional database or a
 cross-process lease. Python cannot promise erasure of immutable secret strings.
 """
+import hmac
 import json
 import os
 import re
@@ -175,6 +176,26 @@ def _current(epoch):
         return not _blocked and epoch == _epoch
 
 
+def _saved_pair_current(epoch, raw):
+    """Recheck the captured opaque vault value at a transport checkpoint.
+
+    The process-local epoch blocks local mutation immediately. The exact vault
+    read also fences a session after another process replaces the saved pair.
+    Busy or unavailable credential storage is denial, never permission.
+    """
+    if not _current(epoch) or not _operations.acquire(blocking=False):
+        return False
+    try:
+        current_raw = _vault().get_password(SERVICE, ACCOUNT)
+        return (type(current_raw) is str and type(raw) is str and
+                hmac.compare_digest(current_raw, raw) and
+                _current(epoch))
+    except Exception:
+        return False
+    finally:
+        _operations.release()
+
+
 def _capture():
     if not _operations.acquire(blocking=False):
         _fail('BUSY_REVIEW_REQUIRED')
@@ -253,12 +274,15 @@ def inspect_saved(*, confirm_read_only_paper=False, expected_account_id=None,
     expected_pacing_head=_read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head)
     expected_provider_budget_head=_provider_preflight(provider_budget,pacing,wall_clock,expected_provider_budget_head)
     epoch, raw, record = _capture()
+    def credential_check():
+        return _saved_pair_current(epoch, raw)
     result = inspect_account(record['api_key'], record['api_secret'], confirm_read_only_paper=True,
         expected_account_id=expected_account_id, opener=opener, wall_clock=wall_clock,
-        elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch), pacing=pacing,expected_pacing_head=expected_pacing_head,
+        elapsed_clock=elapsed_clock, permission_check=credential_check, pacing=pacing,expected_pacing_head=expected_pacing_head,
         provider_budget=provider_budget,expected_provider_budget_head=expected_provider_budget_head)
     current_epoch, current_raw, _ = _capture()
-    if epoch != current_epoch or raw != current_raw or not _current(epoch):
+    if (epoch != current_epoch or raw != current_raw or
+            not credential_check()):
         _fail('READ_REVOKED')
     return result
 
@@ -277,10 +301,13 @@ def recover_saved(journal, client_order_id, *, expected_account_id,
     epoch, raw, record = _capture()
     def credential_check():
         current_epoch, current_raw, _ = _capture()
-        return epoch == current_epoch and raw == current_raw and _current(epoch)
+        return (epoch == current_epoch and raw == current_raw and
+                _saved_pair_current(epoch, raw))
+    def permission_check():
+        return _saved_pair_current(epoch, raw)
     result = recover_original(journal, client_order_id, record['api_key'], record['api_secret'],
         expected_account_id=expected_account_id, confirm_read_only_paper=True, opener=opener,
-        wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=lambda: _current(epoch),
+        wall_clock=wall_clock, elapsed_clock=elapsed_clock, permission_check=permission_check,
         credential_check=credential_check, pacing=pacing,expected_request_head=expected_request_head,expected_pacing_head=expected_pacing_head,
         provider_budget=provider_budget,expected_provider_budget_head=expected_provider_budget_head)
 
@@ -305,11 +332,14 @@ def collect_saved(orders, *, expected_account_id, after, until,
     epoch, raw, record = _capture()
     def credential_check():
         current_epoch, current_raw, _ = _capture()
-        return epoch == current_epoch and raw == current_raw and _current(epoch)
+        return (epoch == current_epoch and raw == current_raw and
+                _saved_pair_current(epoch, raw))
+    def permission_check():
+        return input_guard() is True and _saved_pair_current(epoch, raw)
     result = collect_activities(record['api_key'], record['api_secret'], orders,
         expected_account_id=expected_account_id, after=after, until=until,
         confirm_read_only_paper=True, opener=opener, wall_clock=wall_clock,
-        elapsed_clock=elapsed_clock, permission_check=lambda: input_guard() is True and _current(epoch),
+        elapsed_clock=elapsed_clock, permission_check=permission_check,
         credential_check=credential_check, activity_store=activity_store, pacing=pacing,expected_pacing_head=expected_pacing_head,
         provider_budget=provider_budget,expected_provider_budget_head=expected_provider_budget_head)
     if input_guard() is not True or not credential_check():
@@ -343,14 +373,15 @@ def collect_activity_sse_saved(*, expected_account_id, initial_events,
     epoch, raw, record = _capture()
 
     def current():
-        return _current(epoch) and permission_check() is True
+        return (_saved_pair_current(epoch, raw) and
+                permission_check() is True)
 
     def credential_check():
         if not current():
             return False
         current_epoch, current_raw, _ = _capture()
         return (epoch == current_epoch and raw == current_raw and
-            _current(epoch) and permission_check() is True)
+                current())
 
     result = collect_and_checkpoint_due(record['api_key'],
         record['api_secret'], expected_account_id=expected_account_id,
@@ -382,12 +413,13 @@ def inspect_rules_saved(*,expected_account_id,confirm_read_only_paper=False,open
     expected_pacing_head=_read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head)
     expected_provider_budget_head=_provider_preflight(provider_budget,pacing,wall_clock,expected_provider_budget_head)
     epoch,raw,record=_capture()
+    def credential_check():return _saved_pair_current(epoch,raw)
     result=inspect_rules(record['api_key'],record['api_secret'],expected_account_id=expected_account_id,
         confirm_read_only_paper=True,opener=opener,wall_clock=wall_clock,elapsed_clock=elapsed_clock,
-        permission_check=lambda:_current(epoch),pacing=pacing,expected_pacing_head=expected_pacing_head,
+        permission_check=credential_check,pacing=pacing,expected_pacing_head=expected_pacing_head,
         provider_budget=provider_budget,expected_provider_budget_head=expected_provider_budget_head)
     current_epoch,current_raw,_=_capture()
-    if epoch!=current_epoch or raw!=current_raw or not _current(epoch):_fail('READ_REVOKED')
+    if epoch!=current_epoch or raw!=current_raw or not credential_check():_fail('READ_REVOKED')
     return result
 
 
@@ -411,7 +443,7 @@ def _consume_quote_saved(*,expected_account_id,confirm_read_only_paper=False,pac
     expected_pacing_head=_read_preflight(expected_account_id,pacing,wall_clock,expected_pacing_head)
     expected_provider_budget_head=_provider_preflight(provider_budget,pacing,wall_clock,expected_provider_budget_head)
     epoch,raw,record=_capture()
-    def current():return _current(epoch) and permission_check() is True
+    def current():return _saved_pair_current(epoch,raw) and permission_check() is True
     def rechecked():
         if not current():_fail('READ_REVOKED')
         current_epoch,current_raw,_=_capture()

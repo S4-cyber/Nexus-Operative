@@ -243,19 +243,102 @@ def test_local_mutation_during_transport_revokes_and_closes_read(vault, monkeypa
     assert len(opener.requests) == 1 and opener.responses[0].closed
 
 
-def test_external_entry_change_discards_completed_bundle(vault):
+def test_external_entry_change_stops_before_another_request(vault):
     save(); opener = Opener(); original = opener.open
     def changed(request, timeout):
         response = original(request, timeout)
-        if len(opener.requests) == 4:
+        if len(opener.requests) == 1:
             key = (credentials.SERVICE, credentials.ACCOUNT)
             record = json.loads(vault.data[key]); record['api_key'] = 'different_fixture_1234'
             vault.data[key] = json.dumps(record)
         return response
     opener.open = changed
-    with pytest.raises(credentials.PaperVaultError, match='READ_REVOKED'):
+    with pytest.raises(inspection.PaperInspectionError, match='PERMISSION_REVOKED'):
         inspect(opener=opener)
-    assert len(opener.requests) == 4 and all(r.closed for r in opener.responses)
+    assert len(opener.requests) == 1 and opener.responses[0].closed
+
+
+@pytest.mark.parametrize('failure', ('vault_unavailable', 'vault_busy'))
+def test_saved_checkpoint_uncertainty_closes_response_without_another_request(
+        vault, monkeypatch, failure):
+    save(); opener = Opener(); original = opener.open; held = False
+
+    def interrupt(request, timeout):
+        nonlocal held
+        response = original(request, timeout)
+        if failure == 'vault_unavailable':
+            monkeypatch.setattr(vault, 'get_password', lambda *args:
+                (_ for _ in ()).throw(RuntimeError(SECRET)))
+        else:
+            held = credentials._operations.acquire(False)
+            assert held
+        return response
+
+    opener.open = interrupt
+    try:
+        with pytest.raises(inspection.PaperInspectionError,
+                match='PERMISSION_REVOKED') as caught:
+            inspect(opener=opener)
+    finally:
+        if held:
+            credentials._operations.release()
+    assert SECRET not in str(caught.value)
+    assert len(opener.requests) == 1 and opener.responses[0].closed
+
+
+@pytest.mark.parametrize('failure',
+    ('replace', 'vault_unavailable', 'vault_busy'))
+def test_activity_sse_saved_checkpoint_uncertainty_never_checkpoints_or_rearms(
+        vault, tmp_path, monkeypatch, failure):
+    from test_alpaca_activity_sse_reconnect_budget import (
+        Opener as SSEOpener, segments, stores)
+
+    save(); initial, raw = segments(); cursor, budget = stores(tmp_path)
+    opener = SSEOpener([raw]); original = opener.open; held = False
+    responses = []
+
+    def interrupt(request, timeout):
+        nonlocal held
+        response = original(request, timeout); responses.append(response)
+        if failure == 'replace':
+            key = (credentials.SERVICE, credentials.ACCOUNT)
+            record = json.loads(vault.data[key])
+            record['api_key'] = 'different_fixture_1234'
+            vault.data[key] = json.dumps(record)
+        elif failure == 'vault_unavailable':
+            monkeypatch.setattr(vault, 'get_password', lambda *args:
+                (_ for _ in ()).throw(RuntimeError(SECRET)))
+        else:
+            held = credentials._operations.acquire(False)
+            assert held
+        return response
+
+    opener.open = interrupt
+    try:
+        with pytest.raises(ValueError) as caught:
+            credentials.collect_activity_sse_saved(
+                expected_account_id=BROKER_ACCOUNT, initial_events=initial,
+                reconnect_reason='CONNECTION_DROPPED', cursor_store=cursor,
+                expected_cursor_head='0' * 64, reconnect_budget=budget,
+                expected_budget_head='0' * 64, evaluated_at=1000,
+                confirm_reconnect_attempt=True,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True, opener=opener,
+                wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+                outcome_clock=lambda: 1000,
+                permission_check=lambda: True,
+                emergency_stop_check=lambda: False)
+    finally:
+        if held:
+            credentials._operations.release()
+    assert SECRET not in str(caught.value)
+    assert len(opener.requests) == 1 and responses[0].closed
+    assert cursor.inspect()['head_sha256'] == '0' * 64
+    state = budget.inspect()
+    assert state['attempts'] == 1 and state['pending_token'] is None
+    assert state['last_outcome'] == 'REVIEW_REQUIRED'
+    assert state['review_required'] and not state['completed']
+    assert not state['automatic_retry'] and state['next_allowed_at'] == 0
 
 
 def test_busy_mutation_revokes_inflight_generation_without_waiting(vault):

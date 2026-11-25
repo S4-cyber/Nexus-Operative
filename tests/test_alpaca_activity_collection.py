@@ -233,7 +233,7 @@ def test_saved_key_remove_or_external_entry_change_fences_collection(monkeypatch
         with pytest.raises(ValueError):
             credentials.collect_saved([], expected_account_id=ACCOUNT, after=START, until=END,
                 confirm_read_only_paper=True, opener=opener, wall_clock=lambda: NOW, elapsed_clock=lambda: 50)
-        assert len(opener.requests) == (2 if action == 'remove' else 3)
+        assert len(opener.requests) == 2
 
 
 def test_repeated_calls_do_not_cache_or_automatically_resume_and_share_read_admission():

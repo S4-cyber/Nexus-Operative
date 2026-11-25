@@ -3388,16 +3388,105 @@ def run(*, expected_version=None):
         limitations='Disposable offline process/HTTP/accounting trials. Wall-clock local storage timings include current machine load and are not broker or market latency. Synthetic quotes and assumed liquidity/fees cannot authenticate real-market performance, profitability, source provenance or complete 1.0 acceptance.')
 
 
+def _output_parent_identity(path):
+    """Capture one canonical, non-symlink report parent."""
+    try:
+        before = path.lstat()
+        resolved = path.resolve(strict=True)
+        after = path.lstat()
+    except OSError:
+        raise
+    if (not stat.S_ISDIR(before.st_mode) or
+            not stat.S_ISDIR(after.st_mode) or resolved != path or
+            stat.S_ISLNK(before.st_mode) or stat.S_ISLNK(after.st_mode) or
+            (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino)):
+        raise OSError('release output parent is not an exact directory')
+    return after.st_dev, after.st_ino
+
+
+def _output_parent_matches(path, identity):
+    try:
+        return _output_parent_identity(path) == identity
+    except OSError:
+        return False
+
+
+def _output_file_matches(path, descriptor):
+    try:
+        before = path.lstat()
+        opened = os.fstat(descriptor)
+        after = path.lstat()
+    except OSError:
+        return False
+    identity = opened.st_dev, opened.st_ino
+    return (stat.S_ISREG(before.st_mode) and
+        stat.S_ISREG(opened.st_mode) and
+        stat.S_ISREG(after.st_mode) and opened.st_nlink == 1 and
+        (before.st_dev, before.st_ino) == identity and
+        (after.st_dev, after.st_ino) == identity)
+
+
+def _output_scope_matches(path, descriptor, parent_identity):
+    """Sample the public leaf only while parent samples agree."""
+    return (_output_parent_matches(path.parent, parent_identity) and
+        _output_file_matches(path, descriptor) and
+        _output_parent_matches(path.parent, parent_identity))
+
+
 def _write_output(path, encoded):
+    path = Path(os.path.abspath(path))
     path.parent.mkdir(parents=True, exist_ok=True)
+    parent_identity = _output_parent_identity(path.parent)
     flags = (os.O_WRONLY | os.O_CREAT | os.O_EXCL |
         getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0) |
         getattr(os, 'O_BINARY', 0))
-    descriptor = os.open(path, flags, 0o600)
-    with os.fdopen(descriptor, 'w', encoding='utf-8', newline='') as stream:
-        stream.write(encoded)
-        stream.flush()
-        os.fsync(stream.fileno())
+    parent_descriptor = None
+    descriptor = None
+    try:
+        if os.name != 'nt':
+            parent_flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
+                getattr(os, 'O_CLOEXEC', 0) |
+                getattr(os, 'O_NOFOLLOW', 0))
+            parent_descriptor = os.open(path.parent, parent_flags)
+            opened_parent = os.fstat(parent_descriptor)
+            if (not stat.S_ISDIR(opened_parent.st_mode) or
+                    (opened_parent.st_dev, opened_parent.st_ino) !=
+                    parent_identity or
+                    not _output_parent_matches(path.parent, parent_identity)):
+                raise OSError('release output parent changed before create')
+            descriptor = os.open(path.name, flags, 0o600,
+                dir_fd=parent_descriptor)
+        else:
+            if not _output_parent_matches(path.parent, parent_identity):
+                raise OSError('release output parent changed before create')
+            descriptor = os.open(path, flags, 0o600)
+        stream = os.fdopen(descriptor, 'w', encoding='utf-8', newline='')
+        descriptor = None
+        with stream:
+            stream.write(encoded)
+            stream.flush()
+            if not _output_scope_matches(
+                    path, stream.fileno(), parent_identity):
+                raise OSError('release output path changed before file sync')
+            os.fsync(stream.fileno())
+            if not _output_scope_matches(
+                    path, stream.fileno(), parent_identity):
+                raise OSError('release output path changed during file sync')
+            if parent_descriptor is not None:
+                os.fsync(parent_descriptor)
+                opened_parent = os.fstat(parent_descriptor)
+                if (not stat.S_ISDIR(opened_parent.st_mode) or
+                        (opened_parent.st_dev, opened_parent.st_ino) !=
+                        parent_identity):
+                    raise OSError('release output parent descriptor changed')
+            if not _output_scope_matches(
+                    path, stream.fileno(), parent_identity):
+                raise OSError('release output path changed before acknowledgement')
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if parent_descriptor is not None:
+            os.close(parent_descriptor)
 
 
 def main():

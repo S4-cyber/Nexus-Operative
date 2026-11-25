@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import json
+import stat
 from urllib.error import HTTPError
 
 import pytest
@@ -487,11 +488,146 @@ def test_release_trial_output_never_overwrites_an_existing_path(
 def test_release_trial_output_is_restrictive_and_synced(tmp_path, monkeypatch):
     output=tmp_path/'release-report.json';synced=[];original=trials.os.fsync
     def track(descriptor):
-        synced.append(descriptor);return original(descriptor)
+        mode=os.fstat(descriptor).st_mode
+        synced.append('directory' if stat.S_ISDIR(mode) else 'file')
+        return original(descriptor)
     monkeypatch.setattr(trials.os,'fsync',track)
     trials._write_output(output,'{"passed": true}\n')
-    assert output.read_text()=='{"passed": true}\n' and len(synced)==1
+    expected=['file'] if os.name=='nt' else ['file','directory']
+    assert output.read_text()=='{"passed": true}\n' and synced==expected
     if os.name!='nt':assert output.stat().st_mode & 0o777==0o600
+
+
+def test_release_trial_output_rejects_symlinked_parent(tmp_path):
+    actual=tmp_path/'actual';actual.mkdir()
+    alias=tmp_path/'alias'
+    try:alias.symlink_to(actual,target_is_directory=True)
+    except OSError:pytest.skip('directory symlink unavailable')
+    with pytest.raises(OSError):
+        trials._write_output(alias/'release-report.json','{"passed": true}\n')
+    assert not (actual/'release-report.json').exists()
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX descriptor-relative create')
+def test_release_trial_output_parent_swap_before_leaf_create_is_not_acknowledged(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();retired=tmp_path/'retired'
+    output=public/'release-report.json';replacement=[]
+    original=trials.os.open
+    def swap(value,flags,*args,**kwargs):
+        if kwargs.get('dir_fd') is not None and not replacement:
+            public.rename(retired);public.mkdir();replacement.append(True)
+        return original(value,flags,*args,**kwargs)
+    monkeypatch.setattr(trials.os,'open',swap)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert replacement==[True] and not output.exists()
+    assert list(public.iterdir())==[]
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent-directory fsync')
+def test_release_trial_output_parent_swap_after_file_sync_is_not_acknowledged(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();retired=tmp_path/'retired'
+    output=public/'release-report.json';replacement=[]
+    original=trials.os.fsync
+    def swap(descriptor):
+        result=original(descriptor)
+        if stat.S_ISREG(os.fstat(descriptor).st_mode) and not replacement:
+            public.rename(retired);public.mkdir();replacement.append(True)
+        return result
+    monkeypatch.setattr(trials.os,'fsync',swap)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert replacement==[True] and not output.exists()
+    assert (retired/'release-report.json').read_text()=='{"passed": true}\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent-directory descriptor')
+def test_release_trial_output_rejects_substituted_parent_descriptor(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();foreign=tmp_path/'foreign';foreign.mkdir()
+    output=public/'release-report.json';original=trials.os.open
+    def substitute(value,flags,*args,**kwargs):
+        if flags & getattr(os,'O_DIRECTORY',0):
+            return original(foreign,flags,*args,**kwargs)
+        return original(value,flags,*args,**kwargs)
+    monkeypatch.setattr(trials.os,'open',substitute)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert not output.exists() and list(foreign.iterdir())==[]
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent-directory fsync')
+def test_release_trial_output_parent_sync_failure_is_not_acknowledged(
+        tmp_path, monkeypatch):
+    output=tmp_path/'release-report.json';original=trials.os.fsync
+    def fail_directory(descriptor):
+        if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+            raise OSError('injected directory sync failure')
+        return original(descriptor)
+    monkeypatch.setattr(trials.os,'fsync',fail_directory)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert output.read_text()=='{"passed": true}\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent rename fixture')
+def test_release_trial_output_final_leaf_sample_is_bracketed_by_parent_recheck(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();retired=tmp_path/'retired'
+    output=public/'release-report.json';calls=[]
+    original=trials._output_file_matches
+    def swap_after_leaf_sample(path,descriptor):
+        result=original(path,descriptor);calls.append(result)
+        if len(calls)==3:
+            public.rename(retired);public.mkdir()
+        return result
+    monkeypatch.setattr(trials,'_output_file_matches',swap_after_leaf_sample)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert calls==[True,True,True] and not output.exists()
+    assert (retired/'release-report.json').read_text()=='{"passed": true}\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX leaf rename fixture')
+def test_release_trial_output_leaf_fstat_is_bracketed_by_public_leaf_recheck(
+        tmp_path, monkeypatch):
+    output=tmp_path/'release-report.json';retired=tmp_path/'retired.json';calls=[]
+    original=trials.os.fstat
+    def swap_during_fstat(descriptor):
+        info=original(descriptor)
+        if stat.S_ISREG(info.st_mode):
+            calls.append(True)
+            if len(calls)==3:
+                output.rename(retired)
+                output.write_text('replacement')
+        return info
+    monkeypatch.setattr(trials.os,'fstat',swap_during_fstat)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert calls==[True,True,True]
+    assert output.read_text()=='replacement'
+    assert retired.read_text()=='{"passed": true}\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent rename fixture')
+def test_release_trial_output_parent_resolve_is_bracketed_by_identity_samples(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();retired=tmp_path/'retired'
+    output=public/'release-report.json';calls=[]
+    original=trials.Path.resolve
+    def swap_during_resolve(path,*args,**kwargs):
+        if path==public:
+            calls.append(True)
+            if len(calls)==8:
+                public.rename(retired);public.mkdir()
+        return original(path,*args,**kwargs)
+    monkeypatch.setattr(trials.Path,'resolve',swap_during_resolve)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert len(calls)==8 and not output.exists()
+    assert (retired/'release-report.json').read_text()=='{"passed": true}\n'
 
 
 @pytest.mark.parametrize('has_intent', [False, True])

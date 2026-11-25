@@ -14,18 +14,18 @@ function fixture(){let id=1;return {expected_commit:SHA,runs:spec.map(([name,job
 test('valid inventory is never release approval',()=>{let r=review(fixture());assert.equal(r.release_approved,false);assert.equal(r.workflows_reviewed,3)});
 test('JSON round-trip inventory remains fully inspected',()=>{let r=review(JSON.parse(JSON.stringify(fixture())));assert.equal(r.workflows_reviewed,3);assert.equal(r.steps_inspected>0,true)});
 test('review never invokes a replaced array iterator',()=>{
- const original=Array.prototype[Symbol.iterator],calls=[];let result;
+ const original=Array.prototype[Symbol.iterator],calls=[],input=fixture();let result;
  try{
   Object.defineProperty(Array.prototype,Symbol.iterator,{configurable:true,writable:true,value:function*(){calls.push(this)}});
-  result=review(fixture());
+  result=review(input);
  }finally{Object.defineProperty(Array.prototype,Symbol.iterator,{configurable:true,writable:true,value:original})}
  assert.equal(calls.length,0);assert.equal(result.steps_inspected>0,true);
 });
 test('review never invokes a replaced array every method',()=>{
- const original=Array.prototype.every,calls=[];let result;
+ const original=Array.prototype.every,calls=[],input=fixture();let result;
  try{
   Object.defineProperty(Array.prototype,'every',{configurable:true,writable:true,value:function(){calls.push(this);return true}});
-  result=review(fixture());
+  result=review(input);
  }finally{Object.defineProperty(Array.prototype,'every',{configurable:true,writable:true,value:original})}
  assert.equal(calls.length,0);assert.equal(result.steps_inspected>0,true);
 });

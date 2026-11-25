@@ -339,6 +339,33 @@ def test_release_trial_timeout_is_profile_specific_and_sanitized(monkeypatch):
     assert 'SECRET' not in str(error.value)
 
 
+@pytest.mark.parametrize(('system','profile','expected'), [
+    ('Linux','reconciliation_acceptance',240),
+    ('Windows','forward',240),
+    ('Windows','reconciliation_acceptance',600),
+])
+def test_release_trial_timeout_has_bounded_windows_reconciliation_headroom(
+        monkeypatch, system, profile, expected):
+    monkeypatch.setattr(trials.platform, 'system', lambda: system)
+    assert trials._profile_timeout_seconds(profile) == expected
+
+
+def test_windows_reconciliation_timeout_uses_headroom_and_sanitized_code(monkeypatch):
+    observed = []
+    def timeout(*args, **kwargs):
+        observed.append(kwargs['timeout'])
+        raise subprocess.TimeoutExpired(args[0], kwargs['timeout'],
+            stderr='SECRET_MUST_NOT_ESCAPE')
+    monkeypatch.setattr(trials, 'PROFILES', ('reconciliation_acceptance',))
+    monkeypatch.setattr(trials.platform, 'system', lambda: 'Windows')
+    monkeypatch.setattr(trials.subprocess, 'run', timeout)
+    with pytest.raises(ValueError,
+            match='^RELEASE_TRIAL_RECONCILIATION_ACCEPTANCE_CHILD_TIMEOUT$') as error:
+        trials.run()
+    assert observed == [600]
+    assert 'SECRET' not in str(error.value)
+
+
 @pytest.mark.parametrize(('error','expected'), [
     (trials.ReleaseTrialError('RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED'),
      'Release trials failed: RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED\n'),

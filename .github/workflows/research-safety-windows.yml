@@ -32,7 +32,9 @@ jobs:
 
   offline-release-evidence:
     runs-on: windows-latest
-    timeout-minutes: 15
+    # Preserve bounded setup, the 600-second reconciliation child ceiling,
+    # saved-evidence revalidation and always-run artifact retention headroom.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:

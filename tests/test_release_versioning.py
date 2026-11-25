@@ -3,6 +3,7 @@ import re
 import tomllib
 from pathlib import Path
 from nexus.app import app, status
+from nexus import release_roadmap
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -15,6 +16,7 @@ def test_release_versions_match_and_remain_prerelease():
     assert f'OutputBaseFilename=NexusOperative-Setup-{version}' in installer
     assert app.version==version
     assert status()["version"]==version
+    assert release_roadmap.REVISION==version
 
 def test_development_release_never_claims_live_authority():
     s=status()

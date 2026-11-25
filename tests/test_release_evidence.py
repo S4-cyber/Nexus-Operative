@@ -31,6 +31,13 @@ def test_complete_result_revalidates_without_mutation_and_emits_only_scope_metad
     assert not {'profiles','environment','elapsed_seconds'}&summary.keys()
 
 
+@pytest.mark.parametrize('expected_version',['0.1.0',True])
+def test_package_expected_version_mismatch_is_rejected_before_report_validation(
+        expected_version):
+    with pytest.raises(ValueError,match='RELEASE_EVIDENCE_EXPECTED_VERSION'):
+        evidence.verify(b'private-invalid-report',expected_version=expected_version)
+
+
 @pytest.mark.parametrize('flag',evidence.FLAGS)
 def test_no_root_authority_claim_can_pass(report,flag):
     report[flag]=True
@@ -83,6 +90,10 @@ def test_cli_valid_and_invalid_reports_have_private_fixed_output_and_no_data_wri
     assert result.returncode==0,result.stderr
     assert json.loads(result.stdout)['mode']=='VERIFIED_OFFLINE_EVIDENCE_ONLY'
     assert path.read_bytes()==before and not (tmp_path/'unused-account').exists()
+    mismatch=command+['--expected-version','0.1.0']
+    result=subprocess.run(mismatch,env=env,capture_output=True,text=True,timeout=10)
+    assert result.returncode==2 and result.stdout.strip()=='RELEASE_EVIDENCE_FAILED'
+    assert not result.stderr and path.read_bytes()==before
     path.write_text('{"private":"do-not-echo"}')
     result=subprocess.run(command,env=env,capture_output=True,text=True,timeout=10)
     assert result.returncode==2 and result.stdout.strip()=='RELEASE_EVIDENCE_FAILED' and not result.stderr

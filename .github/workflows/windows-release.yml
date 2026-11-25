@@ -174,9 +174,9 @@ jobs:
           Copy-Item tools/windows_owner_profile_probe.ps1 release/windows-owner-profile-probe.ps1
           Copy-Item tools/windows_owner_profile_review.py release/windows-owner-profile-review.py
           Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result-review.json" release/installer-result-review.json
-          python -m nexus.release_trials --output release/release-trial-evidence.json
+          python -m nexus.release_trials --expected-version $version --output release/release-trial-evidence.json
           if ($LASTEXITCODE -ne 0) { throw 'Distribution offline trials failed' }
-          python -m nexus.release_evidence release/release-trial-evidence.json
+          python -m nexus.release_evidence release/release-trial-evidence.json --expected-version $version
           if ($LASTEXITCODE -ne 0) { throw 'Distribution evidence validation failed' }
           python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe" release/release-trial-evidence.json release/installer-result-review.json release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py
           if ($LASTEXITCODE -ne 0) { throw 'Manifest creation failed' }

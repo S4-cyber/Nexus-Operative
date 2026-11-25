@@ -3074,6 +3074,10 @@ def _validate(profile, result):
             all(type(latency[key]) in (int,float) and latency[key]>=0 for key in LATENCY_PUBLIC_KEYS) and
             latency['p50_ms']<=latency['p95_ms']<=latency['p99_ms'],
             'FORWARD_LATENCY_SCHEMA')
+        _require(type(coverage) is dict and all(key in coverage for key in (
+            'retained_exchange_admissions','exchange_admissions_in_window',
+            'exchange_admission_incidents_in_window')),
+            'FORWARD_COVERAGE_EVIDENCE')
         _require(type(coverage) is dict and frozenset(coverage)==COVERAGE_PUBLIC_KEYS,
             'FORWARD_COVERAGE_SCHEMA')
         _require(result['mode']=='DISPOSABLE_FORWARD_RUNNER_DRILL' and result['passed'] is True and
@@ -3197,6 +3201,9 @@ def _validate(profile, result):
             'over_limit_coverage_gaps':1,'retained_event_records':300,
             'events_in_window':300,'legacy_unbound_observations_in_window':0,
             'quote_outcome_disagreements_in_window':0,'event_incident_records_in_window':80}
+        coverage_counts.update(retained_exchange_admissions=200,
+            exchange_admissions_in_window=200,
+            exchange_admission_incidents_in_window=0)
         _require(all(type(coverage[key]) is int and coverage[key]==value
             for key,value in coverage_counts.items()) and
             coverage['after']=='1970-01-01T00:16:40Z' and coverage['until']=='1970-01-01T00:38:20Z' and
@@ -3342,7 +3349,15 @@ def _profile_timeout_seconds(profile):
     return DEFAULT_CHILD_TIMEOUT_SECONDS
 
 
-def run():
+def _expected_version(value):
+    from nexus.release_roadmap import REVISION
+    if value is not None and (type(value) is not str or value!=REVISION):
+        raise ReleaseTrialError('RELEASE_TRIAL_VERSION_MISMATCH')
+    return REVISION
+
+
+def run(*, expected_version=None):
+    revision = _expected_version(expected_version)
     root = Path(__file__).resolve().parents[1]
     source = source_digest(root); results = {}; timings = {}
     with tempfile.TemporaryDirectory(prefix='nexus-release-trials-') as temporary:
@@ -3364,8 +3379,7 @@ def run():
             _validate(profile, result)
             results[profile] = result; timings[profile] = round(time.perf_counter()-started, 3)
     _require(source_digest(root) == source, 'SOURCE_CHANGED_DURING_RUN')
-    from nexus.release_roadmap import REVISION
-    return dict(mode='BOUNDED_OFFLINE_RELEASE_TRIALS', version=REVISION, source_fingerprint=source,
+    return dict(mode='BOUNDED_OFFLINE_RELEASE_TRIALS', version=revision, source_fingerprint=source,
         passed=True, environment=dict(python=platform.python_version(), system=platform.system(), sqlite=sqlite3.sqlite_version),
         profiles=results, elapsed_seconds=timings,
         production_release_ready=False, release_approved=False, real_market_realism_authenticated=False,
@@ -3376,9 +3390,11 @@ def run():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path); args = parser.parse_args()
+    parser.add_argument('--output', type=Path)
+    parser.add_argument('--expected-version'); args = parser.parse_args()
     try:
-        report = run(); encoded = json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n'
+        report = run(expected_version=args.expected_version)
+        encoded = json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n'
         if args.output:
             args.output.parent.mkdir(parents=True, exist_ok=True); args.output.write_text(encoded, encoding='utf-8')
         print(encoded, end='')

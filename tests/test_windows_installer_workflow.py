@@ -47,6 +47,8 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     workflow=(ROOT/'.github/workflows/windows-release.yml').read_text(encoding='utf-8')
     assert 'timeout-minutes: 150' in workflow
     assert 'name: Create distribution checksum manifest\n        timeout-minutes: 20' in workflow
+    assert 'python -m nexus.release_trials --expected-version $version --output release/release-trial-evidence.json' in workflow
+    assert 'python -m nexus.release_evidence release/release-trial-evidence.json --expected-version $version' in workflow
     assert 'old 120m deadline cancelled' in workflow
     assert "source_commit:\n        description: 'Optional exact 40-character commit descended from the current development head'" in workflow
     assert "required: false\n        default: ''" in workflow

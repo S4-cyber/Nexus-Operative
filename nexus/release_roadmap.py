@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.307'
+REVISION = '0.340.308'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -951,7 +951,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.307 refuses multiply linked read-only order-history and linked-portfolio SQLite files before opening or attaching them, then rechecks the selected leaf identity and single-link count after opening and after each bounded read. A hardlink added during recovery or reconciliation therefore fails closed instead of remaining an unnoticed alias. Four recovery regressions cover initial and mid-read hardlinks, exact byte preservation and successful review after the alias is removed. Existing parent-root identity, symlink, regular-file, read-only SQLite, journal-mode, snapshot and authority-denial checks remain mandatory. This is sampled local filesystem hardening, not an atomic continuous monitor, ACL or administrator boundary, physical-power-loss proof, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.308 separates conservative emergency-cut presence from verified durable-latch evidence. Any existing latch entry still blocks paper intake and preserves the independent durable-halt attempt, but VERIFIED now requires the exact fixed record in a regular single-link file whose identity, content and metadata remain stable across no-follow reads before durable handoff and final reporting. Symlink, hardlink, directory, malformed and in-place-mutated entries remain cut requests but cannot manufacture verified ordering or final-presence claims. Existing priority-fault containment, data-root identity, durable order cancellation, final latch reassertion, OFF defaults, risk limits, account checks and fail-closed exits remain mandatory. This is sampled local filesystem hardening, not an atomic continuous monitor, ACL or administrator boundary, physical-power-loss proof, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

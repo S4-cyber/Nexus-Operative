@@ -29,6 +29,22 @@ test('review never invokes a replaced array every method',()=>{
  }finally{Object.defineProperty(Array.prototype,'every',{configurable:true,writable:true,value:original})}
  assert.equal(calls.length,0);assert.equal(result.steps_inspected>0,true);
 });
+test('review never invokes a replaced array push method',()=>{
+ const original=Array.prototype.push,input=fixture();let result;
+ try{
+  Object.defineProperty(Array.prototype,'push',{configurable:true,writable:true,value(){throw Error('push executed')}});
+  result=review(input);
+ }finally{Object.defineProperty(Array.prototype,'push',{configurable:true,writable:true,value:original})}
+ assert.equal(result.steps_inspected>0,true);
+});
+test('review never invokes a replaced array includes method',()=>{
+ const original=Array.prototype.includes,input=fixture();let result;
+ try{
+  Object.defineProperty(Array.prototype,'includes',{configurable:true,writable:true,value(){throw Error('includes executed')}});
+  result=review(input);
+ }finally{Object.defineProperty(Array.prototype,'includes',{configurable:true,writable:true,value:original})}
+ assert.equal(result.steps_inspected>0,true);
+});
 const cases=[
  ['wrong sha', b=>b.runs[1].run.checked_out_sha='b'.repeat(40)],
  ['cancelled installer',b=>b.runs[2].run.conclusion='cancelled'],

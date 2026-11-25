@@ -15,7 +15,8 @@ def _job_block(text: str, name: str, following: str | None) -> str:
 def test_long_running_safety_gates_have_independent_windows_job_budgets():
     text = WORKFLOW.read_text(encoding="utf-8")
     regression = _job_block(text, "offline-regression", "offline-release-evidence")
-    evidence = _job_block(text, "offline-release-evidence", "portal-browser-help")
+    evidence = _job_block(text, "offline-release-evidence", "offline-ci-inventory-review")
+    inventory = _job_block(text, "offline-ci-inventory-review", "portal-browser-help")
     browser = _job_block(text, "portal-browser-help", None)
 
     assert "timeout-minutes: 120" in regression
@@ -37,6 +38,11 @@ def test_long_running_safety_gates_have_independent_windows_job_budgets():
     assert "if: always()" in evidence
     assert "python -m pytest -q" not in evidence
 
+    assert "timeout-minutes: 10" in inventory
+    assert "node --test ops/test_ci_step_inventory.mjs" in inventory
+    assert "actions/setup-python@" not in inventory
+    assert "python -m pytest -q" not in inventory
+
     assert "timeout-minutes: 15" in browser
     assert "python -m playwright install chromium --only-shell" in browser
     assert "python tools/portal_browser_smoke.py" in browser
@@ -47,15 +53,15 @@ def test_long_running_safety_gates_have_independent_windows_job_budgets():
 
 def test_each_safety_job_uses_pinned_actions_and_nonpersistent_checkout_auth():
     text = WORKFLOW.read_text(encoding="utf-8")
-    assert text.count("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5") == 3
+    assert text.count("actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5") == 4
     assert text.count("actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065") == 3
-    assert text.count("persist-credentials: false") == 3
+    assert text.count("persist-credentials: false") == 4
     assert text.count("cache-dependency-path: pyproject.toml") == 3
-    assert text.count("ref: ${{ github.event.pull_request.head.sha || github.sha }}") == 3
-    assert text.count("name: Bind job to exact source commit") == 3
-    assert text.count("EXPECTED_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}") == 3
-    assert text.count("$actual = (git rev-parse HEAD).Trim()") == 3
-    assert text.count("$actual -cne $env:EXPECTED_SOURCE_COMMIT") == 3
+    assert text.count("ref: ${{ github.event.pull_request.head.sha || github.sha }}") == 4
+    assert text.count("name: Bind job to exact source commit") == 4
+    assert text.count("EXPECTED_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}") == 4
+    assert text.count("$actual = (git rev-parse HEAD).Trim()") == 4
+    assert text.count("$actual -cne $env:EXPECTED_SOURCE_COMMIT") == 4
     assert "python -m compileall -q nexus tests ops" in text
 
 

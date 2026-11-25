@@ -23,14 +23,29 @@ const REQUIRED = Object.freeze({
 });
 const own = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 function assert(condition, code) { if (!condition) throw new Error('CI_STEP_' + code); }
-function object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
+function object(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value) ||
+      Object.getPrototypeOf(value) !== Object.prototype) return false;
+  // The manual export is JSON: never invoke accessors during an offline review.
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  return Reflect.ownKeys(descriptors).every(key => own(descriptors[key], 'value'));
+}
+function plainArray(value, maxLength) {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype ||
+      value.length > maxLength || Object.keys(value).length !== value.length) return false;
+  for (let i = 0; i < value.length; i++) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
+    if (!descriptor || !own(descriptor, 'value')) return false;
+  }
+  return true;
+}
 function positiveInt(n) { return Number.isSafeInteger(n) && n > 0; }
 function exactKeys(obj, keys) {return Object.keys(obj).length === keys.length && keys.every(k=>own(obj,k));}
 function matches(step, token) {return token.endsWith('@') ? step.startsWith(token) : step === token;}
 export function review(bundle) {
   assert(object(bundle) && exactKeys(bundle,['expected_commit','runs']), 'SHAPE');
   assert(typeof bundle.expected_commit === 'string' && SHA.test(bundle.expected_commit), 'COMMIT');
-  assert(Array.isArray(bundle.runs) && bundle.runs.length === 3, 'RUNS');
+  assert(plainArray(bundle.runs, 3) && bundle.runs.length === 3, 'RUNS');
   let runNames=new Set(), runIds=new Set(), jobIds=new Set(), count=0;
   for (const item of bundle.runs) {
     assert(object(item)&&exactKeys(item,['run','jobs']), 'RECORD');
@@ -45,7 +60,7 @@ export function review(bundle) {
     assert(r.head_sha===bundle.expected_commit || (r.name==='Windows simulated-research build'&&r.event==='workflow_dispatch'), 'HEAD_MISMATCH');
     if(r.name==='Windows simulated-research build') assert(r.event!=='pull_request','WINDOWS_EVENT');
     const required=REQUIRED[r.name];
-    assert(Array.isArray(item.jobs)&&item.jobs.length===Object.keys(required).length,'JOBS');
+    assert(plainArray(item.jobs, Object.keys(required).length)&&item.jobs.length===Object.keys(required).length,'JOBS');
     let names=new Set();
     for(const j of item.jobs){
       assert(object(j)&&exactKeys(j,['id','run_id','run_attempt','name','status','conclusion','steps']),'JOB_SHAPE');
@@ -53,7 +68,7 @@ export function review(bundle) {
       jobIds.add(j.id);
       assert(own(required,j.name)&&!names.has(j.name),'JOB_NAME');names.add(j.name);
       assert(j.status==='completed'&&j.conclusion==='success','JOB_NOT_GREEN');
-      assert(Array.isArray(j.steps)&&j.steps.length>=required[j.name].length&&j.steps.length<=50,'STEPS');
+      assert(plainArray(j.steps, 50)&&j.steps.length>=required[j.name].length&&j.steps.length<=50,'STEPS');
       let last=-1;
       for(const token of required[j.name]){
         const matchesAt=[];

@@ -85,16 +85,29 @@ def review(orders, executions, fees, *, expected_account_id, opening_balances, o
     """
     expected = inspection._uuid(expected_account_id)
     if type(fee_coverage_complete) is not bool: _fail('FEE_DECLARATION')
-    groups = ((orders, projection.MAX_ORDERS), (executions, projection.MAX_EXECUTIONS),
+    source_groups = ((orders, projection.MAX_ORDERS), (executions, projection.MAX_EXECUTIONS),
               (fees, MAX_FEES), (positions, MAX_POSITIONS), (open_orders, MAX_OPEN_ORDERS))
-    for rows, limit in groups:
-        if not isinstance(rows, list) or len(rows) > limit: _fail('INPUT_CAP')
-    if not isinstance(account_before, dict) or not isinstance(account_after, dict): _fail('ACCOUNT_SHAPE')
+    groups = []
+    for rows, limit in source_groups:
+        if type(rows) is not list: _fail('INPUT_SHAPE')
+        rows = list(rows)
+        if len(rows) > limit: _fail('INPUT_CAP')
+        detached = []
+        for row in rows:
+            if type(row) is not dict: _fail('ROW_SHAPE')
+            row = dict(row)
+            if any(type(key) is not str for key in row): _fail('ROW_KEY')
+            detached.append(row)
+        groups.append((detached, limit))
+    groups = tuple(groups)
+    if type(account_before) is not dict or type(account_after) is not dict: _fail('ACCOUNT_SHAPE')
+    account_before, account_after = dict(account_before), dict(account_after)
+    if any(type(key) is not str for account in (account_before, account_after) for key in account):
+        _fail('ACCOUNT_KEY')
     total = sum(_budget(rows) for rows, _ in groups) + _budget([account_before, account_after])
     if total > MAX_INPUT_BYTES: _fail('INPUT_BYTE_CAP')
-    # Freeze bounded scalar-only source rows before comparing the snapshots.
-    orders, executions, fees, positions, open_orders = ([dict(row) for row in rows] for rows, _ in groups)
-    account_before, account_after = dict(account_before), dict(account_after)
+    # All later work consumes only the bounded plain-data snapshot above.
+    orders, executions, fees, positions, open_orders = (rows for rows, _ in groups)
     groups = ((orders, projection.MAX_ORDERS), (executions, projection.MAX_EXECUTIONS),
               (fees, MAX_FEES), (positions, MAX_POSITIONS), (open_orders, MAX_OPEN_ORDERS))
     if sum(_budget(rows) for rows, _ in groups) + _budget([account_before, account_after]) > MAX_INPUT_BYTES:

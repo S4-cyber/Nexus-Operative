@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.401'
+REVISION = '0.340.402'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1351,8 +1351,18 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Emergency-stop completion now requires both the exact warm gateway acknowledgement and a fresh durable journal replay proving retained history and halted state. A false success return, lost commit or valid unhalted replacement cannot produce VERIFIED; intake remains latched and cleanup is explicitly retryable. This is bounded local fail-closed evidence, not native interruption, broker-account or sustained-operation acceptance.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; disconnected broker balance review now rejects polymorphic collection, record, account and key evidence before byte budgeting or detachment, preventing caller hooks from influencing supplied financial reconciliation' if item.id=='M4' else
+        '; release-trial report publication now exclusively creates a restrictive no-follow output descriptor, refuses existing paths and symbolic links, and flushes and syncs completed bytes before success' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Disconnected broker balance reconciliation now admits only exact built-in collections, records, accounts and string keys before budgeting and detachment. This is caller-mutation and polymorphic-hook resistance for supplied local evidence, not provider/account/funds acceptance.' if stage['id']=='D4' else
+        ' Saved release-trial reports now use exclusive no-follow creation and refuse existing files or symbolic links before a restrictive descriptor is flushed and synced. This is local report-publication integrity, not artifact provenance, hosted CI success, native acceptance or release approval.'))
+    if stage['id'] in ('D4','D8') else stage) for stage in DELIVERY_STAGES)
+
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.401 binds the exact emergency-latch reader implementation at every persisted broker-intent reconciliation sample, rejecting process-local substitution before a fake can execute. Disconnected fee projection and fee-reserved cash-path review now require exact built-in containers, scope strings and supported numeric scalars before normalization, so polymorphic hooks cannot inflate opening funds, hide fees or forge a passing supplied-history audit. These are bounded offline fail-closed checks, not broker/account/funds acceptance, genuine-feed or sustained-market-trial acceptance, native Windows/installer/power-loss acceptance, performance, profitability or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior and independent emergency-stop access remain unchanged. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.402 rejects polymorphic broker balance collections, records, accounts and keys before byte budgeting or detachment, so caller hooks cannot influence supplied financial reconciliation. Saved release-trial reports now use exclusive restrictive no-follow creation, refuse existing files and symbolic links, and flush and sync completed bytes before success. These are bounded offline fail-closed and report-integrity checks, not broker/account/funds acceptance, genuine-feed or sustained-market-trial acceptance, native Windows/installer/power-loss acceptance, performance, profitability, hosted CI success or release approval. Every broker, funding, live, cloud, spend and release authority flag remains false. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior and independent emergency-stop access remain unchanged. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

@@ -705,3 +705,43 @@ def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
         'passed','halted','intent_preceded_durable_halt',
         'emergency_intent_present','durable_order_halt_confirmed',
         'data_root_path_pinned'))
+
+
+def test_transient_final_replay_fault_is_bounded_and_read_only(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    original=DurableOrderGateway.recovery_report
+    calls=[]
+    def transient_second_replay(self):
+        calls.append(1)
+        if len(calls)==2:
+            raise ValueError('ORDER_JOURNAL_DATABASE_BUSY')
+        return original(self)
+    monkeypatch.setattr(DurableOrderGateway,'recovery_report',
+        transient_second_replay)
+    report=emergency_cut_tool.activate(tmp_path)
+    assert calls==[1,1,1]
+    assert report['passed'] and report['durable_order_halt_confirmed']
+    recovery=DurableOrderGateway(
+        tmp_path/'order_lifecycle.sqlite3').recovery_report()
+    assert recovery['commands']==1 and recovery['halted']
+
+
+def test_replay_confirmation_retry_ceiling_and_definitive_negative(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    monkeypatch.setattr(emergency_cut_tool,'_same_order',lambda *_:True)
+    calls=[]
+    def unavailable(*_):
+        calls.append(1)
+        raise ValueError('ORDER_JOURNAL_DATABASE_BUSY')
+    monkeypatch.setattr(emergency_cut_tool,'emergency_halt_replayed',unavailable)
+    assert not emergency_cut_tool._halt_replayed_bounded(
+        tmp_path/'orders.sqlite3',{'halted':True},object())
+    assert calls==[1,1,1]
+    calls.clear()
+    monkeypatch.setattr(emergency_cut_tool,'emergency_halt_replayed',
+        lambda *_:calls.append(1) and False)
+    assert not emergency_cut_tool._halt_replayed_bounded(
+        tmp_path/'orders.sqlite3',{'halted':True},object())
+    assert calls==[1]

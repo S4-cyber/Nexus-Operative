@@ -1,4 +1,35 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.406 retained request-term agreement
+
+Every retained activity snapshot matched to an observed original paper request
+must now carry canonical requested quantity and limit price terms that equal the
+request journal payload. A correct newest snapshot can no longer hide an earlier
+conflicting quantity or limit. Legacy snapshots without either term remain
+replay-readable but cannot establish exact local agreement; the direct review
+policy is now v2. Latest status/fill selection, exact-head checks, journal/file
+rechecks and every explicit fill/limit check remain unchanged.
+
+Each emergency halt confirmation phase now tolerates at most three read-only
+cold-replay observations when Windows or SQLite reports a transient I/O fault. The exact
+regular single-link journal identity is checked before and after every attempt;
+identity drift, a definitive negative or the third transient fault remains
+immediately unconfirmed. The halt command is still issued once and no reset,
+second mutation or running authority was added.
+
+This is bounded local reconciliation hardening, not broker/account/funds,
+genuine-feed or sustained-trial, native Windows/installer, cloud, performance,
+profitability, hosted-CI or release acceptance. Every live, funding, spend and
+release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
 ## v0.340.405 post-latch durable halt replay
 
 The standalone local-paper emergency cut now reopens and replays the exact

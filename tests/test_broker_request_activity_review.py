@@ -87,6 +87,57 @@ def test_changed_snapshot_status_is_not_accepted_as_matching_fill_history(tmp_pa
     assert 'REQUEST_ACTIVITY_SNAPSHOT_DISAGREEMENT' in review(j,other)['agreement_blockers']
 
 
+@pytest.mark.parametrize(('field','value','reason'),[
+    ('requested_quantity','3','ACTIVITY_REQUESTED_QUANTITY_DISAGREEMENT'),
+    ('limit_price','101','ACTIVITY_LIMIT_PRICE_DISAGREEMENT'),
+])
+def test_earlier_activity_request_term_conflict_cannot_be_hidden_by_latest_snapshot(
+        tmp_path,field,value,reason):
+    j,_,rows,order=stores(tmp_path/'source')
+    other=BrokerActivityStore(tmp_path/'other.sqlite3',ACCOUNT)
+    earlier=dict(order,status='new',filled_quantity='0',average_fill_price=None,
+        updated_at='2026-10-17T18:00:00+00:00',**{field:value})
+    other.retain([],[earlier],after=START,until=END)
+    other.retain(rows,[order],after=START,until=END)
+    result=review(j,other)
+    assert result['agreement_blockers']==[reason]
+    assert not result['request_reviews'][0]['local_terms_agree']
+
+
+def test_legacy_activity_snapshot_without_request_terms_remains_readable_but_not_exact_agreement(
+        tmp_path):
+    j,_,rows,order=stores(tmp_path/'source')
+    other=BrokerActivityStore(tmp_path/'other.sqlite3',ACCOUNT)
+    legacy={key:value for key,value in order.items()
+        if key not in ('requested_quantity','limit_price')}
+    other.retain(rows,[legacy],after=START,until=END)
+    result=review(j,other)
+    assert result['agreement_blockers']==[
+        'ACTIVITY_LIMIT_PRICE_UNBOUND',
+        'ACTIVITY_REQUESTED_QUANTITY_UNBOUND',
+    ]
+    assert not result['request_reviews'][0]['local_terms_agree']
+
+
+def test_canonically_equivalent_terms_agree_across_all_activity_snapshots(tmp_path):
+    j,_,rows,order=stores(tmp_path/'source')
+    other=BrokerActivityStore(tmp_path/'other.sqlite3',ACCOUNT)
+    earlier=dict(order,status='new',filled_quantity='0',average_fill_price=None,
+        requested_quantity='2.00',limit_price='100.0',
+        updated_at='2026-10-17T18:00:00+00:00')
+    other.retain([],[earlier],after=START,until=END)
+    other.retain(rows,[order],after=START,until=END)
+    result=review(j,other)
+    assert result['local_request_activity_agreement']
+    assert result['agreement_blockers']==[]
+
+
+def test_request_activity_policy_identifies_all_snapshot_term_review(tmp_path):
+    j,s,_,_=stores(tmp_path)
+    result=review(j,s)
+    assert result['policy']=='nexus.request-activity-review.v2'
+
+
 def test_incomplete_explicit_fills_are_not_inferred_from_request_average(tmp_path):
     j,s,rows,order=stores(tmp_path);other=BrokerActivityStore(tmp_path/'other.sqlite3',ACCOUNT)
     other.retain(rows[:1],[order],after=START,until=END)

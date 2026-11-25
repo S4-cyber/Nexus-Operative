@@ -1,4 +1,29 @@
 # Nexus Operative continuity instructions
+## v0.340.403 release report parent binding
+
+Saved release-trial reports now reject parent-directory aliases, capture the
+exact canonical parent and report identities, and refuse acknowledgement when
+either public path changes across the bounded publication samples. On POSIX the report is created relative to the
+verified parent descriptor, then the file and new directory entry are synced
+before final identity rechecks. Windows retains exclusive creation, file sync
+and repeated sampled identity checks; native reparse-point, ACL, directory-
+publication and power-loss acceptance remain open.
+
+This is bounded offline report-integrity hardening, not broker/account/funds
+acceptance, genuine-feed or sustained-market-trial acceptance, native Windows/
+installer acceptance, performance, profitability, hosted CI success or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
 ## v0.340.402 financial evidence boundaries
 
 Disconnected broker balance review now rejects polymorphic collection, record,

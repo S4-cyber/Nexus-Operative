@@ -28,11 +28,13 @@ function object(value) {
       Object.getPrototypeOf(value) !== Object.prototype) return false;
   // The manual export is JSON: never invoke accessors during an offline review.
   const descriptors = Object.getOwnPropertyDescriptors(value);
-  return Reflect.ownKeys(descriptors).every(key => own(descriptors[key], 'value'));
+  return Reflect.ownKeys(descriptors).every(key =>
+    typeof key === 'string' && descriptors[key].enumerable && own(descriptors[key], 'value'));
 }
 function plainArray(value, maxLength) {
   if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype ||
-      value.length > maxLength || Object.keys(value).length !== value.length) return false;
+      value.length > maxLength || Object.keys(value).length !== value.length ||
+      Reflect.ownKeys(value).length !== value.length + 1) return false;
   for (let i = 0; i < value.length; i++) {
     const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
     if (!descriptor || !own(descriptor, 'value')) return false;

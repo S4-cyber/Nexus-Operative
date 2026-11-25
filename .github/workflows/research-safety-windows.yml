@@ -85,6 +85,24 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
+  offline-ci-inventory-review:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Bind job to exact source commit
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: pwsh
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -cne $env:EXPECTED_SOURCE_COMMIT) { throw 'Checked-out source does not match the exact workflow source commit' }
+      - name: Run offline CI inventory verifier tests
+        run: node --test ops/test_ci_step_inventory.mjs
+
   portal-browser-help:
     runs-on: windows-latest
     timeout-minutes: 15

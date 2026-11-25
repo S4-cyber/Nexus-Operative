@@ -14,7 +14,8 @@ const REQUIRED = Object.freeze({
     'offline-regression-0-of-2': ['Run actions/checkout@', 'Bind job to exact source commit', 'Compile Python source', 'Run complete Python regression suite', 'Complete job'],
     'offline-regression-1-of-2': ['Run actions/checkout@', 'Bind job to exact source commit', 'Compile Python source', 'Run complete Python regression suite', 'Complete job'],
     'offline-release-evidence': ['Run actions/checkout@', 'Bind job to exact source commit', 'Run bounded offline release trials', 'Revalidate saved offline evidence against this source', 'Complete job'],
-    'portal-browser-help': ['Run actions/checkout@', 'Bind job to exact source commit', 'Verify real-browser control help with isolated fixtures', 'Complete job']},
+    'portal-browser-help': ['Run actions/checkout@', 'Bind job to exact source commit', 'Verify real-browser control help with isolated fixtures', 'Complete job'],
+    'offline-ci-inventory-review': ['Run actions/checkout@', 'Bind job to exact source commit', 'Run offline CI inventory verifier tests', 'Complete job']},
   'Windows simulated-research build': {'test-and-build': [
     'Run actions/checkout@', 'Package standalone EXE', 'Verify EXE starts',
     'Build installer (Inno Setup)', 'Verify installed application, reinstall and data-preserving uninstall',
@@ -23,16 +24,43 @@ const REQUIRED = Object.freeze({
 });
 const own = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
 function assert(condition, code) { if (!condition) throw new Error('CI_STEP_' + code); }
-function object(value) { return value !== null && typeof value === 'object' && !Array.isArray(value); }
+function object(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value) ||
+      Object.getPrototypeOf(value) !== Object.prototype) return false;
+  // The manual export is JSON: never invoke accessors during an offline review.
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const descriptorKeys = Reflect.ownKeys(descriptors);
+  for (let i = 0; i < descriptorKeys.length; i++) {
+    const key = descriptorKeys[i];
+    if (typeof key !== 'string' || !descriptors[key].enumerable ||
+        !own(descriptors[key], 'value')) return false;
+  }
+  return true;
+}
+function plainArray(value, maxLength) {
+  if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype ||
+      value.length > maxLength || Object.keys(value).length !== value.length ||
+      Reflect.ownKeys(value).length !== value.length + 1) return false;
+  for (let i = 0; i < value.length; i++) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(i));
+    if (!descriptor || !own(descriptor, 'value')) return false;
+  }
+  return true;
+}
 function positiveInt(n) { return Number.isSafeInteger(n) && n > 0; }
-function exactKeys(obj, keys) {return Object.keys(obj).length === keys.length && keys.every(k=>own(obj,k));}
+function exactKeys(obj, keys) {
+  if (Object.keys(obj).length !== keys.length) return false;
+  for (let i = 0; i < keys.length; i++) if (!own(obj, keys[i])) return false;
+  return true;
+}
 function matches(step, token) {return token.endsWith('@') ? step.startsWith(token) : step === token;}
 export function review(bundle) {
   assert(object(bundle) && exactKeys(bundle,['expected_commit','runs']), 'SHAPE');
   assert(typeof bundle.expected_commit === 'string' && SHA.test(bundle.expected_commit), 'COMMIT');
-  assert(Array.isArray(bundle.runs) && bundle.runs.length === 3, 'RUNS');
+  assert(plainArray(bundle.runs, 3) && bundle.runs.length === 3, 'RUNS');
   let runNames=new Set(), runIds=new Set(), jobIds=new Set(), count=0;
-  for (const item of bundle.runs) {
+  for (let runIndex = 0; runIndex < bundle.runs.length; runIndex++) {
+    const item = bundle.runs[runIndex];
     assert(object(item)&&exactKeys(item,['run','jobs']), 'RECORD');
     const r=item.run;
     assert(object(r)&&exactKeys(r,['id','name','head_sha','checked_out_sha','status','conclusion','run_attempt','event']), 'RUN_SHAPE');
@@ -45,24 +73,31 @@ export function review(bundle) {
     assert(r.head_sha===bundle.expected_commit || (r.name==='Windows simulated-research build'&&r.event==='workflow_dispatch'), 'HEAD_MISMATCH');
     if(r.name==='Windows simulated-research build') assert(r.event!=='pull_request','WINDOWS_EVENT');
     const required=REQUIRED[r.name];
-    assert(Array.isArray(item.jobs)&&item.jobs.length===Object.keys(required).length,'JOBS');
+    assert(plainArray(item.jobs, Object.keys(required).length)&&item.jobs.length===Object.keys(required).length,'JOBS');
     let names=new Set();
-    for(const j of item.jobs){
+    for(let jobIndex=0;jobIndex<item.jobs.length;jobIndex++){
+      const j=item.jobs[jobIndex];
       assert(object(j)&&exactKeys(j,['id','run_id','run_attempt','name','status','conclusion','steps']),'JOB_SHAPE');
       assert(positiveInt(j.id)&&!jobIds.has(j.id)&&j.run_id===r.id&&j.run_attempt===r.run_attempt,'JOB_ID');
       jobIds.add(j.id);
       assert(own(required,j.name)&&!names.has(j.name),'JOB_NAME');names.add(j.name);
       assert(j.status==='completed'&&j.conclusion==='success','JOB_NOT_GREEN');
-      assert(Array.isArray(j.steps)&&j.steps.length>=required[j.name].length&&j.steps.length<=50,'STEPS');
+      assert(plainArray(j.steps, 50)&&j.steps.length>=required[j.name].length&&j.steps.length<=50,'STEPS');
       let last=-1;
-      for(const token of required[j.name]){
-        const matchesAt=[];
-        for(let i=0;i<j.steps.length;i++) if(object(j.steps[i])&&typeof j.steps[i].name==='string'&&matches(j.steps[i].name,token)) matchesAt.push(i);
-        assert(matchesAt.length===1 && matchesAt[0]>last,'STEP_MISSING_OR_ORDER');last=matchesAt[0];
+      const requiredSteps=required[j.name];
+      for(let tokenIndex=0;tokenIndex<requiredSteps.length;tokenIndex++){
+        const token=requiredSteps[tokenIndex];let matchCount=0,matchIndex=-1;
+        for(let i=0;i<j.steps.length;i++) if(object(j.steps[i])&&typeof j.steps[i].name==='string'&&matches(j.steps[i].name,token)){matchCount++;matchIndex=i}
+        assert(matchCount===1 && matchIndex>last,'STEP_MISSING_OR_ORDER');last=matchIndex;
         const step=j.steps[last];
         assert(exactKeys(step,['name','status','conclusion'])&&step.status==='completed'&&step.conclusion==='success','STEP_NOT_GREEN');
       }
-      assert(j.steps.every(s=>object(s)&&exactKeys(s,['name','status','conclusion'])&&typeof s.name==='string'&&s.status==='completed'&&['success','skipped'].includes(s.conclusion)),'STEP_BAD');
+      for(let stepIndex=0;stepIndex<j.steps.length;stepIndex++){
+        const step=j.steps[stepIndex];
+        assert(object(step)&&exactKeys(step,['name','status','conclusion'])&&
+          typeof step.name==='string'&&step.status==='completed'&&
+          (step.conclusion==='success'||step.conclusion==='skipped'),'STEP_BAD');
+      }
       count+=j.steps.length;
     }
   }

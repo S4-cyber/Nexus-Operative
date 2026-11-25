@@ -28,8 +28,13 @@ function object(value) {
       Object.getPrototypeOf(value) !== Object.prototype) return false;
   // The manual export is JSON: never invoke accessors during an offline review.
   const descriptors = Object.getOwnPropertyDescriptors(value);
-  return Reflect.ownKeys(descriptors).every(key =>
-    typeof key === 'string' && descriptors[key].enumerable && own(descriptors[key], 'value'));
+  const descriptorKeys = Reflect.ownKeys(descriptors);
+  for (let i = 0; i < descriptorKeys.length; i++) {
+    const key = descriptorKeys[i];
+    if (typeof key !== 'string' || !descriptors[key].enumerable ||
+        !own(descriptors[key], 'value')) return false;
+  }
+  return true;
 }
 function plainArray(value, maxLength) {
   if (!Array.isArray(value) || Object.getPrototypeOf(value) !== Array.prototype ||
@@ -42,14 +47,19 @@ function plainArray(value, maxLength) {
   return true;
 }
 function positiveInt(n) { return Number.isSafeInteger(n) && n > 0; }
-function exactKeys(obj, keys) {return Object.keys(obj).length === keys.length && keys.every(k=>own(obj,k));}
+function exactKeys(obj, keys) {
+  if (Object.keys(obj).length !== keys.length) return false;
+  for (let i = 0; i < keys.length; i++) if (!own(obj, keys[i])) return false;
+  return true;
+}
 function matches(step, token) {return token.endsWith('@') ? step.startsWith(token) : step === token;}
 export function review(bundle) {
   assert(object(bundle) && exactKeys(bundle,['expected_commit','runs']), 'SHAPE');
   assert(typeof bundle.expected_commit === 'string' && SHA.test(bundle.expected_commit), 'COMMIT');
   assert(plainArray(bundle.runs, 3) && bundle.runs.length === 3, 'RUNS');
   let runNames=new Set(), runIds=new Set(), jobIds=new Set(), count=0;
-  for (const item of bundle.runs) {
+  for (let runIndex = 0; runIndex < bundle.runs.length; runIndex++) {
+    const item = bundle.runs[runIndex];
     assert(object(item)&&exactKeys(item,['run','jobs']), 'RECORD');
     const r=item.run;
     assert(object(r)&&exactKeys(r,['id','name','head_sha','checked_out_sha','status','conclusion','run_attempt','event']), 'RUN_SHAPE');
@@ -64,7 +74,8 @@ export function review(bundle) {
     const required=REQUIRED[r.name];
     assert(plainArray(item.jobs, Object.keys(required).length)&&item.jobs.length===Object.keys(required).length,'JOBS');
     let names=new Set();
-    for(const j of item.jobs){
+    for(let jobIndex=0;jobIndex<item.jobs.length;jobIndex++){
+      const j=item.jobs[jobIndex];
       assert(object(j)&&exactKeys(j,['id','run_id','run_attempt','name','status','conclusion','steps']),'JOB_SHAPE');
       assert(positiveInt(j.id)&&!jobIds.has(j.id)&&j.run_id===r.id&&j.run_attempt===r.run_attempt,'JOB_ID');
       jobIds.add(j.id);
@@ -72,14 +83,20 @@ export function review(bundle) {
       assert(j.status==='completed'&&j.conclusion==='success','JOB_NOT_GREEN');
       assert(plainArray(j.steps, 50)&&j.steps.length>=required[j.name].length&&j.steps.length<=50,'STEPS');
       let last=-1;
-      for(const token of required[j.name]){
-        const matchesAt=[];
-        for(let i=0;i<j.steps.length;i++) if(object(j.steps[i])&&typeof j.steps[i].name==='string'&&matches(j.steps[i].name,token)) matchesAt.push(i);
-        assert(matchesAt.length===1 && matchesAt[0]>last,'STEP_MISSING_OR_ORDER');last=matchesAt[0];
+      const requiredSteps=required[j.name];
+      for(let tokenIndex=0;tokenIndex<requiredSteps.length;tokenIndex++){
+        const token=requiredSteps[tokenIndex];let matchCount=0,matchIndex=-1;
+        for(let i=0;i<j.steps.length;i++) if(object(j.steps[i])&&typeof j.steps[i].name==='string'&&matches(j.steps[i].name,token)){matchCount++;matchIndex=i}
+        assert(matchCount===1 && matchIndex>last,'STEP_MISSING_OR_ORDER');last=matchIndex;
         const step=j.steps[last];
         assert(exactKeys(step,['name','status','conclusion'])&&step.status==='completed'&&step.conclusion==='success','STEP_NOT_GREEN');
       }
-      assert(j.steps.every(s=>object(s)&&exactKeys(s,['name','status','conclusion'])&&typeof s.name==='string'&&s.status==='completed'&&['success','skipped'].includes(s.conclusion)),'STEP_BAD');
+      for(let stepIndex=0;stepIndex<j.steps.length;stepIndex++){
+        const step=j.steps[stepIndex];
+        assert(object(step)&&exactKeys(step,['name','status','conclusion'])&&
+          typeof step.name==='string'&&step.status==='completed'&&
+          (step.conclusion==='success'||step.conclusion==='skipped'),'STEP_BAD');
+      }
       count+=j.steps.length;
     }
   }

@@ -24,7 +24,7 @@ ACCOUNT='01234567-89ab-cdef-0123-456789abcdef'
 AFTER='2026-10-17T00:00:00Z';UNTIL='2026-10-18T00:00:00Z'
 
 
-def prepared(root, prices=('98','100'), *, typed=True):
+def prepared(root, prices=('98','100'), *, typed=True, terms=True):
     root.mkdir(exist_ok=True)
     pacing=PaperReadPacing(root/'pacing.sqlite3',ACCOUNT)
     activity=BrokerActivityStore(root/'activity.sqlite3',ACCOUNT)
@@ -46,6 +46,8 @@ def prepared(root, prices=('98','100'), *, typed=True):
     order=dict(broker_order_id=broker_id,client_order_id='nx_accept_fixture',symbol='BTC/USD',
         side='buy',status='filled',filled_quantity='2',average_fill_price=average,
         updated_at=raw['updated_at'])
+    if terms:
+        order.update(requested_quantity='2',limit_price='100')
     fills=[dict(id='20261017180000000::'+f'01234567-89ab-cdef-0123-{i:012d}',
         activity_type='FILL',order_id=broker_id,symbol='BTCUSD',side='buy',
         type='partial_fill' if i==1 else 'fill',qty='1',price=price,cum_qty=str(i),
@@ -110,6 +112,19 @@ def test_complete_accepted_history_binds_original_terms_and_explicit_fills(tmp_p
     assert result['semantic_reader_failures_rechecked'] is True
     assert result['accepted_pacing_operations_typed'] is True
     assert result['accepted_pacing_result_receipts_bound'] is True
+    assert all(result[name] is False for name in subject.FLAGS)
+
+
+def test_complete_legacy_history_without_activity_request_terms_is_readable_but_unbound(
+        tmp_path):
+    options,_,_=prepared(tmp_path,terms=False)
+    result=subject.review(**options)
+    assert result['complete_accepted_history_replayed'] is True
+    assert result['local_request_activity_agreement'] is False
+    assert result['request_activity_review']['agreement_blockers']==[
+        'ACTIVITY_LIMIT_PRICE_UNBOUND',
+        'ACTIVITY_REQUESTED_QUANTITY_UNBOUND',
+    ]
     assert all(result[name] is False for name in subject.FLAGS)
 
 

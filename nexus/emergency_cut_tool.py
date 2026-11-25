@@ -7,6 +7,7 @@ order cancellation remains the authoritative cleanup acknowledgment.
 """
 import json
 import os
+import sqlite3
 import stat
 from pathlib import Path
 
@@ -163,6 +164,30 @@ def _same_order(order_path,identity):
         os.path.samestat(identity,current))
 
 
+def _halt_replayed_bounded(order_path,result,identity):
+    """Retry only transient read faults while the exact journal survives.
+
+    A Windows file observer can briefly deny or defer a cold SQLite reopen
+    after the committed halt.  Re-reading is side-effect free, so permit at
+    most three observations.  A definitive negative or any identity drift is
+    authoritative immediately; neither the halt command nor reset is retried.
+    """
+    for attempt in range(3):
+        if not _same_order(order_path,identity):return False
+        try:replayed=emergency_halt_replayed(order_path,result)
+        except (OSError,sqlite3.OperationalError):
+            if not _same_order(order_path,identity):return False
+            if attempt==2:return False
+            continue
+        except ValueError as error:
+            if error.args!=('ORDER_JOURNAL_DATABASE_BUSY',):raise
+            if not _same_order(order_path,identity):return False
+            if attempt==2:return False
+            continue
+        return bool(replayed and _same_order(order_path,identity))
+    return False
+
+
 def activate(data_root=None):
     root,root_identity,root_anchor = _resolved_data_root(data_root)
     priority = _request_priority()
@@ -208,10 +233,8 @@ def activate(data_root=None):
                     # replay the journal through a fresh gateway before any
                     # public result may claim cleanup was confirmed.
                     order_identity = _order_identity(order_path)
-                    first_durable_halt = emergency_halt_replayed(
-                        order_path,halt_result)
-                    first_durable_halt = bool(first_durable_halt and
-                        _same_order(order_path,order_identity))
+                    first_durable_halt = _halt_replayed_bounded(
+                        order_path,halt_result,order_identity)
                     if not _same_data_root(root,root_identity):
                         first_durable_halt = False
                         raise ValueError('DATA_ROOT_CHANGED')
@@ -236,10 +259,8 @@ def activate(data_root=None):
                     # outside this emergency command.
                     if (first_durable_halt and
                             _same_order(order_path,order_identity)):
-                        final_durable_halt = emergency_halt_replayed(
-                            order_path,halt_result)
-                        durable_halt = bool(final_durable_halt and
-                            _same_order(order_path,order_identity))
+                        durable_halt = _halt_replayed_bounded(
+                            order_path,halt_result,order_identity)
     except Exception:
         # An emergency command must still return a conservative structured
         # result after an unforeseen ordinary storage/helper fault.  System

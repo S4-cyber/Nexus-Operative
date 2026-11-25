@@ -1,4 +1,32 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.405 post-latch durable halt replay
+
+The standalone local-paper emergency cut now reopens and replays the exact
+order journal a second time after reasserting its final independent intent
+latch. A sanctioned explicit reset can reuse the same SQLite inode after the
+first cold replay; that window now leaves the latch asserted but reports
+`UNCONFIRMED` with durable cleanup unconfirmed instead of reusing stale halt
+evidence. The unchanged halted path still requires both cold replays.
+Both replays must remain bound to the same regular single-link journal object;
+a final latch persistence/observation fault cannot promote the first replay.
+
+This remains sampled local filesystem evidence, not an atomic cross-process
+lease. A later explicit reset is still possible, and the command gained no
+reset, retry, provider request, broker connection or second halt mutation.
+Broker/account/funds, genuine-feed and sustained-trial, native Windows/
+installer, cloud, performance, profitability, hosted-CI and release acceptance
+remain open. Every live, funding, spend and release authority flag remains
+false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
 ## v0.340.404 bounded Windows process evidence
 
 The Windows installer smoke no longer performs an unbounded wait for redirected

@@ -601,6 +601,79 @@ def test_journal_replacement_after_warm_halt_ack_is_unconfirmed(
     assert cold['journal_present'] and cold['commands']==0 and not cold['halted']
 
 
+def test_same_inode_reset_after_first_replay_cannot_report_verified(
+        tmp_path,monkeypatch):
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    original=emergency_intent.persist;persist_calls=[];same_inode=[]
+    def reset_before_second_persist(path):
+        persist_calls.append(1)
+        if len(persist_calls)==2:
+            before=order_path.stat()
+            DurableOrderGateway(order_path).reset()
+            after=order_path.stat()
+            same_inode.append(os.path.samestat(before,after))
+            emergency_intent.clear(order_path)
+        return original(path)
+    monkeypatch.setattr(emergency_intent,'persist',reset_before_second_persist)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert persist_calls==[1,1] and same_inode==[True]
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert report['emergency_intent_present'] and report['halted']
+    assert report['data_root_path_pinned']
+    cold=DurableOrderGateway(order_path).recovery_report()
+    assert cold['journal_present'] and not cold['halted']
+    assert emergency_intent.requested(order_path)
+
+
+def test_final_persist_fault_cannot_skip_second_replay(tmp_path,monkeypatch):
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    original=emergency_intent.persist;persist_calls=[]
+    def persist_then_fault(path):
+        persist_calls.append(1)
+        original(path)
+        if len(persist_calls)==2:raise OSError('PRIVATE_FINAL_PERSIST_FAULT')
+    monkeypatch.setattr(emergency_intent,'persist',persist_then_fault)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert persist_calls==[1,1]
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert report['emergency_intent_present'] and report['halted']
+    assert report['data_root_path_pinned']
+    assert emergency_intent.requested(order_path)
+    assert DurableOrderGateway(order_path).recovery_report()['halted']
+
+
+def test_halted_journal_replacement_between_replays_is_unconfirmed(
+        tmp_path,monkeypatch):
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    replacement=tmp_path/'halted-replacement.sqlite3'
+    DurableOrderGateway(replacement).emergency_halt()
+    original=emergency_intent.persist;persist_calls=[];same_inode=[]
+    def replace_before_second_persist(path):
+        persist_calls.append(1)
+        if len(persist_calls)==2:
+            before=order_path.stat()
+            os.replace(replacement,order_path)
+            after=order_path.stat()
+            same_inode.append(os.path.samestat(before,after))
+        return original(path)
+    monkeypatch.setattr(emergency_intent,'persist',replace_before_second_persist)
+    from nexus.emergency_cut_tool import activate
+    report=activate(tmp_path)
+    assert persist_calls==[1,1] and same_inode==[False]
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert report['emergency_intent_present'] and report['halted']
+    assert report['data_root_path_pinned']
+    assert DurableOrderGateway(order_path).recovery_report()['halted']
+
+
 def test_unexpected_intent_status_fault_never_escapes_emergency_boundary(
         tmp_path,monkeypatch):
     monkeypatch.setattr(DurableOrderGateway,'emergency_halt',

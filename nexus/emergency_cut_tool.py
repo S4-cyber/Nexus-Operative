@@ -140,6 +140,29 @@ def _same_intent(order_path,identity):
     return emergency_intent.same_canonical(order_path,identity)
 
 
+def _order_identity(order_path):
+    """Sample one regular single-link order journal without following aliases."""
+    try:before=order_path.lstat()
+    except OSError:return None
+    if (stat.S_ISLNK(before.st_mode) or
+            not stat.S_ISREG(before.st_mode) or before.st_nlink!=1):
+        return None
+    try:after=order_path.lstat()
+    except OSError:return None
+    if (stat.S_ISLNK(after.st_mode) or
+            not stat.S_ISREG(after.st_mode) or after.st_nlink!=1 or
+            not os.path.samestat(before,after)):
+        return None
+    return after
+
+
+def _same_order(order_path,identity):
+    """Require both cold replays to observe the same public journal object."""
+    current=_order_identity(order_path)
+    return (identity is not None and current is not None and
+        os.path.samestat(identity,current))
+
+
 def activate(data_root=None):
     root,root_identity,root_anchor = _resolved_data_root(data_root)
     priority = _request_priority()
@@ -148,7 +171,9 @@ def activate(data_root=None):
     root_stable = _same_data_root(root,root_identity)
     order_path = root/'order_lifecycle.sqlite3'
     intent_preceded = durable_halt = final_intent = False
+    first_durable_halt = False
     intent_identity = final_intent_identity = None
+    halt_result = order_identity = None
     try:
         if not root_stable:raise ValueError('DATA_ROOT_CHANGED')
         if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
@@ -178,13 +203,17 @@ def activate(data_root=None):
                     if not _same_data_root(root,root_identity):
                         intent_preceded = False
                         raise ValueError('DATA_ROOT_CHANGED')
-                    result = DurableOrderGateway(order_path).emergency_halt()
+                    halt_result = DurableOrderGateway(order_path).emergency_halt()
                     # The warm return is not durable evidence.  Reopen and
                     # replay the journal through a fresh gateway before any
                     # public result may claim cleanup was confirmed.
-                    durable_halt = emergency_halt_replayed(order_path,result)
+                    order_identity = _order_identity(order_path)
+                    first_durable_halt = emergency_halt_replayed(
+                        order_path,halt_result)
+                    first_durable_halt = bool(first_durable_halt and
+                        _same_order(order_path,order_identity))
                     if not _same_data_root(root,root_identity):
-                        durable_halt = False
+                        first_durable_halt = False
                         raise ValueError('DATA_ROOT_CHANGED')
                 else:raise ValueError('DATA_ROOT_CHANGED')
             finally:
@@ -199,6 +228,18 @@ def activate(data_root=None):
                     if final_intent:
                         final_intent_identity = _intent_identity(order_path)
                     final_intent = final_intent_identity is not None
+                    # The first cold replay can become stale if the separate
+                    # explicit reset workflow wins before this latch is
+                    # reasserted while preserving the SQLite inode.  Sample
+                    # the durable journal again after the final latch.  Reset,
+                    # retry and a second halt mutation remain intentionally
+                    # outside this emergency command.
+                    if (first_durable_halt and
+                            _same_order(order_path,order_identity)):
+                        final_durable_halt = emergency_halt_replayed(
+                            order_path,halt_result)
+                        durable_halt = bool(final_durable_halt and
+                            _same_order(order_path,order_identity))
     except Exception:
         # An emergency command must still return a conservative structured
         # result after an unforeseen ordinary storage/helper fault.  System

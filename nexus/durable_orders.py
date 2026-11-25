@@ -131,20 +131,32 @@ class DurableOrderGateway:
         path=root_guard.path
         root_guard.require_current()
         self._require_rotation_clear(path)
-        if path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
-        try:observed=path.stat()
+        try:observed=path.lstat()
         except FileNotFoundError:
             yield None
             return
+        if stat.S_ISLNK(observed.st_mode):raise ValueError('ORDER_HISTORY_SYMLINK')
         if not stat.S_ISREG(observed.st_mode):raise ValueError('ORDER_HISTORY_REGULAR_FILE_REQUIRED')
+        if observed.st_nlink!=1:raise ValueError('ORDER_HISTORY_SINGLE_LINK_REQUIRED')
+        def require_current():
+            try:current=path.lstat()
+            except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+            if (stat.S_ISLNK(current.st_mode) or not stat.S_ISREG(current.st_mode) or
+                    current.st_nlink!=1 or not os.path.samestat(observed,current)):
+                raise ValueError('ORDER_HISTORY_CHANGED')
         db=None
         try:
-            db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+            try:resolved=path.resolve(strict=True)
+            except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+            require_current()
+            db=sqlite3.connect(resolved.as_uri()+'?mode=ro',uri=True,
                 timeout=DB_BUSY_TIMEOUT_MS/1000)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             db.execute('BEGIN')
             root_guard.require_current()
+            require_current()
             yield db
+            require_current()
             root_guard.require_current()
         except sqlite3.OperationalError as error:
             if _database_busy(error):_busy()

@@ -442,6 +442,16 @@ def test_release_trial_timeout_has_bounded_windows_reconciliation_headroom(
     assert trials._profile_timeout_seconds(profile) == expected
 
 
+@pytest.mark.parametrize('expected_version',['0.1.0',True])
+def test_expected_version_mismatch_fails_before_source_or_profiles(
+        monkeypatch,expected_version):
+    monkeypatch.setattr(trials,'source_digest',
+        lambda _root:pytest.fail('version mismatch must precede source reads'))
+    with pytest.raises(trials.ReleaseTrialError,
+            match='^RELEASE_TRIAL_VERSION_MISMATCH$'):
+        trials.run(expected_version=expected_version)
+
+
 @pytest.mark.parametrize(('error','expected'), [
     (trials.ReleaseTrialError('RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED'),
      'Release trials failed: RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED\n'),
@@ -449,7 +459,7 @@ def test_release_trial_timeout_has_bounded_windows_reconciliation_headroom(
      'Release trials failed: RELEASE_TRIAL_INTERNAL_ERROR\n'),
 ])
 def test_release_trial_cli_emits_only_sanitized_failure_codes(monkeypatch, capsys, error, expected):
-    monkeypatch.setattr(trials, 'run', lambda: (_ for _ in ()).throw(error))
+    monkeypatch.setattr(trials, 'run', lambda **_kwargs: (_ for _ in ()).throw(error))
     monkeypatch.setattr(sys, 'argv', ['release_trials'])
     with pytest.raises(SystemExit) as stopped:
         trials.main()
@@ -1736,9 +1746,17 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     with pytest.raises(ValueError,match='FORWARD_LATENCY_SCHEMA'):trials._validate('forward',changed)
     for field,value in (('retained_observations',279),('after','1970-01-01T00:16:41Z'),
         ('review_reasons',[]),('evidence_snapshot_sha256','0'*63),
-        ('over_limit_coverage_gaps',0),('over_limit_coverage_gap_seconds','1299')):
+        ('over_limit_coverage_gaps',0),('over_limit_coverage_gap_seconds','1299'),
+        ('retained_exchange_admissions',0),('exchange_admissions_in_window',0),
+        ('exchange_admission_incidents_in_window',999),
+        ('retained_exchange_admissions',True)):
         changed=copy.deepcopy(result);changed['recovered']['coverage_review'][field]=value
         with pytest.raises(ValueError,match='FORWARD_COVERAGE_EVIDENCE'):trials._validate('forward',changed)
+    for field in ('retained_exchange_admissions','exchange_admissions_in_window',
+            'exchange_admission_incidents_in_window'):
+        changed=copy.deepcopy(result);del changed['recovered']['coverage_review'][field]
+        with pytest.raises(ValueError,match='FORWARD_COVERAGE_EVIDENCE'):
+            trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['coverage_review']['declared_public_covered_seconds']='1'
     with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCOPE'):trials._validate('forward',changed)
     for field,value in (('incident_free_coverage_target_met',True),

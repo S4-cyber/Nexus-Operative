@@ -577,6 +577,29 @@ def test_emergency_cut_latch_remains_independent_during_request_reconciliation(
     assert not DurableOrderGateway(orders.path).recovery_report()['halted']
 
 
+def test_emergency_cut_after_final_request_source_check_invalidates_reconciliation(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    before=store.path.read_bytes();original=intent._require_request_source
+    calls=[]
+    def request_cut_after_final_source_check(*args,**kwargs):
+        value=original(*args,**kwargs);calls.append(True)
+        if len(calls)==6:emergency_intent.persist(orders.path)
+        return value
+    monkeypatch.setattr(intent,'_require_request_source',
+        request_cut_after_final_source_check)
+    with pytest.raises(ValueError,match='EMERGENCY_CUT_ACTIVE'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert len(calls)==6 and emergency_intent.requested(orders.path)
+    assert store.path.read_bytes()==before
+    assert not DurableOrderGateway(orders.path).recovery_report()['halted']
+
+
 def test_halt_during_request_guard_exit_invalidates_reconciliation(
         tmp_path,monkeypatch):
     result,review=candidate(tmp_path/'forward',monkeypatch)

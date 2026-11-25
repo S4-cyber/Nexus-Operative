@@ -40,8 +40,14 @@ def _float(token):
     return value
 
 
-def verify(raw):
+def _expected_version(value):
+    if value is not None and (type(value) is not str or value!=REVISION):
+        _fail('EXPECTED_VERSION')
+
+
+def verify(raw, *, expected_version=None):
     """Validate bounded bytes; return only an allowlisted evidence-scope summary."""
+    _expected_version(expected_version)
     if type(raw) is not bytes or not 1<=len(raw)<=MAX_BYTES:_fail('SIZE')
     try:
         report=json.loads(raw.decode('utf-8'),object_pairs_hook=_pairs,parse_float=_float,
@@ -92,8 +98,9 @@ class _Parser(argparse.ArgumentParser):
 
 
 def main():
-    parser=_Parser(description=__doc__);parser.add_argument('report');args=parser.parse_args()
-    try:result=verify(_read(args.report))
+    parser=_Parser(description=__doc__);parser.add_argument('report')
+    parser.add_argument('--expected-version');args=parser.parse_args()
+    try:result=verify(_read(args.report),expected_version=args.expected_version)
     except (OSError,ValueError,TypeError,MemoryError,RecursionError):
         print('RELEASE_EVIDENCE_FAILED');return 2
     print(json.dumps(result,sort_keys=True));return 0

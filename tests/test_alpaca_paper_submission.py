@@ -90,6 +90,14 @@ def test_equality_forging_credential_is_rejected_before_store_or_transport(prepa
     assert budget.inspect()==budget_before
 
 
+def test_polymorphic_account_fields_never_pass_submission_preflight():
+    class ForgedText(str):
+        def __str__(self):return '1000'
+    raw=account(cash=ForgedText('0'))
+    with pytest.raises(module.PaperSubmissionError,match='ACCOUNT_INVALID'):
+        module._account_and_funds(raw,[],ACCOUNT,plan()['payload'])
+
+
 def test_single_attempt_commits_unknown_before_post_and_retains_response(prepared):
     opener=Opener();result=submit(prepared,opener)
     assert result['paper_only'] and result['single_attempt_consumed']

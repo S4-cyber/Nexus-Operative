@@ -568,6 +568,7 @@ def reconcile_persisted(review,journal,client_order_id,*,expected_head,
     _require_order_source(order_gateway,order_source)
     _require_emergency_cut_clear(order_source)
     _require_request_source(journal,request_source)
+    _require_emergency_cut_clear(order_source)
     if order_final!=order_before:
         raise ValueError('FORWARD_BROKER_INTENT_ORDER_SNAPSHOT_CHANGED')
     return dict(result,review_input_detached=True,order_gateway_exact=True,

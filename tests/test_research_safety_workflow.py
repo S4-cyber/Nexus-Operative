@@ -31,6 +31,9 @@ def test_long_running_safety_gates_have_independent_windows_job_budgets():
     assert "timeout-minutes: 45" in evidence
     assert "python -m nexus.release_trials" in evidence
     assert "python -m nexus.release_evidence" in evidence
+    assert evidence.count("$version = python -c") == 2
+    assert "python -m nexus.release_trials --expected-version $version --output release-trial-evidence/report.json" in evidence
+    assert "python -m nexus.release_evidence release-trial-evidence/report.json --expected-version $version" in evidence
     assert "if: always()" in evidence
     assert "python -m pytest -q" not in evidence
 

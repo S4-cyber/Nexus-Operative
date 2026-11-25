@@ -1,4 +1,32 @@
 # Nexus Operative versioning and launch gates
+## v0.340.401 offline safety implementation bindings
+
+Persisted counterfactual broker-intent reconciliation now binds the exact
+emergency-latch reader implementation. Every existing latch sample rejects a
+changed public slot before a substitute can execute, including substitution
+after the first durable order replay. The independent stop writer remains
+unlocked and request/order journals remain unchanged on rejection.
+
+Disconnected fee projection and fee-reserved cash-path review now accept only
+exact built-in containers, scope strings and supported numeric scalars before
+normalization. Mapping, row, string and numeric subclasses cannot invoke hooks
+to inflate opening funds, hide fees or forge a passing supplied-history audit.
+
+These are bounded offline fail-closed checks, not broker/account/funds
+acceptance, genuine-feed or sustained-market-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
 ## v0.340.400 safety and release-evidence bindings
 
 Persisted reconciliation now rechecks the independent emergency-cut latch
@@ -370,7 +398,7 @@ remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
 about 40%, 30–45% low-confidence range), with 0/9 stages independently
 accepted and no release permission, trading permission or launch date.
 
-**Current development build: 0.340.400 (pre-release).**
+**Current development build: 0.340.401 (pre-release).**
 
 ## v0.340.385 durable cross-session exchange continuity
 

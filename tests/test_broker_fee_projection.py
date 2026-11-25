@@ -142,6 +142,47 @@ def test_equality_forging_link_identity_is_rejected_before_reconciliation():
     assert data==original
 
 
+@pytest.mark.parametrize('target',('opening_balance','fee_amount'))
+def test_polymorphic_financial_numbers_cannot_inflate_funds_or_hide_fees(target):
+    class ForgedNumber(str):
+        def __str__(self):
+            return '1000' if target=='opening_balance' else '0.001'
+    data=inputs()
+    if target=='opening_balance':
+        data['opening_balances']['USD']=ForgedNumber('0')
+    else:
+        data['fees'][0]['amount']=ForgedNumber('1000')
+    with pytest.raises(ValueError,match='INVALID_BROKER_PROJECTION_NUMBER'):
+        projection.reconcile(**data)
+
+
+def test_financial_type_rejection_does_not_execute_metaclass_equality_hooks():
+    calls=[]
+    class ForgedType(type):
+        def __eq__(cls,other):
+            calls.append(other);return other is str
+    class ForgedNumber(metaclass=ForgedType):
+        def __str__(self):return '1000'
+    data=inputs();data['opening_balances']['USD']=ForgedNumber()
+    with pytest.raises(ValueError,match='INVALID_BROKER_PROJECTION_NUMBER'):
+        projection.reconcile(**data)
+    assert calls==[]
+
+
+@pytest.mark.parametrize('target',('rows','record','balances','scope'))
+def test_projection_rejects_polymorphic_containers_and_scope_strings(target):
+    class Rows(list):pass
+    class Record(dict):pass
+    class Balances(dict):pass
+    class Scope(str):pass
+    data=inputs()
+    if target=='rows':data['orders']=Rows(data['orders'])
+    if target=='record':data['orders'][0]=Record(data['orders'][0])
+    if target=='balances':data['opening_balances']=Balances(data['opening_balances'])
+    if target=='scope':data['orders'][0]['symbol']=Scope('BTC/USD')
+    with pytest.raises(ValueError):projection.reconcile(**data)
+
+
 def test_fixture_cli_and_api_do_not_create_account_files_or_offer_writes(tmp_path,monkeypatch):
     import nexus.app as backend
     from fastapi.testclient import TestClient

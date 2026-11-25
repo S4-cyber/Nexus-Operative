@@ -97,6 +97,12 @@ def review_sample(order_path):
         record_sha256=hashlib.sha256(RECORD).hexdigest()),identity
 
 
+# Capture the canonical reader in its defining module.  Consumers may import
+# after this module's public slot has been replaced, so consumer-local capture
+# is not a sufficient implementation boundary.
+_TRUSTED_REVIEW_SAMPLE=review_sample
+
+
 def same_canonical(order_path,identity):
     """Require one sampled canonical entry to remain the same exact object."""
     if identity is None:return False

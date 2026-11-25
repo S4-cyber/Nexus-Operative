@@ -317,22 +317,23 @@ def test_not_found_does_not_erase_a_previously_observed_partial_fill(journal):
     assert state['lookup']['last_outcome'] == 'NOT_FOUND' and not state['automatic_retry']
 
 
-def test_saved_entry_change_is_checked_before_outcome_commit(journal, monkeypatch):
+def test_saved_entry_change_stops_before_account_recheck_and_outcome_commit(journal, monkeypatch):
     vault = Vault(); monkeypatch.setattr(credentials, '_vault', lambda: vault)
     monkeypatch.setattr(credentials, '_epoch', 0); monkeypatch.setattr(credentials, '_blocked', False)
     credentials.install(KEY, SECRET, confirm_store=True)
     opener = Opener([account(), response(), account()]); original = opener.open
     def changed(request, timeout):
         result = original(request, timeout)
-        if len(opener.requests) == 3:
+        if len(opener.requests) == 2:
             key = (credentials.SERVICE, credentials.ACCOUNT)
             record = json.loads(vault.data[key]); record['api_key'] = 'other_fixture_key_1234'
             vault.data[key] = json.dumps(record)
         return result
     opener.open = changed
-    with pytest.raises(transport.PaperInspectionError, match='CREDENTIALS_CHANGED'):
+    with pytest.raises(transport.PaperInspectionError, match='PERMISSION_REVOKED'):
         credentials.recover_saved(journal, 'nx_fixture', expected_account_id=ACCOUNT,
             confirm_read_only_paper=True, opener=opener, wall_clock=lambda: 1000, elapsed_clock=lambda: 50)
+    assert len(opener.requests) == 2
     assert current(journal)['lookup']['pending'] and current(journal)['snapshot'] is None
 
 

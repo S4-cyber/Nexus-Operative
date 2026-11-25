@@ -1,10 +1,16 @@
 # Nexus Operative versioning and launch gates
 
+## v0.340.307 saved paper credential continuity
+
+This pre-release binds every explicitly saved paper-read session to the exact opaque Windows vault record captured before transport. Existing bounded checkpoints now stop account inspection, original-ID recovery, activity collection, asset rules, quote observation and Activity SSE when another process replaces the entry, the credential vault becomes unavailable or local mutation begins. No later response, GET, retained input or recovery outcome is accepted after denial. Final readback and every existing account, pacing, provider-budget, input and emergency-stop check remain mandatory; no retry or authority is inferred.
+
+No user control or editable parameter changed, so the seven-tab beginner layout and black/bright-purple bottom-right hover help remain unchanged. Engagement remains OFF by default; limits, account checks, fail-closed exits and emergency-stop independence are preserved. This is bounded local credential continuity, not a cross-process lease, provider-side revocation, broker/account/source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. Weighted implementation remains 38% (30–45%, low confidence), with 0/9 independently accepted stages; release approval, trading permission and launch date remain unset.
+
+**Current development build: 0.340.307 (pre-release).**
+
 ## v0.340.306 provider selected-leaf path validation
 
 The provider POST activity, fee-reference and known-fee reserve read-only reviews now freeze each selected parent directory without resolving away the final filename. Existing no-follow identity and bounded fingerprint checks can reject direct leaf symlinks, hardlinks and mid-review symlink substitutions. Twenty-seven parametrized regression cases exercise those boundaries and assert private journal preservation. This is sampled local path hardening, not an atomic multi-file snapshot or administrator boundary. No UI controls changed: seven beginner tabs, black/bright-purple bottom-right hover help, OFF engagement defaults, bounded risk, account checks and independent emergency stop remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source release evidence, security, full Windows regression, browser and installer checks are required before promotion; no result is claimed in advance.
-
-**Current development build: 0.340.306 (pre-release).**
 
 ## v0.340.305 private observation parent-path binding
 

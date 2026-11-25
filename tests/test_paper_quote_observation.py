@@ -174,12 +174,12 @@ def test_key_removal_during_data_read_revokes_and_preserves_pending(vault,tmp_pa
     assert len(opener.requests)==2 and args['pacing'].inspect()['pending_token'] is not None
 
 
-def test_external_key_replacement_after_read_suppresses_return(vault,tmp_path):
+def test_external_key_replacement_stops_before_final_account_request(vault,tmp_path):
     save();args=options(tmp_path);opener=args['opener'];original=opener.open
     def replaced(req,timeout):
         result=original(req,timeout)
-        if len(opener.requests)==3:vault.data[(credentials.SERVICE,credentials.ACCOUNT)]=vault.data[(credentials.SERVICE,credentials.ACCOUNT)].replace(KEY,'fixture_new_key_only_123')
+        if len(opener.requests)==2:vault.data[(credentials.SERVICE,credentials.ACCOUNT)]=vault.data[(credentials.SERVICE,credentials.ACCOUNT)].replace(KEY,'fixture_new_key_only_123')
         return result
     opener.open=replaced
-    with pytest.raises(ValueError,match='READ_REVOKED'):credentials.inspect_quote_saved(**args)
-    assert args['pacing'].inspect()['last_outcome']=='SUCCESS'
+    with pytest.raises(ValueError,match='PERMISSION_REVOKED'):credentials.inspect_quote_saved(**args)
+    assert len(opener.requests)==2 and args['pacing'].inspect()['pending_token'] is not None

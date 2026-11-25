@@ -5,7 +5,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 """
 from dataclasses import dataclass, asdict
 
-REVISION = '0.340.306'
+REVISION = '0.340.307'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -951,7 +951,7 @@ def snapshot():
 
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.306 preserves caller-selected leaf names while freezing parent directories in the provider POST activity, fee-reference and known-fee reserve read-only compositions. Existing no-follow identity and bounded-fingerprint guards now see selected leaf symlinks and hardlinks rather than a silently resolved target. Twenty-seven new parametrized regression cases cover initial selected-leaf symlinks, mid-review symlink replacement and hardlink aliases with private journal preservation assertions. Existing exact heads, store binding, independent replay, fail-closed authority denials, OFF defaults, risk limits, account checks and independent emergency stop remain mandatory. This is sampled local path-scope hardening, not an atomic multi-file snapshot, ACL or administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = 'v0.340.307 binds every explicitly saved paper-read session to the exact opaque Windows vault record captured before transport. Account inspection, original-ID recovery, activity collection, asset rules, quote observation and Activity SSE now recheck that record at each existing bounded transport checkpoint, so an external-process replacement, unavailable vault or concurrent local mutation stops the session before further response consumption, GETs, retention or outcome commitment. Exact final readback and all prior epoch, account, pacing, provider-budget, input and emergency-stop checks remain mandatory; denial never retries, rearms or grants authority. This is bounded local saved-pair continuity, not a cross-process lease, provider credential revocation, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

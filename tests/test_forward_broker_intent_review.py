@@ -353,6 +353,74 @@ def test_persisted_reconciliation_rechecks_order_replay_implementation(
     assert len(calls)==1
 
 
+def test_persisted_reconciliation_rejects_emergency_reader_substitution(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    before=store.path.read_bytes();emergency_intent.persist(orders.path);calls=[]
+    def forged_clear(path):
+        calls.append(path)
+        return dict(status='CLEAR',requested=False,canonical=False,
+            record_sha256=None),None
+    monkeypatch.setattr(emergency_intent,'review_sample',forged_clear)
+    with pytest.raises(ValueError,match='EMERGENCY_IMPLEMENTATION_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert calls==[] and emergency_intent.requested(orders.path)
+    assert store.path.read_bytes()==before
+    assert not DurableOrderGateway(orders.path).recovery_report()['halted']
+
+
+def test_persisted_reconciliation_rechecks_emergency_reader_implementation(
+        tmp_path,monkeypatch):
+    result,review=candidate(tmp_path/'forward',monkeypatch)
+    store=BrokerRequestJournal(tmp_path/'requests.sqlite3',ACCOUNT)
+    store.prepare_forward_intent(result)
+    head=store.lookup_request('nx_forward_fixture')['head_sha256']
+    orders=DurableOrderGateway(tmp_path/'forward'/'orders.sqlite3')
+    before=store.path.read_bytes();original=intent._replayed_order_snapshot
+    replays=[];fake_calls=[]
+    def forged_clear(path):
+        fake_calls.append(path)
+        return dict(status='CLEAR',requested=False,canonical=False,
+            record_sha256=None),None
+    def replace_after_first(frozen_review,order_gateway):
+        value=original(frozen_review,order_gateway);replays.append(value)
+        if len(replays)==1:
+            monkeypatch.setattr(emergency_intent,'review_sample',forged_clear)
+        return value
+    monkeypatch.setattr(intent,'_replayed_order_snapshot',replace_after_first)
+    with pytest.raises(ValueError,match='EMERGENCY_IMPLEMENTATION_CHANGED'):
+        intent.reconcile_persisted(review,store,'nx_forward_fixture',
+            expected_head=head,order_gateway=orders)
+    assert len(replays)==1 and fake_calls==[]
+    assert store.path.read_bytes()==before
+
+
+def test_emergency_reader_binding_survives_consumer_import_after_substitution(
+        monkeypatch):
+    import importlib
+    calls=[]
+    def forged_clear(path):
+        calls.append(path)
+        return dict(status='CLEAR',requested=False,canonical=False,
+            record_sha256=None),None
+    monkeypatch.setattr(emergency_intent,'review_sample',forged_clear)
+    importlib.reload(intent)
+    with pytest.raises(ValueError,match='EMERGENCY_IMPLEMENTATION_CHANGED'):
+        intent._require_emergency_cut_clear((('/unused',0,0),))
+    assert calls==[]
+
+
+def test_missing_emergency_reader_has_fixed_implementation_error(monkeypatch):
+    monkeypatch.delattr(emergency_intent,'review_sample')
+    with pytest.raises(ValueError,match='EMERGENCY_IMPLEMENTATION_CHANGED'):
+        intent._require_emergency_cut_clear((('/unused',0,0),))
+
+
 def test_persisted_reconciliation_rejects_byte_identical_order_path_swap(
         tmp_path,monkeypatch):
     result,review=candidate(tmp_path/'forward',monkeypatch)

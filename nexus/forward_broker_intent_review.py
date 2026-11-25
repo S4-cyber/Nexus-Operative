@@ -24,6 +24,7 @@ from nexus.sqlite_journal_guard import (
 
 _TRUSTED_ORDER_PATH=DurableOrderGateway._path
 _TRUSTED_ORDER_SNAPSHOT=DurableOrderGateway.session_orders_snapshot
+_TRUSTED_EMERGENCY_REVIEW_SAMPLE=emergency_intent._TRUSTED_REVIEW_SAMPLE
 
 
 PROFILE='nexus.forward-broker-intent.v1'
@@ -462,8 +463,12 @@ def _require_order_source(order_gateway,binding):
 
 def _require_emergency_cut_clear(binding):
     """Sample the independent latch without locking or delaying its writer."""
+    if (vars(emergency_intent).get('review_sample') is not
+            _TRUSTED_EMERGENCY_REVIEW_SAMPLE):
+        raise ValueError(
+            'FORWARD_BROKER_INTENT_EMERGENCY_IMPLEMENTATION_CHANGED')
     order_identity=binding[0]
-    try:sample,identity=emergency_intent.review_sample(order_identity[0])
+    try:sample,identity=_TRUSTED_EMERGENCY_REVIEW_SAMPLE(order_identity[0])
     except (OSError,RuntimeError,TypeError,ValueError):
         raise ValueError('FORWARD_BROKER_INTENT_EMERGENCY_CUT_ACTIVE') from None
     expected=dict(status='CLEAR',requested=False,canonical=False,

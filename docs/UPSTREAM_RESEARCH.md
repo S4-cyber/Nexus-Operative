@@ -1,0 +1,7 @@
+# Pinned upstream execution research
+Reviewed 2026-11-24. Architecture references only; no external code copied.
+- [NautilusTrader README](https://github.com/nautechsystems/nautilus_trader/blob/46e8b8263f8536f14e0ea9a5f20e02016e3c17c5/README.md): Rust execution core, Python orchestration, event-driven research and execution. LGPL-3.0.
+- [Bybit reconciliation helper](https://github.com/nautechsystems/nautilus_trader/blob/46e8b8263f8536f14e0ea9a5f20e02016e3c17c5/crates/adapters/bybit/src/http/reconciliation.rs): marks missing historical instrument data as incomplete and rejects report completion. Explicit instrument scope and timestamp window. LGPL-3.0; do not transplant code without compliance review.
+- [LEAN README](https://github.com/QuantConnect/Lean/blob/adac927f6c94a85b828dff79657bdfe5160c4ad3/readme.md): modular event-driven trading and pluggable models. Apache-2.0 metadata.
+## Proposed acceptance work
+Audit existing reconciliation coverage before adding code: require explicit expected instrument set and window, distinguish empty verified results from missing history, reject incomplete page coverage and conflicting snapshots, and test restart/replay with synthetic fixtures. Compare existing execution model interfaces with LEAN's modular design before introducing dependencies. Keep native Windows compatibility and existing emergency-stop and broker-paper boundaries. No live orders, credentials, runtime changes or release acceptance. Do not change readiness estimate for research alone.

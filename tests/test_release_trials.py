@@ -466,6 +466,34 @@ def test_release_trial_cli_emits_only_sanitized_failure_codes(monkeypatch, capsy
     assert stopped.value.code == 1 and capsys.readouterr().err == expected
 
 
+@pytest.mark.parametrize('existing_kind',['file','symlink'])
+def test_release_trial_output_never_overwrites_an_existing_path(
+        tmp_path, monkeypatch, capsys, existing_kind):
+    output=tmp_path/'release-report.json';target=tmp_path/'retained-private-evidence.json'
+    target.write_text('retained')
+    if existing_kind=='file':output.write_text('existing')
+    else:
+        try:output.symlink_to(target)
+        except OSError:pytest.skip('file symlink unavailable')
+    monkeypatch.setattr(trials,'run',lambda **_kwargs:{'passed':True})
+    monkeypatch.setattr(sys,'argv',['release_trials','--output',str(output)])
+    with pytest.raises(SystemExit) as stopped:trials.main()
+    assert stopped.value.code==1
+    assert capsys.readouterr().err=='Release trials failed: RELEASE_TRIAL_INTERNAL_ERROR\n'
+    assert target.read_text()=='retained'
+    if existing_kind=='file':assert output.read_text()=='existing'
+
+
+def test_release_trial_output_is_restrictive_and_synced(tmp_path, monkeypatch):
+    output=tmp_path/'release-report.json';synced=[];original=trials.os.fsync
+    def track(descriptor):
+        synced.append(descriptor);return original(descriptor)
+    monkeypatch.setattr(trials.os,'fsync',track)
+    trials._write_output(output,'{"passed": true}\n')
+    assert output.read_text()=='{"passed": true}\n' and len(synced)==1
+    if os.name!='nt':assert output.stat().st_mode & 0o777==0o600
+
+
 @pytest.mark.parametrize('has_intent', [False, True])
 def test_missing_order_history_is_inspected_without_creating_it(tmp_path, monkeypatch, has_intent):
     from nexus import app as api, emergency_intent

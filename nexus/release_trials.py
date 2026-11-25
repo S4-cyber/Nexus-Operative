@@ -3388,6 +3388,18 @@ def run(*, expected_version=None):
         limitations='Disposable offline process/HTTP/accounting trials. Wall-clock local storage timings include current machine load and are not broker or market latency. Synthetic quotes and assumed liquidity/fees cannot authenticate real-market performance, profitability, source provenance or complete 1.0 acceptance.')
 
 
+def _write_output(path, encoded):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    flags = (os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+        getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0) |
+        getattr(os, 'O_BINARY', 0))
+    descriptor = os.open(path, flags, 0o600)
+    with os.fdopen(descriptor, 'w', encoding='utf-8', newline='') as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path)
@@ -3396,7 +3408,7 @@ def main():
         report = run(expected_version=args.expected_version)
         encoded = json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n'
         if args.output:
-            args.output.parent.mkdir(parents=True, exist_ok=True); args.output.write_text(encoded, encoding='utf-8')
+            _write_output(args.output, encoded)
         print(encoded, end='')
     except (ValueError, OSError, subprocess.SubprocessError, KeyError) as error:
         # Only allowlisted fixed codes are emitted. Raw child stderr,

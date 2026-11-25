@@ -1,22 +1,22 @@
 {
   "actual_broker_acceptance": false,
   "elapsed_seconds": {
-    "activity": 0.156,
-    "activity_acceptance": 1.051,
-    "balance": 0.084,
-    "capacity": 4.591,
-    "collection": 0.396,
-    "encrypted_observation": 2.345,
-    "forward": 3.153,
-    "http": 10.192,
-    "inspection_inventory": 2.657,
-    "observation_review": 1.664,
+    "activity": 0.112,
+    "activity_acceptance": 0.824,
+    "balance": 0.061,
+    "capacity": 3.613,
+    "collection": 0.279,
+    "encrypted_observation": 1.716,
+    "forward": 2.374,
+    "http": 7.891,
+    "inspection_inventory": 2.342,
+    "observation_review": 1.332,
     "open_order_terms": 0.049,
-    "operations": 7.572,
-    "pacing": 7.237,
-    "reconciliation_acceptance": 32.336,
-    "recovery": 0.291,
-    "retained_balance": 0.09
+    "operations": 5.37,
+    "pacing": 5.908,
+    "reconciliation_acceptance": 25.759,
+    "recovery": 0.207,
+    "retained_balance": 0.06
   },
   "environment": {
     "python": "3.12.14",
@@ -499,22 +499,22 @@
         "accounting_consistent": true,
         "admitted": 8,
         "admitted_to_completion_latency": {
-          "p50_ms": 37.148,
-          "p95_ms": 102.303,
-          "p99_ms": 102.303
+          "p50_ms": 28.313,
+          "p95_ms": 82.13,
+          "p99_ms": 82.13
         },
         "application_accounts_changed": false,
         "atomic_order_transactions": true,
         "broker_orders": 0,
-        "cold_recovery_ms": 3.448,
+        "cold_recovery_ms": 2.793,
         "completed_roundtrips": 8,
         "duplicate_fill_replays": 16,
         "duplicate_rejections": 1,
         "durable_commands": 67,
         "durable_roundtrip_latency": {
-          "p50_ms": 11.839,
-          "p95_ms": 17.446,
-          "p99_ms": 17.446
+          "p50_ms": 8.679,
+          "p95_ms": 14.344,
+          "p99_ms": 14.344
         },
         "expired_before_execution": 0,
         "halt_flushed": 0,
@@ -525,9 +525,9 @@
         "queue_age_limit_ms": 250.0,
         "queue_capacity": 8,
         "queue_wait_latency": {
-          "p50_ms": 25.309,
-          "p95_ms": 84.857,
-          "p99_ms": 84.857
+          "p50_ms": 19.634,
+          "p95_ms": 67.787,
+          "p99_ms": 67.787
         },
         "scope": "TEMPORARY_LINKED_LEDGER_FIXTURE_BURST",
         "target_validated": false
@@ -536,22 +536,22 @@
         "accounting_consistent": true,
         "admitted": 8,
         "admitted_to_completion_latency": {
-          "p50_ms": 64.98,
-          "p95_ms": 171.652,
-          "p99_ms": 171.652
+          "p50_ms": 46.684,
+          "p95_ms": 142.945,
+          "p99_ms": 142.945
         },
         "application_accounts_changed": false,
         "atomic_order_transactions": false,
         "broker_orders": 0,
-        "cold_recovery_ms": 3.462,
+        "cold_recovery_ms": 4.165,
         "completed_roundtrips": 8,
         "duplicate_fill_replays": 16,
         "duplicate_rejections": 1,
         "durable_commands": 67,
         "durable_roundtrip_latency": {
-          "p50_ms": 20.934,
-          "p95_ms": 29.048,
-          "p99_ms": 29.048
+          "p50_ms": 14.929,
+          "p95_ms": 33.024,
+          "p99_ms": 33.024
         },
         "expired_before_execution": 0,
         "halt_flushed": 0,
@@ -562,9 +562,9 @@
         "queue_age_limit_ms": 250.0,
         "queue_capacity": 8,
         "queue_wait_latency": {
-          "p50_ms": 44.046,
-          "p95_ms": 142.604,
-          "p99_ms": 142.604
+          "p50_ms": 31.755,
+          "p95_ms": 109.921,
+          "p99_ms": 109.921
         },
         "scope": "TEMPORARY_LINKED_LEDGER_FIXTURE_BURST",
         "target_validated": false
@@ -650,16 +650,16 @@
           "accounting_consistent": true,
           "broker_orders": 0,
           "checkpoints_enabled": false,
-          "cold_recovery_ms": 6.575,
-          "commands_per_second": 243.661,
+          "cold_recovery_ms": 4.776,
+          "commands_per_second": 294.755,
           "commit_return_latency": {
-            "p50_ms": 4.036,
-            "p95_ms": 7.045,
-            "p99_ms": 7.487
+            "p50_ms": 3.188,
+            "p95_ms": 6.857,
+            "p99_ms": 9.014
           },
           "cycles": 30,
           "durable_commands": 240,
-          "elapsed_seconds": 0.984977,
+          "elapsed_seconds": 0.814235,
           "portfolio_linked": false,
           "recovery_diagnostics": {
             "cache_hit": false,
@@ -669,22 +669,22 @@
           },
           "scope": "GATEWAY_ONLY",
           "tier_checks_included": false,
-          "warm_recovery_ms": 6.907
+          "warm_recovery_ms": 4.558
         },
         {
           "accounting_consistent": true,
           "broker_orders": 0,
           "checkpoints_enabled": true,
-          "cold_recovery_ms": 8.212,
-          "commands_per_second": 375.193,
+          "cold_recovery_ms": 9.167,
+          "commands_per_second": 489.982,
           "commit_return_latency": {
-            "p50_ms": 2.504,
-            "p95_ms": 3.991,
-            "p99_ms": 6.63
+            "p50_ms": 1.912,
+            "p95_ms": 3.044,
+            "p99_ms": 3.723
           },
           "cycles": 30,
           "durable_commands": 240,
-          "elapsed_seconds": 0.639671,
+          "elapsed_seconds": 0.489814,
           "portfolio_linked": false,
           "recovery_diagnostics": {
             "cache_hit": true,
@@ -694,22 +694,22 @@
           },
           "scope": "GATEWAY_ONLY",
           "tier_checks_included": false,
-          "warm_recovery_ms": 2.928
+          "warm_recovery_ms": 3.227
         },
         {
           "accounting_consistent": true,
           "broker_orders": 0,
           "checkpoints_enabled": false,
-          "cold_recovery_ms": 8.648,
-          "commands_per_second": 190.259,
+          "cold_recovery_ms": 5.833,
+          "commands_per_second": 240.097,
           "commit_return_latency": {
-            "p50_ms": 5.114,
-            "p95_ms": 10.009,
-            "p99_ms": 11.303
+            "p50_ms": 3.809,
+            "p95_ms": 8.021,
+            "p99_ms": 13.63
           },
           "cycles": 30,
           "durable_commands": 240,
-          "elapsed_seconds": 1.26144,
+          "elapsed_seconds": 0.999598,
           "portfolio_linked": true,
           "recovery_diagnostics": {
             "cache_hit": false,
@@ -719,22 +719,22 @@
           },
           "scope": "LINKED_LEDGER_AND_TIER",
           "tier_checks_included": true,
-          "warm_recovery_ms": 8.726
+          "warm_recovery_ms": 7.781
         },
         {
           "accounting_consistent": true,
           "broker_orders": 0,
           "checkpoints_enabled": true,
-          "cold_recovery_ms": 9.942,
-          "commands_per_second": 258.186,
+          "cold_recovery_ms": 7.489,
+          "commands_per_second": 343.628,
           "commit_return_latency": {
-            "p50_ms": 3.46,
-            "p95_ms": 6.587,
-            "p99_ms": 8.425
+            "p50_ms": 2.613,
+            "p95_ms": 5.633,
+            "p99_ms": 8.859
           },
           "cycles": 30,
           "durable_commands": 240,
-          "elapsed_seconds": 0.929561,
+          "elapsed_seconds": 0.69843,
           "portfolio_linked": true,
           "recovery_diagnostics": {
             "cache_hit": true,
@@ -744,7 +744,7 @@
           },
           "scope": "LINKED_LEDGER_AND_TIER",
           "tier_checks_included": true,
-          "warm_recovery_ms": 4.917
+          "warm_recovery_ms": 3.786
         }
       ]
     },
@@ -826,9 +826,9 @@
       "application_accounts_changed": false,
       "broker_connected": false,
       "cycle_latency": {
-        "p50_ms": 4.706,
-        "p95_ms": 22.045,
-        "p99_ms": 28.43
+        "p50_ms": 3.333,
+        "p95_ms": 15.947,
+        "p99_ms": 21.875
       },
       "cycles": 280,
       "isolated_temporary_storage": true,
@@ -851,7 +851,7 @@
           "declared_public_observations": 0,
           "eligibility_count_scope": "RECORDED_FLAGS_ONLY_SEE_REVALIDATED_COUNTS",
           "eligible_observations_in_window": 220,
-          "evidence_snapshot_sha256": "ff132c5f166278b2561b720b7f4a490c75d64232516507349318a0b9bf4958ac",
+          "evidence_snapshot_sha256": "16682a91187bc01356586b969f8cb4669ef1ad3a2b9c72be2d7d21928f7682ac",
           "external_owner_checked": false,
           "incident_free_coverage_target_met": false,
           "injected_observations": 280,
@@ -913,164 +913,164 @@
         "portfolio_reconciled": true,
         "sessions": [
           {
-            "evidence_sha256": "f20279e70706a90ecfc18faf26904de0e9f0ce6299e8da47e81e91f35acb5e6b",
+            "evidence_sha256": "28084119175516380d12f95cbd4e8e4d573d2d833947f5671c01c98068947b12",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "0790daae11634ffaa260437851b9c5250c5c3964cf68ab0cefb74c62262b61af",
+            "orders_sha256": "d4057db8e84e8eeaef1d6b3f1c1a865d93995dae6cc2b4ec6c4a930b9c3af0f2",
             "quote_observations": 14,
-            "session": "f181167bdd2b47a4"
+            "session": "a487bce668d04fe7"
           },
           {
-            "evidence_sha256": "ab03b9e512379ee27aea215bc2d2544dea07aa6f02631788fb176ff37954167d",
+            "evidence_sha256": "f89cf5a39946393b4a27744296bddfe3266428c2d6f847693b412f50b503bb11",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "055d01547d57a54de418b33f4bcaa2b97caf88fd4d5c03eeee9c2659354abc59",
+            "orders_sha256": "ec31c95015479fabb06f4d33d974a2b11d1929328fb6fc0b8951b97cc34ed84c",
             "quote_observations": 14,
-            "session": "fe57f1b4a93b4faa"
+            "session": "883ac0389f0c43aa"
           },
           {
-            "evidence_sha256": "cd26241cef33a946e8d23ddbfe8b6ccac220c10f6e999241fa970b38855e086f",
+            "evidence_sha256": "4a072e750e00156026408ec81bd4756ec36ed24ec71b5f27bceffbc211166ad9",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "2a061927c166f9747fe52c775ffca36659232e12cd0a1fa721eb1df1395b83ef",
+            "orders_sha256": "616a09a8aa4f34b929b61f6e0a4f6f64bcaaa98825ea050ebe144441e1e265a0",
             "quote_observations": 14,
-            "session": "33b3677edae949a9"
+            "session": "0b90db48e3ec473f"
           },
           {
-            "evidence_sha256": "5311509b7febe057230b607a775f0993d17f84cabcf14c8e3de801ca3f706672",
+            "evidence_sha256": "2862a53fe132f2e81fa9d6c1a91b8a76d5c890dcac814c452ac9ef77b8aa43ad",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "163f72e3d590747f4f8bb034a4a5a9dadacd27e1d9b0a37a07e19d2b07d31c00",
+            "orders_sha256": "bbfde5e55846541cfacdaf37bef0a178e282d4f15c1df92ee0db017c76730789",
             "quote_observations": 14,
-            "session": "91e6d416a51549e2"
+            "session": "bdcdf1b9c5ad4877"
           },
           {
-            "evidence_sha256": "ab1c7df9b8ec9e9e416bcb0837870a2121176a30fac6b96fcd98028500fee275",
+            "evidence_sha256": "32df3c9e1850862e9092f5dc1e8dc011e13c959f9fe01723e47ddd98f5aa68a8",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "4d6b5a3f8b93196000c59871abda39a7db4f74a7a81ed122cadefddf676e9405",
+            "orders_sha256": "6dce17d1b57d870fb687188f3d42b27e2d045fba0933289d5e7fc16e51e7dc85",
             "quote_observations": 14,
-            "session": "922df60f38954307"
+            "session": "1a1a264333fa4eae"
           },
           {
-            "evidence_sha256": "3078adee11eab870748eaaffdd60b21666faa2fa194fd769684d79460404cd83",
+            "evidence_sha256": "6521c1576efc2c49eef9cc840a38a5b909225d90dbb18987f2fec480dc849c4f",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "7118cede8c943dfa04259c3ccf96d4a68dacc43bd9cbd68ffd112f9c4d74aa53",
+            "orders_sha256": "3f870e57b927cf3dc3c63ba682b3eb091aacdb9078ea9387763ec5c56a00b557",
             "quote_observations": 14,
-            "session": "1db6ac5bee6746d8"
+            "session": "24391057923e46d3"
           },
           {
-            "evidence_sha256": "38c05544e65a17ac91b327b8dbd722138b76038a559d1093ae3fc9fa4b9e08b9",
+            "evidence_sha256": "19f1a605dbf330845cdf99bcebeb72d6aa6202538fbe1bb03b20b592a24344a9",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "d734b24057ae53c7ab98d24dc87f4a711ac28181becdb7b45d053ad072dbdb1c",
+            "orders_sha256": "06d37a0bbd0b08d24ac23d40975509074022f65303fbef9894ee2b77bb3c653b",
             "quote_observations": 14,
-            "session": "1c4b3859d09241ee"
+            "session": "50f677c2fc44418b"
           },
           {
-            "evidence_sha256": "e400d91dea580508414278e096e13a478502493eb6cace6b07cb27d4262e9069",
+            "evidence_sha256": "add05d2335dfe9be97590d695b3e1b4546063e3206228396d53e27fca057716f",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "eebbecce96d458e7cfc330732cd33b0c0eb91b72939d3c0a0d15a1a5e311cf15",
+            "orders_sha256": "f3cdf5dbd2e5e42966f0b05da4a70a766a1b099c514c0f79f84633fee5b10d71",
             "quote_observations": 14,
-            "session": "20b04f8b2fb44f34"
+            "session": "2e8318ac19f740dd"
           },
           {
-            "evidence_sha256": "e8ea791534de80aedbc241082be995c7b207729b547c5bedab9b21d389c0dc45",
+            "evidence_sha256": "322c1fa6b074afa9702b33c6660fbb2e8bfc2eea87e5234f2f07b49ef6491887",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "31ff14051e505ba3b9e08e30ba4d48b6efe19b77fa34637fd2e0e42aeaeb83d6",
+            "orders_sha256": "a7ada5e071961b01fb3ebf4fc8014e45c6a6f809cab15f3e855cc26253d59503",
             "quote_observations": 14,
-            "session": "812bff800e124626"
+            "session": "a023275f430949c9"
           },
           {
-            "evidence_sha256": "6d74cc1c2f7ba1b7956b70b8bffb6501868f56f502a98df96458c051edea4e82",
+            "evidence_sha256": "e6302a8f8410ea8391574408d01ca23929ed7c5d5ea93d4bef6c165f14cc7e4b",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "a6df77f950270c6dcbcfddd4a13e519c13f8231ded23317b8a6f90226c953901",
+            "orders_sha256": "9d5e87763dbe9bf1078c324841379eea227ec0743ab2e20fc99b420adc932091",
             "quote_observations": 14,
-            "session": "5ab7cde725a14d99"
+            "session": "b34fe9e89f0746fd"
           },
           {
-            "evidence_sha256": "0276b3d8af9cb0babc0bcb9e18fbd8dcffb88bcec16f62232f9235c89ad2d179",
+            "evidence_sha256": "717cc49f5b8e89b3de81e02c9d01bee0f49f8472dc438ad3fb50e50ae0b47951",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "9448c93390c279645596d7d301ef1618ebec410cafc24decfc12cd12ff5489db",
+            "orders_sha256": "81089640693dc8ae56ec91006ba26c24850110aed6c88254d2792740d66a7f45",
             "quote_observations": 14,
-            "session": "2e90f3fbeb534048"
+            "session": "1811483b8e5a4c36"
           },
           {
-            "evidence_sha256": "9fd9f731fac8d18c2f032ffe3d85022c3b15ece726270bd2442288f193ce9362",
+            "evidence_sha256": "09e052ddfd25f19ac452870ffe2d4662f0c3d081e4270cde47c5ff97b86f0028",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "ca1fad9c0195811fe63c50eb4c47c934a1e98bd2db93bd50a1643f01451183a3",
+            "orders_sha256": "c914600b75c4f0b4dc3307cb2fcd532207d159b27ce6c335053131c4f6c789d0",
             "quote_observations": 14,
-            "session": "4b0f462dc05f44bc"
+            "session": "b8b5abe4d87a4e91"
           },
           {
-            "evidence_sha256": "cf019a0e540ac788537caf610bf235222f72bc8471d432c602467dadf0cbc634",
+            "evidence_sha256": "820ab13d9dce008c87647e81de7f84d676042cc049c011ba0f2c5cd9a2b5b930",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "c86285cd000b3e4b3b3869c8a853c233dc0f25c2226ef763774508fdf6d6c069",
+            "orders_sha256": "fff0732336e015e457f3f8d267a71147a6989ce3414aedaf3e220ff1ccea4276",
             "quote_observations": 14,
-            "session": "fadc5e3ec7694363"
+            "session": "710c7fb7c3bf407b"
           },
           {
-            "evidence_sha256": "7c15fc41c16102e4136a4309f78f462921d3a0a4a9eb61423d7c995783a49acb",
+            "evidence_sha256": "0ae262ebc1bdf5982dbc8669762268de939f8f8d34d7e37e8dcf9e8c2c09871e",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "353cff17ff820d628de8c785a72d9ea9a8e6b84c9c166f3a823f1e491668599d",
+            "orders_sha256": "fd51df1d83a4d7df7cb7d24916e985bf1c1d01ff5cd994f9ee19af4f6829b4ee",
             "quote_observations": 14,
-            "session": "07ae47af4026438c"
+            "session": "7f297a679b694c40"
           },
           {
-            "evidence_sha256": "a16fbf7f12eaff03bfcd2eb6f48a421af7ffb72a8c081ec8dfb0ed360c829443",
+            "evidence_sha256": "49d2e32420501782fbcaf14ecd4c50529c7a248cee6a7f1423df55a5d3d2eeee",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "434557ae077dad7ba4ed004d66c8f84e5f052365cc19e62828abea7df7da7a69",
+            "orders_sha256": "a7fd8c07493ec12ad5c109a97eb56125b8f6664b8b74cf5e9087040886284d45",
             "quote_observations": 14,
-            "session": "9d7df612e51b4f60"
+            "session": "239c52bb073e4db0"
           },
           {
-            "evidence_sha256": "b1237e9d438f94e8c3e10d55072527a35065b178129d61512529a0be7eefdb02",
+            "evidence_sha256": "f457f68023d40943ec2b56900e4b220a874bfd98e9458b5ff762428e54d17a12",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "b29e88cfaff2eb02078af47637aa37478cacb368e653e1de5842cff8eeb27b5f",
+            "orders_sha256": "02b74b6387a7b3c2e190f6412eb2523a013a3234ea8f5f0944d4c10024d31fd0",
             "quote_observations": 14,
-            "session": "452cdc3204854bc5"
+            "session": "880d3befd6b54cf5"
           },
           {
-            "evidence_sha256": "b3b6f83db647a71090f3a34ebee89ff9cdf112b151b755fd4559a1334df4340e",
+            "evidence_sha256": "de6f2841b767cc5eebb5167dfd7d427a75fa42c28c29a68ae1bd47a1de69e473",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "f4cdeb04f3bf6b5e250e4f86a32134b77611582ec9320a8fc27fcf70ea3939fe",
+            "orders_sha256": "3cbca50843f2c5ceb2e3fce4ea7cf92facef9e0221cde77108697b1b82d67b99",
             "quote_observations": 14,
-            "session": "14d7ffdfe1574222"
+            "session": "728c0320ff1b4e84"
           },
           {
-            "evidence_sha256": "17adf015061300d49a758233cb038088a1ae29947e1a28a90e97fcd71ff8cf51",
+            "evidence_sha256": "1db91ad7d9f440b96cfb44084a37742db3eefb427b0c1453599d0d1a3ec88212",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "545b23f7a7c09974d91f8a62402ccf1f37e47ebd179704aea88f1488ea553dfd",
+            "orders_sha256": "0f13fa01fb476367d1312b75d1c27ebeec09b8f11d66644bb9d768faad5c8d04",
             "quote_observations": 14,
-            "session": "e463b890edd040bc"
+            "session": "6c971b8b5e084249"
           },
           {
-            "evidence_sha256": "59c71bf0a3dce025b82569e4a05f401d20d2e1f69a882d13af747ed333df9f51",
+            "evidence_sha256": "e1bd9f5bc61a8bb05580468ca5d02a4399a1f932a05c45b4d9fcc116212b0a76",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "c6d395a904266df86c9b954940874a8a4795d5721cf9f91b5921d8ce96963c86",
+            "orders_sha256": "894020a1960579eef807b32b41e435396fbe26ad13207c3e9b12478a512c15a4",
             "quote_observations": 14,
-            "session": "316dd7310216482e"
+            "session": "c8a9278150ce4777"
           },
           {
-            "evidence_sha256": "ad1374aa0df662e4199a0f874b7e77ca79c8e2c22a1890d4bc1c36dbea8cfeff",
+            "evidence_sha256": "52a4789055605c99b2c1bc83d7723fa1caae6cf25adad5c58b3f3e82164a1a2d",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
-            "orders_sha256": "e40caafbd3e79602311b1078ab68e88bdaa6ccf2d4e3dbc91758244ae0bad932",
+            "orders_sha256": "a959f34dc529701b9b4102a06715946a5ad2faaf590a7072028d3d3431ab09fc",
             "quote_observations": 14,
-            "session": "7b699d9d990b421c"
+            "session": "c2cd977cac914672"
           }
         ]
       },
@@ -3772,15 +3772,15 @@
         "halted": true,
         "modeled_buy_orders": 1,
         "modeled_sell_orders": 1,
-        "order_sha256": "fd9d23b0dfc394fad3d98e7bb96d3c4419f5fc88728e25afe7d18d8399aa9941",
+        "order_sha256": "e74b18af202f5de7f6b16c5609e84f8eec3e2410964e4be55c64013841426108",
         "policy_sha256": "8f2b54cbc7e8a029d02e7216480274c2d3de2f4f6ac4b23759b980785881e600",
         "portfolio_reconciled": true,
-        "quote_head_sha256": "d18474784f31532de7b4dbfa2a538e0cac25e3c4b00facfd4cabfb69adf3ea20",
+        "quote_head_sha256": "e2031900ff7e0a988c5dbd00f8fbefc97041655f3c62aee6c3eac173b0057a22",
         "quote_observations": 8,
-        "session": "dfbc7526e8e444c6",
+        "session": "b2dc66ed78884cd7",
         "session_order_ids": [
-          "pf_dfbc7526e8e444c6_7_BUY",
-          "pf_dfbc7526e8e444c6_8_SELL"
+          "pf_b2dc66ed78884cd7_7_BUY",
+          "pf_b2dc66ed78884cd7_8_SELL"
         ],
         "source_modes": [
           "INJECTED_TRANSPORT_UNATTESTED"
@@ -4080,7 +4080,7 @@
   "release_approved": false,
   "source_fingerprint": {
     "files": 403,
-    "sha256": "3d4ae466389ff78a73ef5b36fc87851a6f46b7aa90c48822a200435ed6076015"
+    "sha256": "d45401ebce58af8ef7f6cc33cd8a0d192478b0406388a15cb81fc738e2456380"
   },
   "sustained_forward_acceptance": false,
   "version": "0.340.307"

@@ -32,5 +32,11 @@ const cases=[
  ['missing regression source binding',b=>b.runs[1].jobs[0].steps.splice(1,1)],
  ['skipped evidence source binding',b=>b.runs[1].jobs[2].steps[1].conclusion='skipped'],
  ['missing browser source binding',b=>b.runs[1].jobs[3].steps.splice(1,1)],
+ ['inherited bundle prototype',b=>Object.setPrototypeOf(b,{untrusted:true})],
+ ['accessor bundle commit',b=>Object.defineProperty(b,'expected_commit',{enumerable:true,get(){throw Error('accessor executed')}})],
+ ['nonstandard job-array prototype',b=>Object.setPrototypeOf(b.runs[1].jobs,Object.create(Array.prototype))],
+ ['accessor step status',b=>Object.defineProperty(b.runs[1].jobs[0].steps[0],'status',{enumerable:true,get(){throw Error('accessor executed')}})],
+ ['sparse steps despite sufficient length',b=>{b.runs[1].jobs[0].steps.length++;}],
+ ['array subclass',b=>Object.setPrototypeOf(b.runs,Object.create(Array.prototype))],
 ];
 for(const [name,mutate] of cases)test('rejects '+name,()=>{let b=fixture();mutate(b);assert.throws(()=>review(b),/CI_STEP_/)});

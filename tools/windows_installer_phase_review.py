@@ -32,6 +32,7 @@ EXPECTED_PHASES = (
 )
 RECORD_KEYS = {
     "mode", "label", "status", "timeout_seconds", "timestamp_utc",
+    "output_drain_timeout_seconds",
     "session_id", "source_commit", "version", "installer_sha256",
 }
 SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
@@ -121,6 +122,8 @@ def verify(raw, *, expected_version, expected_source_commit, expected_installer_
                 or record["status"] != status
                 or type(record["timeout_seconds"]) is not int
                 or record["timeout_seconds"] != timeout_seconds
+                or type(record["output_drain_timeout_seconds"]) is not int
+                or record["output_drain_timeout_seconds"] != 10
                 or record["version"] != expected_version
                 or record["source_commit"] != expected_source_commit
                 or record["installer_sha256"] != expected_installer_sha256
@@ -156,7 +159,8 @@ def verify(raw, *, expected_version, expected_source_commit, expected_installer_
         "single_session_bound": True,
         "sequence_complete": True,
         "timeouts_respected": True,
-        "maximum_timeout_seconds": max(timeout for _, timeout in EXPECTED_PHASES),
+        "maximum_root_process_timeout_seconds": max(timeout for _, timeout in EXPECTED_PHASES),
+        "output_drain_timeout_seconds": 10,
         "maximum_observed_duration_seconds": round(maximum_duration, 3),
         "native_windows_acceptance": False,
         "actual_broker_acceptance": False,

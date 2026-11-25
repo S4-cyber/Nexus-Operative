@@ -17,7 +17,8 @@ def fixture():
     result = {
         "mode": "INSTALLER_SMOKE_RESULT", "version": VERSION, "source_commit": SOURCE,
         "installer_sha256": DIGEST, "session_id": SESSION,
-        "maximum_phase_timeout_seconds": 300, "limitations": review.RESULT_LIMITATIONS,
+        "maximum_root_process_timeout_seconds": 300, "output_drain_timeout_seconds": 10,
+        "limitations": review.RESULT_LIMITATIONS,
         **{key: True for key in review.SEMANTIC_TRUE},
         **{key: False for key in review.SEMANTIC_FALSE},
     }
@@ -27,7 +28,8 @@ def fixture():
         "source_commit": SOURCE, "installer_sha256": DIGEST, "session_id": SESSION,
         "exact_source_bound": True, "installer_digest_bound": True,
         "single_session_bound": True, "sequence_complete": True, "timeouts_respected": True,
-        "maximum_timeout_seconds": 300, "maximum_observed_duration_seconds": 1.25,
+        "maximum_root_process_timeout_seconds": 300, "output_drain_timeout_seconds": 10,
+        "maximum_observed_duration_seconds": 1.25,
         "native_windows_acceptance": False, "actual_broker_acceptance": False,
         "live_orders_enabled": False, "money_movement_enabled": False,
         "release_approved": False, "limitations": "fixture",
@@ -43,6 +45,10 @@ def verify(result, phase):
 
 
 def test_exact_semantic_result_is_bound_to_phase_without_authority():
+    assert "external_process_output_drains_bounded" in review.SEMANTIC_TRUE
+    assert "process_tree_containment_verified" in review.SEMANTIC_FALSE
+    assert "all_external_processes_bounded" not in review.RAW_KEYS
+    assert "descendant containment" in review.RESULT_LIMITATIONS
     result = verify(*fixture())
     assert result["passed"] and result["phase_evidence_bound"]
     assert result["exact_source_bound"] and result["installer_digest_bound"]
@@ -70,14 +76,16 @@ def test_every_required_false_semantic_is_enforced(key):
 @pytest.mark.parametrize(("target", "key", "value"), (
     ("result", "version", "0.340.1"), ("result", "source_commit", "c" * 40),
     ("result", "installer_sha256", "c" * 64), ("result", "session_id", "not-a-session"),
-    ("result", "maximum_phase_timeout_seconds", True), ("result", "limitations", "promoted"),
+    ("result", "maximum_root_process_timeout_seconds", True),
+    ("result", "output_drain_timeout_seconds", True), ("result", "limitations", "promoted"),
     ("phase", "version", "0.340.1"), ("phase", "source_commit", "c" * 40),
     ("phase", "installer_sha256", "c" * 64),
     ("phase", "session_id", "87654321-4321-4321-8321-cba987654321"),
     ("phase", "sequence_complete", False), ("phase", "release_approved", True),
     ("phase", "phases_verified", 10.0),
     ("phase", "records_verified", 20.0),
-    ("phase", "maximum_timeout_seconds", 300.0),
+    ("phase", "maximum_root_process_timeout_seconds", 300.0),
+    ("phase", "output_drain_timeout_seconds", 10.0),
     ("phase", "maximum_observed_duration_seconds", True),
     ("phase", "maximum_observed_duration_seconds", float("nan")),
     ("phase", "limitations", ""),

@@ -35,7 +35,8 @@ def fixture(tmp_path):
         "mode": "VERIFIED_INSTALLER_RESULT_EVIDENCE", "version": VERSION,
         "source_commit": SOURCE, "installer_sha256": installer_info[1],
         "session_id": SESSION, "raw_result_bytes": 123,
-        "raw_result_sha256": "c" * 64, "maximum_phase_timeout_seconds": 300,
+        "raw_result_sha256": "c" * 64, "maximum_root_process_timeout_seconds": 300,
+        "output_drain_timeout_seconds": 10,
         "limitations": review.INSTALLER_RESULT_LIMITATIONS,
         **{key: True for key in review.INSTALLER_RESULT_TRUE},
         **{key: False for key in review.INSTALLER_RESULT_FALSE},
@@ -100,6 +101,10 @@ def verify(parts):
 
 
 def test_exact_owner_profile_probe_is_bound_without_promoting_authority(tmp_path):
+    assert "external_process_output_drains_bounded" in review.INSTALLER_RESULT_TRUE
+    assert "process_tree_containment_verified" in review.INSTALLER_RESULT_FALSE
+    assert "all_external_processes_bounded" not in review.INSTALLER_RESULT_KEYS
+    assert "descendant containment" in review.INSTALLER_RESULT_LIMITATIONS
     result = verify(fixture(tmp_path))
     assert result["passed"] and result["ordinary_user_profile_checked"]
     assert result["effective_acl_operations_checked"] and result["exact_distribution_bound"]

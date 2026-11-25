@@ -1,20 +1,38 @@
+import json
+import os
 from pathlib import Path
 import re
+import subprocess
+import sys
+import time
+
+import pytest
 
 
 ROOT=Path(__file__).resolve().parents[1]
 PRIOR_RECOVERY_FIXTURE_COMMIT='5660ec19d66af6401d3bd4e6c271b6e8dc2bf461'
 
 
-def test_installer_smoke_bounds_every_external_process_and_records_phases():
+def test_installer_smoke_bounds_root_wait_and_output_drains_and_records_phases():
     script=(ROOT/'tools/windows_installer_smoke.ps1').read_text(encoding='utf-8')
-    assert 'function Invoke-BoundedProcess' in script
+    process_script=(ROOT/'tools/windows_bounded_process.ps1').read_text(encoding='utf-8')
+    assert 'function Invoke-BoundedProcess' in process_script
     assert 'installer-phases.jsonl' in script
-    assert "if ($TimeoutSeconds -lt 1 -or $TimeoutSeconds -gt 300)" in script
-    assert '$Process.Kill($true)' in script
-    assert "if (!$terminalRecorded) { Write-Phase $Label 'failed' $TimeoutSeconds }" in script
-    assert script.index("Write-Phase $Label 'timed_out'") < script.index('Stop-BoundedProcess $process')
-    assert 'Start-Process' not in script and ' -Wait' not in script
+    assert "if ($TimeoutSeconds -lt 1 -or $TimeoutSeconds -gt 300)" in process_script
+    assert '$Process.Kill($true)' in process_script
+    assert '. "$PSScriptRoot/windows_bounded_process.ps1"' in script
+    assert '$ProcessOutputDrainTimeoutMilliseconds = 10000' in process_script
+    assert '[System.Threading.Tasks.Task]::WhenAll' in process_script
+    assert '.Wait($ProcessOutputDrainTimeoutMilliseconds)' in process_script
+    assert '$process.WaitForExit()' not in process_script
+    assert '.GetAwaiter().GetResult()' not in process_script
+    assert "Installer smoke phase output streams did not close within the fixed bound" in process_script
+    cleanup = process_script.index('finally {', process_script.index('function Invoke-BoundedProcess'))
+    assert process_script.index('try { Stop-BoundedProcess $process }', cleanup) < process_script.index('finally {', cleanup + 1)
+    assert process_script.index('$process.StandardOutput.Close()', cleanup) < process_script.index('$process.Dispose()', cleanup)
+    assert "if (!$terminalRecorded) { Write-Phase $Label 'failed' $TimeoutSeconds }" in process_script
+    assert process_script.index("Write-Phase $Label 'timed_out'") < process_script.index('Stop-BoundedProcess $process')
+    assert 'Start-Process' not in process_script and ' -Wait' not in process_script
     assert not re.search(r'(?m)^python tools/',script)
     labels=re.findall(r"Invoke-BoundedProcess .*? '([^']+)' (\d+)$",script,re.MULTILINE)
     assert labels==[
@@ -23,9 +41,14 @@ def test_installer_smoke_bounds_every_external_process_and_records_phases():
         ('prior-version-recovery','150'),('default-data-first-start','120'),
         ('default-data-restart','120'),('uninstall','180')]
     assert "Invoke-BoundedProcess $Installer" in script
-    assert "all_external_processes_bounded = $true" in script
+    assert "external_process_output_drains_bounded = $true" in script
+    assert "process_tree_containment_verified = $false" in script
+    assert "all_external_processes_bounded" not in script
     assert "phase_evidence_recorded = $true" in script
-    assert "maximum_phase_timeout_seconds = 300" in script
+    assert "maximum_root_process_timeout_seconds = 300" in script
+    assert "output_drain_timeout_seconds = 10" in script
+    assert "output_drain_timeout_seconds = 10" in script[script.index("function Write-Phase"):script.index('. "$PSScriptRoot/windows_bounded_process.ps1"')]
+    assert "maximum_phase_timeout_seconds" not in script
     assert "if (Test-Path $phaseEvidence) { throw 'Installer phase evidence already exists' }" in script
     assert "if (Test-Path $resultEvidence) { throw 'Installer result evidence already exists' }" in script
     assert "[Guid]::NewGuid().ToString('D')" in script
@@ -41,6 +64,101 @@ def test_installer_smoke_bounds_every_external_process_and_records_phases():
     assert 'release_approved = $false' in script
     assert '[IO.File]::Move($temporaryResult, $resultEvidence)' in script
     assert 'Set-Content "$EvidenceDirectory/installer-result.json"' not in script
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='PowerShell process-handle behavior requires Windows')
+@pytest.mark.parametrize(('mode','expected_status','expected_exit','result_exists'), (
+    ('normal','completed',0,True),
+    ('inherited-handle','failed',7,False),
+))
+def test_bounded_process_executes_normal_and_inherited_handle_cases(
+        tmp_path, mode, expected_status, expected_exit, result_exists):
+    harness=tmp_path/'bounded-process-harness.ps1'
+    evidence=tmp_path/f'{mode}.jsonl'
+    result=tmp_path/f'{mode}.result'
+    error_result=tmp_path/f'{mode}.error'
+    child_pid=tmp_path/f'{mode}.pid'
+    child_release=tmp_path/f'{mode}.release'
+    child_exited=tmp_path/f'{mode}.exited'
+    parent_script=tmp_path/'spawn_inherited_child.py'
+    child_script=tmp_path/'hold_inherited_handles.py'
+    parent_script.write_text(
+        "import subprocess,sys\nsubprocess.Popen([sys.executable,*sys.argv[1:]],"
+        "stdout=sys.stdout,stderr=sys.stderr)\n",encoding='utf-8')
+    child_script.write_text(
+        "import os,sys,time\n"
+        "open(sys.argv[1],'w',encoding='utf-8').write(str(os.getpid()))\n"
+        "deadline=time.monotonic()+20\n"
+        "while not os.path.exists(sys.argv[2]) and time.monotonic() < deadline:\n"
+        "    time.sleep(0.05)\n"
+        "if os.path.exists(sys.argv[2]):\n"
+        "    temporary=sys.argv[3]+'.tmp'\n"
+        "    with open(temporary,'w',encoding='utf-8') as marker:\n"
+        "        marker.write('released')\n"
+        "    os.replace(temporary,sys.argv[3])\n",encoding='utf-8')
+    harness.write_text(r'''param(
+    [Parameter(Mandatory=$true)][string]$Module,
+    [Parameter(Mandatory=$true)][string]$Python,
+    [Parameter(Mandatory=$true)][string]$Evidence,
+    [Parameter(Mandatory=$true)][string]$Result,
+    [Parameter(Mandatory=$true)][string]$ErrorResult,
+    [Parameter(Mandatory=$true)][string]$ChildPid,
+    [Parameter(Mandatory=$true)][string]$ChildRelease,
+    [Parameter(Mandatory=$true)][string]$ChildExited,
+    [Parameter(Mandatory=$true)][string]$ParentScript,
+    [Parameter(Mandatory=$true)][string]$ChildScript,
+    [Parameter(Mandatory=$true)][string]$Mode
+)
+$ErrorActionPreference = 'Stop'
+$phaseEvidence = $Evidence
+$phaseSessionId = [Guid]::NewGuid().ToString('D')
+$SourceCommit = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+$Version = '0.340.404'
+$installerSha256 = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+function Write-Phase([string]$Label, [string]$Status, [int]$TimeoutSeconds) {
+    $record = [ordered]@{ label=$Label; status=$Status; timeout_seconds=$TimeoutSeconds }
+    Add-Content -LiteralPath $phaseEvidence -Value ($record | ConvertTo-Json -Compress) -Encoding UTF8
+}
+. $Module
+try {
+    if ($Mode -eq 'inherited-handle') {
+        Invoke-BoundedProcess $Python @($ParentScript,$ChildScript,$ChildPid,$ChildRelease,$ChildExited) 'fixture' 2
+    } else {
+        Invoke-BoundedProcess $Python @('-c',"print('ok')") 'fixture' 2
+    }
+    [IO.File]::WriteAllText($Result, 'completed')
+    exit 0
+} catch {
+    [IO.File]::WriteAllText($ErrorResult, $_.Exception.Message)
+    exit 7
+}
+''',encoding='utf-8')
+    completed=subprocess.run([
+        'pwsh','-NoProfile','-File',os.fspath(harness),
+        '-Module',os.fspath(ROOT/'tools/windows_bounded_process.ps1'),
+        '-Python',sys.executable,'-Evidence',os.fspath(evidence),
+        '-Result',os.fspath(result),'-ErrorResult',os.fspath(error_result),
+        '-ChildPid',os.fspath(child_pid),'-ChildRelease',os.fspath(child_release),
+        '-ChildExited',os.fspath(child_exited),
+        '-ParentScript',os.fspath(parent_script),'-ChildScript',os.fspath(child_script),
+        '-Mode',mode,
+    ],timeout=18,check=False,capture_output=True,text=True)
+    assert completed.returncode == expected_exit, (completed.stdout,completed.stderr)
+    records=[json.loads(line) for line in evidence.read_text(encoding='utf-8-sig').splitlines()]
+    assert [record['status'] for record in records] == ['started',expected_status]
+    assert result.exists() is result_exists
+    if mode == 'inherited-handle':
+        assert error_result.read_text(encoding='utf-8') == (
+            'Installer smoke phase output streams did not close within the fixed bound: fixture')
+        assert int(child_pid.read_text(encoding='utf-8')) > 0
+        assert not child_exited.exists()
+        child_release.write_text('release',encoding='utf-8')
+        deadline=time.monotonic()+5
+        while time.monotonic() < deadline and not child_exited.exists():
+            time.sleep(0.05)
+        assert child_exited.read_text(encoding='utf-8') == 'released'
+    else:
+        assert not error_result.exists()
 
 
 def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagnostics():
@@ -147,3 +265,5 @@ def test_owner_instructions_require_the_manifest_bound_installer_result_review()
     assert '--expected-source-commit $expectedSourceCommit' in windows
     assert '--expected-version 0.340.364' not in windows
     assert 'independently compare `$expectedSourceCommit`' in windows
+    assert 'terminates the entire onefile process tree' not in windows
+    assert 'attempts descendant cleanup' in windows

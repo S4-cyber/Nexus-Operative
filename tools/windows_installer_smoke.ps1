@@ -26,6 +26,7 @@ function Write-Phase([string]$Label, [string]$Status, [int]$TimeoutSeconds) {
         label = $Label
         status = $Status
         timeout_seconds = $TimeoutSeconds
+        output_drain_timeout_seconds = 10
         timestamp_utc = [DateTime]::UtcNow.ToString('o')
         session_id = $phaseSessionId
         source_commit = $SourceCommit
@@ -36,66 +37,7 @@ function Write-Phase([string]$Label, [string]$Status, [int]$TimeoutSeconds) {
     Write-Host "Nexus installer smoke phase $Status`: $Label"
 }
 
-function Stop-BoundedProcess([System.Diagnostics.Process]$Process) {
-    if ($null -eq $Process) { return }
-    try { if ($Process.HasExited) { return } }
-    catch { return }
-    try { $Process.Kill($true) }
-    catch { try { $Process.Kill() } catch {} }
-    if (!$Process.WaitForExit(10000)) {
-        throw 'Installer smoke child tree did not stop'
-    }
-}
-
-function Invoke-BoundedProcess(
-    [string]$FilePath,
-    [string[]]$Arguments,
-    [string]$Label,
-    [int]$TimeoutSeconds
-) {
-    if ($TimeoutSeconds -lt 1 -or $TimeoutSeconds -gt 300) {
-        throw 'Installer smoke phase timeout is outside the fixed bound'
-    }
-    Write-Phase $Label 'started' $TimeoutSeconds
-    $start = [System.Diagnostics.ProcessStartInfo]::new()
-    $start.FileName = $FilePath
-    $start.UseShellExecute = $false
-    $start.RedirectStandardOutput = $true
-    $start.RedirectStandardError = $true
-    foreach ($argument in $Arguments) { [void]$start.ArgumentList.Add($argument) }
-    $process = [System.Diagnostics.Process]::new()
-    $process.StartInfo = $start
-    $terminalRecorded = $false
-    try {
-        if (!$process.Start()) { throw "Installer smoke phase failed to start: $Label" }
-        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-        $stderrTask = $process.StandardError.ReadToEndAsync()
-        if (!$process.WaitForExit($TimeoutSeconds * 1000)) {
-            Write-Phase $Label 'timed_out' $TimeoutSeconds
-            $terminalRecorded = $true
-            Stop-BoundedProcess $process
-            throw "Installer smoke phase timed out: $Label"
-        }
-        $process.WaitForExit()
-        $stdout = $stdoutTask.GetAwaiter().GetResult()
-        $stderr = $stderrTask.GetAwaiter().GetResult()
-        if ($stdout.Length -gt 0) { Write-Host $stdout.TrimEnd() }
-        if ($stderr.Length -gt 0) { Write-Error $stderr.TrimEnd() -ErrorAction Continue }
-        if ($process.ExitCode -ne 0) {
-            Write-Phase $Label 'failed' $TimeoutSeconds
-            $terminalRecorded = $true
-            throw "Installer smoke phase failed ($($process.ExitCode)): $Label"
-        }
-        Write-Phase $Label 'completed' $TimeoutSeconds
-        $terminalRecorded = $true
-    } catch {
-        if (!$terminalRecorded) { Write-Phase $Label 'failed' $TimeoutSeconds }
-        throw
-    } finally {
-        Stop-BoundedProcess $process
-        $process.Dispose()
-    }
-}
+. "$PSScriptRoot/windows_bounded_process.ps1"
 
 $sentinel = Join-Path $dataDir 'preserve-data.txt'
 Set-Content -Path $sentinel -Value 'Nexus installer must preserve user data' -Encoding UTF8
@@ -154,17 +96,19 @@ $result = [ordered]@{
     same_version_reinstall = $true
     halt_recovered = $true
     uninstall_preserved_data = $true
-    all_external_processes_bounded = $true
+    external_process_output_drains_bounded = $true
     phase_evidence_recorded = $true
-    maximum_phase_timeout_seconds = 300
+    maximum_root_process_timeout_seconds = 300
+    output_drain_timeout_seconds = 10
     cross_version_upgrade_verified = $false
+    process_tree_containment_verified = $false
     native_window_verified = $false
     native_windows_acceptance = $false
     actual_broker_acceptance = $false
     live_orders_enabled = $false
     money_movement_enabled = $false
     release_approved = $false
-    limitations = 'Successful CI installer semantic checks only; not clean-machine, native-window, ordinary-user, power-loss, broker, market, funds or release acceptance.'
+    limitations = 'Successful CI installer semantic checks with bounded redirected-output drainage only; descendant containment is not verified; not clean-machine, native-window, ordinary-user, power-loss, broker, market, funds or release acceptance.'
 }
 $temporaryResult = Join-Path $EvidenceDirectory ('.installer-result-' + [Guid]::NewGuid().ToString('N') + '.tmp')
 try {

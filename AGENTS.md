@@ -1,4 +1,34 @@
 # Nexus Operative continuity instructions
+## v0.340.404 bounded Windows process evidence
+
+The Windows installer smoke no longer performs an unbounded wait for redirected
+stdout/stderr after the root process exits. Both drain tasks share one fixed
+10-second grace; failure records a failed phase, closes owned readers and
+prevents installer-result evidence from being written. Evidence reports the
+maximum 300-second root-process wait and 10-second output-drain budgets as
+separate fields rather than presenting either as a whole-phase wall clock.
+
+The evidence schema now states only that redirected-output drainage is bounded
+and explicitly records process-tree containment as unverified. Atomic
+launch-into-job containment, descendant cleanup and native Windows acceptance
+remain open; an immediate post-start assignment race is not presented as
+containment.
+
+This is bounded Windows harness and evidence-integrity hardening, not broker/
+account/funds acceptance, genuine-feed or sustained-market-trial acceptance,
+native Windows/installer acceptance, performance, profitability, hosted CI
+success or release approval. Every broker, funding, live, cloud, spend and
+release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
 ## v0.340.403 release report parent binding
 
 Saved release-trial reports now reject parent-directory aliases, capture the

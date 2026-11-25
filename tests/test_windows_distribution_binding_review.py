@@ -23,7 +23,8 @@ def fixture(tmp_path):
         "source_commit": SOURCE, "installer_sha256": digest,
         "session_id": "12345678-1234-4234-8234-123456789abc",
         "exact_source_bound": True, "installer_digest_bound": True, "single_session_bound": True,
-        "sequence_complete": True, "timeouts_respected": True, "maximum_timeout_seconds": 300,
+        "sequence_complete": True, "timeouts_respected": True,
+        "maximum_root_process_timeout_seconds": 300, "output_drain_timeout_seconds": 10,
         "maximum_observed_duration_seconds": 1, "native_windows_acceptance": False,
         "actual_broker_acceptance": False, "live_orders_enabled": False,
         "money_movement_enabled": False, "release_approved": False, "limitations": "fixture",
@@ -32,7 +33,8 @@ def fixture(tmp_path):
         "mode": "VERIFIED_INSTALLER_RESULT_EVIDENCE", "version": VERSION,
         "source_commit": SOURCE, "installer_sha256": digest,
         "session_id": phase["session_id"], "raw_result_bytes": 123,
-        "raw_result_sha256": "c" * 64, "maximum_phase_timeout_seconds": 300,
+        "raw_result_sha256": "c" * 64, "maximum_root_process_timeout_seconds": 300,
+        "output_drain_timeout_seconds": 10,
         "limitations": review.RESULT_LIMITATIONS,
         **{key: True for key in review.RESULT_TRUE},
         **{key: False for key in review.RESULT_FALSE},
@@ -53,6 +55,10 @@ def verify(installer, size, digest, phase, result_review, result_raw, artifact):
 
 
 def test_exact_phase_installer_and_manifest_binding_passes(tmp_path):
+    assert "external_process_output_drains_bounded" in review.RESULT_TRUE
+    assert "process_tree_containment_verified" in review.RESULT_FALSE
+    assert "all_external_processes_bounded" not in review.RESULT_KEYS
+    assert "descendant containment" in review.RESULT_LIMITATIONS
     parts = fixture(tmp_path)
     result = verify(*parts)
     assert result["passed"] and result["phase_evidence_bound"] and result["artifact_manifest_bound"]
@@ -72,7 +78,8 @@ def test_exact_phase_installer_and_manifest_binding_passes(tmp_path):
     lambda phase, result, artifact: phase.update(passed=False),
     lambda phase, result, artifact: phase.update(phases_verified=10.0),
     lambda phase, result, artifact: phase.update(records_verified=20.0),
-    lambda phase, result, artifact: phase.update(maximum_timeout_seconds=300.0),
+    lambda phase, result, artifact: phase.update(maximum_root_process_timeout_seconds=300.0),
+    lambda phase, result, artifact: phase.update(output_drain_timeout_seconds=10.0),
     lambda phase, result, artifact: phase.update(release_approved=True),
     lambda phase, result, artifact: result.update(version="0.340.46"),
     lambda phase, result, artifact: result.update(source_commit="b" * 40),

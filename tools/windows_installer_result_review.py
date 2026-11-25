@@ -18,8 +18,9 @@ SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
 VERSION = re.compile(r"0\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 RESULT_LIMITATIONS = (
-    "Successful CI installer semantic checks only; not clean-machine, native-window, ordinary-user, "
-    "power-loss, broker, market, funds or release acceptance."
+    "Successful CI installer semantic checks with bounded redirected-output drainage only; descendant "
+    "containment is not verified; not clean-machine, native-window, ordinary-user, power-loss, broker, "
+    "market, funds or release acceptance."
 )
 SEMANTIC_TRUE = {
     "first_run_paper_defaults", "saved_setup_survived_reinstall",
@@ -27,27 +28,29 @@ SEMANTIC_TRUE = {
     "default_windows_data_recovery", "default_data_preserved_on_uninstall",
     "prior_version_data_recovery", "packaged_backup_recovery",
     "same_version_reinstall", "halt_recovered", "uninstall_preserved_data",
-    "all_external_processes_bounded", "phase_evidence_recorded",
+    "external_process_output_drains_bounded", "phase_evidence_recorded",
 }
 SEMANTIC_FALSE = {
-    "cross_version_upgrade_verified", "native_window_verified",
+    "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified",
     "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
     "money_movement_enabled", "release_approved",
 }
 RAW_KEYS = {
     "mode", "version", "source_commit", "installer_sha256", "session_id",
-    "maximum_phase_timeout_seconds", "limitations",
+    "maximum_root_process_timeout_seconds", "output_drain_timeout_seconds", "limitations",
 } | SEMANTIC_TRUE | SEMANTIC_FALSE
 PHASE_KEYS = {
     "mode", "passed", "phases_verified", "records_verified", "version", "source_commit",
     "installer_sha256", "session_id", "exact_source_bound", "installer_digest_bound",
-    "single_session_bound", "sequence_complete", "timeouts_respected", "maximum_timeout_seconds",
+    "single_session_bound", "sequence_complete", "timeouts_respected",
+    "maximum_root_process_timeout_seconds", "output_drain_timeout_seconds",
     "maximum_observed_duration_seconds", "native_windows_acceptance", "actual_broker_acceptance",
     "live_orders_enabled", "money_movement_enabled", "release_approved", "limitations",
 }
 REVIEW_KEYS = {
     "mode", "passed", "version", "source_commit", "installer_sha256", "session_id",
-    "raw_result_bytes", "raw_result_sha256", "maximum_phase_timeout_seconds",
+    "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
+    "output_drain_timeout_seconds",
     "phase_evidence_bound", "exact_source_bound", "installer_digest_bound",
     "single_session_bound", "limitations",
 } | SEMANTIC_TRUE | SEMANTIC_FALSE
@@ -127,8 +130,10 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
             or result["source_commit"] != expected_source_commit
             or type(result["installer_sha256"]) is not str
             or SHA256.fullmatch(result["installer_sha256"]) is None
-            or result["maximum_phase_timeout_seconds"] != 300
-            or type(result["maximum_phase_timeout_seconds"]) is not int
+            or result["maximum_root_process_timeout_seconds"] != 300
+            or type(result["maximum_root_process_timeout_seconds"]) is not int
+            or result["output_drain_timeout_seconds"] != 10
+            or type(result["output_drain_timeout_seconds"]) is not int
             or result["limitations"] != RESULT_LIMITATIONS
             or any(result[key] is not True for key in SEMANTIC_TRUE)
             or any(result[key] is not False for key in SEMANTIC_FALSE)):
@@ -143,8 +148,10 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
             or phase["phases_verified"] != 10
             or type(phase["records_verified"]) is not int
             or phase["records_verified"] != 20
-            or type(phase["maximum_timeout_seconds"]) is not int
-            or phase["maximum_timeout_seconds"] != 300
+            or type(phase["maximum_root_process_timeout_seconds"]) is not int
+            or phase["maximum_root_process_timeout_seconds"] != 300
+            or type(phase["output_drain_timeout_seconds"]) is not int
+            or phase["output_drain_timeout_seconds"] != 10
             or type(phase["maximum_observed_duration_seconds"]) not in (int, float)
             or not math.isfinite(phase["maximum_observed_duration_seconds"])
             or not 0 <= phase["maximum_observed_duration_seconds"] <= 315
@@ -165,7 +172,8 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
         "session_id": session_id,
         "raw_result_bytes": raw_result_bytes,
         "raw_result_sha256": raw_result_sha256,
-        "maximum_phase_timeout_seconds": 300,
+        "maximum_root_process_timeout_seconds": 300,
+        "output_drain_timeout_seconds": 10,
         **{key: True for key in sorted(SEMANTIC_TRUE)},
         **{key: False for key in sorted(SEMANTIC_FALSE)},
         "phase_evidence_bound": True,

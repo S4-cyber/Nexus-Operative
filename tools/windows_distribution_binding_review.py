@@ -20,30 +20,33 @@ VERSION = re.compile(r"0\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 INSTALLER_RESULT_REVIEW_NAME = "installer-result-review.json"
 RESULT_LIMITATIONS = (
-    "Successful CI installer semantic checks only; not clean-machine, native-window, ordinary-user, "
-    "power-loss, broker, market, funds or release acceptance."
+    "Successful CI installer semantic checks with bounded redirected-output drainage only; descendant "
+    "containment is not verified; not clean-machine, native-window, ordinary-user, power-loss, broker, "
+    "market, funds or release acceptance."
 )
 RESULT_TRUE = {
     "passed", "first_run_paper_defaults", "saved_setup_survived_reinstall",
     "saved_setup_survived_restart", "setup_preserved_on_uninstall",
     "default_windows_data_recovery", "default_data_preserved_on_uninstall",
     "prior_version_data_recovery", "packaged_backup_recovery", "same_version_reinstall",
-    "halt_recovered", "uninstall_preserved_data", "all_external_processes_bounded",
+    "halt_recovered", "uninstall_preserved_data", "external_process_output_drains_bounded",
     "phase_evidence_recorded", "phase_evidence_bound", "exact_source_bound",
     "installer_digest_bound", "single_session_bound",
 }
 RESULT_FALSE = {
-    "cross_version_upgrade_verified", "native_window_verified", "native_windows_acceptance",
+    "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified", "native_windows_acceptance",
     "actual_broker_acceptance", "live_orders_enabled", "money_movement_enabled", "release_approved",
 }
 RESULT_KEYS = {
     "mode", "version", "source_commit", "installer_sha256", "session_id",
-    "raw_result_bytes", "raw_result_sha256", "maximum_phase_timeout_seconds", "limitations",
+    "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
+    "output_drain_timeout_seconds", "limitations",
 } | RESULT_TRUE | RESULT_FALSE
 PHASE_KEYS = {
     "mode", "passed", "phases_verified", "records_verified", "version", "source_commit",
     "installer_sha256", "session_id", "exact_source_bound", "installer_digest_bound",
-    "single_session_bound", "sequence_complete", "timeouts_respected", "maximum_timeout_seconds",
+    "single_session_bound", "sequence_complete", "timeouts_respected",
+    "maximum_root_process_timeout_seconds", "output_drain_timeout_seconds",
     "maximum_observed_duration_seconds", "native_windows_acceptance", "actual_broker_acceptance",
     "live_orders_enabled", "money_movement_enabled", "release_approved", "limitations",
 }
@@ -164,8 +167,10 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
             or phase["installer_sha256"] != installer_sha256
             or type(phase["phases_verified"]) is not int or phase["phases_verified"] != 10
             or type(phase["records_verified"]) is not int or phase["records_verified"] != 20
-            or type(phase["maximum_timeout_seconds"]) is not int
-            or phase["maximum_timeout_seconds"] != 300
+            or type(phase["maximum_root_process_timeout_seconds"]) is not int
+            or phase["maximum_root_process_timeout_seconds"] != 300
+            or type(phase["output_drain_timeout_seconds"]) is not int
+            or phase["output_drain_timeout_seconds"] != 10
             or type(phase["maximum_observed_duration_seconds"]) not in (int, float)
             or not math.isfinite(phase["maximum_observed_duration_seconds"])
             or not 0 <= phase["maximum_observed_duration_seconds"] <= 315
@@ -188,8 +193,10 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
             or installer_result["raw_result_bytes"] < 1
             or type(installer_result["raw_result_sha256"]) is not str
             or SHA256.fullmatch(installer_result["raw_result_sha256"]) is None
-            or type(installer_result["maximum_phase_timeout_seconds"]) is not int
-            or installer_result["maximum_phase_timeout_seconds"] != 300
+            or type(installer_result["maximum_root_process_timeout_seconds"]) is not int
+            or installer_result["maximum_root_process_timeout_seconds"] != 300
+            or type(installer_result["output_drain_timeout_seconds"]) is not int
+            or installer_result["output_drain_timeout_seconds"] != 10
             or installer_result["limitations"] != RESULT_LIMITATIONS
             or any(installer_result[key] is not True for key in RESULT_TRUE)
             or any(installer_result[key] is not False for key in RESULT_FALSE)):

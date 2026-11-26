@@ -155,6 +155,87 @@ def repeat_exchange_pairs(path):
                 (evidence.canonical(last),sid))
 
 
+def rewrite_first_outcome_decision(path, decision):
+    """Rewrite one local outcome coherently; this still is not reconciliation."""
+    with closing(sqlite3.connect(path)) as db,db:
+        rows=db.execute('SELECT session,sequence,payload FROM forward_events '
+            'ORDER BY session,sequence').fetchall()
+        previous={};counts={};changed=False
+        for sid,sequence,raw in rows:
+            data=json.loads(raw);record=data['record']
+            if not changed and data['kind']=='OUTCOME':
+                record.update(decision=decision,reason='TEST_MODELED_EXECUTION',
+                    order_id='fixture-unreconciled-order',
+                    liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False,
+                    modeled_fill_sha256='a'*64)
+                changed=True
+            payload=events.canonical(data)
+            parent=previous.get(sid,events.GENESIS)
+            digest=events.digest(parent,payload)
+            db.execute('UPDATE forward_events SET payload=?,previous=?,digest=? '
+                'WHERE session=? AND sequence=?',
+                (payload,parent,digest,sid,sequence))
+            previous[sid]=digest
+            session_counts=counts.setdefault(sid,{})
+            session_counts[record['decision']]=session_counts.get(record['decision'],0)+1
+        assert changed
+        for sid,head in previous.items():
+            db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
+                (sum(counts[sid].values()),head,sid))
+            db.execute('UPDATE sessions SET counts_json=? WHERE id=?',
+                (evidence.canonical(counts[sid]),sid))
+
+
+def insert_unquoted_modeled_execution(path, decision):
+    """Insert a self-consistent pre-terminal chain row with no quote binding."""
+    with closing(sqlite3.connect(path)) as db,db:
+        sid=db.execute('SELECT id FROM sessions').fetchone()[0]
+        raw_rows=db.execute('SELECT payload FROM forward_events WHERE session=? '
+            'ORDER BY sequence',(sid,)).fetchall()
+        records=[json.loads(raw)['record'] for raw, in raw_rows]
+        modeled=dict(records[1],quote_evidence_sha256=None,decision=decision,
+            reason='TEST_UNQUOTED_MODELED_EXECUTION',
+            order_id='fixture-unquoted-order',liquidity='ASSUMED_QUANTITY_NO_DEPTH',
+            strategy_validated=False,modeled_fill_sha256='b'*64)
+        records.insert(2,modeled)
+        db.execute('DELETE FROM forward_events WHERE session=?',(sid,))
+        previous=events.GENESIS;counts={};ordinals={}
+        for sequence,record in enumerate(records,1):
+            cycle=record['cycle'];ordinals[cycle]=ordinals.get(cycle,0)+1
+            kind=events.classify(record)
+            payload=events.canonical(dict(kind=kind,record=record))
+            digest=events.digest(previous,payload)
+            db.execute('INSERT INTO forward_events VALUES (?,?,?,?,?,?,?,?)',
+                (sid,sequence,cycle,ordinals[cycle],kind,payload,previous,digest))
+            previous=digest
+            counts[record['decision']]=counts.get(record['decision'],0)+1
+        db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
+            (len(records),previous,sid))
+        db.execute('UPDATE sessions SET counts_json=? WHERE id=?',
+            (evidence.canonical(counts),sid))
+
+
+def move_second_outcome_before_bound_quote(path):
+    with closing(sqlite3.connect(path)) as db,db:
+        sid=db.execute('SELECT id FROM sessions').fetchone()[0]
+        rows=db.execute('SELECT sequence,payload FROM forward_events WHERE session=? '
+            'ORDER BY sequence',(sid,)).fetchall()
+        previous=events.GENESIS;outcomes=0
+        for sequence,raw in rows:
+            data=json.loads(raw)
+            if data['kind']=='OUTCOME':
+                outcomes+=1
+                if outcomes==2:data['record']['at']-=1
+            payload=events.canonical(data);digest=events.digest(previous,payload)
+            db.execute('UPDATE forward_events SET payload=?,previous=?,digest=? '
+                'WHERE session=? AND sequence=?',
+                (payload,previous,digest,sid,sequence))
+            previous=digest
+        assert outcomes>=2
+        db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
+            (len(rows),previous,sid))
+
+
 def test_cross_session_boundary_conflict_is_an_incident(tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
         ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
@@ -531,6 +612,68 @@ def test_high_aggregate_coverage_does_not_hide_over_limit_feed_gap(tmp_path,monk
     assert result['operational_incidents_present'] is True
     assert result['incident_free_coverage_target_met'] is False
     assert 'COVERAGE_GAP_EXCEEDS_MAXIMUM' in result['review_reasons']
+
+
+@pytest.mark.parametrize('decision',['BUY','SELL'])
+def test_modeled_execution_without_durable_reconciliation_blocks_incident_free_coverage(
+        tmp_path,monkeypatch,decision):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,decision)
+    result=run(path,600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['modeled_execution_events_in_window']==1
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'MODELED_EXECUTION_RECONCILIATION_NOT_BOUND' in result['review_reasons']
+    assert all(result[key] is False for key in trial.FLAGS)
+
+
+def test_hold_only_coverage_has_no_modeled_execution_reconciliation_blocker(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    result=run(path,600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['modeled_execution_events_in_window']==0
+    assert result['operational_incidents_present'] is False
+    assert result['incident_free_coverage_target_met'] is True
+    assert 'MODELED_EXECUTION_RECONCILIATION_NOT_BOUND' not in result['review_reasons']
+
+
+@pytest.mark.parametrize('decision',['BUY','SELL'])
+def test_unquoted_modeled_execution_cannot_bypass_reconciliation_fence(
+        tmp_path,monkeypatch,decision):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    insert_unquoted_modeled_execution(path,decision)
+    result=run(path,600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['event_trace_complete'] is False
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
+
+
+def test_outcome_before_bound_quote_is_trace_incomplete(tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    move_second_outcome_before_bound_quote(path)
+    result=run(path,600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['quote_outcome_disagreements_in_window']==1
+    assert result['event_trace_complete'] is False
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
 
 
 def test_high_aggregate_coverage_does_not_hide_retained_rejection(tmp_path,monkeypatch):

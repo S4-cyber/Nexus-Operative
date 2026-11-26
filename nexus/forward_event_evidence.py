@@ -98,7 +98,7 @@ def validate_record(record,require_no_fill_binding=False,require_fill_binding=Fa
             re.fullmatch(r'[A-Za-z0-9_.:-]{1,128}',order_id) is None):
         raise ValueError('FORWARD_EVENT_SCHEMA')
     if record['decision'] in ('BUY','SELL') and (
-            order_id is None or
+            quote is None or order_id is None or
             record.get('liquidity')!='ASSUMED_QUANTITY_NO_DEPTH' or
             record.get('strategy_validated') is not False):
         raise ValueError('FORWARD_EVENT_SCHEMA')

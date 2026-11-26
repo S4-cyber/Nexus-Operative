@@ -48,6 +48,7 @@ def test_verify_rejects_distribution_directory_replacement_between_artifacts(
     retired = tmp_path / "retired"
     original_sha256 = subject.hashlib.sha256
     digests = 0
+    replacement_denied = False
 
     class ReplacingDigest:
         def __init__(self):
@@ -57,19 +58,31 @@ def test_verify_rejects_distribution_directory_replacement_between_artifacts(
             self._digest.update(block)
 
         def hexdigest(self):
-            nonlocal digests
+            nonlocal digests, replacement_denied
             digests += 1
             if digests == 1:
-                distribution.rename(retired)
-                replacement.rename(distribution)
+                try:
+                    distribution.rename(retired)
+                    replacement.rename(distribution)
+                except PermissionError:
+                    # Windows can deny the attempted directory swap because
+                    # the verifier deliberately retains every leaf handle.
+                    # That is already a safe rejection, so let verification
+                    # reach its fixed directory/digest disagreement instead
+                    # of leaking the fixture's platform-specific exception.
+                    replacement_denied = True
             return self._digest.hexdigest()
 
     monkeypatch.setattr(subject.hashlib, "sha256", ReplacingDigest)
     if force_path_fallback:
         monkeypatch.setattr(subject.os, "supports_dir_fd", set())
-    with pytest.raises(subject.ArtifactManifestError,
-                       match="ARTIFACT_DIRECTORY_CHANGED"):
+    with pytest.raises(subject.ArtifactManifestError) as rejected:
         subject.verify(document, distribution)
+    if replacement_denied:
+        assert str(rejected.value) in {
+            "ARTIFACT_DIRECTORY_CHANGED", "ARTIFACT_DIGEST_DISAGREEMENT"}
+    else:
+        assert str(rejected.value) == "ARTIFACT_DIRECTORY_CHANGED"
 
 
 def test_verify_rejects_symlinked_distribution_directory(tmp_path):
@@ -136,8 +149,9 @@ def test_verify_rejects_leaf_generation_change_between_artifacts(
         subject.verify(document, tmp_path)
 
 
+@pytest.mark.parametrize("deny_restoration", (False, True))
 def test_path_fallback_retains_leaf_identity_across_transient_directory_swap(
-        tmp_path, monkeypatch):
+        tmp_path, monkeypatch, deny_restoration):
     distribution = tmp_path / "distribution"
     distribution.mkdir()
     artifact = distribution / "a.exe"
@@ -148,10 +162,18 @@ def test_path_fallback_retains_leaf_identity_across_transient_directory_swap(
     (replacement / "a.exe").write_bytes(b"reviewed")
     retired = tmp_path / "retired"
     original = subject._open_artifact_leaf
+    original_rename = type(distribution).rename
     swapped = False
+    restoration_denied = False
+
+    def platform_rename(path, target):
+        if (deny_restoration and path == distribution
+                and target == replacement and swapped):
+            raise PermissionError("SIMULATED_WINDOWS_PINNED_LEAF")
+        return original_rename(path, target)
 
     def transient_swap(directory, name, descriptor):
-        nonlocal swapped
+        nonlocal swapped, restoration_denied
         if not swapped:
             swapped = True
             directory.rename(retired)
@@ -159,15 +181,25 @@ def test_path_fallback_retains_leaf_identity_across_transient_directory_swap(
             try:
                 return original(directory, name, descriptor)
             finally:
-                directory.rename(replacement)
-                retired.rename(directory)
+                try:
+                    directory.rename(replacement)
+                    retired.rename(directory)
+                except PermissionError:
+                    # Windows denies the restoration while the replacement
+                    # leaf is deliberately pinned.  Leave the changed public
+                    # directory in place so the verifier can reject it and
+                    # close the retained handle normally.
+                    restoration_denied = True
         return original(directory, name, descriptor)
 
     monkeypatch.setattr(subject.os, "supports_dir_fd", set())
+    monkeypatch.setattr(type(distribution), "rename", platform_rename)
     monkeypatch.setattr(subject, "_open_artifact_leaf", transient_swap)
     with pytest.raises(subject.ArtifactManifestError,
-                       match="(?:ARTIFACT_DIRECTORY_CHANGED|ARTIFACT_CHANGED_DURING_READ)"):
+                       match="(?:ARTIFACT_DIRECTORY_CHANGED|ARTIFACT_CHANGED_DURING_READ)") as rejected:
         subject.verify(document, distribution)
+    if restoration_denied:
+        assert str(rejected.value) == "ARTIFACT_DIRECTORY_CHANGED"
 
 
 def test_verify_falls_back_when_stat_dir_fd_is_unsupported(tmp_path, monkeypatch):

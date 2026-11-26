@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from nexus import trial_readiness as ready
 from nexus import forward_trial_review as trial
-from test_forward_trial_review import database,START
+from test_forward_trial_review import database,rewrite_first_outcome_decision,START
 
 
 def snapshot(path,owner=None):
@@ -77,6 +77,27 @@ def test_retained_injected_history_remains_review_and_file_bytes_unchanged(tmp_p
     assert snapshot(tmp_path)==before
     assert report['local_owner_quiescence']['state']=='LOCAL_OWNER_LEASE_HELD_DURING_REVIEW'
     assert all(report[k] is False and report['review'][k] is False for k in trial.FLAGS)
+
+
+def test_readiness_preserves_unreconciled_modeled_execution_blocker_without_order_journal(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',3600)
+    points=[(i,True) for i in range(0,3601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release()
+    before=snapshot(tmp_path)
+    report=ready.build(path,hours=1,now=START+3600)
+    assert report['review']['declared_coverage_target_met'] is True
+    assert report['review']['modeled_execution_events_in_window']==1
+    assert report['review']['incident_free_coverage_target_met'] is False
+    assert 'MODELED_EXECUTION_RECONCILIATION_NOT_BOUND' in report['review'][
+        'review_reasons']
+    assert report['order_capacity']['journal_present'] is False
+    assert not (tmp_path/'order_lifecycle.sqlite3').exists()
+    assert snapshot(tmp_path)==before
 
 
 def test_retained_review_never_reopens_owner_marker_through_generic_guard(tmp_path,monkeypatch):

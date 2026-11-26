@@ -3200,7 +3200,8 @@ def _validate(profile, result):
             'sessions_with_quote_errors':20,'quote_error_observations':80,
             'over_limit_coverage_gaps':1,'retained_event_records':300,
             'events_in_window':300,'legacy_unbound_observations_in_window':0,
-            'quote_outcome_disagreements_in_window':0,'event_incident_records_in_window':80}
+            'quote_outcome_disagreements_in_window':0,'event_incident_records_in_window':80,
+            'modeled_execution_events_in_window':40}
         coverage_counts.update(retained_exchange_admissions=200,
             exchange_admissions_in_window=200,
             exchange_admission_incidents_in_window=0)

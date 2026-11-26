@@ -26,6 +26,243 @@ def test_manifest_deterministic_and_detects_changed_distribution(tmp_path):
         subject.verify(result, tmp_path)
 
 
+@pytest.mark.parametrize("force_path_fallback", (False, True))
+def test_verify_rejects_distribution_directory_replacement_between_artifacts(
+        tmp_path, monkeypatch, force_path_fallback):
+    expected = tmp_path / "expected"
+    expected.mkdir()
+    (expected / "a.exe").write_bytes(b"reviewed-a")
+    (expected / "b.exe").write_bytes(b"reviewed-b")
+    document = subject.manifest(
+        [expected / "a.exe", expected / "b.exe"], VERSION, SOURCE)
+
+    distribution = tmp_path / "distribution"
+    distribution.mkdir()
+    (distribution / "a.exe").write_bytes(b"reviewed-a")
+    (distribution / "b.exe").write_bytes(b"unreviewed-b")
+    replacement = tmp_path / "replacement"
+    replacement.mkdir()
+    (replacement / "a.exe").write_bytes(b"unreviewed-a")
+    (replacement / "b.exe").write_bytes(b"reviewed-b")
+
+    retired = tmp_path / "retired"
+    original_sha256 = subject.hashlib.sha256
+    digests = 0
+
+    class ReplacingDigest:
+        def __init__(self):
+            self._digest = original_sha256()
+
+        def update(self, block):
+            self._digest.update(block)
+
+        def hexdigest(self):
+            nonlocal digests
+            digests += 1
+            if digests == 1:
+                distribution.rename(retired)
+                replacement.rename(distribution)
+            return self._digest.hexdigest()
+
+    monkeypatch.setattr(subject.hashlib, "sha256", ReplacingDigest)
+    if force_path_fallback:
+        monkeypatch.setattr(subject.os, "supports_dir_fd", set())
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="ARTIFACT_DIRECTORY_CHANGED"):
+        subject.verify(document, distribution)
+
+
+def test_verify_rejects_symlinked_distribution_directory(tmp_path):
+    target = tmp_path / "target"
+    target.mkdir()
+    artifact = target / "a.exe"
+    artifact.write_bytes(b"a")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    alias = tmp_path / "alias"
+    try:
+        alias.symlink_to(target, target_is_directory=True)
+    except OSError:
+        pytest.skip("directory symlinks unavailable")
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="INVALID_ARTIFACT_DIRECTORY"):
+        subject.verify(document, alias)
+
+
+def test_verify_rejects_symlinked_distribution_parent(tmp_path):
+    real_parent = tmp_path / "real-parent"
+    distribution = real_parent / "distribution"
+    distribution.mkdir(parents=True)
+    artifact = distribution / "a.exe"
+    artifact.write_bytes(b"a")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    alias_parent = tmp_path / "alias-parent"
+    try:
+        alias_parent.symlink_to(real_parent, target_is_directory=True)
+    except OSError:
+        pytest.skip("directory symlinks unavailable")
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="INVALID_ARTIFACT_DIRECTORY"):
+        subject.verify(document, alias_parent / "distribution")
+
+
+def test_verify_rejects_leaf_generation_change_between_artifacts(
+        tmp_path, monkeypatch):
+    first = tmp_path / "a.exe"
+    second = tmp_path / "b.exe"
+    first.write_bytes(b"reviewed-a")
+    second.write_bytes(b"reviewed-b")
+    document = subject.manifest([first, second], VERSION, SOURCE)
+    original_sha256 = subject.hashlib.sha256
+    digests = 0
+
+    class ReplacingDigest:
+        def __init__(self):
+            self._digest = original_sha256()
+
+        def update(self, block):
+            self._digest.update(block)
+
+        def hexdigest(self):
+            nonlocal digests
+            digests += 1
+            if digests == 1:
+                first.write_bytes(b"unreviewed")
+                second.write_bytes(b"reviewed-b")
+            return self._digest.hexdigest()
+
+    monkeypatch.setattr(subject.hashlib, "sha256", ReplacingDigest)
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="ARTIFACT_CHANGED_DURING_READ"):
+        subject.verify(document, tmp_path)
+
+
+def test_path_fallback_retains_leaf_identity_across_transient_directory_swap(
+        tmp_path, monkeypatch):
+    distribution = tmp_path / "distribution"
+    distribution.mkdir()
+    artifact = distribution / "a.exe"
+    artifact.write_bytes(b"reviewed")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    replacement = tmp_path / "replacement"
+    replacement.mkdir()
+    (replacement / "a.exe").write_bytes(b"reviewed")
+    retired = tmp_path / "retired"
+    original = subject._open_artifact_leaf
+    swapped = False
+
+    def transient_swap(directory, name, descriptor):
+        nonlocal swapped
+        if not swapped:
+            swapped = True
+            directory.rename(retired)
+            replacement.rename(directory)
+            try:
+                return original(directory, name, descriptor)
+            finally:
+                directory.rename(replacement)
+                retired.rename(directory)
+        return original(directory, name, descriptor)
+
+    monkeypatch.setattr(subject.os, "supports_dir_fd", set())
+    monkeypatch.setattr(subject, "_open_artifact_leaf", transient_swap)
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="(?:ARTIFACT_DIRECTORY_CHANGED|ARTIFACT_CHANGED_DURING_READ)"):
+        subject.verify(document, distribution)
+
+
+def test_verify_falls_back_when_stat_dir_fd_is_unsupported(tmp_path, monkeypatch):
+    artifact = tmp_path / "a.exe"
+    artifact.write_bytes(b"reviewed")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    monkeypatch.setattr(subject.os, "supports_dir_fd", {subject.os.open})
+    assert subject.verify(document, tmp_path)["artifact_integrity_ok"]
+
+
+def test_retained_leaf_descriptor_closes_when_fdopen_fails(tmp_path, monkeypatch):
+    descriptor_root = "/proc/self/fd"
+    if not os.path.isdir(descriptor_root):
+        pytest.skip("descriptor inventory unavailable")
+    artifact = tmp_path / "a.exe"
+    artifact.write_bytes(b"reviewed")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    before = len(os.listdir(descriptor_root))
+
+    def fail_fdopen(*_args, **_kwargs):
+        raise OSError("simulated fdopen failure")
+
+    monkeypatch.setattr(subject.os, "fdopen", fail_fdopen)
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="ARTIFACT_CHANGED_DURING_READ"):
+        subject.verify(document, tmp_path)
+    assert len(os.listdir(descriptor_root)) == before
+
+
+def test_open_artifact_leaf_closes_descriptor_when_initial_fstat_fails(
+        tmp_path, monkeypatch):
+    descriptor_root = "/proc/self/fd"
+    if not os.path.isdir(descriptor_root):
+        pytest.skip("descriptor inventory unavailable")
+    artifact = tmp_path / "a.exe"
+    artifact.write_bytes(b"reviewed")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    before = len(os.listdir(descriptor_root))
+    monkeypatch.setattr(subject.os, "supports_dir_fd", set())
+
+    def fail_fstat(_descriptor):
+        raise OSError("simulated initial fstat failure")
+
+    monkeypatch.setattr(subject, "_opened_leaf_identity", fail_fstat)
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="INVALID_ARTIFACT_FILE"):
+        subject.verify(document, tmp_path)
+    assert len(os.listdir(descriptor_root)) == before
+
+
+def test_windows_style_same_size_cross_leaf_rewrite_is_rejected(
+        tmp_path, monkeypatch):
+    expected = tmp_path / "expected"
+    expected.mkdir()
+    (expected / "a.exe").write_bytes(b"reviewed-a")
+    (expected / "b.exe").write_bytes(b"reviewed-b")
+    document = subject.manifest(
+        [expected / "a.exe", expected / "b.exe"], VERSION, SOURCE)
+    distribution = tmp_path / "distribution"
+    distribution.mkdir()
+    first = distribution / "a.exe"
+    second = distribution / "b.exe"
+    first.write_bytes(b"reviewed-a")
+    second.write_bytes(b"unreviewed")
+
+    def windows_identity(left, right):
+        fields = ("st_dev", "st_ino", "st_size", "st_nlink")
+        return all(getattr(left, field) == getattr(right, field)
+                   for field in fields)
+
+    original_sha256 = subject.hashlib.sha256
+    digests = 0
+
+    class ReplacingDigest:
+        def __init__(self):
+            self._digest = original_sha256()
+
+        def update(self, block):
+            self._digest.update(block)
+
+        def hexdigest(self):
+            nonlocal digests
+            digests += 1
+            if digests == 1:
+                first.write_bytes(b"unreviewed")
+                second.write_bytes(b"reviewed-b")
+            return self._digest.hexdigest()
+
+    monkeypatch.setattr(subject, "_same_file", windows_identity)
+    monkeypatch.setattr(subject.hashlib, "sha256", ReplacingDigest)
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="ARTIFACT_DIGEST_DISAGREEMENT"):
+        subject.verify(document, distribution)
+
+
 @pytest.mark.parametrize("name", ("../private", "..", "", "/absolute", "folder/file", "folder\\file",
                                   "C:private", "nul\x00name", "line\nbreak"))
 def test_manifest_rejects_paths(tmp_path, name):

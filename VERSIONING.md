@@ -1,4 +1,32 @@
 # Nexus Operative versioning and launch gates
+## v0.340.409 coherent distribution-directory verification
+
+Artifact-manifest verification now binds the complete reviewed set to one exact
+non-aliased distribution directory and retains every artifact handle before
+hashing. POSIX leaves open relative to one no-follow directory descriptor; all
+platforms recheck public and retained identities and require two complete digest
+passes to agree. Directory swaps, parent/directory aliases and cross-leaf
+same-size content changes fail instead of combining separate generations.
+
+Both exact PR #130 Windows regression shards still observed intermittent
+malformed-intent cleanup confirmation failures. The strict three-attempt
+read-only replay now pauses for fixed 20 ms and 50 ms intervals only between
+transient unavailable observations. A definitive mismatch, negative replay or
+third unavailable sample still fails immediately, and the durable halt mutation
+is never retried. Exact-child hosted Windows verification remains required.
+
+This is bounded offline artifact-integrity hardening, not artifact signing or
+provenance, hosted or native Windows/installer acceptance, broker-paper or
+sustained-market acceptance, performance, profitability, deployment or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and independent emergency-stop
+access are unchanged. No control was added, so the seven beginner-friendly tabs
+and black/bright-purple bottom-right hover help are unchanged. The read-only
+roadmap estimate stays exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
 ## v0.340.408 bounded Windows journal observation
 
 The standalone emergency stop now distinguishes a temporarily unavailable

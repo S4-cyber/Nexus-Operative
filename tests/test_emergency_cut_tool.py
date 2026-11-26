@@ -765,6 +765,30 @@ def test_transient_initial_order_identity_capture_is_bounded_in_activation(
     assert recovery['commands']==1 and recovery['halted']
 
 
+def test_transient_identity_retry_yields_before_resampling_without_reissuing_halt(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    DurableOrderGateway(order_path).emergency_halt()
+    original=emergency_cut_tool._observed_order_identity
+    yielded=False;sleeps=[];observations=[]
+    def unavailable_until_yield(path):
+        observations.append(1)
+        if not yielded:return None,None
+        return original(path)
+    def bounded_yield(duration):
+        nonlocal yielded
+        sleeps.append(duration);yielded=True
+    monkeypatch.setattr(emergency_cut_tool,'_observed_order_identity',
+        unavailable_until_yield)
+    monkeypatch.setattr(emergency_cut_tool.time,'sleep',bounded_yield)
+    identity=emergency_cut_tool._order_identity_bounded(order_path)
+    assert identity is not None and len(observations)==2
+    assert sleeps==[emergency_cut_tool.TRANSIENT_OBSERVATION_DELAYS[0]]
+    recovery=DurableOrderGateway(order_path).recovery_report()
+    assert recovery['commands']==1 and recovery['halted']
+
+
 def test_transient_pre_final_replay_identity_sample_enters_bounded_observer(
         tmp_path,monkeypatch):
     from nexus import emergency_cut_tool
@@ -786,7 +810,8 @@ def test_replay_confirmation_retry_ceiling_and_definitive_negative(
         tmp_path,monkeypatch):
     from nexus import emergency_cut_tool
     monkeypatch.setattr(emergency_cut_tool,'_same_order',lambda *_:True)
-    calls=[]
+    calls=[];sleeps=[]
+    monkeypatch.setattr(emergency_cut_tool.time,'sleep',sleeps.append)
     def unavailable(*_):
         calls.append(1)
         raise ValueError('ORDER_JOURNAL_DATABASE_BUSY')
@@ -794,9 +819,43 @@ def test_replay_confirmation_retry_ceiling_and_definitive_negative(
     assert not emergency_cut_tool._halt_replayed_bounded(
         tmp_path/'orders.sqlite3',{'halted':True},object())
     assert calls==[1,1,1]
-    calls.clear()
+    assert sleeps==list(emergency_cut_tool.TRANSIENT_OBSERVATION_DELAYS)
+    calls.clear();sleeps.clear()
     monkeypatch.setattr(emergency_cut_tool,'emergency_halt_replayed',
         lambda *_:calls.append(1) and False)
     assert not emergency_cut_tool._halt_replayed_bounded(
         tmp_path/'orders.sqlite3',{'halted':True},object())
     assert calls==[1]
+    assert sleeps==[]
+    calls.clear()
+    monkeypatch.setattr(emergency_cut_tool,'_same_order',lambda *_:False)
+    monkeypatch.setattr(emergency_cut_tool,'emergency_halt_replayed',
+        lambda *_:calls.append(1) and True)
+    assert not emergency_cut_tool._halt_replayed_bounded(
+        tmp_path/'orders.sqlite3',{'halted':True},object())
+    assert calls==[] and sleeps==[]
+
+
+def test_busy_replay_yields_once_then_confirms_without_reissuing_halt(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    result=DurableOrderGateway(order_path).emergency_halt()
+    identity=order_path.stat();yielded=False;sleeps=[];calls=[]
+    original=emergency_cut_tool.emergency_halt_replayed
+    def busy_until_yield(path,warm_result):
+        calls.append(1)
+        if not yielded:raise ValueError('ORDER_JOURNAL_DATABASE_BUSY')
+        return original(path,warm_result)
+    def bounded_yield(duration):
+        nonlocal yielded
+        sleeps.append(duration);yielded=True
+    monkeypatch.setattr(emergency_cut_tool,'emergency_halt_replayed',
+        busy_until_yield)
+    monkeypatch.setattr(emergency_cut_tool.time,'sleep',bounded_yield)
+    assert emergency_cut_tool._halt_replayed_bounded(
+        order_path,result,identity)
+    assert calls==[1,1]
+    assert sleeps==[emergency_cut_tool.TRANSIENT_OBSERVATION_DELAYS[0]]
+    recovery=DurableOrderGateway(order_path).recovery_report()
+    assert recovery['commands']==1 and recovery['halted']

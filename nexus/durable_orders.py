@@ -11,7 +11,7 @@ import math
 import os
 import sqlite3
 import stat
-from contextlib import closing, contextmanager
+from contextlib import ExitStack, closing, contextmanager
 from decimal import Decimal
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
@@ -278,7 +278,7 @@ class DurableOrderGateway:
             if [step[0] for step in prepared]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
                 raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')
             if len({step[1][0] for step in prepared})!=1:raise ValueError('QUOTE_ORDER_TRANSACTION_ID_MISMATCH')
-        with closing(self._connect(path)) as db:
+        with closing(self._connect(path)) as db,ExitStack() as entry_guards:
             root_guard.require_current()
             with _transaction(db):
                 db.execute('BEGIN IMMEDIATE')
@@ -319,12 +319,14 @@ class DurableOrderGateway:
                 results=[]
                 for method,args,kwargs,payload in prepared:
                     if cut_guarded:require_cut_clear()
-                    result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
+                    result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload,entry_guards)
                     results.append(result)
                 # A cut published by or during the final mutation must still
                 # win before SQLite can commit the order and linked portfolio.
                 if cut_guarded:require_cut_clear()
                 root_guard.require_current()
+            # The order and linked portfolio commit before ExitStack releases
+            # the settings writer reservation held by any admitted BUY fill.
         return results
 
     def _require_last_halt_reserve(self,db,gateway,count,prepared):
@@ -349,7 +351,7 @@ class DurableOrderGateway:
                     raise ValueError('ORDER_JOURNAL_LAST_HALT_RESERVE')
                 count+=1
 
-    def _apply(self,db,portfolio,gateway,count,method,args,kwargs,payload):
+    def _apply(self,db,portfolio,gateway,count,method,args,kwargs,payload,entry_guards):
         active_count=count-gateway.archival_boundary
         if method=='archive_terminal':
             args=(*args,count+1)
@@ -382,8 +384,9 @@ class DurableOrderGateway:
                 eid=args[1] if len(args)>1 else kwargs['event_id']
                 order=gateway.intents[oid]
                 if order['side']=='BUY':
-                    from nexus.tier_permissions import require_entry
-                    require_entry(order['tier'],Decimal(order['notional']))
+                    from nexus.tier_permissions import entry_commit_guard
+                    entry_guards.enter_context(entry_commit_guard(
+                        order['tier'],Decimal(order['notional'])))
                 execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
             # Halt/cancel/reset must remain possible when normal intake is full.
             if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','submit_reducing','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill','bind_replacement_epoch'):

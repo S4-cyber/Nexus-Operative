@@ -1,4 +1,29 @@
 # Nexus Operative versioning and launch gates
+## v0.340.416 tier-OFF durable BUY commit fence
+
+A linked durable BUY fill now holds a bounded SQLite writer reservation on the
+paper settings database from its authoritative tier/cap snapshot through the
+order-journal and attached-portfolio commit. An OFF or cap change that commits
+first is observed and refuses the BUY without a new position. A BUY that wins
+the reservation commits both durable stores before OFF can acknowledge. Cold
+replay verifies both order and linked-portfolio outcomes, and subsequent BUYs
+remain refused after OFF.
+
+The guard applies only to non-idempotent linked BUY fills. Reducing SELL exits
+and the independent emergency latch do not acquire it. This is cooperating
+same-settings-database transaction ordering, not broker/account/source
+acceptance, genuine-market or sustained-trial acceptance, distributed
+coordination, performance, profitability, funding, cloud, Windows/installer or
+release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, fail-closed behavior and exits remain intact. No button or
+editable parameter was added, so the seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
+
 ## v0.340.415 Windows artifact stat coherence
 
 Hosted Windows run 45807797630 exposed 92 false artifact-integrity rejections

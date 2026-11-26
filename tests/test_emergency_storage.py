@@ -11,6 +11,7 @@ import threading
 import pytest
 from fastapi.testclient import TestClient
 from nexus import app as api
+from nexus import execution_portfolio
 from nexus.durable_orders import DB_BUSY_TIMEOUT_MS
 from test_engine_throttle import rig,START
 from test_paper_forward import Clock,warmup
@@ -38,9 +39,24 @@ def test_real_write_lock_keeps_cut_pending_but_signals_runner_without_waiting(co
     c,g,r,w,starts,obs=control
     c.post('/api/portal',json={'enabled':True});c.post('/api/paper/forward/start',json=START)
     g.submit('partial','BTC-USD','BUY',100,tier='terrestrial');g.simulate_priced_fill('partial','f1',1,1,25)
-    before=g.recovery_report();entered=threading.Event();original=g.emergency_halt
-    def mark():entered.set();return original()
+    before=g.recovery_report();entered=threading.Event();allow_halt=threading.Event()
+    contending=threading.Event();original=g.emergency_halt;original_connect=g._connect
+    original_attach=execution_portfolio.attach
+    def mark():
+        entered.set();assert allow_halt.wait(5);return original()
+    def connect(path=None):
+        db=original_connect(path)
+        if store=='orders':
+            db.set_trace_callback(lambda statement:
+                contending.set() if statement=='BEGIN IMMEDIATE' else None)
+        return db
+    def attach_portfolio(db,path):
+        contending.set()
+        return original_attach(db,path)
     monkeypatch.setattr(g,'emergency_halt',mark)
+    monkeypatch.setattr(g,'_connect',connect)
+    if store=='portfolio':
+        monkeypatch.setattr(execution_portfolio,'attach',attach_portfolio)
     path=g._path() if store=='orders' else g._path().parent/'paper_portfolio.sqlite3'
     writer=sqlite3.connect(path);writer.execute('BEGIN IMMEDIATE')
     async def exercise():
@@ -52,7 +68,12 @@ def test_real_write_lock_keeps_cut_pending_but_signals_runner_without_waiting(co
             assert r.single_cycle()['reason']=='PAPER_FORWARD_STOPPED'  # No storage/feed needed.
             assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==409
             assert w.status()['enabled'] and obs==['on']
-        finally:writer.rollback();writer.close()
+            # Enter the real SQLite path only after the signal-only boundary is
+            # observed, then prove the held writer still keeps cleanup pending.
+            allow_halt.set();await until(contending.is_set)
+            assert not any(t.done() for t in cuts) and not r._stop.is_set()
+        finally:
+            allow_halt.set();writer.rollback();writer.close()
         # A queued cut uses the same bounded SQLite busy policy as the writer
         # it must conservatively stop.  Give that documented 10-second wait a
         # fixed completion margin; a shorter test timeout can cancel only the

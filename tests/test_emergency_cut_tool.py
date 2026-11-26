@@ -390,6 +390,65 @@ def test_root_replacement_during_final_latch_sample_cannot_keep_verified_claim(
     assert DurableOrderGateway(retired/'order_lifecycle.sqlite3').recovery_report()['halted']
 
 
+def test_final_latch_sample_journal_replacement_cannot_remain_verified(
+        tmp_path,monkeypatch):
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    replacement=tmp_path/'unhalted-replacement.sqlite3'
+    DurableOrderGateway(replacement).reset()
+    from nexus import emergency_cut_tool
+    original=emergency_cut_tool._same_intent;calls=[]
+    def replace_after_sample(path,identity):
+        result=original(path,identity);calls.append(1)
+        if len(calls)==2:os.replace(replacement,order_path)
+        return result
+    monkeypatch.setattr(emergency_cut_tool,'_same_intent',replace_after_sample)
+    report=emergency_cut_tool.activate(tmp_path)
+    assert calls==[1,1]
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert report['emergency_intent_present'] and report['halted']
+    assert report['data_root_path_pinned']
+    cold=DurableOrderGateway(order_path).recovery_report()
+    assert cold['journal_present'] and cold['commands']==0 and not cold['halted']
+
+
+def test_root_replacement_during_final_journal_sample_preserves_only_history(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
+    from nexus import emergency_cut_tool
+    original_intent=emergency_cut_tool._same_intent
+    original_order=emergency_cut_tool._same_order
+    final_latch_sampled=False
+    def sample_intent(order_path,identity):
+        nonlocal final_latch_sampled
+        result=original_intent(order_path,identity)
+        if final_latch_sampled:
+            raise AssertionError('unexpected extra intent sample')
+        if sample_intent.calls==1:final_latch_sampled=True
+        sample_intent.calls+=1
+        return result
+    sample_intent.calls=0
+    def displace_root_during_journal_sample(order_path,identity):
+        if final_latch_sampled:
+            root.rename(retired);root.mkdir()
+            (retired/'order_lifecycle.sqlite3').replace(
+                root/'order_lifecycle.sqlite3')
+        return original_order(order_path,identity)
+    monkeypatch.setattr(emergency_cut_tool,'_same_intent',sample_intent)
+    monkeypatch.setattr(emergency_cut_tool,'_same_order',
+        displace_root_during_journal_sample)
+    report=emergency_cut_tool.activate(root)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['halted']
+    assert not report['emergency_intent_present']
+    assert not report['data_root_path_pinned']
+    assert emergency_intent.requested(retired/'order_lifecycle.sqlite3')
+    assert DurableOrderGateway(
+        root/'order_lifecycle.sqlite3').recovery_report()['halted']
+
+
 def test_storage_failure_retains_cut_until_explicit_retry_finishes_cleanup(tmp_path,monkeypatch):
     gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
     gateway.submit('storage-fault','BTC-USD','BUY',1,tier='terrestrial')
@@ -707,6 +766,11 @@ def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
     monkeypatch.setattr(emergency_cut_tool,'_halt_replayed_bounded',
         lambda path,result,observed:replays.append(
             (path,result,observed)) or True)
+    # This schema-only fixture replaces the durable journal and replay with
+    # exact synthetic success evidence, so keep the new final read-only
+    # identity observation consistent with that isolated durable result.
+    monkeypatch.setattr(emergency_cut_tool,'_same_order',
+        lambda path,observed:observed is identity)
     report=emergency_cut_tool.activate(tmp_path)
     order_path=tmp_path/'order_lifecycle.sqlite3'
     assert halts==[order_path]

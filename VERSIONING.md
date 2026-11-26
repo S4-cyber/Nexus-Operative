@@ -1,4 +1,28 @@
 # Nexus Operative versioning and launch gates
+## v0.340.422 final emergency journal identity fence
+
+The standalone local-paper emergency command now performs one final read-only
+comparison against the exact public journal identity captured before its cold
+replays, then rechecks the data-root identity. If the replayed journal is
+replaced or becomes unobservable while the original root remains pinned, or
+the root is displaced during that final journal observation,
+durable confirmation is cleared and the command returns `UNCONFIRMED`. It does
+not issue another halt, reset, retry or writer lock. Existing displaced-root
+history remains visible but cannot produce `VERIFIED`.
+
+A real disposable SQLite regression swaps in a separately initialized,
+unhalted zero-command journal during the final latch sample and verifies the
+replacement remains unmodified. This is sampled offline local emergency
+evidence, not an atomic cross-process lease, native Windows/installer,
+broker-paper, sustained-trial, funding, cloud, live or release acceptance.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+intact. No button or editable parameter was added, so seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate remains exact 38% weighted (displayed about 40%,
+30–45% low-confidence), with 0/9 stages independently accepted and no release
+or trading permission.
+
 ## v0.340.421 optional Windows artifact birth time
 
 Exact development-branch Windows run `45807905265` first failed artifact

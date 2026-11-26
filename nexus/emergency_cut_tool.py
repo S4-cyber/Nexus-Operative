@@ -328,6 +328,16 @@ def activate(data_root=None):
     root_stable = bool(root_stable and
         _same_data_root(root,root_identity))
     final_intent = bool(root_stable and final_intent)
+    # Retain durable evidence only while the public journal still names the
+    # exact file cold-replayed above.  Bracket that read with the pinned root:
+    # a root displaced during the journal sample keeps historical durable
+    # evidence but cannot keep current latch/root authority.  This is bounded
+    # read-only observation: no halt, reset or retry enters the cut path.
+    if root_stable and durable_halt:
+        journal_stable = _same_order(order_path,order_identity) is True
+        root_stable = _same_data_root(root,root_identity)
+        if root_stable:durable_halt = journal_stable
+        else:final_intent = False
     verified = root_stable and intent_preceded and durable_halt and final_intent
     return dict(mode='NEXUS_LOCAL_PAPER_EMERGENCY_STOP',passed=verified,
         halted=final_intent or durable_halt,

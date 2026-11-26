@@ -1,4 +1,30 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.407 retained fill remainder agreement
+
+Retained provider activity now requires each fill completion type to agree with
+its reported remaining quantity before the supplied history can support local
+request/activity agreement. A terminal `fill` with a positive remainder, or a
+`partial_fill` with zero remainder, remains readable for investigation but
+carries an explicit reconciliation disagreement through durable activity and
+the higher request/activity composition. Existing cumulative-chain,
+request-term, exact-head, fee, journal/file and emergency-stop checks remain
+unchanged.
+
+This is bounded local evidence-consistency hardening, not provider identity,
+broker/account/fill/fee/hold/funds, genuine-feed or sustained-trial, native
+Windows/installer, cloud, performance, profitability, hosted-CI or release
+acceptance. Every live, funding, spend and release authority flag remains
+false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
 ## v0.340.406 retained request-term agreement
 
 Every retained activity snapshot matched to an observed original paper request

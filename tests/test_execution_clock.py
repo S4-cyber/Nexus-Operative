@@ -3,7 +3,7 @@ import sqlite3
 import pytest
 from test_atomic_quote_order import setup as atomic_setup,execute
 from test_paper_forward import setup
-from nexus import emergency_intent
+from nexus import emergency_intent,execution_portfolio
 
 
 def test_runtime_evaluation_is_sampled_after_restore_and_journaled(tmp_path,monkeypatch):
@@ -221,3 +221,48 @@ def test_real_sqlite_writer_wait_refreshes_runtime_evaluation(tmp_path,monkeypat
     assert len(errors)==1 and 'STALE_OR_FUTURE_SYNTHETIC_QUOTE' in str(errors[0])
     report=g.recovery_report()
     assert report['commands']==2 and not report['orders'] and report['portfolio_reconciled']
+
+
+def test_real_linked_portfolio_writer_wait_refreshes_runtime_evaluation(
+        tmp_path,monkeypatch):
+    import threading
+    g=atomic_setup(tmp_path,monkeypatch);now=[1001];attaching=threading.Event();sampled=threading.Event()
+    original_attach=execution_portfolio.attach;errors=[]
+    def attach(db,path):
+        attaching.set()
+        return original_attach(db,path)
+    def clock():sampled.set();return now[0]
+    def worker():
+        try:execute(g,execution_clock=clock)
+        except Exception as exc:errors.append(exc)
+    monkeypatch.setattr(execution_portfolio,'attach',attach)
+    blocker=sqlite3.connect(tmp_path/'paper_portfolio.sqlite3')
+    blocker.execute('BEGIN EXCLUSIVE')
+    thread=threading.Thread(target=worker);thread.start()
+    try:
+        assert attaching.wait(timeout=5)
+        assert not sampled.is_set()
+        now[0]=1005
+    finally:
+        blocker.rollback();blocker.close();thread.join(timeout=10)
+    assert not thread.is_alive() and sampled.is_set()
+    assert len(errors)==1 and 'STALE_OR_FUTURE_SYNTHETIC_QUOTE' in str(errors[0])
+    report=g.recovery_report()
+    assert report['commands']==2 and not report['orders'] and report['portfolio_reconciled']
+
+
+def test_runtime_clock_sample_holds_linked_portfolio_writer_reservation(
+        tmp_path,monkeypatch):
+    g=atomic_setup(tmp_path,monkeypatch);reserved=[]
+    def clock():
+        competitor=sqlite3.connect(tmp_path/'paper_portfolio.sqlite3',timeout=0)
+        try:
+            with pytest.raises(sqlite3.OperationalError,match='locked'):
+                competitor.execute('BEGIN IMMEDIATE')
+            reserved.append(True)
+        finally:competitor.close()
+        return 1001
+
+    result=execute(g,execution_clock=clock)
+
+    assert reserved==[True] and not result['fill'].get('expired')

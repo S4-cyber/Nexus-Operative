@@ -325,10 +325,10 @@ def test_candidate_delta_caps_fail_closed(tmp_path,monkeypatch,limit,reason):
 
 
 def test_history_budget_is_finite_and_above_measured_reachable_history():
-    measured_bytes=1_467_457_423
+    measured_bytes=1_652_385_179
     assert audit.MAX_BYTES == 4 * 1024 * 1024 * 1024
     assert audit.MAX_OBJECT_BYTES == 16 * 1024 * 1024
-    assert audit.MAX_DELTA_BYTES == 64 * 1024 * 1024
+    assert audit.MAX_DELTA_BYTES == 512 * 1024 * 1024
     assert audit.MAX_DELTA_OBJECTS == 4096
     assert measured_bytes < audit.MAX_BYTES <= 4 * 1024 * 1024 * 1024
 

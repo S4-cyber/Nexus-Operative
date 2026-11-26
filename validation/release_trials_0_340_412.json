@@ -1,22 +1,22 @@
 {
   "actual_broker_acceptance": false,
   "elapsed_seconds": {
-    "activity": 0.15,
-    "activity_acceptance": 1.194,
-    "balance": 0.057,
-    "capacity": 4.616,
-    "collection": 0.382,
-    "encrypted_observation": 2.07,
-    "forward": 7.488,
-    "http": 9.319,
-    "inspection_inventory": 2.321,
-    "observation_review": 1.616,
-    "open_order_terms": 0.041,
-    "operations": 6.945,
-    "pacing": 7.915,
-    "reconciliation_acceptance": 30.819,
-    "recovery": 0.329,
-    "retained_balance": 0.068
+    "activity": 0.14,
+    "activity_acceptance": 0.788,
+    "balance": 0.065,
+    "capacity": 4.119,
+    "collection": 0.445,
+    "encrypted_observation": 1.791,
+    "forward": 6.499,
+    "http": 8.483,
+    "inspection_inventory": 2.28,
+    "observation_review": 1.687,
+    "open_order_terms": 0.044,
+    "operations": 6.429,
+    "pacing": 7.565,
+    "reconciliation_acceptance": 28.735,
+    "recovery": 0.241,
+    "retained_balance": 0.066
   },
   "environment": {
     "python": "3.12.14",
@@ -502,15 +502,15 @@
         "accounting_consistent": true,
         "admitted": 8,
         "admitted_to_completion_latency": {
-          "p50_ms": 36.713,
-          "p95_ms": 100.896,
-          "p99_ms": 100.896
+          "p50_ms": 31.715,
+          "p95_ms": 86.477,
+          "p99_ms": 86.477
         },
         "application_accounts_changed": false,
         "atomic_order_transactions": true,
         "broker_orders": 0,
         "capacity_bounds_verified": true,
-        "cold_recovery_ms": 3.369,
+        "cold_recovery_ms": 3.146,
         "completed_roundtrips": 8,
         "duplicate_fill_replays": 16,
         "duplicate_rejections": 1,
@@ -544,9 +544,9 @@
         },
         "durable_commands": 67,
         "durable_roundtrip_latency": {
-          "p50_ms": 11.987,
-          "p95_ms": 17.928,
-          "p99_ms": 17.928
+          "p50_ms": 10.369,
+          "p95_ms": 15.432,
+          "p99_ms": 15.432
         },
         "expired_before_execution": 0,
         "halt_flushed": 0,
@@ -557,9 +557,9 @@
         "queue_age_limit_ms": 250.0,
         "queue_capacity": 8,
         "queue_wait_latency": {
-          "p50_ms": 24.726,
-          "p95_ms": 82.967,
-          "p99_ms": 82.967
+          "p50_ms": 21.346,
+          "p95_ms": 71.045,
+          "p99_ms": 71.045
         },
         "scope": "TEMPORARY_LINKED_LEDGER_FIXTURE_BURST",
         "target_validated": false,
@@ -579,22 +579,22 @@
           "queue_wait_sample_count": 8,
           "scope": "PROCESS_LOCAL_BOUNDED_BURST_WINDOW",
           "throughput_claimed": false,
-          "window_elapsed_ms": 102.108
+          "window_elapsed_ms": 87.487
         }
       },
       "burst_treatment": {
         "accounting_consistent": true,
         "admitted": 8,
         "admitted_to_completion_latency": {
-          "p50_ms": 60.53,
-          "p95_ms": 172.164,
-          "p99_ms": 172.164
+          "p50_ms": 52.729,
+          "p95_ms": 146.351,
+          "p99_ms": 146.351
         },
         "application_accounts_changed": false,
         "atomic_order_transactions": false,
         "broker_orders": 0,
         "capacity_bounds_verified": true,
-        "cold_recovery_ms": 3.313,
+        "cold_recovery_ms": 3.157,
         "completed_roundtrips": 8,
         "duplicate_fill_replays": 16,
         "duplicate_rejections": 1,
@@ -628,9 +628,9 @@
         },
         "durable_commands": 67,
         "durable_roundtrip_latency": {
-          "p50_ms": 19.939,
-          "p95_ms": 31.792,
-          "p99_ms": 31.792
+          "p50_ms": 17.457,
+          "p95_ms": 25.528,
+          "p99_ms": 25.528
         },
         "expired_before_execution": 0,
         "halt_flushed": 0,
@@ -641,9 +641,9 @@
         "queue_age_limit_ms": 250.0,
         "queue_capacity": 8,
         "queue_wait_latency": {
-          "p50_ms": 40.591,
-          "p95_ms": 142.771,
-          "p99_ms": 142.771
+          "p50_ms": 35.272,
+          "p95_ms": 121.97,
+          "p99_ms": 121.97
         },
         "scope": "TEMPORARY_LINKED_LEDGER_FIXTURE_BURST",
         "target_validated": false,
@@ -663,7 +663,7 @@
           "queue_wait_sample_count": 8,
           "scope": "PROCESS_LOCAL_BOUNDED_BURST_WINDOW",
           "throughput_claimed": false,
-          "window_elapsed_ms": 173.315
+          "window_elapsed_ms": 147.414
         }
       },
       "execution_quality": {
@@ -747,16 +747,16 @@
           "accounting_consistent": true,
           "broker_orders": 0,
           "checkpoints_enabled": false,
-          "cold_recovery_ms": 6.713,
-          "commands_per_second": 218.746,
+          "cold_recovery_ms": 6.211,
+          "commands_per_second": 220.423,
           "commit_return_latency": {
-            "p50_ms": 4.558,
-            "p95_ms": 8.042,
-            "p99_ms": 9.386
+            "p50_ms": 4.047,
+            "p95_ms": 11.337,
+            "p99_ms": 14.665
           },
           "cycles": 30,
           "durable_commands": 240,
-          "elapsed_seconds": 1.097161,
+          "elapsed_seconds": 1.088814,
           "portfolio_linked": false,
           "recovery_diagnostics": {
             "cache_hit": false,
@@ -766,22 +766,22 @@
           },
           "scope": "GATEWAY_ONLY",
           "tier_checks_included": false,
-          "warm_recovery_ms": 7.672
+          "warm_recovery_ms": 6.107
         },
         {
           "accounting_consistent": true,
           "broker_orders": 0,
           "checkpoints_enabled": true,
-          "cold_recovery_ms": 9.242,
-          "commands_per_second": 427.742,
+          "cold_recovery_ms": 7.378,
+          "commands_per_second": 467.572,
           "commit_return_latency": {
-            "p50_ms": 2.384,
-            "p95_ms": 3.623,
-            "p99_ms": 4.218
+            "p50_ms": 2.106,
+            "p95_ms": 3.226,
+            "p99_ms": 3.816
           },
           "cycles": 30,
           "durable_commands": 240,
-          "elapsed_seconds": 0.561086,
+          "elapsed_seconds": 0.513289,
           "portfolio_linked": false,
           "recovery_diagnostics": {
             "cache_hit": true,
@@ -791,22 +791,22 @@
           },
           "scope": "GATEWAY_ONLY",
           "tier_checks_included": false,
-          "warm_recovery_ms": 2.953
+          "warm_recovery_ms": 2.293
         },
         {
           "accounting_consistent": true,
           "broker_orders": 0,
           "checkpoints_enabled": false,
-          "cold_recovery_ms": 8.859,
-          "commands_per_second": 180.721,
+          "cold_recovery_ms": 7.656,
+          "commands_per_second": 210.875,
           "commit_return_latency": {
-            "p50_ms": 5.483,
-            "p95_ms": 9.811,
-            "p99_ms": 11.361
+            "p50_ms": 4.69,
+            "p95_ms": 8.862,
+            "p99_ms": 10.499
           },
           "cycles": 30,
           "durable_commands": 240,
-          "elapsed_seconds": 1.328015,
+          "elapsed_seconds": 1.138117,
           "portfolio_linked": true,
           "recovery_diagnostics": {
             "cache_hit": false,
@@ -816,22 +816,22 @@
           },
           "scope": "LINKED_LEDGER_AND_TIER",
           "tier_checks_included": true,
-          "warm_recovery_ms": 8.665
+          "warm_recovery_ms": 7.548
         },
         {
           "accounting_consistent": true,
           "broker_orders": 0,
           "checkpoints_enabled": true,
-          "cold_recovery_ms": 9.813,
-          "commands_per_second": 287.391,
+          "cold_recovery_ms": 9.562,
+          "commands_per_second": 328.644,
           "commit_return_latency": {
-            "p50_ms": 3.262,
-            "p95_ms": 6.536,
-            "p99_ms": 8.343
+            "p50_ms": 2.933,
+            "p95_ms": 5.429,
+            "p99_ms": 6.233
           },
           "cycles": 30,
           "durable_commands": 240,
-          "elapsed_seconds": 0.835099,
+          "elapsed_seconds": 0.730274,
           "portfolio_linked": true,
           "recovery_diagnostics": {
             "cache_hit": true,
@@ -841,7 +841,7 @@
           },
           "scope": "LINKED_LEDGER_AND_TIER",
           "tier_checks_included": true,
-          "warm_recovery_ms": 4.105
+          "warm_recovery_ms": 4.127
         }
       ]
     },
@@ -932,7 +932,7 @@
         "counterfactual_only": true,
         "forward_intent_bound": true,
         "funds_reconciled": false,
-        "intent_sha256": "0104c8916db89a83c7c5259c250aeb09cb48296648c26b1eef3e9081483970bf",
+        "intent_sha256": "b7a8e9caf0fc38dbc7edd7db409d98aec002f578bc3b0f43d3d3e86ec5cbde74",
         "ledger_applied": false,
         "legacy_readable_unbound": true,
         "limitations": "One stopped, locally reconciled injected modeled fill is bound to one disconnected preview and durable request-journal PREPARE. The local modeled fill already changed the synthetic ledger, so the binding is counterfactual and permanently unsendable. This is not source, broker, account, funds, fees, holdings, market, sustained-trial or release acceptance.",
@@ -961,8 +961,8 @@
         "final_request_snapshot_replayed": true,
         "forward_source_revalidated": true,
         "funds_reconciled": false,
-        "intent_reconciliation_sha256": "1fef697e78d94e41fa91942abd0cde1d1d141d72158f20c5dba490a5ad96dfba",
-        "intent_sha256": "0104c8916db89a83c7c5259c250aeb09cb48296648c26b1eef3e9081483970bf",
+        "intent_reconciliation_sha256": "1384d905edb0569463a303346a05798a63fb0c9d1da47621c21a23e4d1269bba",
+        "intent_sha256": "b7a8e9caf0fc38dbc7edd7db409d98aec002f578bc3b0f43d3d3e86ec5cbde74",
         "journal_file_fingerprint_rechecked": true,
         "journal_unchanged": true,
         "ledger_applied": false,
@@ -1019,9 +1019,9 @@
         "sustained_forward_accepted": false
       },
       "cycle_latency": {
-        "p50_ms": 12.481,
-        "p95_ms": 33.988,
-        "p99_ms": 64.764
+        "p50_ms": 11.682,
+        "p95_ms": 30.665,
+        "p99_ms": 40.028
       },
       "cycles": 280,
       "exchange_admission_crash": {
@@ -1060,9 +1060,9 @@
           },
           "cycles": 1,
           "evidence_hash_preserved": true,
-          "failed_evidence_sha256": "ca1ea3c91ec5b10e7e382b4d44e5073da07b6285253851670f9eba6981003203",
+          "failed_evidence_sha256": "196029f9ef63e9465d1aef04be178bb0f9aa3265cfdcdf44cade8220ede1b896",
           "failed_orders_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "failed_session": "57616b4ce144448e",
+          "failed_session": "474d0bbc46a849b3",
           "fetches": 0,
           "healthy_decision": "HOLD",
           "healthy_orders_created": 0,
@@ -1079,7 +1079,7 @@
             "RUNTIME_CLOCK_DISCONTINUITY"
           ],
           "rejected_observations": 0,
-          "reopened_evidence_sha256": "ca1ea3c91ec5b10e7e382b4d44e5073da07b6285253851670f9eba6981003203",
+          "reopened_evidence_sha256": "196029f9ef63e9465d1aef04be178bb0f9aa3265cfdcdf44cade8220ede1b896",
           "reopened_orders_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "review_reasons": [
             "NO_RECORDED_QUOTE_EVIDENCE"
@@ -1101,9 +1101,9 @@
           },
           "cycles": 1,
           "evidence_hash_preserved": true,
-          "failed_evidence_sha256": "0f19410a9a2077941f03eaa733f3f55810f7fd388812660fe23c34eb19ac5716",
+          "failed_evidence_sha256": "acf64c242d9f58791b93966711ece431ce46979a47acf85632cab5da780be211",
           "failed_orders_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "failed_session": "d8dc6f2c0ad64364",
+          "failed_session": "2d739e2cee874db5",
           "fetches": 0,
           "healthy_decision": "HOLD",
           "healthy_orders_created": 0,
@@ -1120,7 +1120,7 @@
             "INVALID_RUNTIME_CLOCK"
           ],
           "rejected_observations": 0,
-          "reopened_evidence_sha256": "0f19410a9a2077941f03eaa733f3f55810f7fd388812660fe23c34eb19ac5716",
+          "reopened_evidence_sha256": "acf64c242d9f58791b93966711ece431ce46979a47acf85632cab5da780be211",
           "reopened_orders_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "review_reasons": [
             "NO_RECORDED_QUOTE_EVIDENCE"
@@ -1177,9 +1177,9 @@
           },
           "cycles": 3,
           "evidence_hash_preserved": true,
-          "failed_evidence_sha256": "2845b73c7234d252308e44553ce85ec74c74276fe36cb9bbd4b79714bac81f9e",
+          "failed_evidence_sha256": "eaab4b9789ccec499c62b41b411be84f099654a51f4f60f8a6bb456b75bb23d8",
           "failed_orders_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "failed_session": "9651e1b2b464403e",
+          "failed_session": "6c5bb78eeab6456b",
           "fetches": 3,
           "healthy_decision": "HOLD",
           "healthy_orders_created": 0,
@@ -1198,7 +1198,7 @@
             "QUOTE_UNAVAILABLE_OR_INVALID"
           ],
           "rejected_observations": 3,
-          "reopened_evidence_sha256": "2845b73c7234d252308e44553ce85ec74c74276fe36cb9bbd4b79714bac81f9e",
+          "reopened_evidence_sha256": "eaab4b9789ccec499c62b41b411be84f099654a51f4f60f8a6bb456b75bb23d8",
           "reopened_orders_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "review_reasons": [],
           "stored_state": "PAUSED",
@@ -1219,9 +1219,9 @@
           },
           "cycles": 3,
           "evidence_hash_preserved": true,
-          "failed_evidence_sha256": "44193999572206a4e6954935028aca2f9226ef609b992b913e178a2ca28b8846",
+          "failed_evidence_sha256": "de69568340b806ee1ce55250bce7071ccfd79b08c9babd8a70f2da489eb47a42",
           "failed_orders_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-          "failed_session": "6cf8a6daf020456c",
+          "failed_session": "4d51d202136846af",
           "fetches": 3,
           "healthy_decision": "HOLD",
           "healthy_orders_created": 0,
@@ -1240,7 +1240,7 @@
             "QUOTE_UNAVAILABLE_OR_INVALID"
           ],
           "rejected_observations": 3,
-          "reopened_evidence_sha256": "44193999572206a4e6954935028aca2f9226ef609b992b913e178a2ca28b8846",
+          "reopened_evidence_sha256": "de69568340b806ee1ce55250bce7071ccfd79b08c9babd8a70f2da489eb47a42",
           "reopened_orders_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
           "review_reasons": [],
           "stored_state": "PAUSED",
@@ -1293,7 +1293,7 @@
           "event_incident_records_in_window": 80,
           "event_trace_complete": true,
           "events_in_window": 300,
-          "evidence_snapshot_sha256": "13083f7cc32f56c35260d07ed1267a49ae4714135a4cdb7687246ed3762b2d83",
+          "evidence_snapshot_sha256": "279d4b7ad9c50ec247982822219c358178c57408435eeb756fea9ff2b78113ba",
           "exchange_admission_incidents_in_window": 0,
           "exchange_admissions_in_window": 200,
           "external_owner_checked": false,
@@ -1372,18 +1372,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "709a50278bde0f9591532a23805adb7ac709ea741e17b9e1f005df5e6cba1588",
-            "evidence_sha256": "72c2b7744364bf33c062dbfd24ed4243d51acc2781b6be3f75debc95d7e839c9",
+            "event_head_sha256": "47a70dbf14c0784978c6b753c637c7e221580f927fa4e461adfe88c65c474804",
+            "evidence_sha256": "2f14b14af742c79d2d42fe1a1b6fa64fa59108e748b2f7cc721ef2cb860e93ee",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "6aa1d74934f14fed9056392062307be993b8881d1a44e6baca0c5ff9a6fa236e",
+            "orders_sha256": "d491c4f73e55fae86c8c76cde486170fda30570197fd1734f58393eb5dd5942f",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "f44b7567d3aaacbf54f8d9827671f3d35b01ab17c85ed5c52eb023077baeba49",
+            "reconciliation_sha256": "710c98bb94d836404b8c37a20ea84014a1ae3e8a0ee22defed39d1cae6188752",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "bb1dac7a791a97c3421cf9e9384d6a63381cdcd2ac71b4e4524286fe94d8cd94",
-            "session": "69253462b0fd43c7"
+            "review_receipt_sha256": "c5dc21405e2f677d04c151245ecf23c93bab7939c5dabf467a35242d8a19dfe6",
+            "session": "b1c028c8e8d14e62"
           },
           {
             "cut_binding_verified": false,
@@ -1392,18 +1392,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "f4043197b6755ca61db0cf2d842d062b6d4897abc27d228c6e6677f425f0a75b",
-            "evidence_sha256": "0969a40acc6928a4a555a336922470170e3cc4d0d08a0c3e177135e9408cdd82",
+            "event_head_sha256": "9ccc03eba87ec0633767fd7f2985c83d28740aa80359e78fc24ff2407acddff2",
+            "evidence_sha256": "11c059e4b375416872314993076a10f46df9a8187b3dc725fcd5e0983b32d6d9",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "b7d86931d71de2f809138e5fdf076b5c0aaa35bbc70baefafd685124dfd78bc4",
+            "orders_sha256": "0df224e355569e1245926b2bbfd7678716c67d04ef34bebb12e56a3917ded192",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "4cd506cf9a5f976c484ae9388cafb9a9d2938d5485920622da368b8d40cc471e",
+            "reconciliation_sha256": "01701a6af7f47bd1b603432789fa4bdda4695819e8608d1b4565947cb48a92d3",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "c42b20ec727993fc55ae62c340ac9003dab5282f5cf6188f716304a3fd2e7a2f",
-            "session": "91bdb449aa6540e9"
+            "review_receipt_sha256": "2da4241807b1f8d78f213f3d5a7e4d3d1ba2b286d04fc3844e172b044cd6e25b",
+            "session": "c2bdb0606fad49a4"
           },
           {
             "cut_binding_verified": false,
@@ -1412,18 +1412,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "eead2fa41757118a6f1af3c8552977fad6cb8a418feac3091d25ceb4ff2e9bef",
-            "evidence_sha256": "871753e099a83882f282b8a3025406f543edbb44d9317eb98428e5f4b86e942e",
+            "event_head_sha256": "d358303807f899e5e4965a78cb8f7dc2f589037ba204e5e4159a48a20ec2ec72",
+            "evidence_sha256": "f0626909398ed583700de12aa103c27af09dd9b7e1bb72416c92cedecaa5ab25",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "d2d20f91fab2471ab2bcb133e01123bcde41be0ea5587a851caea505515e309b",
+            "orders_sha256": "ff70be65858cdaead3be254f5ebc8265ea4653285f1223612e93cb920e9427cb",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "6e9bd52fc7a92e40d653111bd203250eb57c92c61c990a643a159d2ad38dbb28",
+            "reconciliation_sha256": "8ce0bb0f6eca630214f7a68a602d04206be8b9381a82b45a896a213373a7df38",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "14a4073bd21a0eaa24d91432d712c2c536760d81cd15f7d5a63fb9bbf3a7eab1",
-            "session": "be390d84207f4b05"
+            "review_receipt_sha256": "dee777f47c9fc89703e3d7dcd61fd2f40343038f1cd3a6b39ab454ccdb8afc1b",
+            "session": "8a6b05c25c134878"
           },
           {
             "cut_binding_verified": false,
@@ -1432,18 +1432,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "5cc5dc35fa51dbb1b807795e25510a5639dcef070b4c9844ab7e911ff7abb99f",
-            "evidence_sha256": "8cd545f2fe92eb1b5cc0d39e1c9addd6a743ec19995de73e78f1ecb8c99bff76",
+            "event_head_sha256": "ffa47c8786cd40017268867ca52f247c7e5601a6132afd4c2dd668f626909b3f",
+            "evidence_sha256": "d95d2007e33df5287b9964defdd3842c6b93c5ef6dc872f5138be8052adf549b",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "5e9c793864adca1fc09da93d4eefbe06afdeb567731cef678d7aa08864991d5d",
+            "orders_sha256": "b4a69c6e1262babb665c44877a2cae463ddfbc19bd3ffff2b75b2ae28694bf72",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "6e5203790ddbcc43d8ab4f78f5eee02d202a3349b1a97f1f35f567a8516e01e4",
+            "reconciliation_sha256": "f8a10503854b03586ac4609849f25a702bfeb1a3d97aaf9d4eb07a28b67c74ed",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "55996390cce8c3e00921161756990eb4868249370a4ee6bb57a7d9681c4ff085",
-            "session": "964d138edf954b40"
+            "review_receipt_sha256": "6a1b906444ecdef81736d0ecf46eaa1eaef927be053d872d1ebef05020f496eb",
+            "session": "51461de7f421454a"
           },
           {
             "cut_binding_verified": false,
@@ -1452,18 +1452,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "6aad7d600fa6f5d06159c45274dba352ee766a9fb039fa85d7bc7febcab08d3d",
-            "evidence_sha256": "7aebc895f759b26fd2d8b3413b2513f15214c3de1a1ae5fdbd23fbc9a4c17f9c",
+            "event_head_sha256": "c159eb0f2b855314fcb2a8ae4643b5a1963a70bc2f292effecd3652a7869b53a",
+            "evidence_sha256": "dd95c05bb895e8cf5aec6c82a1a2b1cb76ad9fcf0288bd744707f04460eb2c36",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "016f42bd64624ac69a176a90e1234709f632c828c70878159ae47dc526dba2cd",
+            "orders_sha256": "95d033dbbcdef6918e3d699dff921c65911ee865d1fa3f38b58c239842624233",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "c3cf943a659f0740acaa1fd6877cf32ae48a71759e28a080a7afd774cadbf89e",
+            "reconciliation_sha256": "2cb37f427332a693631f26b8165125a72109a8ae1a4b819fd1e77b88bde95e2d",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "cbd28d238bf6f4689ac167b8c51429f5ad1ff8e5856cb2c543114227e7d42a22",
-            "session": "bde97dea0fdb42c2"
+            "review_receipt_sha256": "04210a1784756259d06f3e9296a9c9bd190ca16a92ef49c6f0b99401b79287d2",
+            "session": "3a796fae7f064465"
           },
           {
             "cut_binding_verified": false,
@@ -1472,18 +1472,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "8bbf6e5371cad543f1d4539a07ccab9d54390f5d49212e94695030dfd2362298",
-            "evidence_sha256": "25fc0b54892b9ea5c6b6d6a400fbfe101573fd7655bdfcffa07a374f040f6d13",
+            "event_head_sha256": "92148bcd4cde3b09a3fddbb588d8e9b98b8533c74808a967a36ab52f03975c83",
+            "evidence_sha256": "abd9187537cf695f5dab84ce3dd9d0896cc5a550ca5676a3bba20eae6bdc222d",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "9415a6db0e575d5459221b50b0399603c114e2beb103eade753b5af580f26a6a",
+            "orders_sha256": "d2aa376ef5c479f1cb9af8c96508b904c22d6f5844ac3507f29aab623554e487",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "56f2f65d7a14b235fc304f7df97daa952631791ae8ba584ca1122dcd40262e33",
+            "reconciliation_sha256": "42a9d1468537b3f2a0758cfe50fe2cddba7f153d7a8180c0f59cd36b43ab1711",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "d05e8b28763abadbd4f008a56502fcf79f5f3c559ad02310fd7f50ebe14677ab",
-            "session": "ce95afceffbc4a9d"
+            "review_receipt_sha256": "b5efa122704813f1af6962d1d54d29ce6185cc7b4e0a1d5273d1f253e93ff298",
+            "session": "7208bc7cbaf9470b"
           },
           {
             "cut_binding_verified": false,
@@ -1492,18 +1492,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "aa94272c536d4bdab16b0acb144bf725d042fafea73e3dd8f58bdd19e47502ba",
-            "evidence_sha256": "618a713a7f5479802644e2f54f172b5260e2026c6d81fcb50cc2cc7122c49b6a",
+            "event_head_sha256": "ad279f75529de5707357b05cd160f536c822ddd1fe25d198e36a3d131b94caee",
+            "evidence_sha256": "f11b581d783a4aaa1ed82889cf0b11944e73dd941a90caf353603717732da14b",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "7346e4e145a0412067ad1ee8bdb183eaccacd66ba7480b39b7f7300f9911c79c",
+            "orders_sha256": "d9cbb04b6ee378854647dac059ea4cf757346f39ea55d8cbd22a2673ae26b62c",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "eb98aeb273cee98b1a9e601f53a0b7d93643e526b6a9cda71d66dc84a62bcda3",
+            "reconciliation_sha256": "9921957962827f8db7d68d55de63b45aeb2fbc93882d0c08e80ef8402c3c3309",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "47afae9ef0d9b7d93101f780c381bf9d8d292c067fb1b635d5a21649e6107f05",
-            "session": "4722055a061c4aa6"
+            "review_receipt_sha256": "5d377cfb2824f83301b26b4c532c54466775af942d7d7592e5b81bf0a3cceefa",
+            "session": "d759b3310dbe4c8c"
           },
           {
             "cut_binding_verified": false,
@@ -1512,18 +1512,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "f8e6deac6ea93d7fd4da7259becb8c2cfd8845146019d523b1e8e33ddd2d5290",
-            "evidence_sha256": "8364e310e70ee0543b4eba9dcd7982d3ff3bab12012364c8fdc1807986db1d55",
+            "event_head_sha256": "72f5546382b32b41b1bfaee97c61bf61147526aa1a2f1f69976adcc3f22c50f6",
+            "evidence_sha256": "488856fef5fa5aaa114cfdb3e3cdc17699f60d2c565e073a0ccf02eaeb3688c5",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "b4620693edae815ebaa36f6cd58eb7593de0e48a6fdd1ab322a3ea2a977a4ea0",
+            "orders_sha256": "21ac0230378959bbe2acd427a9e039c29435a31eb42503436e9d77d06e19f783",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "a8648590f3ad561ca0ecaef0dde9dedb15e7470e2e5f1470b74aaa93006ae065",
+            "reconciliation_sha256": "fa5d987aa25c4f82842433793b51f22620856a857fcd117ccafaa6a729b7a1ec",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "7cccfe6acecb523e677295b0bd9b37b2e34c81d7cd64c6f3350a1eeeb64e1f5f",
-            "session": "9346a7b76f24407b"
+            "review_receipt_sha256": "89d12b4edb1431baba4586eb6444ddd5adabed93e901c68f15b48fd4844439b9",
+            "session": "fc4a3d522b00469b"
           },
           {
             "cut_binding_verified": false,
@@ -1532,18 +1532,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "cb4077f4268da27fba11c4e161a2cca8caf8281e2d456f80eb0ebd7ff68d30a3",
-            "evidence_sha256": "032168b9de182aaf918a2cbb287509f6e86a07cbf3bbe5d1a59ae57638823e66",
+            "event_head_sha256": "353e95b53fbca384cf20bed6686346c45075cb650e24713db6a09602e4af2622",
+            "evidence_sha256": "6242329317865723cea11268867e67b6e82eac36d9bce3d67909912349ead9c1",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "42abe78b381a7a224f4ece7aa2a9cf4e41000811a1fd860034b93d993d60895d",
+            "orders_sha256": "2e9fb223889424b1eea6c86e0dd699f7b9bcdc0c1898205db0b3158130ee378d",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "aa245a454d52420ce5d9e83894e312a7abccf20774a137f3113ae12f04e52e99",
+            "reconciliation_sha256": "094bf31388a36c3043ed654e14f0c4de4f42ee1eebf6ac098ef3c1d7255e842b",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "46666bf2995be1619671cc9f6a6b2adc43048e9b8fe37531a497848f9ed3fcd3",
-            "session": "a292cc879bf64501"
+            "review_receipt_sha256": "775432e746153bc3118fe5fec590b179a5c51566bbf9a8d218ace6c485b111c7",
+            "session": "a010cb42f4bc49f8"
           },
           {
             "cut_binding_verified": false,
@@ -1552,18 +1552,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "caa5065f301e25f1976ff920dd5afeefde9a7081438b0050a6bb0925c36c2176",
-            "evidence_sha256": "387f3c8f6947de542dc88c3e8ec905819b42eb2c1ddacde444ab8fd2e3d1e28a",
+            "event_head_sha256": "d2dd3a44ea8c5da708422eede5ff69c105a5d8880ec72cce09ffe1534995cd73",
+            "evidence_sha256": "ea4165bff16e81f79edc288c8814a5a4d0987cf6c3036039b8579a12084f6878",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "99dcf010efbc2f7f8a421056af49d12b9f530e3f794c3ebe0f3224a042828c0d",
+            "orders_sha256": "c91526771a7bd2ba201db9f8eb7b8f7ec729801dff47740115312197cd5e8754",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "cc84c4f54d578f4a0d2baa9af9687043867dccbdacbf02ee85b0e36953774fe4",
+            "reconciliation_sha256": "d0e973f5f4b9d79e24e2a4e4ec7075366e851f101259d34af7d6cc52d706f2b8",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "e56880a60a1fe2bfd7d1da552addc49da97ace2b7f8ae0d8d852ae5916c7d0f4",
-            "session": "d1e34352b4b1427e"
+            "review_receipt_sha256": "6959355a09ccee6c8755943a59c0d498d36aace83eebf4f4c329a1878afcee8f",
+            "session": "8f88af18d7b74e95"
           },
           {
             "cut_binding_verified": false,
@@ -1572,18 +1572,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "6c20f071aec0cd2e9146508287e571bd1aa4b8112fcd87e076a540b32c65e687",
-            "evidence_sha256": "d48323993979734f40fe3e4870021bdd0b21bb11b14c75bce7e850b829f58e36",
+            "event_head_sha256": "0ce2bea3ea7e4ba8986d12cf0670a856b65bc4905104ae8224d07e11b62db212",
+            "evidence_sha256": "a6544fefe2e802ad966add301311f4a8804de1c4b0c086ba97e431f7517e402c",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "a7e9f7c7f15e91c2eeda1a91faef87af4cc69f2280803e676ee499ac6bceb3a7",
+            "orders_sha256": "08c8a0282c0c6d3d4fd37b85eae9689ddcbdedcaa68cf2b82e56792e940bd8da",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "4c15a8b30c4a2621c6a8057e794c2800656c38ca7f4c61bcd684f06ff3c8fb03",
+            "reconciliation_sha256": "f0260d574efa9d727f0bc86d53b8d5d12c5dbc63c69b494cb65f1d8a61925923",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "5d1c7ba72f064df690890e8dc1ffb3a62ae087cd0604d18a15d3417f641abc1c",
-            "session": "207d194980c4450b"
+            "review_receipt_sha256": "c11c66c6c483a98f30205d5d052d0cd02b2e7e0d7a135a3e2b4656f4590e3c92",
+            "session": "7e4a2b289cb54a6b"
           },
           {
             "cut_binding_verified": false,
@@ -1592,18 +1592,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "9c84451ab7597a565172c2d65011155ff41e6ac800992aaa5a0b7b5f9d7a47ac",
-            "evidence_sha256": "695366fc03909f05cd70fbda81cba787e5ec79466274858f7e0986f2ba9463f7",
+            "event_head_sha256": "f735ae20fddfb646183e172bff7f6f44d6cc0a67fe916631b4add82c4c5fec51",
+            "evidence_sha256": "1e54d87428f7725c2c6415a0f1f5dc777b557b0ab0b2c2f8c0a633648ee989db",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "60b4c1915cf7c2facd693a1a0fd49eb2f3df873dff38ab06b4e6cab6df2776d7",
+            "orders_sha256": "9344728737211ed27460f9ab2cb7328c400d80325e4fbe0383665125d72d387c",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "dc4b8a29494290ccfb364477ecc95fdcf6975815db2f0e65e33f893f25995f15",
+            "reconciliation_sha256": "f59826d084ad5d308fc6f68fb3722b8d8bea37f6c9a9c8e087e80f250d3ef22f",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "1083dfbe45fec373344e6fed0e60f55a246c5680d2fb77b4c29a2076942d3e3e",
-            "session": "c0eba41d02ba4352"
+            "review_receipt_sha256": "4d7a12c522efc9997c8fa663bbdaf634a4896e28a6fd1bc3aec47a6a3503fb6a",
+            "session": "5d7c302cddfa4d34"
           },
           {
             "cut_binding_verified": false,
@@ -1612,18 +1612,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "0cef9b9115fc752387692d62713c0c3d711a79927c7f42aee9c5fbd9770747ae",
-            "evidence_sha256": "db0c093312f3da63b7d5e9eb2c7a4b2e59e4c5a976a6babc921af5543d2f7d79",
+            "event_head_sha256": "28dfc2ea21e343d09719696212e7ef498b497e2990972ae873cc5e78f286a24d",
+            "evidence_sha256": "f29471d7e7431eb7f976d2214a4dfdcd527574b7f5ef2dd9a854ff2b8f3e9d35",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "d8bd36b791b7ee241f1b3d6545d2e32b7d5ff74cf149d560a787ba08dcefe5bb",
+            "orders_sha256": "140f6a7e30e6553438cef98284a544bda9523d7bf4b172c721ca58b730d048f1",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "5dd43f97c831ff5436c68c2592e03b781084e82cd3857962a99e6b5c16b1583b",
+            "reconciliation_sha256": "9771a40b34d3b576d92c6926672abb614d0f8b683a2957ae5ecee951b2a8d200",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "8f994d09bbaa9cf1accf3ba43dfa83bffcc4d1f2561d0c870928896bcddc8354",
-            "session": "f05f5b536f0946a1"
+            "review_receipt_sha256": "1dd50261b1d47d289b163caa6b004d3b6236b4f6bea843b554e5d325018de9ef",
+            "session": "29e0ab4845574b92"
           },
           {
             "cut_binding_verified": false,
@@ -1632,18 +1632,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "028679ae23ccc5d06414ba16b1a6c2cda8e1cf13fe3e5fe0ab94c9126d29309e",
-            "evidence_sha256": "baa0e06e36b6e8fb637b61755c6f1d02e769e7be25b5be39918e6f1c67eeb128",
+            "event_head_sha256": "eb7d848b6b34be872f3ab48e81664cc285e5981c0ac6c0b379f113fa426e3c82",
+            "evidence_sha256": "932e17811d0916c0907b4afa6b17f00496b7ada47927764dffab0d66ad137dba",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "306c8073dff178d5a49d27027a93dc678d0f8551d3b7b852b00c83cf35535dcb",
+            "orders_sha256": "be458662abe7a5166a585788add06f1c7ad4d33df5f69b53184b2a2c8f7b58b9",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "fd53e09fac339f02c617b2ae639dd7f85d926488d95f2f5f3a2837c6c3bebbc1",
+            "reconciliation_sha256": "f2caaf8cbfb5cddd31f2df32e7aa48ac2c63c60b2eb86fddc1e03ddc96db9f7b",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "52eff2b9a764c3c7e67ef51d2dd39779408168ce1546363c00d2deb92eec9791",
-            "session": "616de19c267b47a9"
+            "review_receipt_sha256": "f67352c4ec827340a3562b7b564c5937d540f7296d181ed2683c3ce814b1500a",
+            "session": "fe56be1ff58847a5"
           },
           {
             "cut_binding_verified": false,
@@ -1652,18 +1652,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "d8c3fd0d82246e841872a718f9fd5d4fde153620b3a16ca7c86bb8e9164c999b",
-            "evidence_sha256": "02724c668e4013f3cb14be8ced3fa10d248827ec20a55c779b90694405412f83",
+            "event_head_sha256": "5801a5d87fc9a06f78226abf35d0594b14ed199b18b64a18f1b7d0eb0039a64a",
+            "evidence_sha256": "92dbebfc284dd7581e17fd50de834b1eda726a3573fe1044eb5ff753e433b5a7",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "190622ab386d8101c62b8cad04da092c99c45b959a6375d5091a90689d264a65",
+            "orders_sha256": "2cdf4fc2c7fc57e4af97d47287d0138cfb4b9a7eff8a9a28af73174410d19fc3",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "c03c86d775fd9114fe328530a354e980520b72a1318029072dab29e36947a599",
+            "reconciliation_sha256": "d68b077df9101b81fec90fccc91f85f5f89fc0dff27e4d9b2169f4a9cfa61a31",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "3434a7423cd9fea91482e28e2600242d8dd5478d96578dd8bf4877c5cf1b81e3",
-            "session": "e677d64e930043ef"
+            "review_receipt_sha256": "077890edf18e4579fface2a5d816f146c5afcb5acff65002af38eb2dbe483347",
+            "session": "4467e389d24a47b1"
           },
           {
             "cut_binding_verified": false,
@@ -1672,18 +1672,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "36e101d9265477437661720b5de7e584a11ed7249238576e9a2b0089e6799532",
-            "evidence_sha256": "5e616e84bd9d3363c8bb27f3e066cc94763a0223398c9497b15a17725211ef8e",
+            "event_head_sha256": "4bfbf069e8d48420f1ac87ac2378975b9d949e33745b35a71eb1868b818e7e8f",
+            "evidence_sha256": "f4de3fdf69b22b968bb973129d0be14f4ddedcb1ed7e7faafccb34e212e423f3",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "09dd110b2af323684ec0c93d03902587c13b6dede44f98f74a7dbd66a8bca3fd",
+            "orders_sha256": "c6feaf1420b28c5f94c9427f1c2c54039b46c3f4d39bd4542833637e3b01a3ee",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "3036d3839779470bb751306d4ddd29a5e9e43c738185eda9b473e2d216d94817",
+            "reconciliation_sha256": "977ac311ec6f81b65e12b51d5133af74067ffff90ba131b2976c64167754228d",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "c2ae2b7a9a862d34ec198e8d3791a2cd8aeebe0974aefc7895904f725a78281e",
-            "session": "3276f247c1fd471c"
+            "review_receipt_sha256": "13d24f13887f1176f5dd31b11e77fca08e9351ca1ef5ecb866b77efaee8084c7",
+            "session": "1677e9352ff84397"
           },
           {
             "cut_binding_verified": false,
@@ -1692,18 +1692,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "276c81ea6748f8e52f78eef80f18d104ea85ee34d71862a7c0c5f21324343d0f",
-            "evidence_sha256": "4262ddf0b268dc88c35ac6acdc4199b233dd8ad9ff9e57c79797fa483bcefc34",
+            "event_head_sha256": "551485643a8ceff3e04dcff454d68126130c9cdf8e7474a8ba248691fae5d06c",
+            "evidence_sha256": "21f316fc4a6d178ca2e1e380281216b186f87258b766e077388193cc9aa9e3e6",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "7f475a272e902bb6cc8ed7a92b4849e31546bdfb46f9431f642940c9798cb341",
+            "orders_sha256": "b8147ce9b3a4165ba272454513caba2b0ae44d989cc1c94d5c0f4f74e6650437",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "42b113626c0a4deab2cd78cd03014cabd75214619cf9e75f2989de876c5d8c1b",
+            "reconciliation_sha256": "ab6e3294c985da7f7885ce84e8a58f05bfcf16db3f9fc263826bc4f782ee32f6",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "3ddc404a170379ab0ed7bcd452845d6dffb0140143b5ffb1066019d8709b2109",
-            "session": "613d0b9083a64994"
+            "review_receipt_sha256": "69859ca1780a152606d37e24711029c9825b8b3b5364cf1d46ec5d79c16ad86b",
+            "session": "bbfddbf421df4f9e"
           },
           {
             "cut_binding_verified": false,
@@ -1712,18 +1712,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "b1f277520f2e9ff702b60114d2b3db83d0daaf878c135204a180b9e544e5c54c",
-            "evidence_sha256": "3be1706143ed1e0967781cc3f68bd20527b99f1f87f0fc7313282ed95aec621f",
+            "event_head_sha256": "6f9061ce241ca06b31591bde89c9897aa99f6fc938039aa67b7df189e409634e",
+            "evidence_sha256": "0920ae9acb259af73e42854c8303c222deb5e2a289f253587d093f30e1ac0275",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "72cf06d69140abd2f2d6ab5aa9bca88ce08aad0f5f2738c05b38ed65f9a2a5ac",
+            "orders_sha256": "351465c28404eec6e0c14917bdab737788dc02e696fcf6cc070889d6adb516e9",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "d1d2430147bf2eb6a9b3c0981cbf47130a1395ada6d3491b6bbfc9ca4eaec13d",
+            "reconciliation_sha256": "7b05c82a76ee5c4e56daf9a66e9a7737594bbab5d7b15e13066bf6e0c2887220",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "4b89265bd9f1d0a8758dfb1281241598047fdab8ff82e05fe2956167b0be26fc",
-            "session": "6f03496dfa2b4275"
+            "review_receipt_sha256": "60bdbba6e87209d0a334ebfb0a61c64f4252bc392cedc860c5356ad8769f0bd9",
+            "session": "d1bc4ce7c8294408"
           },
           {
             "cut_binding_verified": false,
@@ -1732,18 +1732,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "21f480f1aabd817d410b67010e761d872096c0ace60a2b78927f8dde256cf469",
-            "evidence_sha256": "44de2e5207006533b9922ae4eb24e11d3f684718a01bd457b363edb1717b8e28",
+            "event_head_sha256": "e42b10e5452ab2639364dad865126d3a82ee3f31f560c4767c3a70449820dbbf",
+            "evidence_sha256": "4d93b5e89a53ea525102d869a086c4697559b8c5b0d97969d3b2f75ce4813161",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "a865ad68d7cd0d2e5a75d9a5b1913ee40634880ed5b72afe0231e9501673dbc3",
+            "orders_sha256": "9ffb742ffc62c569a78235b0bae177433e85574b96c9feaf0a8e90e84a634e9e",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "d35e2c1a08eddc46e092df535d5983e9a2d83b0650637bc13efae0f333df6b06",
+            "reconciliation_sha256": "4ea321e9fc68b5a5bef56b59cca2f6b8faabe6ade1f19f3b90538b6bf15eaabf",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "2f9dc2f7ebda3f44f5b719d22c3525974b2232d0ddf61f25a2668d09a5c65e07",
-            "session": "6f920906a6434e4c"
+            "review_receipt_sha256": "2d7346e6a2c5a6ee211742a36bb4dfa165d35ffb5c1e47a6e81b431a57b04742",
+            "session": "2ce1e4e52fba45b8"
           },
           {
             "cut_binding_verified": false,
@@ -1752,18 +1752,18 @@
             "durable_fill_attempts_bound": true,
             "durable_no_fill_attempts_bound": true,
             "durable_order_outcomes_reconciled": true,
-            "event_head_sha256": "221a828b198c3efe18a499549e49b017536c061ef9e78c8c19d57c87609bd2af",
-            "evidence_sha256": "c9b58d6ab3b8c528c3f360e9e31af876b9a086d237ea80faad31d5d77e7679e1",
+            "event_head_sha256": "a198cd9017cefc01fef6d4e6a4b693497c2f8780bd70e9db91ee2ecd911a7114",
+            "evidence_sha256": "0fb8830dc85c3bba94055d5259fba0c402df595168294ca2951280aa3baa6832",
             "modeled_buy_orders": 1,
             "modeled_sell_orders": 1,
             "order_snapshot_stable": true,
-            "orders_sha256": "7726d5ad5678865b2213b6350712f7a5609296f2b3c6dd5599705e7b0ccd9750",
+            "orders_sha256": "5e5547b8dce64e6eef356420df5645584179e476d28da61562547d45462af2c0",
             "quote_observations": 14,
             "quote_outcome_bijection": true,
-            "reconciliation_sha256": "01e8af90d213f78bf1e6cabcd8fe404b4260e19bf6f9074462ca89bf1f68bbc2",
+            "reconciliation_sha256": "2a0f92f4ac0bd3e71bec849ccd49eaeaa6fc39a05bf5dd42ba7e11b51db6ad2c",
             "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-            "review_receipt_sha256": "6a6923b68e1822c6ef909831483421c9a0f49432b6e5e3165df371a1fa888ca1",
-            "session": "3209280d448f4d8a"
+            "review_receipt_sha256": "2bc247cde939d32a7cfcb65da9ee97d0b82986f959a2e359b86713b91ddbad18",
+            "session": "c59fecddc083486e"
           }
         ]
       },
@@ -5408,26 +5408,26 @@
         "cut_evidence_stable": true,
         "durable_fill_attempts_bound": true,
         "durable_order_outcomes_reconciled": true,
-        "event_head_sha256": "5f695fb19c93833662ed30e28e9e4c9cdf4ec7545ea3e0cf3d5a7b015db5900f",
-        "event_reconciliation_sha256": "3f926eddddfa870d03b950217e060161b0a42e19305b851cd84bb704a761c9bb",
+        "event_head_sha256": "9853046e68a99b44675822111d6658aa4926759b15d0eafd64578f861910021b",
+        "event_reconciliation_sha256": "ae80957d3939f42fcea544a3fe23744afa7a598def09879362737fb10026face",
         "event_records": 10,
         "forward_stopped": true,
         "halted": true,
         "modeled_buy_orders": 1,
         "modeled_sell_orders": 1,
-        "order_sha256": "d86d81c5ad811ef8178124ca44765e42d596926256ac16fe57168ab3e88b718a",
+        "order_sha256": "0ffd709d74c3184da88cdc015523c3ab58cea1e0cc5f5717a0baa50db33709f4",
         "order_snapshot_stable": true,
         "policy_sha256": "8f2b54cbc7e8a029d02e7216480274c2d3de2f4f6ac4b23759b980785881e600",
         "portfolio_reconciled": true,
-        "quote_head_sha256": "2400c7520b06b5b29cf66aa859f051b350c87c9f547c40cd88c7bcf79e25636f",
+        "quote_head_sha256": "a1f768f3b480b392cb0398e015cd1c5fb81cbb7b86dd530dfe3c562f2225254a",
         "quote_observations": 8,
         "quote_outcome_bijection": true,
         "review_reason_codes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "review_receipt_sha256": "aa1d96a42df01fe8f90b8217449b0c1f4a2cf82b9588c9415a7c5e5663390ebb",
-        "session": "9013c84ceae24c45",
+        "review_receipt_sha256": "cbd5d98f43e0b8226fd6d4f7163b06964a7f148a3c60681ff3f4ec20f13cd366",
+        "session": "5fcf2e896c1f4e9f",
         "session_order_ids": [
-          "pf_9013c84ceae24c45_7_BUY",
-          "pf_9013c84ceae24c45_8_SELL"
+          "pf_5fcf2e896c1f4e9f_7_BUY",
+          "pf_5fcf2e896c1f4e9f_8_SELL"
         ],
         "source_modes": [
           "INJECTED_TRANSPORT_UNATTESTED"
@@ -5727,7 +5727,7 @@
   "release_approved": false,
   "source_fingerprint": {
     "files": 437,
-    "sha256": "ec207b53992b8bcb5426803fa9d048eeabbdcf0e3b772d6afb4ca1330c5fc888"
+    "sha256": "d8cd2397dc8a1001aee3e3f663bf5e23135e1ca3a71dd257ac66af2a4e3a51cd"
   },
   "sustained_forward_acceptance": false,
   "version": "0.340.412"

@@ -37,6 +37,12 @@ def test_complete_matrix_is_compact_exact_and_non_authoritative(components):
 @pytest.mark.parametrize(('component','key'),(
     (0,'exact_review_block_bound'),
     (1,'exactly_one_post'),
+    (1,'post_transport_controls_rechecked'),
+    (1,'typed_local_transport_authorization_consumed'),
+    (1,'pre_post_journal_writer_exclusion'),
+    (1,'explicit_emergency_stop_binding'),
+    (1,'trusted_transport_deadline_enforced'),
+    (1,'terminal_store_bindings_rechecked'),
     (1,'safety_closure_cold_replayed'),
     (1,'transport_loss_preserved_for_original_id_lookup'),
     (2,'recovery_acknowledgement_cold_replayed'),

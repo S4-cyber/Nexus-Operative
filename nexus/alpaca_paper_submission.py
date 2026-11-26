@@ -7,18 +7,23 @@ commits the durable unknown-outcome marker before POST, and then sends at most
 once.  Every exception after that commit leaves original-client-ID recovery
 mandatory.
 """
+from contextlib import contextmanager
 from decimal import Decimal, localcontext
 import hashlib
+import hmac
 import json
 import math
 import os
+from pathlib import Path
 import re
+import threading
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, ProxyHandler, build_opener
 
 from nexus import alpaca_paper_contract as contract
 from nexus import alpaca_paper_inspection as inspection
+from nexus import emergency_intent
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from nexus.sqlite_journal_guard import (capture_file_identities, check_path_set,
@@ -33,6 +38,7 @@ TOTAL_SECONDS = 16
 MAX_REQUESTS = 9
 MAX_BODY = inspection.MAX_BODY
 POST_BUDGET_SCOPE = 'ALPACA_PAPER_ORDERS'
+_TRUSTED_MONOTONIC = time.monotonic
 
 
 class PaperSubmissionError(ValueError):
@@ -52,6 +58,81 @@ def _hash(value):
 def _credential(value):
     if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
         _fail('CREDENTIAL_FORMAT_INVALID')
+
+
+def _credential_pair_digest(api_key, api_secret):
+    _credential(api_key); _credential(api_secret)
+    return hashlib.sha256(
+        api_key.encode('ascii') + b'\0' + api_secret.encode('ascii')).digest()
+
+
+def _bind_emergency_stop_order_path(value, *, confirmed):
+    if confirmed is not True or type(value) is not str or not value:
+        _fail('EMERGENCY_STOP_BINDING_REQUIRED')
+    try:
+        selected = Path(value)
+        parent = selected.parent.resolve(strict=True)
+        canonical = parent / selected.name
+        if (not selected.is_absolute() or selected != canonical or
+                not selected.name):
+            _fail('EMERGENCY_STOP_BINDING_INVALID')
+        identity = emergency_intent._sample_directory(parent)
+    except PaperSubmissionError:
+        raise
+    except (OSError, RuntimeError, TypeError, ValueError):
+        _fail('EMERGENCY_STOP_BINDING_INVALID')
+    return canonical, identity
+
+
+class PaperTransportAuthorizationLease:
+    """One-shot local credential/permission fence for a paper POST.
+
+    The lease is OFF by default, stores only an in-memory digest of the exact
+    credential pair, and serializes cooperating local revocation with opener
+    entry.  It is not a provider credential lease, distributed lock, saved
+    write scope, engagement permission, or release authority.
+    """
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._armed = False
+        self._claimed = False
+        self._digest = None
+
+    def arm_once(self, api_key, api_secret, *, confirm_single_attempt=False):
+        if confirm_single_attempt is not True:
+            _fail('TRANSPORT_AUTHORIZATION_CONFIRMATION_REQUIRED')
+        digest = _credential_pair_digest(api_key, api_secret)
+        with self._lock:
+            if self._armed or self._claimed:
+                _fail('TRANSPORT_AUTHORIZATION_ALREADY_USED')
+            self._digest = digest
+            self._armed = True
+        return self
+
+    def revoke(self):
+        """Revoke before dispatch, or wait until an entered opener returns."""
+        with self._lock:
+            self._armed = False
+            self._claimed = True
+            self._digest = None
+
+    @contextmanager
+    def claim(self, api_key, api_secret):
+        digest = _credential_pair_digest(api_key, api_secret)
+        self._lock.acquire()
+        try:
+            if not self._armed or self._claimed or self._digest is None:
+                _fail('TRANSPORT_AUTHORIZATION_NOT_ARMED')
+            if not hmac.compare_digest(self._digest, digest):
+                _fail('TRANSPORT_AUTHORIZATION_CREDENTIALS_CHANGED')
+            # Consume before any later stop/head check.  A refused dispatch is
+            # never silently re-armed.
+            self._armed = False
+            self._claimed = True
+            self._digest = None
+            yield
+        finally:
+            self._lock.release()
 
 
 def _asset(raw, payload):
@@ -496,6 +577,10 @@ class _Session:
         self.credential_check = credential_check
         self.store_binding_check = store_binding_check
         self.reservation_check = None
+        self.transport_authorization = None
+        self.request_head_guard = None
+        self.emergency_stop_path = None
+        self.emergency_stop_parent_identity = None
         self.start = self.previous = None
         self.requests = 0
         self.post_attempted = False
@@ -509,6 +594,27 @@ class _Session:
             raise
         except Exception:
             _fail('CREDENTIAL_CHECK_FAILED')
+
+    def independent_stop_checkpoint(self):
+        """Read the canonical durable stop after all pre-transport work."""
+        try:
+            if (self.emergency_stop_path is None or
+                    self.emergency_stop_parent_identity is None):
+                _fail('EMERGENCY_STOP_ACTIVE')
+            parent = self.emergency_stop_path.parent
+            emergency_intent._verify_directory(
+                parent, self.emergency_stop_parent_identity, None)
+            sample,_ = emergency_intent._TRUSTED_REVIEW_SAMPLE(
+                self.emergency_stop_path)
+            emergency_intent._verify_directory(
+                parent, self.emergency_stop_parent_identity, None)
+            if (type(sample) is not dict or
+                    sample.get('requested') is not False):
+                _fail('EMERGENCY_STOP_ACTIVE')
+        except PaperSubmissionError:
+            raise
+        except Exception:
+            _fail('ADMISSION_CHECK_FAILED')
 
     def checkpoint(self):
         try:
@@ -573,16 +679,62 @@ class _Session:
         if data is not None:
             headers['Content-Type'] = 'application/json'
         request = Request(url, data=data, headers=headers, method=method)
-        timeout = self.checkpoint(); self.requests += 1
+        trusted_transport_start = None
         if method == 'POST':
-            # ``checkpoint`` invokes caller-controlled permission and stop
-            # readers.  Re-sample the exact saved-pair binding after those
-            # callbacks and immediately before the sole transport attempt.
-            # A mutation here closes the durable reservation as NOT_SENT.
-            self.credential_checkpoint('CREDENTIALS_CHANGED_AT_TRANSPORT')
-            self.post_attempted = True
+            trusted_transport_start = _TRUSTED_MONOTONIC()
+            if (type(trusted_transport_start) not in (int, float) or
+                    not math.isfinite(trusted_transport_start)):
+                _fail('CLOCK_INVALID')
+        timeout = self.checkpoint(); self.requests += 1
+        transport_deadline = (None if trusted_transport_start is None else
+                              trusted_transport_start + timeout)
+        response_handle = None
+        response_entered = False
+        def discard_unentered_response():
+            if response_handle is None or response_entered:
+                return
+            try:
+                close = getattr(response_handle, 'close', None)
+                if callable(close):
+                    close()
+                else:
+                    response_handle.__exit__(None, None, None)
+            except Exception:
+                pass
         try:
-            with self.reader.open(request, timeout=timeout) as response:
+            if method == 'POST':
+                # Finish opaque caller callbacks first.  The typed local lease
+                # then serializes cooperating credential/permission revocation,
+                # while the journal snapshot excludes cooperating SQLite
+                # writers through synchronous opener entry.  The independent
+                # stop remains unlocked and is sampled last.  Its writer never
+                # waits on either local guard.
+                self.credential_checkpoint('CREDENTIALS_CHANGED_AT_TRANSPORT')
+                if (type(self.transport_authorization) is not
+                        PaperTransportAuthorizationLease or
+                        not callable(self.request_head_guard)):
+                    _fail('TRANSPORT_AUTHORIZATION_REQUIRED')
+                with self.transport_authorization.claim(self.key, self.secret):
+                    with self.request_head_guard() as locked_read:
+                        locked_read()
+                        self.store_binding_check()
+                        self.reservation_check()
+                        self.store_binding_check()
+                        locked_read()
+                        remaining = transport_deadline - _TRUSTED_MONOTONIC()
+                        if not math.isfinite(remaining) or remaining < .001:
+                            _fail('TIME_BUDGET')
+                        self.independent_stop_checkpoint()
+                        remaining = transport_deadline - _TRUSTED_MONOTONIC()
+                        if not math.isfinite(remaining) or remaining < .001:
+                            _fail('TIME_BUDGET')
+                        self.post_attempted = True
+                        response_handle = self.reader.open(request,
+                            timeout=min(timeout, remaining))
+            else:
+                response_handle = self.reader.open(request, timeout=timeout)
+            with response_handle as response:
+                response_entered = True
                 self.checkpoint()
                 if response.geturl() != url:
                     _fail('RESPONSE_URL_CHANGED')
@@ -618,11 +770,19 @@ class _Session:
         except PaperSubmissionError:
             raise
         except (HTTPError, URLError, TimeoutError, OSError):
-            _fail('TRANSPORT_OUTCOME_UNKNOWN_LOOKUP_REQUIRED' if method == 'POST'
+            _fail('TRANSPORT_OUTCOME_UNKNOWN_LOOKUP_REQUIRED'
+                  if method == 'POST' and self.post_attempted
                   else 'PREFLIGHT_TRANSPORT_FAILED')
         except Exception:
-            _fail('TRANSPORT_OUTCOME_UNKNOWN_LOOKUP_REQUIRED' if method == 'POST'
-                  else 'PREFLIGHT_TRANSPORT_FAILED')
+            _fail('TRANSPORT_OUTCOME_UNKNOWN_LOOKUP_REQUIRED'
+                  if method == 'POST' and self.post_attempted else
+                  'PRE_POST_TRANSPORT_GUARD_FAILED' if method == 'POST' else
+                  'PREFLIGHT_TRANSPORT_FAILED')
+        finally:
+            # Guard exit can raise any BaseException after opener entry but
+            # before the response context is entered.  Always close that
+            # unconsumed handle without swallowing the original signal.
+            discard_unentered_response()
 
 
 def submit_once(journal, client_order_id, api_key, api_secret, *,
@@ -631,7 +791,9 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 confirm_paper_order=False, confirm_single_attempt=False,
                 opener=None, wall_clock=time.time, elapsed_clock=time.monotonic,
                 permission_check=lambda: False, emergency_stop_check=lambda: True,
-                credential_check=lambda: False):
+                credential_check=lambda: False, transport_authorization=None,
+                emergency_stop_order_path=None,
+                confirm_emergency_stop_binding=False):
     """Submit one prepared paper IOC limit after durable uncertainty admission."""
     if confirm_paper_order is not True or confirm_single_attempt is not True:
         _fail('EXPLICIT_SINGLE_ATTEMPT_CONFIRMATION_REQUIRED')
@@ -648,6 +810,11 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         _fail('COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE')
     if type(post_budget) is not PaperProviderPostBudget:
         _fail('POST_BUDGET_REQUIRED')
+    if type(transport_authorization) is not PaperTransportAuthorizationLease:
+        _fail('TRANSPORT_AUTHORIZATION_REQUIRED')
+    (bound_emergency_stop_path,
+     emergency_stop_parent_identity) = _bind_emergency_stop_order_path(
+        emergency_stop_order_path, confirmed=confirm_emergency_stop_binding)
     _hash(expected_post_budget_head)
     _credential(api_key); _credential(api_secret)
     expected_account_id = inspection._uuid(expected_account_id)
@@ -786,6 +953,13 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             if _asset(final_asset, payload) != initial_asset:
                 _fail('POST_RESERVATION_ASSET_CHANGED')
             session.credential_checkpoint('CREDENTIALS_CHANGED_AFTER_MARKER')
+            session.transport_authorization = transport_authorization
+            session.emergency_stop_path = bound_emergency_stop_path
+            session.emergency_stop_parent_identity = (
+                emergency_stop_parent_identity)
+            session.request_head_guard = lambda: (
+                bound_journal.locked_request_snapshot(
+                    client_order_id, expected_head=marker_head))
             raw = session.request(ORDER_URL, payload=payload)
             # A complete parsed provider response is already known.  From
             # here onward only local durable reconciliation is permitted; a
@@ -917,6 +1091,12 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         post_reservation_risk_resampled=True,
         post_reservation_asset_resampled=True,
         post_transport_credentials_rechecked=True,
+        post_transport_controls_rechecked=True,
+        typed_local_transport_authorization_consumed=True,
+        pre_post_journal_writer_exclusion=True,
+        explicit_emergency_stop_binding=True,
+        trusted_transport_deadline_enforced=True,
+        terminal_store_bindings_rechecked=True,
         request_and_post_budget_store_bindings_pinned=True,
         request_and_post_budget_file_identities_pinned=True,
         post_reservation_durable_heads_rechecked=True,
@@ -940,7 +1120,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations='One explicitly confirmed Alpaca paper POST after two matching fixed-endpoint asset eligibility/increment samples, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation account/BTC-position sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects across callbacks; their sampled single-link file identities and exact post-reservation durable heads/state are rechecked through the final pre-POST transport checkpoint. The exact saved-pair binding is sampled again after the final permission/stop checkpoint and immediately before the sole transport attempt; callback failure or pair mutation closes the retained reservation as NOT_SENT. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. Once a complete response is parsed, response persistence and terminal local provider-budget reconciliation use local store/reservation proofs plus the final trusted transport timestamp without permission or emergency-stop reauthorization; they perform no further provider IO and remain exact-head/cold-replay checked. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay, and the immutable response observation is replayed again after the terminal budget write. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is sampled sequential local validation, not an atomic provider snapshot, descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. Durable reservations precede the final samples and IO; any later disagreement consumes the request as original-client-ID lookup-only without sending. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.')
+        limitations="One explicitly confirmed Alpaca paper POST after two matching fixed-endpoint asset eligibility/increment samples, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation account/BTC-position sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects. Opaque caller callbacks finish before an OFF-by-default, one-shot typed local credential/permission lease and request-journal writer-exclusion snapshot are acquired. The exact credential pair and local permission remain serialized for cooperating in-process writers through synchronous opener entry, while cooperating SQLite writers cannot advance the marked request head before that entry. The caller explicitly confirms one canonical owner runtime/order path for the durable latch; it is never inferred from broker evidence storage. After opaque callbacks, the originally pinned request/provider-budget identities, exact pending reservation and a callback-free trusted monotonic deadline are rechecked under the request-head guard. The independent emergency stop does not share either guard and is sampled last; a cut observed before opener entry closes the retained reservation as NOT_SENT, consumes the one-shot authorization and cannot re-arm automatically. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process ownership lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. Once a complete response is parsed, response persistence and terminal local provider-budget reconciliation use local store/reservation proofs plus the final trusted transport timestamp without permission or emergency-stop reauthorization; they perform no further provider IO and remain exact-head/cold-replay checked. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay, and the immutable response observation is replayed again after the terminal budget write. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is cooperating local linearization plus a sampled stop, not an atomic provider snapshot, a distributed credential/permission lease, a provider-side revocation guarantee, descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. A non-cooperating writer, provider-side credential revocation, another host/process outside the typed lease, or a stop asserted after the final sample is not atomically excluded. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.")
 
 
 def fixture_report():
@@ -948,6 +1128,7 @@ def fixture_report():
     import io
     import tempfile
     from pathlib import Path
+    from nexus import emergency_intent
 
     account_id = '01234567-89ab-cdef-0123-456789abcdef'
     key, secret = 'fixture_key_only_123', 'fixture_secret_only_123'
@@ -1003,12 +1184,17 @@ def fixture_report():
         journal.prepare(plan);selected=journal.lookup_request('nx_submit_fixture')
         return journal,selected
     def options(selected,opener,budget):
+        authorization=PaperTransportAuthorizationLease()
+        authorization.arm_once(key,secret,confirm_single_attempt=True)
         return dict(expected_account_id=account_id,expected_head=selected['head_sha256'],
             expected_payload_sha256=selected['plan']['payload_sha256'],
             post_budget=budget,expected_post_budget_head=budget.inspect()['head_sha256'],
             confirm_paper_order=True,confirm_single_attempt=True,opener=opener,
             wall_clock=lambda:1000,elapsed_clock=lambda:50,permission_check=lambda:True,
-            emergency_stop_check=lambda:False,credential_check=lambda:True)
+            emergency_stop_check=lambda:False,credential_check=lambda:True,
+            transport_authorization=authorization,
+            emergency_stop_order_path=str(opener.journal.path.resolve()),
+            confirm_emergency_stop_binding=True)
 
     with tempfile.TemporaryDirectory(prefix='nexus-paper-submit-') as directory:
         root=Path(directory);journal,selected=prepared(root/'success');opener=Opener(journal)
@@ -1136,6 +1322,35 @@ def fixture_report():
                 and credential_history[0]['actual_posts']==0
                 and not any(request.get_method()=='POST'
                             for request in credential_opener.requests))
+        stop_journal,stop_selected=prepared(root/'terminal-stop')
+        stop_budget=PaperProviderPostBudget(
+            root/'terminal-stop-post-budget.sqlite3')
+        stop_opener=Opener(stop_journal);stop_credential_samples=0
+        def stop_credential_check():
+            nonlocal stop_credential_samples
+            stop_credential_samples += 1
+            if stop_credential_samples==3:
+                emergency_intent.persist(stop_journal.path)
+            return True
+        post_transport_stop_blocked=False
+        try:submit_once(stop_journal,'nx_submit_fixture',key,secret,
+            **dict(options(stop_selected,stop_opener,stop_budget),
+                   emergency_stop_check=lambda:emergency_intent.requested(
+                       stop_journal.path),
+                   credential_check=stop_credential_check))
+        except PaperSubmissionError as error:
+            stop_history=stop_budget.history()
+            post_transport_stop_blocked=(
+                str(error)=='PAPER_SUBMISSION_EMERGENCY_STOP_ACTIVE'
+                and stop_credential_samples==3
+                and emergency_intent.requested(stop_journal.path)
+                and stop_journal.recovery()['requests'][0]
+                    ['lookup_by_original_client_id_required']
+                and len(stop_history)==1
+                and stop_history[0]['outcome']=='NOT_SENT'
+                and stop_history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in stop_opener.requests))
         binding_journal,binding_selected=prepared(root/'binding')
         binding_budget=PaperProviderPostBudget(root/'binding-post-budget.sqlite3')
         binding_request_path=binding_journal.path
@@ -1506,6 +1721,19 @@ def fixture_report():
             post_transport_credentials_rechecked=
                 result['post_transport_credentials_rechecked'] is True and
                 post_transport_credential_change_blocked,
+            post_transport_controls_rechecked=
+                result['post_transport_controls_rechecked'] is True and
+                post_transport_stop_blocked,
+            typed_local_transport_authorization_consumed=
+                result['typed_local_transport_authorization_consumed'] is True,
+            pre_post_journal_writer_exclusion=
+                result['pre_post_journal_writer_exclusion'] is True,
+            explicit_emergency_stop_binding=
+                result['explicit_emergency_stop_binding'] is True,
+            trusted_transport_deadline_enforced=
+                result['trusted_transport_deadline_enforced'] is True,
+            terminal_store_bindings_rechecked=
+                result['terminal_store_bindings_rechecked'] is True,
             request_and_post_budget_store_bindings_pinned=
                 result['request_and_post_budget_store_bindings_pinned'] is True and
                 store_bindings_pinned,

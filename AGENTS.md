@@ -1,4 +1,35 @@
 # Nexus Operative continuity instructions
+## v0.340.414 typed paper-POST transport fence
+
+The disconnected single-attempt Alpaca paper boundary now requires an
+OFF-by-default, one-shot typed local credential/permission lease. Opaque caller
+callbacks finish before that lease and the marked request's SQLite writer-
+exclusion snapshot are acquired. Cooperating local credential/permission
+revocation and request-head writers therefore linearize before or after
+synchronous opener entry instead of racing between ordered callbacks. The
+independent emergency stop shares neither guard and is sampled last; a durable
+cut observed before opener entry consumes the authorization and request as
+`NOT_SENT` with zero POSTs and cannot re-arm automatically. Threaded release
+regressions make these local ordering guarantees mandatory.
+
+The final edge uses an explicitly confirmed canonical owner runtime/order path,
+not a path inferred from broker evidence storage. After opaque callbacks it
+rechecks both originally pinned store identities, exact reservation state and a
+callback-free trusted monotonic deadline before reading that bound durable stop.
+
+This is cooperating local linearization plus a sampled stop, not atomic or
+distributed broker coordination. Provider-side credential revocation,
+non-cooperating writers, other hosts and a stop asserted after the last sample
+are not atomically excluded. It is not broker/account/source, genuine-market,
+sustained-trial, performance, profitability, funding, cloud, Windows/installer
+or release acceptance. Engagement and optional AI remain OFF by default;
+limits, account checks, reducing exits, fail-closed behavior and the independent
+emergency-stop path remain unchanged. No button or editable parameter was
+added, so the seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The read-only roadmap estimate stays exact 38%
+weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
 ## v0.340.413 durable final-halt reserve
 
 Durable order admission now preserves one final appendable command slot for

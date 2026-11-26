@@ -1,4 +1,32 @@
 # Nexus Operative continuity instructions
+## v0.340.417 direct paper BUY tier-OFF commit fence
+
+The direct paper-portfolio BUY path now carries its selected tier into the
+durable ledger transaction. After the portfolio writer reservation and exact
+ledger-governor audit, it acquires the same bounded settings-database writer
+reservation used by linked fills. An OFF or cap change that commits first is
+therefore observed and refuses the position. If the BUY owns both writer
+reservations first, OFF cannot acknowledge until the position, cash delta,
+position event and transaction seal commit atomically. The route's earlier
+permission check remains only a fail-fast preflight; the in-transaction guard
+is authoritative.
+
+Two threaded real-SQLite regressions force both orderings and verify the
+resulting durable portfolio plus final OFF state. The linked gateway fence from
+v0.340.416 remains intact, while reducing SELL exits and the independent
+emergency latch do not acquire the tier guard. This is cooperating local
+transaction ordering, not broker/account/source acceptance, genuine-market or
+sustained-trial acceptance, distributed coordination, performance,
+profitability, funding, cloud, Windows/installer or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed behavior and exits remain intact. No button or editable parameter
+was added, so the seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate
+remains exact 38% weighted (displayed about 40%, 30–45% low-confidence), with
+0/9 stages independently accepted and no release or trading permission.
+
+
+
 ## v0.340.416 tier-OFF durable BUY commit fence
 
 A linked durable BUY fill now holds a bounded SQLite writer reservation on the

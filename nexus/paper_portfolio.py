@@ -7,7 +7,7 @@ import os
 import sqlite3
 import threading
 import time
-from contextlib import closing,contextmanager
+from contextlib import closing,contextmanager,nullcontext
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from nexus.public_data import PRODUCTS
@@ -159,7 +159,7 @@ def verify_ledger(db):
         raise ValueError("Cash journal mismatch: new simulated buys blocked")
     return cash
 
-def buy(product,notional,quote):
+def buy(product,notional,quote,tier=None):
     amount=num(notional)
     _,ask=check_quote(product,quote)
     with LOCK:
@@ -169,25 +169,31 @@ def buy(product,notional,quote):
                 # Reducing SELL exits intentionally do not use this governor.
                 from nexus.portfolio_governor import require_safe_ledger
                 require_safe_ledger(db)
-                meta=dict(db.execute("SELECT key,value FROM meta"))
-                if meta.get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
-                if "cash" not in meta:raise ValueError("Initialize first")
-                if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
-                    raise ValueError("Already holding this paper product")
-                cash=verify_ledger(db);capital=D(meta["initial"])
-                exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
-                if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")
-                if amount>capital*D(".02") or amount*(D(1)+FEE)>cash:
-                    raise ValueError("Position cap or cash exceeded")
-                qty=amount/ask
-                delta=-amount*(D(1)+FEE)
-                db.execute("INSERT INTO positions(product,quantity,entry) VALUES(?,?,?)",(product,str(qty),str(ask)))
-                db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
-                cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
-                db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
-                           (cur.lastrowid,"PAPER_BUY",product,str(qty),str(ask)))
-                from nexus.transaction_seals import append_seal
-                append_seal(db,cur.lastrowid)
+                if tier is None:
+                    permission_guard=nullcontext()
+                else:
+                    from nexus.tier_permissions import entry_commit_guard
+                    permission_guard=entry_commit_guard(tier,amount)
+                with permission_guard:
+                    meta=dict(db.execute("SELECT key,value FROM meta"))
+                    if meta.get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
+                    if "cash" not in meta:raise ValueError("Initialize first")
+                    if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
+                        raise ValueError("Already holding this paper product")
+                    cash=verify_ledger(db);capital=D(meta["initial"])
+                    exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
+                    if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")
+                    if amount>capital*D(".02") or amount*(D(1)+FEE)>cash:
+                        raise ValueError("Position cap or cash exceeded")
+                    qty=amount/ask
+                    delta=-amount*(D(1)+FEE)
+                    db.execute("INSERT INTO positions(product,quantity,entry) VALUES(?,?,?)",(product,str(qty),str(ask)))
+                    db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
+                    cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
+                    db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
+                               (cur.lastrowid,"PAPER_BUY",product,str(qty),str(ask)))
+                    from nexus.transaction_seals import append_seal
+                    append_seal(db,cur.lastrowid)
     return state()
 
 def sell(product,quote):

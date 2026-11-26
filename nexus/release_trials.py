@@ -12,12 +12,15 @@ from pathlib import Path
 import platform
 import re
 import sqlite3
+import stat
 import subprocess
 import sys
 import tempfile
 import time
 
 PROFILES = ('forward', 'operations', 'recovery', 'capacity', 'http', 'activity', 'activity_acceptance', 'reconciliation_acceptance', 'pacing', 'balance', 'collection', 'retained_balance', 'inspection_inventory', 'observation_review', 'open_order_terms', 'encrypted_observation')
+DEFAULT_CHILD_TIMEOUT_SECONDS = 240
+WINDOWS_RECONCILIATION_ACCEPTANCE_TIMEOUT_SECONDS = 600
 PAPER_HTTP_CHECKS = ('missing_status_created_nothing', 'status_vault_silent',
     'unconfirmed_read_denied', 'invalid_scope_denied', 'foreign_origin_denied',
     'precredential_denial_reset_scoped',
@@ -35,7 +38,8 @@ PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
     'bounded_recovery_crash_drill',
     'bounded_recovery_step','submission_admission',
     'single_attempt_submission_transport','resolved_unknown_post_recovery',
-    'provider_read_budget_recovery','account_read_pacing_recovery',
+    'provider_read_budget_recovery','provider_budget_write_acknowledgement',
+    'account_read_pacing_recovery',
     'provider_read_history_review','account_read_history_review',
     'provider_post_history_review','provider_post_activity_review','passed',
     'source','completed_sessions','replayed_events','cooldown_enforced',
@@ -123,6 +127,7 @@ HTTP_FAILURE_PHASES = frozenset({
     'ENDPOINT_ONBOARDING_READINESS', 'ENDPOINT_AI_STATUS',
     'ENDPOINT_PORTFOLIO', 'ENDPOINT_FORWARD_STATUS',
     'ENDPOINT_FORWARD_SESSIONS', 'ENDPOINT_FORWARD_PREFLIGHT',
+    'ENDPOINT_AUTHORITY_INVENTORY',
     'ENDPOINT_FOUND_MARKETS', 'ENDPOINT_TRIAL_READINESS',
     'ENDPOINT_EXECUTION_RECOVERY', 'ENDPOINT_FORWARD_RECOVERY',
     'ENDPOINT_ROOT_REDIRECT', 'ENDPOINT_PORTAL', 'BOUNDARY', 'DEFAULTS',
@@ -144,6 +149,18 @@ def _http_phase(phase, operation, *args, **kwargs):
         raise
     except Exception:
         raise ReleaseTrialError('RELEASE_TRIAL_HTTP_' + phase + '_FAILED') from None
+
+
+def _paper_tools_phase(operation, *args, **kwargs):
+    """Retain only a reviewed fixed paper-tool substage failure code."""
+    from tools.packaged_paper_tools_smoke import FAILURE_CODES
+    try:
+        return operation(*args, **kwargs)
+    except ValueError as error:
+        code = str(error)
+        if type(error) is ValueError and code in FAILURE_CODES:
+            raise ReleaseTrialError('RELEASE_TRIAL_HTTP_' + code) from None
+        raise
 
 
 def _http_trial_response_body(response, *, tolerate_precredential_denial_reset=False):
@@ -437,6 +454,7 @@ def _http_trial():
             ('ENDPOINT_FORWARD_STATUS', '/api/paper/forward'),
             ('ENDPOINT_FORWARD_SESSIONS', '/api/paper/forward/sessions'),
             ('ENDPOINT_FORWARD_PREFLIGHT', '/api/paper/forward/preflight'),
+            ('ENDPOINT_AUTHORITY_INVENTORY', '/api/authority/inventory'),
             ('ENDPOINT_FOUND_MARKETS', '/api/research/found-markets'),
             ('ENDPOINT_TRIAL_READINESS', '/api/paper/forward/trial-readiness'),
             ('ENDPOINT_EXECUTION_RECOVERY', '/api/execution/recovery'),
@@ -472,9 +490,25 @@ def _http_trial():
             responses['/api/execution/recovery']['status']=='NO_RETAINED_HISTORY' and
             responses['/api/paper/forward/recovery']['order_history_present'] is False,
             'PASSIVE_ORDER_RECOVERY_STARTUP')
+        authority_inventory=responses['/api/authority/inventory']
+        _require(authority_inventory['route_bindings_verified'] is True and
+            authority_inventory['source_declaration_complete'] is True and
+            authority_inventory['mutating_route_count']==52 and
+            authority_inventory['external_transport_boundaries_verified'] is True and
+            authority_inventory['external_transport_boundary_count']==2 and
+            all(authority_inventory[key] is False for key in (
+                'broker_order_route_present','bank_transfer_route_present',
+                'cloud_control_route_present','bank_transfer_transport_present',
+                'cloud_control_transport_present','automatic_resume_present',
+                'learned_policy_promotion_present','broker_connected',
+                'live_orders_enabled','money_movement_enabled','release_approved',
+                'spendable_funds_verified')) and
+            authority_inventory['broker_order_transport_present'] is True and
+            authority_inventory['ai_advisory_transport_present'] is True,
+            'HTTP_AUTHORITY_INVENTORY')
         trial=responses['/api/paper/forward/trial-readiness']
         owner=trial['local_owner_quiescence']
-        _require(trial['read_only'] is True and trial['status']=='NO_RETAINED_HISTORY' and trial['review'] is None and trial['quote_capacity']['estimated_additional_observations']==51841 and all(trial[k] is False for k in ('automatic_start','strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled','money_movement_enabled')), 'HTTP_TRIAL_READINESS_PASSIVE')
+        _require(trial['read_only'] is True and trial['status']=='NO_RETAINED_HISTORY' and trial['review'] is None and trial['quote_capacity']['estimated_additional_observations']==51841 and trial['event_capacity']['estimated_additional_events']==103685 and trial['event_capacity']['room_for_additional_requested_window'] is True and all(trial[k] is False for k in ('automatic_start','strategy_validated','sustained_forward_accepted','release_approved','live_orders_enabled','money_movement_enabled')), 'HTTP_TRIAL_READINESS_PASSIVE')
         _require(owner['checked'] is True and owner['state']=='OWNER_PATH_ABSENCE_BOUND' and
             owner['retained_history_requires_owner_lock'] is True and
             all(owner[key] is False for key in ('active_owner_detected',
@@ -499,6 +533,7 @@ def _http_trial():
         _require(not any(attempts.values()), 'HTTP_PAPER_EXTERNAL_ACCESS')
         result = dict(passed=True, transport='REAL_LOOPBACK_TCP_HTTP', startup_engine_stopped=True,
             endpoints_checked=list(responses), startup_data_files=0, passive_forward_reads_preserved_missing_storage=True, **attempts,
+            authority_inventory=authority_inventory,
             paper_pacing=paper_pacing,first_run_defaults=first_run_defaults,read_only_preflight_preserved_stopped_gate=True,found_markets_passive_read=True,found_markets_shared_budget_scope_checked=True,trial_readiness_passive_read=True,trial_readiness_owner_quiescence_checked=True,progress_estimate_scope_checked=True,
             credential_policy_branch='INJECTED_WINDOWS_ONLY_GATE',untrusted_host_rejected=True,cross_origin_rejected=True,api_no_store=True,proxy_headers_trusted=False,
             limitations='Real local source-process HTTP only; paper credential and provider seams are injected fixtures with temporary retained pacing. No rendered browser, Windows executable, actual provider, order or sustained market test.')
@@ -555,7 +590,8 @@ def _http_trial():
     result['lifecycle_stop_scope'] = 'DEDICATED_APPLICATION_LIFECYCLE_WORKER'
     result['shutdown_fence_order'] = lifecycle_stop_order
     from tools.packaged_paper_tools_smoke import run as paper_tools_trial
-    result['paper_tools_source']=_http_phase('PAPER_TOOLS', paper_tools_trial,
+    result['paper_tools_source']=_http_phase('PAPER_TOOLS', _paper_tools_phase,
+        paper_tools_trial,
         [sys.executable,str(Path(__file__).resolve().parents[1]/'portable'/'desktop.py')])
     return result
 
@@ -907,6 +943,8 @@ def _pacing_trial():
         account_read_review=account_read_review_fixture()
         from nexus.paper_provider_post_activity_review import fixture_report as post_activity_fixture
         post_activity=post_activity_fixture()
+        from nexus.paper_provider_budget_ack_evidence import fixture_report as budget_ack_fixture
+        budget_ack=budget_ack_fixture()
         from nexus.paper_recovery_step import fixture_report as recovery_step_fixture
         bounded_step=recovery_step_fixture()
         from nexus.paper_recovery_drill import fixture_report as crash_fixture
@@ -914,7 +952,7 @@ def _pacing_trial():
         from nexus.sqlite_journal_guard import path_fixture_report
         from nexus.alpaca_paper_contract import timestamp_fixture_report
         from nexus.paper_read_pacing import completion_fixture_report
-        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),owner_scope_durability=_owner_scope_durability_trial(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,account_read_history_review=account_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),owner_scope_durability=_owner_scope_durability_trial(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,provider_budget_write_acknowledgement=budget_ack,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,account_read_history_review=account_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -1095,6 +1133,7 @@ def _execute(profile):
         from nexus.paper_provider_post_reconciliation_review import fixture_report as post_reconciliation_fixture
         from nexus.paper_provider_post_fee_reference_review import fixture_report as post_fee_fixture
         from nexus.paper_provider_post_known_fee_reserve_review import fixture_report as post_fee_reserve_fixture
+        from nexus.paper_transport_uncertainty_matrix import fixture_report as transport_matrix_fixture
         from nexus.alpaca_activity_sse_review import fixture_report as activity_sse_fixture
         from nexus.alpaca_activity_sse_reconnect_review import fixture_report as activity_sse_reconnect_fixture
         from nexus.alpaca_activity_sse_cursor_store import fixture_report as activity_sse_cursor_fixture
@@ -1116,6 +1155,7 @@ def _execute(profile):
         result['provider_post_reconciliation']=post_reconciliation_fixture()
         result['provider_post_fee_references']=post_fee_fixture()
         result['provider_post_known_fee_reserve']=post_fee_reserve_fixture()
+        result['transport_uncertainty_matrix']=transport_matrix_fixture()
         result['supplied_activity_sse_links']=activity_sse_fixture()
         result['supplied_activity_sse_reconnect']=activity_sse_reconnect_fixture()
         result['private_activity_sse_cursor_store']=activity_sse_cursor_fixture()
@@ -1209,7 +1249,9 @@ def _validate(profile, result):
         from nexus.durable_benchmark import (LATENCY_KEYS,LIMITATIONS as CAPACITY_LIMITATIONS,
             PUBLIC_KEYS as CAPACITY_KEYS,RECOVERY_KEYS,TREATMENT_KEYS)
         from nexus.durable_burst import (LIMITATIONS as BURST_LIMITATIONS,
-            PUBLIC_KEYS as BURST_KEYS)
+            PUBLIC_KEYS as BURST_KEYS,TIMING_ATTESTATION_KEYS)
+        from nexus.execution_capacity import (CONTROL_RESERVE,
+            PUBLIC_KEYS as DURABLE_CAPACITY_KEYS)
         _require(type(result) is dict and frozenset(result)==
             CAPACITY_KEYS|frozenset(('execution_quality','paper_execution_quality')),
             'CAPACITY_PROFILE_SCHEMA')
@@ -1264,6 +1306,7 @@ def _validate(profile, result):
             _require(burst['scope']=='TEMPORARY_LINKED_LEDGER_FIXTURE_BURST' and
                 burst['atomic_order_transactions'] is atomic and
                 burst['accounting_consistent'] is burst['halted'] is True and
+                burst['capacity_bounds_verified'] is True and
                 burst['application_accounts_changed'] is burst['target_validated'] is False and
                 burst['limitations']==BURST_LIMITATIONS,
                 'CAPACITY_BURST_SCOPE')
@@ -1281,13 +1324,63 @@ def _validate(profile, result):
                 type(burst['queue_age_limit_ms']) is float and
                 burst['queue_age_limit_ms']==250.0,
                 'CAPACITY_BURST_COUNTS')
+            capacity=burst['durable_capacity']
+            _require(type(capacity) is dict and frozenset(capacity)==DURABLE_CAPACITY_KEYS,
+                'CAPACITY_BURST_RESERVE_SCHEMA')
+            _require(capacity['read_only'] is True and
+                capacity['command_count']==capacity['retained_commands']==burst['durable_commands'] and
+                capacity['intent_count']==2*burst['completed_roundtrips'] and
+                capacity['ordinary_commands_remaining']+capacity['command_count']==
+                    capacity['ordinary_command_limit'] and
+                capacity['total_commands_remaining']+capacity['command_count']==
+                    capacity['command_limit'] and
+                capacity['intents_remaining']+capacity['intent_count']==capacity['intent_limit'] and
+                capacity['ordinary_intent_limit']==capacity['intent_limit']-1 and
+                capacity['ordinary_intents_remaining']+capacity['intent_count']==
+                    capacity['ordinary_intent_limit'] and
+                capacity['exit_intent_reserve_active'] is True and
+                capacity['exit_intents_remaining']==1 and
+                capacity['control_commands_reserved']==CONTROL_RESERVE and
+                capacity['new_intents_allowed'] is capacity['lifecycle_intake_allowed'] is False and
+                capacity['reasons']==['EMERGENCY_HALT_ACTIVE'] and
+                capacity['automatic_archival_available'] is capacity['history_deleted'] is False,
+                'CAPACITY_BURST_RESERVE_BOUNDS')
             _require(all(latency(burst[key]) for key in ('queue_wait_latency',
                     'durable_roundtrip_latency','admitted_to_completion_latency')) and
                 type(burst['cold_recovery_ms']) is float and
                 math.isfinite(burst['cold_recovery_ms']) and burst['cold_recovery_ms']>=0,
                 'CAPACITY_BURST_TIMING')
+            timing=burst['timing_attestation']
+            _require(type(timing) is dict and frozenset(timing)==TIMING_ATTESTATION_KEYS and
+                timing['scope']=='PROCESS_LOCAL_BOUNDED_BURST_WINDOW' and
+                type(timing['clock_samples']) is int and
+                timing['clock_samples']==2+timing['dequeued_outcomes']+
+                    timing['completed_outcomes'] and
+                type(timing['window_elapsed_ms']) is float and
+                math.isfinite(timing['window_elapsed_ms']) and timing['window_elapsed_ms']>=0 and
+                all(type(timing[key]) is int and timing[key]>=0 for key in
+                    ('queue_wait_sample_count','durable_roundtrip_sample_count',
+                     'admitted_to_completion_sample_count','dequeued_outcomes',
+                     'completed_outcomes','expired_outcomes','flushed_outcomes')) and
+                timing['queue_wait_sample_count']==timing['dequeued_outcomes']==
+                    burst['completed_roundtrips']+burst['expired_before_execution'] and
+                timing['durable_roundtrip_sample_count']==
+                    timing['admitted_to_completion_sample_count']==
+                    timing['completed_outcomes']==burst['completed_roundtrips'] and
+                timing['expired_outcomes']==burst['expired_before_execution'] and
+                timing['flushed_outcomes']==burst['halt_flushed'] and
+                timing['dequeued_outcomes']+timing['flushed_outcomes']==burst['admitted'] and
+                all(timing[key] is True for key in ('outcome_partition_verified',
+                    'finite_nonnegative_samples','monotonic_sequence_verified',
+                    'emergency_halt_in_window')) and
+                timing['market_or_broker_latency'] is timing['throughput_claimed'] is False,
+                'CAPACITY_BURST_TIMING_ATTESTATION')
     elif profile != 'forward': _require(result.get('passed') is True, 'PROFILE_FAILED')
     if profile == 'http':
+        from nexus.authority_inventory import (AUTHORITY_FLAGS,
+            AUTHORITY_PUBLIC_KEYS, AUTHORITIES, EXTERNAL_TRANSPORT_BOUNDARIES,
+            EXTERNAL_TRANSPORT_BOUNDARY_PUBLIC_KEYS, MUTATING_ROUTE_PUBLIC_KEYS,
+            MUTATING_ROUTES, REPORT_PUBLIC_KEYS)
         from tools.packaged_paper_tools_smoke import CHECKS as PAPER_TOOL_CHECKS
         tools=result['paper_tools_source']
         native_windows_required=tools['host_os']=='WINDOWS_NT'
@@ -1298,6 +1391,59 @@ def _validate(profile, result):
             all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
         _require(result['progress_estimate_scope_checked'] is True,'HTTP_PROGRESS_ASSESSMENT')
+        authority=result['authority_inventory']
+        _require(type(authority) is dict and
+            frozenset(authority)==REPORT_PUBLIC_KEYS and
+            authority['mode']=='READ_ONLY_SOURCE_DECLARED_ADMISSION_AUTHORITY_INVENTORY' and
+            authority['read_only'] is True and
+            authority['route_bindings_verified'] is True and
+            authority['source_declaration_complete'] is True and
+            authority['authority_count']==len(AUTHORITIES) and
+            authority['authority_ids']==[row['id'] for row in AUTHORITIES] and
+            authority['mutating_route_count']==len(MUTATING_ROUTES)==52 and
+            authority['external_transport_boundaries_verified'] is True and
+            authority['external_transport_boundary_count']==len(EXTERNAL_TRANSPORT_BOUNDARIES)==2 and
+            authority['runtime_engagement_default']=='OFF' and
+            authority['external_ai_default']=='OFF',
+            'HTTP_AUTHORITY_INVENTORY_SCHEMA')
+        _require(type(authority['authorities']) is list and
+            len(authority['authorities'])==len(AUTHORITIES) and
+            all(type(row) is dict and frozenset(row)==AUTHORITY_PUBLIC_KEYS and
+                row['automatic_start'] is False and
+                row['automatic_resume'] is False and
+                row['learned_policy_promotion'] is False and
+                all(row[flag] is False for flag in AUTHORITY_FLAGS)
+                for row in authority['authorities']),
+            'HTTP_AUTHORITY_DECLARATIONS')
+        expected_mutating=[dict(method=method,path=path,
+            authority_class=authority_class,capability=capability)
+            for method,path,authority_class,capability in MUTATING_ROUTES]
+        _require(type(authority['mutating_routes']) is list and
+            authority['mutating_routes']==expected_mutating and
+            all(type(row) is dict and
+                frozenset(row)==MUTATING_ROUTE_PUBLIC_KEYS
+                for row in authority['mutating_routes']),
+            'HTTP_AUTHORITY_MUTATING_ROUTES')
+        expected_external=[{**row,**{flag:False for flag in AUTHORITY_FLAGS}}
+            for row in EXTERNAL_TRANSPORT_BOUNDARIES]
+        _require(type(authority['external_transport_boundaries']) is list and
+            authority['external_transport_boundaries']==expected_external and
+            all(type(row) is dict and
+                frozenset(row)==EXTERNAL_TRANSPORT_BOUNDARY_PUBLIC_KEYS and
+                row['explicit_confirmation_required'] is True and
+                row['automatic_start'] is row['automatic_resume'] is False and
+                all(row[flag] is False for flag in AUTHORITY_FLAGS)
+                for row in authority['external_transport_boundaries']),
+            'HTTP_AUTHORITY_EXTERNAL_TRANSPORTS')
+        _require(all(authority[key] is False for key in (
+                'broker_order_route_present','bank_transfer_route_present',
+                'cloud_control_route_present','bank_transfer_transport_present',
+                'cloud_control_transport_present','automatic_resume_present',
+                'learned_policy_promotion_present',*AUTHORITY_FLAGS)),
+            'HTTP_AUTHORITY_DENIALS')
+        _require(authority['broker_order_transport_present'] is True and
+            authority['ai_advisory_transport_present'] is True,
+            'HTTP_AUTHORITY_EXTERNAL_TRANSPORTS')
         _require(result['trial_readiness_passive_read'] is True and
             result['trial_readiness_owner_quiescence_checked'] is True,
             'HTTP_TRIAL_READINESS_READ')
@@ -1919,6 +2065,7 @@ def _validate(profile, result):
             ('marker_committed_before_post','exactly_one_post','response_retained',
              'account_and_position_capacity_resampled',
              'post_reservation_risk_resampled',
+             'post_reservation_asset_resampled',
              'post_transport_credentials_rechecked',
              'request_and_post_budget_store_bindings_pinned',
              'request_and_post_budget_file_identities_pinned',
@@ -1941,6 +2088,7 @@ def _validate(profile, result):
              'alpaca_post_budget_scope_required',
              'late_risk_change_blocked_before_reservation',
              'post_reservation_risk_change_blocked_before_post',
+             'post_reservation_asset_change_blocked_before_post',
              'transport_loss_preserved_for_original_id_lookup','repeat_submission_blocked',
              'output_never_sendable')),'SUBMISSION_TRANSPORT_FENCES')
         _require(all(transport[k] is False for k in ('actual_provider_access','actual_vault_access',
@@ -1986,6 +2134,16 @@ def _validate(profile, result):
             'ready_for_routing','live_orders_enabled','money_movement_enabled',
             'release_approved')),
             'PROVIDER_READ_RECOVERY_AUTHORITY')
+        budget_ack=result['provider_budget_write_acknowledgement']
+        from nexus.paper_provider_budget_ack_evidence import (
+            CHECKS as BUDGET_ACK_CHECKS, FLAGS as BUDGET_ACK_FLAGS)
+        _require(budget_ack['source']==
+            'TEMPORARY_PROVIDER_BUDGET_ACK_FIXTURE' and
+            budget_ack['passed'] is True and
+            all(budget_ack[k] is True for k in BUDGET_ACK_CHECKS),
+            'PROVIDER_BUDGET_ACK_FENCES')
+        _require(all(budget_ack[k] is False for k in BUDGET_ACK_FLAGS),
+            'PROVIDER_BUDGET_ACK_AUTHORITY')
         provider_read=result['provider_read_history_review']
         _require(provider_read['source']=='TEMPORARY_LOCAL_PROVIDER_READ_HISTORY_FIXTURE' and
             provider_read['passed'] is True and all(provider_read[k] is True for k in
@@ -2109,6 +2267,13 @@ def _validate(profile, result):
         from nexus.paper_provider_post_known_fee_reserve_review import (
             FLAGS as POST_FEE_RESERVE_FLAGS,
             PUBLIC_FIXTURE_KEYS as POST_FEE_RESERVE_PUBLIC_KEYS)
+        from nexus.paper_transport_uncertainty_matrix import (
+            AUTHORITY_FLAGS as TRANSPORT_MATRIX_AUTHORITY_FLAGS,
+            CHECKS as TRANSPORT_MATRIX_CHECKS,
+            LIMITATIONS as TRANSPORT_MATRIX_LIMITATIONS,
+            MODE as TRANSPORT_MATRIX_MODE,
+            PUBLIC_FIXTURE_KEYS as TRANSPORT_MATRIX_PUBLIC_KEYS,
+            SOURCE as TRANSPORT_MATRIX_SOURCE)
         from nexus.alpaca_activity_sse_review import FLAGS as ACTIVITY_SSE_FLAGS
         from nexus.alpaca_activity_sse_reconnect_review import FLAGS as ACTIVITY_SSE_RECONNECT_FLAGS
         from nexus.alpaca_activity_sse_cursor_store import FLAGS as ACTIVITY_SSE_CURSOR_FLAGS
@@ -2124,7 +2289,8 @@ def _validate(profile, result):
             'account_evidence_bundle', 'exact_account_response',
             'exact_activity_response', 'exact_response_bundle',
             'provider_post_reconciliation', 'provider_post_fee_references',
-            'provider_post_known_fee_reserve', 'supplied_activity_sse_links',
+            'provider_post_known_fee_reserve', 'transport_uncertainty_matrix',
+            'supplied_activity_sse_links',
             'supplied_activity_sse_reconnect',
             'private_activity_sse_cursor_store',
             'supplied_activity_sse_wire_session',
@@ -2226,6 +2392,21 @@ def _validate(profile, result):
             (*POST_FEE_RESERVE_FLAGS,'actual_provider_access',
              'actual_vault_access')),
             'PROVIDER_POST_KNOWN_FEE_RESERVE_AUTHORITY')
+        transport_matrix=result['transport_uncertainty_matrix']
+        _require(type(transport_matrix) is dict and
+            frozenset(transport_matrix)==TRANSPORT_MATRIX_PUBLIC_KEYS and
+            transport_matrix['mode']==TRANSPORT_MATRIX_MODE and
+            transport_matrix['source']==TRANSPORT_MATRIX_SOURCE and
+            transport_matrix['passed'] is True and
+            type(transport_matrix['surfaces_verified']) is int and
+            transport_matrix['surfaces_verified']==3 and
+            all(transport_matrix[key] is True
+                for key in TRANSPORT_MATRIX_CHECKS) and
+            transport_matrix['limitations']==TRANSPORT_MATRIX_LIMITATIONS,
+            'TRANSPORT_UNCERTAINTY_MATRIX')
+        _require(all(transport_matrix[key] is False
+            for key in TRANSPORT_MATRIX_AUTHORITY_FLAGS),
+            'TRANSPORT_UNCERTAINTY_MATRIX_AUTHORITY')
         activity_sse=result['supplied_activity_sse_links']
         _require(activity_sse['source']==
             'SYNTHETIC_SUPPLIED_ACTIVITY_SSE_LINK_FIXTURE' and
@@ -2258,6 +2439,8 @@ def _validate(profile, result):
                 'review_fixture_passed','checkpoint_committed',
                 'cold_restart_recovers_cursor',
                 'exact_stale_head_replay_idempotent',
+                'commit_durability_failure_replays_exactly',
+                'commit_sync_preserves_process_control',
                 'output_never_authoritative')) and
             cursor['actual_storage_retained'] is False,
             'PRIVATE_ACTIVITY_SSE_CURSOR_STORE')
@@ -2305,6 +2488,10 @@ def _validate(profile, result):
                 'checkpoint_exception_scope_pinned',
                 'semantic_review_exception_scope_pinned',
                 'malformed_checkpoint_acknowledgement_retained',
+                'cold_checkpoint_binding_disagreement_retained',
+                'cursor_file_replacement_rejected',
+                'cursor_directory_creation_rejected',
+                'transport_boundary_rejects_promoted_acknowledgement',
                 'no_private_identifier_or_credential_echo',
                 'no_automatic_or_financial_authority')) and
             checkpoint['actual_storage_retained'] is False,
@@ -2318,6 +2505,8 @@ def _validate(profile, result):
                 'first_failure_retained_without_retry',
                 'lost_reservation_ack_replays_without_provider_request',
                 'lost_retry_result_ack_replays_without_new_attempt',
+                'reservation_commit_durability_replays_exactly',
+                'commit_sync_preserves_process_control',
                 'emergency_stop_blocks_before_reconnect_storage',
                 'control_callback_mutation_blocks_before_provider_request',
                 'control_callback_cursor_advance_blocks_before_provider_request',
@@ -2335,6 +2524,7 @@ def _validate(profile, result):
                 'pending_checkpoint_exception_rechecks_settled_files',
                 'reconciliation_exception_rechecks_settled_files',
                 'checkpoint_reconciliation_replay_is_byte_stable',
+                'type_confused_replays_rejected',
                 'emergency_stop_retires_pending_without_external_access',
                 'emergency_stop_closes_retry_wait_without_new_attempt',
                 'emergency_stop_blocks_retry_schedule_during_result',
@@ -2596,7 +2786,8 @@ def _validate(profile, result):
             result['journal_file_fingerprints_rechecked'] is True and
             result['journal_file_identities_rechecked'] is True and
             result['journal_store_bindings_rechecked'] is True and
-            result['semantic_reader_failures_rechecked'] is True,
+            result['semantic_reader_failures_rechecked'] is True and
+            result['selected_journal_leaf_links_rejected'] is True,
             'RECONCILIATION_ACCEPTANCE_BINDING')
         _require(result['identity_replacement_failure_rejected'] is True and
             result['store_retarget_rejected'] is True,
@@ -2664,15 +2855,217 @@ def _validate(profile, result):
         _require(reviewed['review_reasons'] == ['ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED'], 'ACTIVITY_CONSISTENCY')
     if profile == 'forward':
         from nexus.forward_drill import (COVERAGE_REVIEW_REASONS,
-            LATENCY_PUBLIC_KEYS, LIMITATIONS, PUBLIC_KEYS,
+            BROKER_INTENT_LIMITATIONS, BROKER_INTENT_PUBLIC_KEYS,
+            BROKER_INTENT_RECONCILIATION_PUBLIC_KEYS,
+            FAULT_CASE_PUBLIC_KEYS, FAULT_LIMITATIONS, FAULT_PUBLIC_KEYS,
+            EXCHANGE_ADMISSION_CRASH_LIMITATIONS,
+            EXCHANGE_ADMISSION_CRASH_PUBLIC_KEYS,
+            LATENCY_PUBLIC_KEYS, LIMITATIONS, NO_FILL_CRASH_LIMITATIONS,
+            NO_FILL_CRASH_PUBLIC_KEYS, PROCESS_CONTROL_CASE_PUBLIC_KEYS,
+            PROCESS_CONTROL_PUBLIC_KEYS, PUBLIC_KEYS, SCHEDULER_CADENCE_CASE_PUBLIC_KEYS,
+            SCHEDULER_CADENCE_LIMITATIONS, SCHEDULER_CADENCE_PUBLIC_KEYS,
+            REPEATED_INTERRUPTION_LIMITATIONS, REPEATED_INTERRUPTION_PUBLIC_KEYS,
             RECOVERED_PUBLIC_KEYS, SESSION_PUBLIC_KEYS)
+        from nexus.paper_forward import (COMMIT_DURABILITY_CHECKS,
+            COMMIT_DURABILITY_PUBLIC_KEYS)
         from nexus.forward_trial_review import (FLAGS as COVERAGE_FLAGS,
             LIMITATIONS as COVERAGE_LIMITATIONS, PUBLIC_KEYS as COVERAGE_PUBLIC_KEYS)
         _require(type(result) is dict and frozenset(result)==PUBLIC_KEYS,
             'FORWARD_PROFILE_SCHEMA')
         recovered=result['recovered']
+        durability=result['commit_durability']
+        faults=result['fault_injection']
+        cadence=result['scheduler_cadence']
+        no_fill_crash=result['no_fill_crash']
+        repeated=result['repeated_interruption']
+        exchange_admission=result['exchange_admission_crash']
+        broker_intent=result['broker_intent_binding']
+        broker_intent_reconciliation=result['broker_intent_reconciliation']
+        _require(type(durability) is dict and
+            frozenset(durability)==COMMIT_DURABILITY_PUBLIC_KEYS and
+            durability['source']==
+                'TEMPORARY_INJECTED_FORWARD_COMMIT_DURABILITY_FIXTURE' and
+            durability['passed'] is True and
+            all(durability[key] is True for key in COMMIT_DURABILITY_CHECKS) and
+            all(durability[key] is False for key in ('actual_provider_access',
+                'broker_connected','live_orders_enabled',
+                'sustained_forward_accepted','release_approved')),
+            'FORWARD_COMMIT_DURABILITY')
         _require(type(recovered) is dict and frozenset(recovered)==RECOVERED_PUBLIC_KEYS,
             'FORWARD_RECOVERY_SCHEMA')
+        _require(type(exchange_admission) is dict and
+            frozenset(exchange_admission)==EXCHANGE_ADMISSION_CRASH_PUBLIC_KEYS,
+            'FORWARD_EXCHANGE_ADMISSION_CRASH_SCHEMA')
+        _require(exchange_admission['mode']==
+                'DISPOSABLE_EXCHANGE_ADMISSION_CRASH' and
+            exchange_admission['passed'] is True and
+            exchange_admission['exit_code']==79 and
+            type(exchange_admission['exit_code']) is int and
+            all(exchange_admission[key] is True for key in (
+                'process_terminated','admission_retained','quote_missing',
+                'restart_floor_retained','replay_rejected',
+                'marker_count_stable','altered_price_orderless',
+                'tail_review_required')) and
+            all(exchange_admission[key] is False for key in (
+                'trial_coverage_granted','actual_provider_requests',
+                'broker_connected','live_orders_enabled','release_approved')) and
+            exchange_admission['limitations']==
+                EXCHANGE_ADMISSION_CRASH_LIMITATIONS,
+            'FORWARD_EXCHANGE_ADMISSION_CRASH_EVIDENCE')
+        _require(type(faults) is dict and frozenset(faults)==FAULT_PUBLIC_KEYS and
+            all(type(faults[name]) is dict and frozenset(faults[name])==FAULT_CASE_PUBLIC_KEYS
+                for name in ('source_loss','stale_quote','clock_regression','invalid_clock')),
+            'FORWARD_FAULT_SCHEMA')
+        _require(type(cadence) is dict and
+            frozenset(cadence)==SCHEDULER_CADENCE_PUBLIC_KEYS,
+            'FORWARD_SCHEDULER_CADENCE_SCHEMA')
+        _require(type(no_fill_crash) is dict and
+            frozenset(no_fill_crash)==NO_FILL_CRASH_PUBLIC_KEYS,
+            'FORWARD_NO_FILL_CRASH_SCHEMA')
+        _require(no_fill_crash['mode']=='DISPOSABLE_DURABLE_NO_FILL_CRASH' and
+            no_fill_crash['passed'] is True and no_fill_crash['process_terminated'] is True and
+            no_fill_crash['exit_code']==76 and type(no_fill_crash['exit_code']) is int and
+            no_fill_crash['no_fill_attempts']==1 and
+            type(no_fill_crash['no_fill_attempts']) is int and
+            all(no_fill_crash[key] is True for key in (
+                'attempt_digest_stable','position_preserved','fill_sequence_preserved',
+                'mandate_resumable','old_session_review_required','quote_outcome_gap',
+                'no_fill_outcome_gap','no_fill_binding_gap')) and
+            all(no_fill_crash[key] is False for key in (
+                'automatic_repair','actual_provider_requests','broker_connected',
+                'live_orders_enabled','release_approved')) and
+            no_fill_crash['limitations']==NO_FILL_CRASH_LIMITATIONS,
+            'FORWARD_NO_FILL_CRASH_EVIDENCE')
+        _require(type(repeated) is dict and
+            frozenset(repeated)==REPEATED_INTERRUPTION_PUBLIC_KEYS,
+            'FORWARD_REPEATED_INTERRUPTION_SCHEMA')
+        _require(repeated['mode']=='DISPOSABLE_REPEATED_INTERRUPTION_RECOVERY' and
+            repeated['passed'] is True and repeated['process_exit_codes']==[77,78] and
+            repeated['interruptions']==2 and type(repeated['interruptions']) is int and
+            repeated['no_fill_attempts']==1 and type(repeated['no_fill_attempts']) is int and
+            all(repeated[key] is True for key in (
+                'first_gap_stable','no_fill_digest_stable','fill_sequence_monotonic',
+                'position_equation_preserved','explicit_review_action',
+                'old_session_review_required','no_fill_session_review_required',
+                'quote_outcome_gaps')) and
+            all(repeated[key] is False for key in (
+                'automatic_repair','automatic_retries','automatic_restart','forward_enabled',
+                'ownership_held','actual_provider_requests','broker_connected',
+                'live_orders_enabled','release_approved')) and
+            repeated['limitations']==REPEATED_INTERRUPTION_LIMITATIONS,
+            'FORWARD_REPEATED_INTERRUPTION_EVIDENCE')
+        _require(type(broker_intent) is dict and
+            frozenset(broker_intent)==BROKER_INTENT_PUBLIC_KEYS,
+            'FORWARD_BROKER_INTENT_SCHEMA')
+        _require(broker_intent['mode']=='DISPOSABLE_FORWARD_BROKER_INTENT_BINDING' and
+            broker_intent['passed'] is True and broker_intent['side']=='BUY' and
+            broker_intent['binding_stable'] is True and
+            broker_intent['forward_intent_bound'] is True and
+            broker_intent['cold_replay_bound'] is True and
+            broker_intent['submission_review_blocked'] is True and
+            broker_intent['checked_attempt_blocked'] is True and
+            broker_intent['submit_once_blocked'] is True and
+            broker_intent['callbacks_invoked']==0 and
+            broker_intent['legacy_readable_unbound'] is True and
+            broker_intent['counterfactual_only'] is True and
+            all(type(broker_intent[key]) is str and len(broker_intent[key])==64 and
+                all(character in '0123456789abcdef' for character in broker_intent[key])
+                for key in ('intent_sha256','payload_sha256')) and
+            all(broker_intent[key] is False for key in (
+                'sendable','routing_authorized','source_attested','broker_connected',
+                'broker_account_reconciled','funds_reconciled','ledger_applied',
+                'live_orders_enabled','money_movement_enabled','release_approved')) and
+            broker_intent['limitations']==BROKER_INTENT_LIMITATIONS,
+            'FORWARD_BROKER_INTENT_EVIDENCE')
+        from nexus.forward_broker_intent_review import (
+            RECONCILIATION_LIMITATIONS,RECONCILIATION_MODE,
+            RECONCILIATION_PROFILE)
+        _require(type(broker_intent_reconciliation) is dict and
+            frozenset(broker_intent_reconciliation)==
+                BROKER_INTENT_RECONCILIATION_PUBLIC_KEYS,
+            'FORWARD_BROKER_INTENT_RECONCILIATION_SCHEMA')
+        _require(
+            broker_intent_reconciliation['mode']==RECONCILIATION_MODE and
+            broker_intent_reconciliation['profile']==RECONCILIATION_PROFILE and
+            broker_intent_reconciliation['passed'] is True and
+            broker_intent_reconciliation['read_only'] is True and
+            all(broker_intent_reconciliation[key] is True for key in (
+                'matched_local_snapshot','prepared_unsent','account_scope_bound',
+                'request_head_bound','plan_normalized','forward_source_revalidated',
+                'receipt_bound','event_reconciliation_bound','order_snapshots_bound',
+                'modeled_fill_bound','payload_bound','review_input_detached',
+                'order_gateway_exact','order_gateway_policy_bound',
+                'order_replay_implementation_bound',
+                'order_journal_identity_rechecked','order_file_set_bound',
+                'order_file_fingerprints_rechecked',
+                'emergency_cut_latch_clear_rechecked','request_journal_exact',
+                'request_guard_implementation_bound',
+                'request_journal_identity_rechecked_from_entry',
+                'request_snapshot_replayed',
+                'journal_file_fingerprint_rechecked',
+                'request_guard_spans_second_order_replay',
+                'final_request_snapshot_replayed',
+                'post_guard_order_snapshot_replayed',
+                'post_guard_request_source_rechecked','order_snapshot_replayed',
+                'order_snapshot_stable_during_reconciliation','durable_halt_clear',
+                'journal_unchanged','pending_emergency_cut_rejected',
+                'post_review_halt_rejected',
+                'changed_review_rejected','stale_head_rejected',
+                'legacy_unbound_rejected')) and
+            broker_intent_reconciliation['callbacks_invoked']==0 and
+            all(type(broker_intent_reconciliation[key]) is str and
+                len(broker_intent_reconciliation[key])==64 and
+                all(character in '0123456789abcdef'
+                    for character in broker_intent_reconciliation[key])
+                for key in ('intent_sha256','payload_sha256',
+                    'intent_reconciliation_sha256')) and
+            all(broker_intent_reconciliation[key] is False for key in (
+                'sendable','routing_authorized','source_attested','broker_connected',
+                'broker_account_reconciled','funds_reconciled','ledger_applied',
+                'live_orders_enabled','money_movement_enabled','release_approved')) and
+            broker_intent_reconciliation['limitations']==
+                RECONCILIATION_LIMITATIONS,
+            'FORWARD_BROKER_INTENT_RECONCILIATION_EVIDENCE')
+        _require(all(type(cadence[name]) is dict and
+            frozenset(cadence[name])==SCHEDULER_CADENCE_CASE_PUBLIC_KEYS
+            for name in ('nominal','overrun','invalid_clock','clock_regression','stalled_clock')),
+            'FORWARD_SCHEDULER_CADENCE_CASE_SCHEMA')
+        expected_cadence={
+            'nominal':([100.0,105.0,110.0],[5.0,5.0],3,3,[],0,0.0,0.0),
+            'overrun':([100.0,112.0],[12.0],2,2,['SCHEDULER_OVERRUN'],1,7.0,2.0),
+            'invalid_clock':([],[],0,0,['INVALID_SCHEDULER_CLOCK'],0,0.0,0.0),
+            'clock_regression':([100.0],[],1,1,['SCHEDULER_CLOCK_REGRESSION'],0,0.0,0.0),
+            'stalled_clock':([100.0],[],1,1,['SCHEDULER_CLOCK_STALLED'],0,0.0,0.0),
+        }
+        _require(cadence['mode']=='DISPOSABLE_FORWARD_SCHEDULER_CADENCE' and
+            cadence['passed'] is True and type(cadence['interval_seconds']) is int and
+            cadence['interval_seconds']==5 and cadence['limitations']==SCHEDULER_CADENCE_LIMITATIONS,
+            'FORWARD_SCHEDULER_CADENCE_EVIDENCE')
+        _require(all(
+            case['cycle_starts']==expected[0] and case['start_intervals']==expected[1] and
+            case['fetches']==expected[2] and type(case['fetches']) is int and
+            case['cycles']==expected[3] and type(case['cycles']) is int and
+            case['scheduler_reasons']==expected[4] and
+            case['overrun_records']==expected[5] and type(case['overrun_records']) is int and
+            case['cycle_duration_seconds']==expected[6] and
+            type(case['cycle_duration_seconds']) is float and
+            case['overrun_seconds']==expected[7] and type(case['overrun_seconds']) is float and
+            case['orders_created']==0 and type(case['orders_created']) is int and
+            case['stored_state']=='PAUSED' and case['ownership_released'] is True and
+            case['worker_stopped'] is True and case['burst_catchup_allowed'] is False
+            for name,expected in expected_cadence.items() for case in (cadence[name],)),
+            'FORWARD_SCHEDULER_CADENCE_EVIDENCE')
+        _require(all(cadence[key] is False for key in ('actual_provider_requests',
+            'automatic_retries','broker_connected','live_orders_enabled',
+            'sustained_forward_accepted','release_approved')),
+            'FORWARD_SCHEDULER_CADENCE_AUTHORITY')
+        process_control=faults['process_control_cleanup']
+        _require(type(process_control) is dict and
+            frozenset(process_control)==PROCESS_CONTROL_PUBLIC_KEYS and
+            all(type(process_control[name]) is dict and
+                frozenset(process_control[name])==PROCESS_CONTROL_CASE_PUBLIC_KEYS
+                for name in PROCESS_CONTROL_PUBLIC_KEYS),
+            'FORWARD_PROCESS_CONTROL_SCHEMA')
         sessions=recovered['sessions'];latency=result['cycle_latency'];coverage=recovered['coverage_review']
         _require(type(sessions) is list and len(sessions)==20 and all(
             type(session) is dict and frozenset(session)==SESSION_PUBLIC_KEYS for session in sessions),
@@ -2681,6 +3074,10 @@ def _validate(profile, result):
             all(type(latency[key]) in (int,float) and latency[key]>=0 for key in LATENCY_PUBLIC_KEYS) and
             latency['p50_ms']<=latency['p95_ms']<=latency['p99_ms'],
             'FORWARD_LATENCY_SCHEMA')
+        _require(type(coverage) is dict and all(key in coverage for key in (
+            'retained_exchange_admissions','exchange_admissions_in_window',
+            'exchange_admission_incidents_in_window')),
+            'FORWARD_COVERAGE_EVIDENCE')
         _require(type(coverage) is dict and frozenset(coverage)==COVERAGE_PUBLIC_KEYS,
             'FORWARD_COVERAGE_SCHEMA')
         _require(result['mode']=='DISPOSABLE_FORWARD_RUNNER_DRILL' and result['passed'] is True and
@@ -2691,15 +3088,82 @@ def _validate(profile, result):
         _require(all(result[key] is False for key in ('application_accounts_changed','broker_connected',
             'live_orders_enabled','release_approved','target_validated')),
             'FORWARD_AUTHORITY')
+        expected_faults={
+            'source_loss':(3,3,['QUOTE_UNAVAILABLE_OR_INVALID']*3,
+                {'START':1,'VETO':2,'PAUSED':1},3,[]),
+            'stale_quote':(3,3,['QUOTE_UNAVAILABLE_OR_INVALID']*3,
+                {'START':1,'VETO':2,'PAUSED':1},3,[]),
+            'clock_regression':(1,0,['RUNTIME_CLOCK_DISCONTINUITY'],
+                {'START':1,'PAUSED':1},0,['NO_RECORDED_QUOTE_EVIDENCE']),
+            'invalid_clock':(1,0,['INVALID_RUNTIME_CLOCK'],
+                {'START':1,'PAUSED':1},0,['NO_RECORDED_QUOTE_EVIDENCE']),
+        }
+        _require(faults['mode']=='DISPOSABLE_FORWARD_FAULT_INJECTION' and
+            faults['passed'] is True and faults['limitations']==FAULT_LIMITATIONS and
+            faults['orders_created']==0 and type(faults['orders_created']) is int and
+            faults['sessions_paused']==4 and type(faults['sessions_paused']) is int and
+            faults['ownership_released'] is True and
+            all(faults[key] is False for key in ('actual_provider_requests','automatic_retries',
+                'broker_connected','live_orders_enabled','release_approved')) and
+            all(faults[name]['cycles']==cycles and faults[name]['fetches']==fetches and
+                faults[name]['reasons']==reasons and faults[name]['paused'] is True and
+                faults[name]['stored_state']=='PAUSED' and faults[name]['counts']==counts and
+                faults[name]['quote_observations']==observations and
+                faults[name]['rejected_observations']==observations and
+                faults[name]['review_reasons']==review_reasons and
+                faults[name]['orders_created']==0 and type(faults[name]['orders_created']) is int and
+                faults[name]['healthy_orders_created']==0 and
+                faults[name]['post_pause_fetches']==0 and
+                faults[name]['cold_fetches_before_prepare']==0 and
+                faults[name]['healthy_decision']=='HOLD' and
+                faults[name]['healthy_reason']=='WARMUP_REQUIRES_SIX_DISTINCT_TICKS' and
+                all(faults[name][key] is True for key in ('ownership_released','worker_started',
+                    'worker_paused_while_alive','cleanup_blocked_before_process_death','process_terminated',
+                    'cold_reopen_disabled','cold_ownership_available','order_hash_preserved','evidence_hash_preserved',
+                    'new_session_distinct')) and
+                all(faults[name][key] is False for key in ('cold_worker_alive','automatic_restart')) and
+                re.fullmatch('[a-f0-9]{16}',faults[name]['failed_session']) is not None and
+                all(type(faults[name][key]) is str and re.fullmatch('[a-f0-9]{64}',faults[name][key]) is not None
+                    for key in ('failed_orders_sha256','failed_evidence_sha256','reopened_orders_sha256',
+                        'reopened_evidence_sha256')) and
+                faults[name]['failed_orders_sha256']==faults[name]['reopened_orders_sha256'] and
+                faults[name]['failed_evidence_sha256']==faults[name]['reopened_evidence_sha256']
+                for name,(cycles,fetches,reasons,counts,observations,review_reasons)
+                    in expected_faults.items()),
+            'FORWARD_FAULT_EVIDENCE')
+        _require(all(process_control[name]['signal']==signal and
+                process_control[name]['worker_started'] is True and
+                process_control[name]['signal_observed'] is True and
+                process_control[name]['worker_stopped'] is True and
+                process_control[name]['runner_disabled'] is True and
+                process_control[name]['ownership_released'] is True and
+                process_control[name]['orders_created']==0 and
+                type(process_control[name]['orders_created']) is int and
+                process_control[name]['stored_state']=='RUNNING' and
+                process_control[name]['effective_state']=='STOPPED_WITHOUT_FINAL_RECORD' and
+                process_control[name]['automatic_restart'] is False
+                for name,signal in (('keyboard_interrupt','KeyboardInterrupt'),
+                    ('system_exit','SystemExit'))),
+            'FORWARD_PROCESS_CONTROL_EVIDENCE')
         hashes=[recovered['account_sha256']]
         session_ids=[]
         for session in sessions:
             session_ids.append(session['session']);hashes.extend((session['orders_sha256'],session['evidence_sha256']))
             _require(type(session['session']) is str and re.fullmatch('[a-f0-9]{16}',session['session']) is not None and
                 session['quote_observations']==14 and type(session['quote_observations']) is int and
+                session['durable_event_records']==15 and type(session['durable_event_records']) is int and
                 session['modeled_buy_orders']==session['modeled_sell_orders']==1 and
-                type(session['modeled_buy_orders']) is int and type(session['modeled_sell_orders']) is int,
+                type(session['modeled_buy_orders']) is int and type(session['modeled_sell_orders']) is int and
+                session['quote_outcome_bijection'] is True and
+                session['durable_order_outcomes_reconciled'] is True and
+                session['durable_fill_attempts_bound'] is True and
+                session['durable_no_fill_attempts_bound'] is True and
+                session['cut_evidence_stable'] is True and
+                session['cut_binding_verified'] is False and
+                session['order_snapshot_stable'] is True,
                 'FORWARD_SESSION_EVIDENCE')
+            hashes.extend((session['event_head_sha256'],session['reconciliation_sha256'],
+                session['review_receipt_sha256'],session['review_reason_codes_sha256']))
         _require(len(set(session_ids))==20 and all(type(value) is str and
             re.fullmatch('[a-f0-9]{64}',value) is not None for value in hashes),
             'FORWARD_SESSION_BINDING')
@@ -2726,21 +3190,31 @@ def _validate(profile, result):
         _require(all(coverage[k] is False for k in COVERAGE_FLAGS),'FORWARD_COVERAGE_AUTHORITY')
         coverage_counts={'minimum_trial_seconds':259200,'maximum_covered_gap_seconds':10,
             'retained_observations':280,'retained_sessions':20,'observations_in_window':280,
-            'eligible_observations_in_window':220,'rejected_observations_in_window':60,
-            'revalidated_eligible_observations_in_window':220,'revalidated_rejected_observations_in_window':60,
+            'eligible_observations_in_window':200,'rejected_observations_in_window':80,
+            'revalidated_eligible_observations_in_window':200,'revalidated_rejected_observations_in_window':80,
             'recorded_eligibility_disagreements_in_window':0,'declared_public_observations':0,
             'injected_observations':280,'unknown_source_observations':0,'sessions_in_window':20,
             'nonstopped_or_cleanup_review_sessions':20,'uncovered_intervals':1,
             'clean_manual_stop_sessions':0,'other_stopped_sessions':0,
             'paused_sessions':20,'running_sessions':0,
-            'sessions_with_quote_errors':20,'quote_error_observations':60,
-            'over_limit_coverage_gaps':1}
+            'sessions_with_quote_errors':20,'quote_error_observations':80,
+            'over_limit_coverage_gaps':1,'retained_event_records':300,
+            'events_in_window':300,'legacy_unbound_observations_in_window':0,
+            'quote_outcome_disagreements_in_window':0,'event_incident_records_in_window':80,
+            'modeled_execution_events_in_window':40,
+            'bundle_bound_modeled_execution_events_in_window':0,
+            'unreconciled_modeled_execution_events_in_window':40}
+        coverage_counts.update(retained_exchange_admissions=200,
+            exchange_admissions_in_window=200,
+            exchange_admission_incidents_in_window=0)
         _require(all(type(coverage[key]) is int and coverage[key]==value
             for key,value in coverage_counts.items()) and
             coverage['after']=='1970-01-01T00:16:40Z' and coverage['until']=='1970-01-01T00:38:20Z' and
             coverage['window_seconds']==coverage['uncovered_seconds']==coverage['longest_uncovered_seconds']==
                 coverage['over_limit_coverage_gap_seconds']=='1300' and
             coverage['required_coverage_fraction']=='0.95' and coverage['coverage_fraction']=='0.000000' and
+            coverage['event_trace_complete'] is True and
+            coverage['reconciliation_bundle_sha256'] is None and
             coverage['review_reasons']==list(COVERAGE_REVIEW_REASONS) and
             type(coverage['evidence_snapshot_sha256']) is str and
             re.fullmatch('[a-f0-9]{64}',coverage['evidence_snapshot_sha256']) is not None,
@@ -2810,13 +3284,23 @@ def _validate(profile, result):
             type(recovered['archived_session_orders']) is int and
             recovered['archived_session_orders']==2 and
             type(recovered['quote_observations']) is int and recovered['quote_observations']==8 and
+            type(recovered['event_records']) is int and recovered['event_records']==10 and
             type(recovered['modeled_buy_orders']) is int and
             type(recovered['modeled_sell_orders']) is int and
             recovered['modeled_buy_orders']==recovered['modeled_sell_orders']==1 and
+            recovered['quote_outcome_bijection'] is True and
+            recovered['durable_order_outcomes_reconciled'] is True and
+            recovered['durable_fill_attempts_bound'] is True and
+            recovered['cut_evidence_stable'] is True and
+            recovered['cut_binding_verified'] is False and
+            recovered['order_snapshot_stable'] is True and
             recovered['source_modes']==['INJECTED_TRANSPORT_UNATTESTED'],
             'RESTORE_ACCOUNTING')
         hashes=[recovered[key] for key in
-            ('order_sha256','account_sha256','quote_head_sha256','policy_sha256')]
+            ('order_sha256','account_sha256','quote_head_sha256','policy_sha256',
+             'event_head_sha256','event_reconciliation_sha256')]
+        hashes.extend(recovered[key] for key in
+            ('review_receipt_sha256','review_reason_codes_sha256'))
         _require(all(type(value) is str and re.fullmatch('[a-f0-9]{64}',value) is not None
             for value in hashes) and
             recovered['policy_sha256']==admit(POLICY['id'])['policy_sha256'],
@@ -2833,18 +3317,51 @@ def source_digest(root):
     configuration, so normalize only CRLF pairs before hashing.  Lone CR bytes
     and every other byte remain significant.
     """
-    root = Path(root); entries = []
+    root = Path(root); resolved_root = root.resolve(strict=True); entries = []
     paths = set(root.glob('nexus/*.py')) | set(root.glob('tests/*.py')) | set(root.glob('tools/*.py')) | set(root.glob('tools/*.cjs')) | set(root.glob('tools/*.ps1'))
-    paths |= set(root.glob('.github/workflows/*.yml')) | set(root.glob('portable/*.py'))
+    paths |= set(root.glob('ops/*.py')) | set(root.glob('ops/*.mjs'))
+    paths |= set(root.glob('.github/workflows/*.yml')) | set(root.glob('.github/workflows/*.yaml')) | set(root.glob('portable/*.py'))
     paths |= {root/'pyproject.toml', root/'dashboard/portal_preview.html', root/'installer/NexusOperative.iss'}
     paths |= {root/name for name in ('.gitignore','.gitleaks.toml','.github/CODEOWNERS','.github/dependabot.yml') if (root/name).is_file()}
     for path in sorted(paths):
-        source=path.read_bytes().replace(b'\r\n',b'\n')
+        try:
+            before=path.lstat()
+            if not stat.S_ISREG(before.st_mode):raise OSError()
+            resolved=path.resolve(strict=True)
+            if not resolved.is_relative_to(resolved_root):raise OSError()
+            descriptor=os.open(path,os.O_RDONLY|getattr(os,'O_NOFOLLOW',0))
+            try:
+                opened=os.fstat(descriptor)
+                if not stat.S_ISREG(opened.st_mode) or not os.path.samestat(before,opened):raise OSError()
+                with os.fdopen(descriptor,'rb') as source_file:
+                    descriptor=-1;source=source_file.read()
+            finally:
+                if descriptor>=0:os.close(descriptor)
+            after=path.lstat()
+            if not stat.S_ISREG(after.st_mode) or not os.path.samestat(before,after):raise OSError()
+        except OSError:
+            raise ReleaseTrialError('RELEASE_SOURCE_FILE_INVALID') from None
+        source=source.replace(b'\r\n',b'\n')
         entries.append((path.relative_to(root).as_posix(), hashlib.sha256(source).hexdigest()))
     return dict(files=len(entries), sha256=hashlib.sha256(json.dumps(entries, separators=(',', ':')).encode()).hexdigest())
 
 
-def run():
+def _profile_timeout_seconds(profile):
+    """Keep the slow native Windows reconciliation fixture bounded with measured headroom."""
+    if profile == 'reconciliation_acceptance' and platform.system() == 'Windows':
+        return WINDOWS_RECONCILIATION_ACCEPTANCE_TIMEOUT_SECONDS
+    return DEFAULT_CHILD_TIMEOUT_SECONDS
+
+
+def _expected_version(value):
+    from nexus.release_roadmap import REVISION
+    if value is not None and (type(value) is not str or value!=REVISION):
+        raise ReleaseTrialError('RELEASE_TRIAL_VERSION_MISMATCH')
+    return REVISION
+
+
+def run(*, expected_version=None):
+    revision = _expected_version(expected_version)
     root = Path(__file__).resolve().parents[1]
     source = source_digest(root); results = {}; timings = {}
     with tempfile.TemporaryDirectory(prefix='nexus-release-trials-') as temporary:
@@ -2855,7 +3372,8 @@ def run():
             started = time.perf_counter()
             try:
                 child = subprocess.run([sys.executable, '-c', expression], cwd=root, env=env,
-                                       capture_output=True, text=True, timeout=240)
+                                       capture_output=True, text=True,
+                                       timeout=_profile_timeout_seconds(profile))
             except subprocess.TimeoutExpired:
                 raise ReleaseTrialError('RELEASE_TRIAL_' + profile.upper() + '_CHILD_TIMEOUT') from None
             if child.returncode != 0:
@@ -2865,8 +3383,7 @@ def run():
             _validate(profile, result)
             results[profile] = result; timings[profile] = round(time.perf_counter()-started, 3)
     _require(source_digest(root) == source, 'SOURCE_CHANGED_DURING_RUN')
-    from nexus.release_roadmap import REVISION
-    return dict(mode='BOUNDED_OFFLINE_RELEASE_TRIALS', version=REVISION, source_fingerprint=source,
+    return dict(mode='BOUNDED_OFFLINE_RELEASE_TRIALS', version=revision, source_fingerprint=source,
         passed=True, environment=dict(python=platform.python_version(), system=platform.system(), sqlite=sqlite3.sqlite_version),
         profiles=results, elapsed_seconds=timings,
         production_release_ready=False, release_approved=False, real_market_realism_authenticated=False,
@@ -2875,13 +3392,116 @@ def run():
         limitations='Disposable offline process/HTTP/accounting trials. Wall-clock local storage timings include current machine load and are not broker or market latency. Synthetic quotes and assumed liquidity/fees cannot authenticate real-market performance, profitability, source provenance or complete 1.0 acceptance.')
 
 
+def _output_parent_identity(path):
+    """Capture one canonical, non-symlink report parent."""
+    try:
+        before = path.lstat()
+        resolved = path.resolve(strict=True)
+        after = path.lstat()
+    except OSError:
+        raise
+    if (not stat.S_ISDIR(before.st_mode) or
+            not stat.S_ISDIR(after.st_mode) or resolved != path or
+            stat.S_ISLNK(before.st_mode) or stat.S_ISLNK(after.st_mode) or
+            (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino)):
+        raise OSError('release output parent is not an exact directory')
+    return after.st_dev, after.st_ino
+
+
+def _output_parent_matches(path, identity):
+    try:
+        return _output_parent_identity(path) == identity
+    except OSError:
+        return False
+
+
+def _output_file_matches(path, descriptor):
+    try:
+        before = path.lstat()
+        opened = os.fstat(descriptor)
+        after = path.lstat()
+    except OSError:
+        return False
+    identity = opened.st_dev, opened.st_ino
+    return (stat.S_ISREG(before.st_mode) and
+        stat.S_ISREG(opened.st_mode) and
+        stat.S_ISREG(after.st_mode) and opened.st_nlink == 1 and
+        (before.st_dev, before.st_ino) == identity and
+        (after.st_dev, after.st_ino) == identity)
+
+
+def _output_scope_matches(path, descriptor, parent_identity):
+    """Sample the public leaf only while parent samples agree."""
+    return (_output_parent_matches(path.parent, parent_identity) and
+        _output_file_matches(path, descriptor) and
+        _output_parent_matches(path.parent, parent_identity))
+
+
+def _write_output(path, encoded):
+    path = Path(os.path.abspath(path))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    parent_identity = _output_parent_identity(path.parent)
+    flags = (os.O_WRONLY | os.O_CREAT | os.O_EXCL |
+        getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0) |
+        getattr(os, 'O_BINARY', 0))
+    parent_descriptor = None
+    descriptor = None
+    try:
+        if os.name != 'nt':
+            parent_flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
+                getattr(os, 'O_CLOEXEC', 0) |
+                getattr(os, 'O_NOFOLLOW', 0))
+            parent_descriptor = os.open(path.parent, parent_flags)
+            opened_parent = os.fstat(parent_descriptor)
+            if (not stat.S_ISDIR(opened_parent.st_mode) or
+                    (opened_parent.st_dev, opened_parent.st_ino) !=
+                    parent_identity or
+                    not _output_parent_matches(path.parent, parent_identity)):
+                raise OSError('release output parent changed before create')
+            descriptor = os.open(path.name, flags, 0o600,
+                dir_fd=parent_descriptor)
+        else:
+            if not _output_parent_matches(path.parent, parent_identity):
+                raise OSError('release output parent changed before create')
+            descriptor = os.open(path, flags, 0o600)
+        stream = os.fdopen(descriptor, 'w', encoding='utf-8', newline='')
+        descriptor = None
+        with stream:
+            stream.write(encoded)
+            stream.flush()
+            if not _output_scope_matches(
+                    path, stream.fileno(), parent_identity):
+                raise OSError('release output path changed before file sync')
+            os.fsync(stream.fileno())
+            if not _output_scope_matches(
+                    path, stream.fileno(), parent_identity):
+                raise OSError('release output path changed during file sync')
+            if parent_descriptor is not None:
+                os.fsync(parent_descriptor)
+                opened_parent = os.fstat(parent_descriptor)
+                if (not stat.S_ISDIR(opened_parent.st_mode) or
+                        (opened_parent.st_dev, opened_parent.st_ino) !=
+                        parent_identity):
+                    raise OSError('release output parent descriptor changed')
+            if not _output_scope_matches(
+                    path, stream.fileno(), parent_identity):
+                raise OSError('release output path changed before acknowledgement')
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if parent_descriptor is not None:
+            os.close(parent_descriptor)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path); args = parser.parse_args()
+    parser.add_argument('--output', type=Path)
+    parser.add_argument('--expected-version'); args = parser.parse_args()
     try:
-        report = run(); encoded = json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n'
+        report = run(expected_version=args.expected_version)
+        encoded = json.dumps(report, sort_keys=True, indent=2, allow_nan=False) + '\n'
         if args.output:
-            args.output.parent.mkdir(parents=True, exist_ok=True); args.output.write_text(encoded, encoding='utf-8')
+            _write_output(args.output, encoded)
         print(encoded, end='')
     except (ValueError, OSError, subprocess.SubprocessError, KeyError) as error:
         # Only allowlisted fixed codes are emitted. Raw child stderr,

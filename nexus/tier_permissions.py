@@ -29,13 +29,22 @@ def _db():
         if db is not None:db.close()
         raise
 
-def current():
+def _policy_snapshot():
+    """Read settings and tier switches from one SQLite snapshot."""
     with _lock:
-        config=load_settings()
+        # Bootstrap a genuinely new installation through state._connect before
+        # _db creates any schema. This read is not used for admission; the
+        # authoritative settings and switch values are both read below.
+        load_settings()
         with closing(_db()) as db:
             with settings_transaction(db):
                 db.execute('BEGIN')
+                config=read_effective_settings(db)
                 saved=dict(db.execute("SELECT tier,enabled FROM tier_permissions"))
+    return config,saved
+
+def current():
+    config,saved=_policy_snapshot()
     return {"mode":"LOCAL_SIMULATED_RISK_PERMISSIONS",
         "tiers":[{"tier":tier,"enabled":saved.get(tier,0)==1,
                   "maximum_intent_fraction":float(frac),
@@ -62,12 +71,20 @@ def configure(tier,enabled):
             note='This tier is OFF. Saved paper settings need review; no other tier limits are inferred.')
 
 def require_entry(tier,notional):
-    if tier not in TIERS:raise ValueError("UNKNOWN_RISK_TIER")
-    policy=next(x for x in current()["tiers"] if x["tier"]==tier)
-    if not policy["enabled"]:raise ValueError("RISK_TIER_DISENGAGED")
+    if type(tier) is not str or tier not in TIERS:
+        raise ValueError("UNKNOWN_RISK_TIER")
+    if type(notional) not in (int,float,Decimal):
+        raise ValueError("RISK_TIER_INTENT_INVALID")
     amount=Decimal(str(notional))
-    # Compare against unrounded limit (avoid cent rounding permitting excess).
-    config=load_settings()
+    if not amount.is_finite() or amount<=0:
+        raise ValueError("RISK_TIER_INTENT_INVALID")
+    # Permission and cap inputs must come from one durable SQLite snapshot.
+    # A disable or settings change can commit before or after this snapshot,
+    # but cannot be spliced between two independent reads.
+    config,saved=_policy_snapshot()
+    if saved.get(tier,0)!=1:raise ValueError("RISK_TIER_DISENGAGED")
+    # Compare against the same snapshot's unrounded limit (avoid cent rounding
+    # permitting excess).
     budget=Decimal(str(config["paper_budget"]))
     cap=min(Decimal("200"),budget*TIERS[tier],budget*Decimal(str(config[tier+"_allocation"]))/100)
     if amount>cap:raise ValueError("RISK_TIER_INTENT_CAP_EXCEEDED")

@@ -58,7 +58,7 @@ class _NoRedirect(HTTPRedirectHandler):
 
 
 def _uuid(value):
-    if not isinstance(value, str) or len(value) != 36:
+    if type(value) is not str or len(value) != 36:
         _fail('PAPER_INSPECTION_ACCOUNT_ID_INVALID')
     try:
         return str(UUID(value))
@@ -80,13 +80,13 @@ def _nonfinite(value):
 
 
 def _account(raw):
-    if not isinstance(raw, dict):
+    if type(raw) is not dict or any(type(key) is not str for key in raw):
         _fail('PAPER_INSPECTION_ACCOUNT_INVALID')
     result = {'id': _uuid(raw.get('id'))}
     # Missing, unknown and noncanonical flags must never become an implicit pass.
     for field in ('currency', 'status', 'crypto_status'):
         value = raw.get(field)
-        if value is not None and (not isinstance(value, str) or not re.fullmatch(r'[A-Z_]{1,40}', value)):
+        if value is not None and (type(value) is not str or not re.fullmatch(r'[A-Z_]{1,40}', value)):
             _fail('PAPER_INSPECTION_ACCOUNT_INVALID')
         result[field] = value
     for field in ('account_blocked', 'trading_blocked', 'trade_suspended_by_user'):
@@ -96,6 +96,8 @@ def _account(raw):
         result[field] = value
     for field in ('cash', 'non_marginable_buying_power', 'pending_transfer_in', 'pending_transfer_out', 'accrued_fees'):
         value = raw.get(field)
+        if value is not None and type(value) not in (str, int, float, Decimal):
+            _fail('PAPER_INSPECTION_ACCOUNT_INVALID')
         result[field] = None if value is None else text(number(value, zero=True))
     return result
 
@@ -197,7 +199,7 @@ class _ReadSession:
         if confirm_read_only_paper is not True:
             _fail('PAPER_INSPECTION_EXPLICIT_AUTHORIZATION_REQUIRED')
         for value in (api_key, api_secret):
-            if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
+            if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
                 _fail('PAPER_INSPECTION_CREDENTIAL_FORMAT_INVALID')
         from nexus.paper_read_pacing import OPERATIONS
         if operation is not None and (type(operation) is not str or operation not in OPERATIONS):

@@ -7,12 +7,14 @@ order cancellation remains the authoritative cleanup acknowledgment.
 """
 import json
 import os
+import sqlite3
 import stat
+import time
 from pathlib import Path
 
 from nexus import emergency_intent
 from nexus import emergency_priority
-from nexus.durable_orders import DurableOrderGateway
+from nexus.durable_orders import DurableOrderGateway,emergency_halt_replayed
 
 PUBLIC_KEYS = frozenset(('mode','passed','halted','emergency_cut_state',
     'intent_preceded_durable_halt','emergency_intent_present',
@@ -21,30 +23,78 @@ PUBLIC_KEYS = frozenset(('mode','passed','halted','emergency_cut_state',
     'data_root_path_pinned','desktop_started','network_requested',
     'credential_access_requested','broker_connected','live_orders_enabled',
     'money_movement_enabled','reset_available','automatic_restart','scope'))
+TRANSIENT_OBSERVATION_DELAYS = (0.02, 0.05)
 
 
 def _resolved_data_root(data_root):
-    """Resolve one non-symlink data-root before cut storage access."""
+    """Resolve one non-symlink data-root and lease an absent root's ancestor."""
     candidate = Path(data_root or os.environ.get('NEXUS_PORTABLE_DATA',
         str(Path.home()/'.nexus-operative'))).expanduser()
     if candidate.is_symlink():raise ValueError('DATA_ROOT_SYMLINK')
     try:before = candidate.lstat()
     except FileNotFoundError:
-        return candidate.resolve(strict=False),None
+        resolved=candidate.resolve(strict=False)
+        anchor=resolved.parent
+        while True:
+            try:anchor_identity=anchor.lstat()
+            except FileNotFoundError:
+                parent=anchor.parent
+                if parent==anchor:raise ValueError('DATA_ROOT_CHANGED')
+                anchor=parent
+                continue
+            if (anchor.is_symlink() or
+                    not stat.S_ISDIR(anchor_identity.st_mode)):
+                raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
+            if anchor.resolve(strict=True)!=anchor:
+                raise ValueError('DATA_ROOT_CHANGED')
+            final=anchor.lstat()
+            if not os.path.samestat(anchor_identity,final):
+                raise ValueError('DATA_ROOT_CHANGED')
+            return resolved,None,(anchor,final)
     if not stat.S_ISDIR(before.st_mode):raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
     resolved = candidate.resolve(strict=True)
     after = candidate.lstat()
     if candidate.is_symlink() or not os.path.samestat(before,after):
         raise ValueError('DATA_ROOT_CHANGED')
-    return resolved,before
+    return resolved,before,None
 
 
-def _initialize_data_root(root):
-    """Exclusively create a root observed absent before priority elevation."""
+def _same_directory(path,identity):
+    """Sample one exact canonical directory without accepting parent aliases."""
+    try:
+        resolved_before=path.resolve(strict=True)
+        before=path.lstat()
+        resolved_after=path.resolve(strict=True)
+        after=path.lstat()
+        resolved_final=path.resolve(strict=True)
+    except OSError:return False
+    return (resolved_before==path and resolved_after==path
+        and resolved_final==path
+        and stat.S_ISDIR(before.st_mode) and stat.S_ISDIR(after.st_mode)
+        and os.path.samestat(identity,before)
+        and os.path.samestat(before,after))
+
+
+def _initialize_data_root(root,anchor_lease):
+    """Create an absent root only inside its still-identical resolved ancestor."""
+    anchor,anchor_identity=anchor_lease
+    if not _same_directory(anchor,anchor_identity):
+        raise ValueError('DATA_ROOT_CHANGED')
     root.parent.mkdir(parents=True,exist_ok=True)
+    if not _same_directory(anchor,anchor_identity):
+        raise ValueError('DATA_ROOT_CHANGED')
+    try:parent_identity=root.parent.lstat()
+    except OSError:raise ValueError('DATA_ROOT_CHANGED') from None
+    if (root.parent.is_symlink() or
+            not stat.S_ISDIR(parent_identity.st_mode)):
+        raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
     try:root.mkdir(mode=0o700)
     except FileExistsError:raise ValueError('DATA_ROOT_CHANGED')
-    identity=root.lstat()
+    try:identity=root.lstat()
+    except OSError:raise ValueError('DATA_ROOT_CHANGED') from None
+    if (not _same_directory(anchor,anchor_identity) or
+            not _same_directory(root.parent,parent_identity)):
+        raise ValueError('DATA_ROOT_CHANGED')
     if root.is_symlink() or not stat.S_ISDIR(identity.st_mode):
         raise ValueError('DATA_ROOT_DIRECTORY_REQUIRED')
     return identity
@@ -52,11 +102,7 @@ def _initialize_data_root(root):
 
 def _same_data_root(root,identity):
     """Conservatively sample the public root identity throughout the cut."""
-    if identity is None:return False
-    try:current=root.lstat()
-    except OSError:return False
-    return (not root.is_symlink() and stat.S_ISDIR(current.st_mode)
-        and os.path.samestat(identity,current))
+    return identity is not None and _same_directory(root,identity)
 
 
 def _request_priority():
@@ -77,38 +123,122 @@ def _request_priority():
         priority_class=priority_class)
 
 
-def _halt_confirmed(result):
-    """Accept only the gateway's ordinary, explicit halt acknowledgement."""
-    return type(result) is dict and result.get('halted') is True
-
-
 def _intent_present(result):
     """Accept only the intent reader's exact boolean presence result."""
     return result is True
 
 
+def _validated_intent_identity(order_path):
+    """Read one exact durable latch record without following aliases."""
+    return emergency_intent._validated_identity(order_path)
+
+
 def _intent_identity(order_path):
-    """Sample the exact latch entry without following it."""
-    try:return emergency_intent.path(order_path).lstat()
-    except OSError:return None
+    """Sample one complete, regular, single-link latch record."""
+    return _validated_intent_identity(order_path)
 
 
 def _same_intent(order_path,identity):
-    """Require the observed latch entry to survive until durable handoff."""
+    """Require the exact validated latch to survive until durable handoff."""
+    return emergency_intent.same_canonical(order_path,identity)
+
+
+def _observed_order_identity(order_path):
+    """Classify a no-follow journal sample without hiding read denial."""
+    try:before=order_path.lstat()
+    except OSError:return None,None
+    if (stat.S_ISLNK(before.st_mode) or
+            not stat.S_ISREG(before.st_mode) or before.st_nlink!=1):
+        return False,None
+    try:after=order_path.lstat()
+    except OSError:return None,None
+    if (stat.S_ISLNK(after.st_mode) or
+            not stat.S_ISREG(after.st_mode) or after.st_nlink!=1 or
+            not os.path.samestat(before,after)):
+        return False,None
+    return True,after
+
+
+def _order_identity(order_path):
+    """Sample one regular single-link order journal without following aliases."""
+    observed,identity=_observed_order_identity(order_path)
+    return identity if observed is True else None
+
+
+def _order_identity_bounded(order_path):
+    """Acquire one baseline identity with the same strict read-only ceiling."""
+    for attempt in range(3):
+        observed,identity=_observed_order_identity(order_path)
+        if observed is True:return identity
+        if observed is False:return None
+        if attempt<2:time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
+    return None
+
+
+def _order_identity_match(order_path,identity):
+    """Return agreement, mismatch, or transient observation unavailability."""
     if identity is None:return False
-    try:current=emergency_intent.path(order_path).lstat()
-    except OSError:return False
-    return os.path.samestat(identity,current)
+    observed,current=_observed_order_identity(order_path)
+    if observed is None:return None
+    return bool(observed and os.path.samestat(identity,current))
+
+
+def _same_order(order_path,identity):
+    """Return journal identity agreement, mismatch, or read unavailability."""
+    return _order_identity_match(order_path,identity)
+
+
+def _halt_replayed_bounded(order_path,result,identity):
+    """Retry only transient read faults while the exact journal survives.
+
+    A Windows file observer can briefly deny or defer a cold SQLite reopen
+    after the committed halt.  Re-reading is side-effect free, so permit at
+    most three observations.  A definitive negative or any identity drift is
+    authoritative immediately; neither the halt command nor reset is retried.
+    """
+    for attempt in range(3):
+        before=_same_order(order_path,identity)
+        if before is False:return False
+        if before is None:
+            if attempt==2:return False
+            time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
+            continue
+        try:replayed=emergency_halt_replayed(order_path,result)
+        except (OSError,sqlite3.OperationalError):
+            after=_same_order(order_path,identity)
+            if after is False:return False
+            if attempt==2:return False
+            time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
+            continue
+        except ValueError as error:
+            if error.args!=('ORDER_JOURNAL_DATABASE_BUSY',):raise
+            after=_same_order(order_path,identity)
+            if after is False:return False
+            if attempt==2:return False
+            time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
+            continue
+        if not replayed:return False
+        after=_same_order(order_path,identity)
+        if after is False:return False
+        if after is None:
+            if attempt==2:return False
+            time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
+            continue
+        return True
+    return False
 
 
 def activate(data_root=None):
-    root,root_identity = _resolved_data_root(data_root)
+    root,root_identity,root_anchor = _resolved_data_root(data_root)
     priority = _request_priority()
-    if root_identity is None:root_identity=_initialize_data_root(root)
+    if root_identity is None:
+        root_identity=_initialize_data_root(root,root_anchor)
     root_stable = _same_data_root(root,root_identity)
     order_path = root/'order_lifecycle.sqlite3'
     intent_preceded = durable_halt = final_intent = False
+    first_durable_halt = False
     intent_identity = final_intent_identity = None
+    halt_result = order_identity = None
     try:
         if not root_stable:raise ValueError('DATA_ROOT_CHANGED')
         if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
@@ -135,8 +265,19 @@ def activate(data_root=None):
                     # fenced ahead of it.
                     if not _same_intent(order_path,intent_identity):
                         intent_preceded = False
-                    result = DurableOrderGateway(order_path).emergency_halt()
-                    durable_halt = _halt_confirmed(result)
+                    if not _same_data_root(root,root_identity):
+                        intent_preceded = False
+                        raise ValueError('DATA_ROOT_CHANGED')
+                    halt_result = DurableOrderGateway(order_path).emergency_halt()
+                    # The warm return is not durable evidence.  Reopen and
+                    # replay the journal through a fresh gateway before any
+                    # public result may claim cleanup was confirmed.
+                    order_identity = _order_identity_bounded(order_path)
+                    first_durable_halt = _halt_replayed_bounded(
+                        order_path,halt_result,order_identity)
+                    if not _same_data_root(root,root_identity):
+                        first_durable_halt = False
+                        raise ValueError('DATA_ROOT_CHANGED')
                 else:raise ValueError('DATA_ROOT_CHANGED')
             finally:
                 # Reassert after SQLite so a concurrently finishing explicit
@@ -150,6 +291,15 @@ def activate(data_root=None):
                     if final_intent:
                         final_intent_identity = _intent_identity(order_path)
                     final_intent = final_intent_identity is not None
+                    # The first cold replay can become stale if the separate
+                    # explicit reset workflow wins before this latch is
+                    # reasserted while preserving the SQLite inode.  Sample
+                    # the durable journal again after the final latch.  Reset,
+                    # retry and a second halt mutation remain intentionally
+                    # outside this emergency command.
+                    if first_durable_halt:
+                        durable_halt = _halt_replayed_bounded(
+                            order_path,halt_result,order_identity)
     except Exception:
         # An emergency command must still return a conservative structured
         # result after an unforeseen ordinary storage/helper fault.  System
@@ -172,6 +322,12 @@ def activate(data_root=None):
     # remains sampled evidence; a later explicit reset is still possible.
     final_intent = bool(root_stable and final_intent and
         _same_intent(order_path,final_intent_identity))
+    # Bracket the last latch sample with the data-root identity.  A same-inode
+    # latch moved into a replacement root during ``_same_intent`` must not keep
+    # the earlier root sample authoritative for the public VERIFIED result.
+    root_stable = bool(root_stable and
+        _same_data_root(root,root_identity))
+    final_intent = bool(root_stable and final_intent)
     verified = root_stable and intent_preceded and durable_halt and final_intent
     return dict(mode='NEXUS_LOCAL_PAPER_EMERGENCY_STOP',passed=verified,
         halted=final_intent or durable_halt,

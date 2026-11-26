@@ -1,5 +1,7 @@
 """Nexus Operative development desktop API. Simulation only: no brokerage or money movement."""
 import math
+import json
+import re
 import threading
 import asyncio
 from contextlib import asynccontextmanager
@@ -8,14 +10,15 @@ import sqlite3
 import time
 from pathlib import Path
 import sys
-from fastapi import FastAPI, HTTPException, Request
+from decimal import Decimal
+from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from nexus.state import load_settings, save_settings, audit
 from nexus.markets import list_markets
 from nexus.market_universe import page as market_universe_page
 from nexus.expansion_initiative import roadmap as expansion_roadmap, assess_evidence as assess_expansion_evidence
-from nexus.durable_orders import gateway as research_order_gateway
+from nexus.durable_orders import gateway as research_order_gateway,emergency_halt_replayed
 from nexus.paper_forward import runner as paper_forward_runner
 from nexus.hub_refresh import refresh_worker
 from nexus.hub_jobs import BUILD_LOCK
@@ -95,7 +98,7 @@ async def application_lifespan(application):
             if lifecycle_executor is not None:
                 lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.306",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.412",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -243,9 +246,38 @@ register_paper_onboarding(app, _require_local_portal)
 from nexus.ai_onboarding import register as register_ai_onboarding
 register_ai_onboarding(app, _require_local_portal)
 
-class PublicAiConsent(BaseModel):
-    product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
-    preview_sha256: str = Field(pattern="^[a-f0-9]{64}$")
+PUBLIC_AI_CONSENT_MAX_BODY = 2048
+
+
+def _public_ai_consent_pairs(items):
+    value = {}
+    for key, item in items:
+        if key in value:
+            raise ValueError('DUPLICATE_KEY')
+        value[key] = item
+    return value
+
+
+async def _public_ai_consent(request):
+    if request.headers.get('content-type', '').split(';')[0].strip().lower() != 'application/json':
+        raise ValueError('CONTENT_TYPE')
+    length = request.headers.get('content-length')
+    if length is not None and (not length.isascii() or not length.isdecimal() or
+                               len(length) > 4 or int(length) > PUBLIC_AI_CONSENT_MAX_BODY):
+        raise ValueError('BODY_SIZE')
+    raw = bytearray()
+    async for chunk in request.stream():
+        if len(raw) + len(chunk) > PUBLIC_AI_CONSENT_MAX_BODY:
+            raise ValueError('BODY_SIZE')
+        raw.extend(chunk)
+    value = json.loads(raw.decode('utf-8'), object_pairs_hook=_public_ai_consent_pairs)
+    if type(value) is not dict or set(value) != {'product', 'preview_sha256'}:
+        raise ValueError('FIELDS')
+    product = value['product']; digest = value['preview_sha256']
+    if (type(product) is not str or product not in ('BTC-USD', 'ETH-USD', 'SOL-USD') or
+            type(digest) is not str or re.fullmatch(r'[a-f0-9]{64}', digest) is None):
+        raise ValueError('VALUES')
+    return product, digest
 
 @app.get("/api/paper/ai-provider/public-preview/{product}")
 def public_ai_research_preview(product: str):
@@ -253,9 +285,11 @@ def public_ai_research_preview(product: str):
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.post("/api/paper/ai-provider/public-preview/send")
-def public_ai_research_send(consent:PublicAiConsent,request:Request):
+async def public_ai_research_send(request:Request):
     _require_local_portal(request)
-    try:return ai_authorize_preview(consent.product,consent.preview_sha256)
+    try:product,digest=await _public_ai_consent(request)
+    except Exception:raise HTTPException(status_code=422,detail='PUBLIC_AI_CONSENT_BODY_INVALID')
+    try:return ai_authorize_preview(product,digest)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
 @app.get("/api/paper/ai-provider/advisory-benchmark")
@@ -353,10 +387,6 @@ def paper_stress(value: StressRequest):
     except ValueError as exc:
         raise HTTPException(status_code=422,detail=str(exc))
 
-class DepositPreview(BaseModel):
-    amount: float = Field(gt=0, le=1000000)
-    cadence: str = Field(pattern="^(once|weekly|monthly)$")
-
 def simulated_snapshot():
     elapsed = int((time.monotonic()-_started)//5)
     return [
@@ -372,12 +402,17 @@ def release_roadmap():
     from nexus.release_roadmap import snapshot
     return snapshot()
 
+@app.get("/api/authority/inventory")
+def admission_authority_inventory():
+    from nexus.authority_inventory import snapshot
+    return JSONResponse(snapshot(app),headers={"Cache-Control":"no-store"})
+
 def status():
     _execution_halted()
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.306", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.412", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -556,12 +591,12 @@ def paper_portfolio_buy(data:PaperTrade):
 
 @app.post("/api/paper/portfolio/sell")
 def paper_portfolio_sell(data:PaperClose):
-    if _execution_halted():raise HTTPException(status_code=409,detail="EMERGENCY_HALT_ACTIVE")
-    with _cut_lock:epoch=_cut_epoch
     try:
         quote=read_ticker(data.product)
         with _trading_control_lock:
-            if _execution_halted() or epoch!=_cut_epoch:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_INTERRUPTED_TRADE")
+            # A cut forbids new exposure but must not strand a strictly reducing
+            # close of an existing local-paper long. Quote and ledger checks stay
+            # inside their original fail-closed/atomic boundaries.
             return paper_sell(data.product,quote)
     except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
 
@@ -755,7 +790,7 @@ class SimulatedOrderIntent(BaseModel):
     client_order_id: str = Field(min_length=1,max_length=64)
     product: str = Field(pattern="^(BTC-USD|ETH-USD|SOL-USD)$")
     side: str = Field(pattern="^(BUY|SELL)$")
-    notional: float = Field(gt=0,le=200)
+    notional: float = Field(gt=0,le=200,strict=True)
     provider: str = "nexus_local_paper"
     tier: str = Field(pattern="^(terrestrial|solar|universal)$")
 
@@ -956,9 +991,13 @@ def _complete_emergency_cut():
     with _trading_control_lock:
         try:
             # Independent intent precedes SQLite. Still halt/stop if its disk write fails.
-            try:emergency_intent.persist(research_order_gateway._path())
+            order_path=research_order_gateway._path()
+            try:emergency_intent.persist(order_path)
             finally:
-                try:research_order_gateway.emergency_halt()
+                try:
+                    result=research_order_gateway.emergency_halt()
+                    if not emergency_halt_replayed(order_path,result):
+                        raise ValueError('DURABLE_HALT_REPLAY_UNCONFIRMED')
                 finally:paper_forward_runner.stop('EMERGENCY_THROTTLE_CUT')
         except (ValueError,OSError,sqlite3.Error,RuntimeError):
             raise HTTPException(status_code=503,detail="HALTED_LOCALLY_CUT_CLEANUP_UNCONFIRMED")
@@ -1049,7 +1088,7 @@ class HaltResetConfirmation(BaseModel):
     confirm_reset: bool
 
 def _complete_halt_reset(epoch):
-    global _halted,_cut_confirmed
+    global _halted,_cut_confirmed,_cut_epoch
     with _trading_control_lock:
         with _cut_lock:
             if _cut_pending or epoch!=_cut_epoch:
@@ -1086,7 +1125,22 @@ def _complete_halt_reset(epoch):
             except (ValueError,OSError,sqlite3.Error):
                 raise HTTPException(status_code=503,detail="HALTED_LOCALLY_ORDER_STORAGE_UNAVAILABLE")
             raise HTTPException(status_code=409,detail="RESET_INTERRUPTED_BY_EMERGENCY_CUT")
-        audit("emergency_halt_reset_disengaged")
+        try:audit("emergency_halt_reset_disengaged")
+        except (ValueError,OSError,sqlite3.Error):
+            # A reset is not acknowledged unless its audit boundary commits.
+            # Restore the independent process veto first, then attempt both
+            # durable barriers even if either restoration fails.
+            with _cut_lock:
+                _halted=True
+                _cut_confirmed=False
+                _cut_epoch+=1
+                paper_forward_runner.request_cut()
+            try:
+                try:emergency_intent.persist(research_order_gateway._path())
+                finally:research_order_gateway.emergency_halt()
+            except (ValueError,OSError,sqlite3.Error,RuntimeError):
+                pass
+            raise HTTPException(status_code=503,detail="HALT_RESET_AUDIT_UNAVAILABLE")
         return status()
 
 @app.post("/api/simulate/halt/reset")
@@ -1103,9 +1157,20 @@ async def reset_emergency_halt(confirmation:HaltResetConfirmation):
     return await asyncio.to_thread(_complete_halt_reset,epoch)
 
 @app.post("/api/funding/preview")
-def funding_preview(data:DepositPreview):
-    return {"amount":round(data.amount,2), "cadence":data.cadence, "status":"PREVIEW_ONLY",
-      "bank_link_created":False,"transfer_scheduled":False}
+def funding_preview(data:object=Body(...)):
+    if type(data) is not dict or set(data)!= {'amount','cadence'}:
+        raise HTTPException(status_code=422,detail='FUNDING_PREVIEW_INVALID')
+    amount=data['amount'];cadence=data['cadence']
+    if (type(amount) not in (int,float) or not 0.01<=amount<=1000000 or
+            (type(amount) is float and not math.isfinite(amount)) or
+            Decimal(str(amount))*100 % 1):
+        raise HTTPException(status_code=422,detail='FUNDING_PREVIEW_INVALID')
+    if type(cadence) is not str or cadence not in ('once','weekly','monthly'):
+        raise HTTPException(status_code=422,detail='FUNDING_PREVIEW_INVALID')
+    return {"amount":float(Decimal(str(amount)).quantize(Decimal('0.01'))),
+      "cadence":cadence,"status":"PREVIEW_ONLY","bank_link_created":False,
+      "transfer_scheduled":False,"funding_authorized":False,
+      "money_movement_enabled":False,"live_orders_enabled":False}
 
 def portal_html_path():
     bundle=Path(getattr(sys,"_MEIPASS",Path(__file__).resolve().parents[1]))

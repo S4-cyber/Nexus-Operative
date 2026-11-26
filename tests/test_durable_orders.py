@@ -7,6 +7,46 @@ from nexus.durable_orders import DurableOrderGateway
 from nexus.order_accounting import order_id_fingerprint, retired_id_set_sha256
 
 
+class EqualText(str):
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
+def test_polymorphic_command_number_is_rejected_before_storage_creation(tmp_path):
+    class ForgedNotional(float):
+        def __str__(self):return '25'
+
+    path=tmp_path/'absent'/'orders.sqlite3';gateway=DurableOrderGateway(path)
+    with pytest.raises(ValueError,match='ORDER_COMMAND_ARGUMENT_INVALID'):
+        gateway.submit('order','BTC-USD','BUY',ForgedNotional(100.0))
+    assert not path.parent.exists()
+
+
+def test_polymorphic_lineage_digest_is_state_invariant_and_replay_safe(tmp_path):
+    class ForgedDigest(str):
+        def __iter__(self):return iter('a'*64)
+
+    path=tmp_path/'orders.sqlite3';gateway=DurableOrderGateway(path)
+    gateway.initialize_account(1000);gateway.link_portfolio();gateway.emergency_halt()
+    before=path.read_bytes();report=gateway.recovery_report()
+    with pytest.raises(ValueError,match='ORDER_COMMAND_ARGUMENT_INVALID'):
+        gateway.bind_replacement_epoch(1,ForgedDigest('x'*64),'0'*64)
+    assert path.read_bytes()==before
+    assert DurableOrderGateway(path).recovery_report()==report
+
+
+def test_type_confused_protocol_text_cannot_poison_durable_replay(tmp_path):
+    path=tmp_path/'orders.sqlite3';gateway=DurableOrderGateway(path)
+    gateway.submit('order','BTC-USD','BUY',25)
+    before=gateway.recovery_report()
+    with pytest.raises(ValueError,match='ORDER_COMMAND_ARGUMENT_INVALID'):
+        gateway.submit('poison',EqualText('PRIVATE-PRODUCT'),'BUY',25)
+    with pytest.raises(ValueError,match='ORDER_COMMAND_ARGUMENT_INVALID'):
+        gateway.simulate_event('order','event',1,EqualText('PRIVATE-KIND'),25)
+    assert gateway.recovery_report()==before
+    assert DurableOrderGateway(path).recovery_report()==before
+
+
 def test_restart_preserves_partial_fees_cancel_and_idempotency(tmp_path):
     path = tmp_path/'orders.sqlite3'
     g = DurableOrderGateway(path)

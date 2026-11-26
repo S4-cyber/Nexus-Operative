@@ -197,6 +197,12 @@ def _review_exact(post_budget, *, expected_post_head, account_id, journal,
         _fail('POST_BUDGET_REQUIRED')
     if type(journal) is not BrokerRequestJournal:
         _fail('REQUEST_JOURNAL_REQUIRED')
+    # Freeze caller-owned evidence before any composed review can yield to a
+    # callback. Every later component and arithmetic pass must see one value.
+    (pre_opening_observation, opening_observation, closing_observation,
+        post_closing_observation) = tuple(portable.validate(value) for value in (
+            pre_opening_observation, opening_observation,
+            closing_observation, post_closing_observation))
     pacing_path = _frozen_path(pacing_path, 'PACING_PATH_INVALID')
     activity_store_path = _frozen_path(
         activity_store_path, 'ACTIVITY_STORE_PATH_INVALID')

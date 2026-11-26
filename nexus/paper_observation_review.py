@@ -91,7 +91,7 @@ def review(store, *, expected_account_id, expected_head, opening_observation, cl
     if type(store) is not BrokerActivityStore: _fail('STORE_REQUIRED')
     account = adapter._uuid(expected_account_id)
     if store.account != account or first['account_id'] != account or last['account_id'] != account: _fail('ACCOUNT_DISAGREEMENT')
-    if not isinstance(expected_head,str) or re.fullmatch(r'[0-9a-f]{64}',expected_head) is None: _fail('HEAD_REFERENCE')
+    if type(expected_head) is not str or re.fullmatch(r'[0-9a-f]{64}',expected_head) is None: _fail('HEAD_REFERENCE')
     retained = store.inspect()
     if retained['retained_batches'] == 0: _fail('HISTORY_REQUIRED')
     if retained['head_sha256'] != expected_head: _fail('HEAD_DISAGREEMENT')

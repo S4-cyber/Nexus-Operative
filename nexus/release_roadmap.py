@@ -4,8 +4,9 @@ Change through reviewed source commits. There is no runtime update operation.
 ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementation history.
 """
 from dataclasses import dataclass, asdict
+from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.306'
+REVISION = '0.340.412'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -26,7 +27,7 @@ MILESTONES = (
     Milestone('M5','Durable latency and capacity','PARTIAL','Replay-validated checkpoints, two-snapshot retention, checkpoint interruption tests and isolated gateway and linked-ledger/tier-inclusive p50/p95/p99 benchmark; capacity admission diagnostics; opt-in atomic quote-order fixture treatment with retained commands and crash rollback tests; explicit logical archival with retained IDs and commands; read-only sustained-trial readiness reports quote/session headroom plus conservative every-cycle durable command and ID bounds; an explicit application-closed installed/source rotation tool verifies an offline archive, prepares a fresh halted candidate, retains a second exact source recovery copy, installs the candidate behind a persistent fail-closed marker and can explicitly recover an interrupted pair replacement or roll a completed install back. Archive/candidate/recovery publication, the marker and both live pair replacements use one durable move boundary: parent-directory fsync on POSIX and MoveFileExW WRITE_THROUGH on Windows, while file contents remain separately flushed. Each new v3 candidate retains replay-validated generation lineage plus a bounded private fingerprint set for all retired client-order IDs, rejecting cross-epoch reuse before journal mutation; v1/v2 candidate and legacy recovery/marker records remain readable. A legacy v2 source without fingerprints can proceed only through a private v1 baseline review bound to the exact closed source generation, epoch, replay digest and verified archive manifest. Known archived IDs must be included, raw IDs are never copied into the candidate, and the v4 lineage labels the result OPERATOR_REVIEWED_UNATTESTED. The mandatory operations fixture repeats four synthetic generations and 48 terminal orders, replays every retained archive/candidate/recovery set, verifies all 48 retired-ID fingerprints, exercises the legacy migration fence and requires each installed live journal to return to its four-command halted baseline.','Extended multi-epoch long-run scalability and pressure acceptance, sustained queue pressure, source-retirement policy and independent archive/private-volume/native Windows power-loss/profile/ACL acceptance remain open. The bounded synthetic fixture is not duration, market throughput or native interruption evidence. Write-through metadata publication reduces a known Windows durability gap but is not physical power-loss proof. The private fingerprint fence covers only a complete retained lineage; it does not establish caller identity, other-host coordination or broker-wide idempotency. A reviewed legacy baseline records an operator completeness assertion, not source attestation; independent review of the actual private scope remains required. Installation reclaims live journal capacity but preserves source history externally, never resumes operation and grants no broker, funds, live or release authority; the conservative trial bound is not expected trading volume or validated broker throughput.'),
     Milestone('M6','Scientific strategy evidence','PARTIAL','Chronological research, holdout, regime and cost-stress modules; persisted multi-horizon ridge momentum baselines with training-only scaling, purged chronological holdout, naive/momentum comparisons, generation invalidation and compact research signals; three built-in trained feature specialists with fixed three-block baseline checks, disagreement reporting and independent deterministic validation/provenance reviewers; versioned saved research packs and unchanged-data reuse; three expanding-window refits with purged training targets, delayed nonoverlapping modeled fills, fixed cost scenarios and fold-consistency checks; shared causal feature computation and serialized preparation; engine-started bounded learning with captured public/saved-only scope, bounded polls/fit attempts, generation skips, local OS ownership and stop-fenced publication.','Independent model calibration and walk-forward/forward evidence, licensed shared-source provenance, delisting/survivorship review and performance audit; trained baselines are not validated market edge.'),
     Milestone('M7','Unattended paper operation','PARTIAL','Explicitly started BTC public-quote paper runner; separate research-engine and explicit Engage Paper controls, independent emergency throttle cut preserving research, reset/start race fencing, dedicated coalesced emergency cleanup independent of feed/general workers, plus a separate installed emergency-stop process that publishes the durable latch before SQLite, starts no Portal/network/vault/reset path, is adopted by a running API and is consulted at paper start/quote/submit/fill boundaries; cancellation-shielded cut completion and pending/verified/unconfirmed status, queued-reset epoch checks, an immediate local runner cut signal and post-lock veto during real SQLite contention, independent bounded local cut-intent persistence and conservative restart recovery, native Windows read-only journal fault fencing with explicit post-recovery cleanup retry, process-death-before/after-cut-commit recovery fixtures, tier-gated entries, exits, halt/pause, feed-failure stop, durable session counters/heartbeats and fingerprinted fixed-policy admission; retained quote evidence, quote/fill price/quantity/fee/policy crosschecks, portable review summaries and exclusive local process ownership, clock-discontinuity pauses and exchange-regression warmup fencing and retained-storage preflight with operator runbook; bounded repeatable forward-runner fixture drill with fresh-process evidence comparison; operator recovery snapshot and pending-remainder inspect/cancel controls; Singularity account-equity and Fractal coordinated shared-time position constellation plus per-holding observed history with retained ranges and journal adjustment inspection and transactionally retained closed-day observation history with bounded active/total admission and range responses plus observation database byte/free-disk budgets and rollback-safe allocation failure handling.','Extend native Windows acceptance to ordinary-user ACL inheritance and whole-machine pressure; run sustained real-feed forward validation, independent policy evidence review and multi-market scheduling. Local subprocess/file-attribute outage tests are not broker or market performance evidence.'),
-    Milestone('M8','Broker paper integration and operations','OPEN','Provider-neutral design plus disconnected Alpaca paper IOC-limit previews and bounded identity/status/cumulative-fill diagnostics and explicit execution/asset-fee balance projections plus chronological fee-reserved funding audits with equal-time ambiguity and nonterminal-reservation review using repeatable fixtures; a bounded account-scoped durable request/uncertain-attempt/observation journal with replay validation and crash/lost-ack fixtures, persisted lookup-attempt limits, shared cooldowns and conservative timeout/not-found/rate-limit/authentication outcome handling, read-only pending-ticket review and explicit current-head-fenced lookup-interruption records preserving attempts and order uncertainty; an opt-in fixed-host GET-only paper account inspection primitive with bounded reads, redirect rejection, clock/permission fencing, stable account identity and conservative observed cash/BTC checks, explicit Windows credential pair storage/removal with verified readback, local mutation fencing and bounded same-origin Portal controls for separately confirmed one-time inspection; an explicit original-client-ID recovery coordinator sharing the bounded reader, persisting attempts before IO and normalized outcomes under post-lock clock/permission checks, with saved-key mutation fencing and crash/uncertainty retention; a bounded supplied Trading REST BTC/USD activity adapter with explicit fill prices/quantities, semantic deduplication, nanosecond time preservation and cumulative-chain checks, keeping received-asset fee debits unlinked and date semantics/coverage unverified; an internal explicitly confirmed two-page paper activity collector with canonical creation-window paths, exact opaque cursors, account/key/time fencing and explicit partial/end-observed reports, retaining no verified coverage or automatic continuation; optional account-bound local activity retention with canonical record reuse, immutable order bindings, bounded full replay and atomic crash/lost-return recovery, read-only cross-batch fill-chain review with snapshot conflict/revision checks and declared-window gap diagnostics; an optional explicit local paper-read reservation journal shared across inspection, activity collection and recovery, retaining cooldown/rate/auth/interruption blocks across cooperating processes and holding local OS ownership through read cleanup, with explicit account/head/token-fenced interruption review preserving unknown outcomes and full-day cooldowns; a pure combined supplied balance review compares explicit linked fills/fees with total cash/BTC while separately checking availability/open IOC terms without inferring provider holds or spending permission; optional collection observations preserve bounded page identities, opaque cursor chains, read timing and normalized-content/query digests within atomic activity receipts, without attesting source or coverage; an exact-account/head-bound retained gross-fill and total-balance residual review preserves nanosecond groups, rejects stale/concurrently changed history and leaves all fee links/posting scope/funding unverified; the explicit paper inspector and Accounts display now separate reported cash, non-margin buying power, total/available BTC and unknown/unavailable differences with normalized fingerprints/sampled timing, fail-fast malformed/foreign collections and no non-USD cash projection; portable allowlisted JSON observations now support explicit local download and bounded offline content-consistency validation without source attestation; a read-only portable-observation pair review now binds account/manifests/history head, checks sequential read windows for retained boundary fills and conditionally compares total balances without rounding nanoseconds or promoting source/funds authority; the existing confirmed inspector and Accounts readout also summarize bounded simple IOC buy-limit principal and sell remainders, deduplicate matching terms, preserve nanosecond identities and leave unsupported/conflicting aggregates unknown without claiming holds; validated with injected responses only, with order adapters still disconnected; an explicit source-only Windows saved-pair acceptance probe composes the account-ID-bound four-GET inspector with caller-selected durable local pacing, vault-silent pacing status and a content-bound allowlisted open-IOC aggregate from the same read, without granting provider/account/fee/hold/funding/live acceptance; Accounts now offers separately confirmed managed paced reads and vault-silent retained pacing review, with account-hashed private OS-profile storage and no automatic retry/reset; pacing, activity and request journals now preflight regular single-link files, bounded headers and DELETE-mode history, rejecting WAL layouts and sidecars before SQLite without conversion or evidence deletion; private cross-journal status replays every accepted receipt and exact successful pacing/activity head transition, separating latest-tail from historical-content disagreement without automatic repair; a read-only reconciliation composition requires no unverified legacy baseline and exactly one accepted record per retained pacing session, activity batch and collection observation, binds two portable observation manifests to that exact retained activity head and requires an exact nanosecond union of accepted declared creation windows to cover the full observation envelope before arithmetic, then rechecks all journals without promoting source, provider boundaries, received coverage, funds or routing authority.','Alpaca paper first after explicit paper-connection authorization; actual-account original-ID recovery acceptance, broker-wide pacing, account/asset eligibility and asset-denominated fee/position reconciliation. IBKR paper then Coinbase Advanced expansion.'),
+    Milestone('M8','Broker paper integration and operations','OPEN','Provider-neutral design plus disconnected Alpaca paper IOC-limit previews and bounded identity/status/cumulative-fill diagnostics and explicit execution/asset-fee balance projections plus chronological fee-reserved funding audits with equal-time ambiguity and nonterminal-reservation review using repeatable fixtures; a bounded account-scoped durable request/uncertain-attempt/observation journal with replay validation and crash/lost-ack fixtures, persisted lookup-attempt limits, shared cooldowns and conservative timeout/not-found/rate-limit/authentication outcome handling, read-only pending-ticket review and explicit current-head-fenced lookup-interruption records preserving attempts and order uncertainty; an opt-in fixed-host GET-only paper account inspection primitive with bounded reads, redirect rejection, clock/permission fencing, stable account identity and conservative observed cash/BTC checks, explicit Windows credential pair storage/removal with verified readback, local mutation fencing and bounded same-origin Portal controls for separately confirmed one-time inspection; an explicit original-client-ID recovery coordinator sharing the bounded reader, persisting attempts before IO and normalized outcomes under post-lock clock/permission checks, with saved-key mutation fencing and crash/uncertainty retention; a bounded supplied Trading REST BTC/USD activity adapter with explicit fill prices/quantities, semantic deduplication, nanosecond time preservation and cumulative-chain checks, keeping received-asset fee debits unlinked and date semantics/coverage unverified; an internal explicitly confirmed two-page paper activity collector with canonical creation-window paths, exact opaque cursors, account/key/time fencing and explicit partial/end-observed reports, retaining no verified coverage or automatic continuation; optional account-bound local activity retention with canonical record reuse, immutable order bindings, bounded full replay, atomic crash/lost-return recovery and exact post-commit main-file flush verification, read-only cross-batch fill-chain review with snapshot conflict/revision checks and declared-window gap diagnostics; an optional explicit local paper-read reservation journal shared across inspection, activity collection and recovery, retaining cooldown/rate/auth/interruption blocks across cooperating processes and holding local OS ownership through read cleanup, with explicit account/head/token-fenced interruption review preserving unknown outcomes and full-day cooldowns; a pure combined supplied balance review compares explicit linked fills/fees with total cash/BTC while separately checking availability/open IOC terms without inferring provider holds or spending permission; optional collection observations preserve bounded page identities, opaque cursor chains, read timing and normalized-content/query digests within atomic activity receipts, without attesting source or coverage; an exact-account/head-bound retained gross-fill and total-balance residual review preserves nanosecond groups, rejects stale/concurrently changed history and leaves all fee links/posting scope/funding unverified; the explicit paper inspector and Accounts display now separate reported cash, non-margin buying power, total/available BTC and unknown/unavailable differences with normalized fingerprints/sampled timing, fail-fast malformed/foreign collections and no non-USD cash projection; portable allowlisted JSON observations now support explicit local download and bounded offline content-consistency validation without source attestation; a read-only portable-observation pair review now binds account/manifests/history head, checks sequential read windows for retained boundary fills and conditionally compares total balances without rounding nanoseconds or promoting source/funds authority; the existing confirmed inspector and Accounts readout also summarize bounded simple IOC buy-limit principal and sell remainders, deduplicate matching terms, preserve nanosecond identities and leave unsupported/conflicting aggregates unknown without claiming holds; validated with injected responses only, with order adapters still disconnected; an explicit source-only Windows saved-pair acceptance probe composes the account-ID-bound four-GET inspector with caller-selected durable local pacing, vault-silent pacing status and a content-bound allowlisted open-IOC aggregate from the same read, without granting provider/account/fee/hold/funding/live acceptance; Accounts now offers separately confirmed managed paced reads and vault-silent retained pacing review, with account-hashed private OS-profile storage and no automatic retry/reset; pacing, activity and request journals now preflight regular single-link files, bounded headers and DELETE-mode history, rejecting WAL layouts and sidecars before SQLite without conversion or evidence deletion; private cross-journal status replays every accepted receipt and exact successful pacing/activity head transition, separating latest-tail from historical-content disagreement without automatic repair; a read-only reconciliation composition requires no unverified legacy baseline and exactly one accepted record per retained pacing session, activity batch and collection observation, binds two portable observation manifests to that exact retained activity head and requires an exact nanosecond union of accepted declared creation windows to cover the full observation envelope before arithmetic, then rechecks all journals without promoting source, provider boundaries, received coverage, funds or routing authority.','Alpaca paper first after explicit paper-connection authorization; actual-account original-ID recovery acceptance, broker-wide pacing, account/asset eligibility and asset-denominated fee/position reconciliation. IBKR paper then Coinbase Advanced expansion.'),
     Milestone('M9','Release acceptance and authorization','OPEN','0.x numbering and release gates enforced; read-only retained forward coverage review revalidates recorded eligible quotes under the admitted policy before measuring a requested72-hour/95-percent target using clipped, unioned same-session public-labeled eligible intervals, excludes injection/gaps and leaves sustained-market/account acceptance unverified; repeatable source-fingerprinted offline trial suite covers 20 forward sessions, 24 operation rounds, backup/restore, durable capacity and real loopback HTTP startup/shutdown; fresh-install stop inspection avoids accounting initialization; bounded origin-first optional-AI credential controls use fixed errors, exact backend binding and verified save/remove readback. Public-repository hardening adds checksum-pinned full reachable-history secret/artifact scans, immutable Action references, nonpersistent checkout credentials, dependency updates/code ownership, a global loopback/Host/Origin boundary, no-store API responses and password-encrypted observation-copy tooling and explicit encrypted-input offline pair reviews without decrypted files; admin settings, historical logs/artifacts, default-branch policy adoption and native disk/ACL acceptance remain separate. Saved trial evidence is revalidated against every required profile and the exact current source; distribution checksums bind the bundled offline report as well as binaries, without attesting CI or approving release; real loopback HTTP trials now exercise paced paper reads with injected vault/transport seams, concurrent key removal, revoked-result suppression, retained cooldown/pending state and vault/network-silent fresh-process replay. Mandatory acceptance recovery observes a real pre-commit rollback sidecar, fingerprints all three main journals plus rollback/WAL/shared-memory sidecars and re-derives every accepted collection scope/account fields/observation/canonical activity input plus exact pacing/activity head transition from its retained receipt across fresh-process status. Release-run failures expose only allowlisted profile-specific child/timeout codes while suppressing child stderr, exception text, paths and environment data. See RELEASE_ACCEPTANCE.md for scope and unverified gates.','Independent security/risk review, operator runbook, complete acceptance evidence and explicit owner approval for 1.0. Live-money activation requires separate authorization.'),
 )
 
@@ -49,6 +50,45 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; a no-network supplied Activity SSE schema review now fail-closes to BTC/USD TRD fills and one-to-one USD fees, requires strict ULID cursor order and unique stable ref IDs, binds each admitted fee parent_id to a supplied fill, and rejects corrections, busts, bulk fees, FX and unsupported financial activities without claiming stream entitlement, delivery, replay coverage or provider source' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Retained request-bound quote evidence now crosses the same explicit commit
+# boundary as the broker activity journals that later reconcile against it.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every acknowledged request-bound paper quote receipt '
+        'now binds committed SQLite connection bytes to one stable bounded '
+        'main-file fingerprint, hashes the exact writable descriptor before '
+        'and after explicit fsync and flushes a newly created exact POSIX '
+        'parent entry; flush uncertainty retains one exact receipt for '
+        'no-provider duplicate replay without source, coverage, routing or '
+        'release authority' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Require durable Activity SSE checkpoint and reconnect acknowledgements to
+# cross the same explicit main-file flush boundary as the paper journals they
+# coordinate. Lost acknowledgement remains explicit replay, never retry.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every acknowledged Activity SSE cursor checkpoint, '
+        'reconnect reservation and reconnect result now binds committed '
+        'SQLite connection bytes to one stable bounded main file, hashes the '
+        'exact writable descriptor before and after explicit fsync and flushes '
+        'a newly created exact POSIX parent entry; flush uncertainty retains '
+        'the checkpoint or attempt for exact no-network replay while keeping '
+        'provider-request, automatic-retry, routing, funds and release '
+        'authority false' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Sustained-trial session and quote evidence must cross an explicit commit
+# boundary even though the injected profile remains non-authoritative.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every acknowledged forward-session or retained-quote '
+        'evidence commit now binds the exact SQLite main connection and '
+        'committed bytes to a bounded single-link main file, hashes the exact '
+        'writable descriptor before and after explicit fsync and flushes a '
+        'new exact POSIX parent entry; flush uncertainty stops the runner, '
+        'releases ownership and leaves the retained session requiring review '
+        'without granting sustained-market or release acceptance'
+        if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -233,6 +273,23 @@ DELIVERY_STAGES = tuple((dict(stage,
         'an internal single-attempt paper POST boundary with an exact-head shared-local provider budget and bounded cross-journal marker/outcome/recovery history review now exists with injected tests only; terminal recovery events must bind back to the exact request prefix retaining the matching terminal original-ID observation, but it has no saved write credential, Portal or strategy route and does not attest an account or broker-wide quota.'),
     remaining='Authorized-account acceptance of the single-attempt boundary and shared-local budget, separately scoped saved write credentials, explicit operator integration, broker-wide/distributed POST coordination, authenticated recovery/collection, durable activity coverage, verified execution/fee associations and cash/position/hold/funds reconciliation.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; linked durable paper accounts now protect one slot inside the existing fixed intent-ID limit from ordinary intake, while an internal replayable reducing-exit command may consume that slot only after binding an exact current product, quantity and expected position; cold replay, duplicate conflict, ordinary-route denial and account-change fences preserve the total cap' if item.id=='M5' else
+        '; the paper-forward runner now admits entries only when both the ordinary-ID slice and the protected reducing-exit slice are available, and binds every reserved SELL to the exact reconciled holding before its modeled fill; public simulation requests cannot consume or invoke that exit slice' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Linked local-paper accounts now reserve one existing durable intent slot from ordinary intake and expose separate total, ordinary and reducing-exit headroom. The internal reducing command binds the exact SELL product, requested reduction and expected current holding in replayed history, rechecks position continuity at fill, and never raises the total ID limit. Public simulation, BUY, wrong-product, flat, unlinked, oversized, stale-position, halted and cut paths cannot consume the slot. This is bounded local exit-capacity hardening, not broker routing, market realism, provider/account acceptance, funding/live/cloud readiness or permission.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; persisted counterfactual broker-intent reconciliation now brackets its exact request-head check with two fresh durable session-order replays, requires both to equal the reviewed non-halted order snapshot, and leaves the order journal unlocked so an emergency halt can proceed independently and invalidate the result' if item.id in ('M4','M8') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Persisted counterfactual broker-intent reconciliation now requires the reviewed non-halted order snapshot to survive fresh durable replay before and after the exact request-head check. No order-journal lock spans reconciliation, so an emergency halt remains independent and makes the retained review stale. This is bounded sequential local reconciliation evidence; the plan remains unsendable and no provider, account, funds, routing or release authority is granted.' if stage['id'] in ('D3','D4') else ''))
+    if stage['id'] in ('D3','D4') else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the provider-POST reconciliation boundary now validates the retained observation\'s shared gross-balance and activity subreviews, binds both account/activity heads to the outer observation, replays the gross-balance scope hash and rejects nested authority promotion or removed replay/arithmetic assurances' if item.id == 'M8' else ''),
@@ -747,6 +804,24 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Every valid shared broker-paper owner lease now captures the no-follow identity of the directory that publishes its exact owner-directory entry before opening the marker. That identity is required during marker preparation, every active validation and context exit, so a replacement immediate parent cannot inherit authority by moving the same owner directory back under the public pathname. This is one additional local ancestry level, not full ancestor-chain, extended-ACL, distributed-owner, native-profile, provider/account or broker acceptance.')
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; final caller-selected reconciliation journal leaves must now remain regular single-link files bound to the canonical preflight identity before semantic acceptance, so symbolic links, hard links and observed leaf replacement fail closed' if item.id=='M4' else
+        '; the read-only admission inventory now separately binds the dormant Alpaca paper-order and optional AI credentialed POST transports to exact fixed targets while proving that transport existence is not route exposure or operational authority' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Reconciliation acceptance now rejects symbolic or multiply linked caller-selected pacing, activity and acceptance journal leaves before semantic reads and rebinds each canonical preflight result to the exact selected identity. The source-declared authority inventory separately reports application routes and the two exact credentialed POST transports: the paper-order transport remains OFF and unrouted, while every broker, funding, live, cloud, spend and release authority flag remains false. This is local evidence-integrity and truthful capability inventory, not provider/account connectivity, broker acceptance, genuine-market coverage, sustained operation, funding/live/cloud readiness or permission.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; exact-TTL expiry of a residual reducing-exit slice now returns an explicit no-fill result while preserving the immutable full-position mandate, so the runner durably records a veto instead of a modeled SELL and may resume only under later fresh terms and quote' if item.id=='M4' else
+        '; paper-forward execution now distinguishes per-slice expiry from terminal reducing-mandate expiry, retaining the bounded position/account binding and independent halt path across a cold restart without fabricating a fill' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Residual position-reducing mandates now treat an exact execution-term TTL boundary as a per-slice no-fill veto. The current position, durable fill count and quote-event count remain unchanged; a later cycle must establish newer terms and a fresh quote before the same bounded mandate can continue. This is local reconciliation correctness, not broker-paper, genuine-market, liquidity, sustained-operation or release acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
 # Human engineering estimates; reassess on substantial integration/evidence or
 # scope changes. Weights are relative scope, not measured hours or permission.
 PROGRESS_BASELINE = (
@@ -898,7 +973,7 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 # Keep the standalone cut's public-root claim sampled and conservative.  This
 # does not replace native ordinary-profile or sustained pressure acceptance.
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
-    item.evidence + ('; the standalone emergency-stop process now samples an existing resolved data-root identity before priority elevation, exclusively initializes a root observed absent only afterward, and rechecks the identity throughout intent/SQLite work, refusing a concurrently replaced public root instead of reporting VERIFIED for a cut applied only to replacement storage' if item.id == 'M7' else ''),
+    item.evidence + ('; the standalone emergency-stop process now samples an existing resolved data-root identity before priority elevation, exclusively initializes a root observed absent only afterward, and requires every sampled root or absent-root ancestor path to remain canonical while rechecking identity throughout intent/SQLite work, refusing both replacement roots and same-inode parent aliases instead of reporting VERIFIED for an ambiguously addressed cut' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
 # Best-effort process priority is diagnostic only.  Unexpected helper failures
@@ -927,6 +1002,231 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the standalone emergency-stop process samples the exact latch entry after its first confirmed observation and rechecks the same entry immediately before durable-halt handoff, so a concurrent clear or replacement loses ordering confirmation without suppressing the independent halt or final-latch attempts' if item.id == 'M7' else ''),
     item.remaining) for item in MILESTONES)
 
+# Canonical root/ancestor sampling must finish after its trailing identity
+# observation.  Otherwise a same-inode parent alias inserted after the prior
+# resolution could authorize one storage step before the next sample failed.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; each emergency data-root and absent-root ancestor identity sample is followed by a final canonical-path resolution, preventing a same-inode parent alias inserted after the earlier resolution from authorizing root creation or the first latch write' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+# The exact development Windows lane completed regression and installer
+# acceptance before its old outer timeout cancelled only the distribution
+# evidence tail. Preserve every gate with explicit finite measured margins.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the source-bound Windows regression and packaging lane now has a finite 150-minute outer budget and a separate 20-minute distribution-evidence tail after exact development run 43595758062 exhausted the old 120-minute budget only after full regression, EXE, install/reinstall, prior-version recovery, uninstall and phase review had passed' if item.id == 'M1' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Manual installer validation may bind an immutable stacked review commit, but
+# only after proving the current development head is its ancestor. The default
+# dispatch remains the refreshed exact development head.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; owner-dispatched Windows validation can bind one exact 40-character review commit only after proving it descends from the refreshed development head, while an omitted commit must equal that refreshed head' if item.id == 'M1' else ''),
+    item.remaining) for item in MILESTONES)
+
+# A Windows directory cannot be opened for fsync through the standard Python
+# API. Keep its emergency latch entry operation bound to a sampled resolved
+# parent identity, while POSIX retains its stronger descriptor/fsync boundary.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; emergency-latch persist and clear now bind the resolved parent identity before every entry operation and recheck it before acknowledgement even when Windows cannot supply a directory descriptor, including the already-absent clear path' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Native Windows can pin a directory with CreateFileW even though the standard
+# Python API cannot open it for fsync. Excluding delete sharing prevents a
+# cooperating rename from retargeting the latch pathname during acknowledgement.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; Windows emergency-latch persist and clear now hold a backup-semantics directory handle without delete/rename sharing across entry access and final identity acknowledgement, with native rename-denial acceptance retained for the Windows lane' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Open the exact public Windows parent with OPEN_REPARSE_POINT rather than its
+# resolved target, then prove that handle is a non-reparse directory. This keeps
+# a late junction/symlink substitution inside the fail-closed lease boundary.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Windows emergency-latch lease now opens the exact public parent path and rejects non-directory or reparse-point handles before entry access, while the native regression contract records ordinary Windows file-handle rename denial as conservative success rather than sampled-identity failure' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+# A failed first provider-POST budget transaction must not strand an empty,
+# schema-less main file that blocks an exact clean retry. Cleanup is limited to
+# the captured new identity with zero bytes and no SQLite sidecars; ambiguity is
+# retained fail-closed for inspection.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; a failed first local provider-POST budget transaction now removes only its captured unchanged empty regular single-link main file when no SQLite sidecar exists, allowing one exact clean retry while replacement, bytes, links, sidecars or cleanup uncertainty remain retained and blocked' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Freeze the selected provider-POST parent before any operation and bind the
+# mutable store path/scope/digest through owner acquisition, SQLite setup and
+# rollback cleanup. Retargeting cannot redirect a write or delete a decoy.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the local provider-POST budget now freezes its selected parent while retaining final-leaf checks, binds path plus provider scope/digest through active ownership, requires the captured regular single-link main-file identity and exact SQLite main path throughout setup, and performs failed-first-write cleanup only against the captured path so mutable aliases, inode replacement, foreign connections or object retargeting cannot redirect a write or delete a decoy' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Windows permits a directory rename despite the directory handle used by the
+# prior lease on the hosted runner. Hold a verified regular child without
+# delete sharing as the effective parent-rename barrier.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the native Windows emergency-latch lease now also holds a fixed validated regular single-link child guard without delete sharing through final acknowledgement because hosted run 43634033695 proved the directory handle alone did not deny parent rename; unsafe guards fail closed and a fresh exact-source native pass remains required' if item.id == 'M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Bind the shared provider-GET budget to one selected physical path and provider
+# scope, including narrow recovery of a failed first SQLite transaction.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the shared local provider-GET budget now freezes its selected parent while retaining final-leaf checks, binds path plus provider scope/digest through active ownership, requires the captured regular single-link main-file identity and exact SQLite main path throughout setup, and removes only its captured empty sidecar-free file after an aborted first transaction so aliases, inode replacement, foreign connections or object retargeting cannot redirect a write or poison an exact operator retry' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Carry the captured provider POST/GET main-file identity through transaction
+# finalization, connection close and the final local acknowledgement sample.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider POST and GET write contexts now retain the captured SQLite main-file identity through transaction finalization, require the exact main connection and file before close, recheck the pathname identity after close, reject uncommitted returns for both existing and new stores, and fail closed on an injected or actual during-transaction replacement without deleting the replacement or reclaiming uncertain capacity' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Make a committed provider-budget acknowledgement observe an explicit flush
+# of the exact captured main-file descriptor. New POSIX entries also flush the
+# validated parent directory; Windows retains the portable main-file boundary.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; provider POST and GET committed writes now hash the exact captured writable main-file descriptor around explicit fsync, recheck its bounded pathname fingerprint, and flush a newly created exact parent entry on POSIX; any file or parent flush uncertainty retains the committed pending reservation and blocks automatic retry or capacity reuse' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Match the shared account-read admission/result journal to the provider
+# budgets' explicit commit boundary. A committed but unflushed reservation is
+# retained for review and cannot silently become reusable request capacity.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every committed shared account-read pacing write now '
+        'matches its exact writable SQLite main descriptor and bounded '
+        'pathname bytes around explicit file fsync, plus an identity-bound '
+        'parent-directory fsync for a newly created POSIX entry; flush '
+        'uncertainty retains the committed reservation and blocks reuse' if
+        item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+# Require the broker request/recovery journal itself to cross the same explicit
+# descriptor-bound commit boundary as its provider budgets and read pacing.
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every acknowledged broker request/recovery write now '
+        'matches the committed SQLite connection bytes to a stable bounded '
+        'pathname fingerprint, hashes the exact writable main descriptor '
+        'before and after explicit fsync, and flushes a newly created exact '
+        'parent entry on POSIX; flush uncertainty retains PREPARE, submission, '
+        'observation, lookup or interruption state without retry or routing '
+        'authority, while the account-read and request-journal fingerprint '
+        'schemas explicitly retain their portable omitted-ctime representation '
+        'on Windows' if item.id == 'M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; pull-request security and Windows research jobs now explicitly check out and verify the immutable pull-request head before testing, while an offline exact-CI inventory reviewer binds one requested source to exact workflow paths/events, checked-out SHA values, unique run/job identifiers and attempts, and exact required job sets from a bounded stable single-link input; this records source and inventory consistency only and grants no CI, installer, Windows, broker, live or release authority' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Activity SSE checkpoint coordinator now requires the complete private transport acknowledgement schema, exact policy/limitations/source mode, account and cursor digests, bounded count arithmetic, interruption status and every denied authority before any durable cursor mutation; this is an internal fail-closed composition boundary using injected fixtures, not provider source, stream coverage, paper-account reconciliation or broker acceptance' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Activity SSE checkpoint coordinator now freezes an existing bounded single-link cursor main-file identity and bytes, or proves a fresh path remains absent, across admission, the sole provider read, private parsing and reconnect review before checkpoint handoff; a byte-identical pathname replacement cannot preserve cursor authority, while the cursor store retains its separate descriptor-bound commit and recovery checks' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; Activity SSE reconnect reasons now require one exact built-in allowlisted string at every offline review, saved-credential, reconnect-budget, checkpoint and owner-acceptance ingress before callbacks, journal inspection or creation, reservation and the sole provider GET; malformed or equality-forging reasons are network/storage silent and retain no request authority' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the allowlisted public account-evidence summary now requires exact built-in top-level keys, mode, policy and status text plus exact built-in gross-currency keys before comparison or public copying, so equality-forging text subclasses cannot pass private policy/status text or ambiguous keys through the privacy boundary' if item.id=='M4' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; simulated tier-entry permission now preflights one exact built-in tier and a finite strictly positive exact built-in integer, float or Decimal notional before settings/permission reads, while durable and forward callers convert their already validated stored values to Decimal; Boolean, stringified, non-finite, zero, negative and equality-forging inputs fail storage-silent' if item.id=='M3' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; durable simulated-order admission now requires exact built-in order/product/side/provider/tier/event identifiers and event kinds before lookup, comparison or mutation, so equality-forging text cannot persist a command that later poisons journal replay' if item.id=='M4' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the opt-in paper forward runner now admits only an exact built-in public-quote mapping with exact provenance/permission text and booleans plus finite positive built-in prices and a finite built-in receipt clock before feed evaluation or modeled order creation; rejected polymorphic inputs retain only a fixed invalid-evidence marker' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; supplied Activity SSE reconnect review now requires exact built-in persisted and since cursors before transcript normalization, preventing equality-forging cursor subclasses from reporting exact reuse or forward advancement with mismatched cursor digests' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; public ticker parsing and paper-forward admission now share a finite 1e-18 through 1e12 price envelope before float publication, cache sharing, retained quote evidence or modeled execution, so extreme finite provider values cannot underflow, overflow or reach entry arithmetic' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; supplied Activity SSE link review now preflights the exact account before inspecting events and validates exact built-in list/mapping/key/scalar types into a detached immutable-use snapshot, preventing polymorphic or concurrently changed envelopes from presenting different budget and normalization views; the installed checkpoint rejects such initial evidence before provider IO or cursor storage' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct PaperEngine capital, fee, cost, notional, market and mark values now share a finite 1e-18 through 1e12 envelope before risk-state mutation, preventing extreme finite values from producing zero/infinite public floats or corrupting cash, position and history state' if item.id=='M3' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; public quote-bundle summaries now admit one exact built-in review mapping/schema and capture exact text/count scalars once, preventing stateful mapping rereads or equality-forging text from moving private content into the public diagnostic' if item.id=='M4' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; public ticker product selection now requires an exact built-in allowlisted product before cache, flight, transport or URL construction, preventing equality-forging strings from changing the hard-coded public path' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; Activity SSE checkpoint initial and replay events now pass exact envelope validation into a detached snapshot before any caller-controlled copy protocol, so deepcopy laundering cannot create accepted evidence or reach provider IO and cursor storage' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the explicit Activity SSE checkpoint now freezes the exact non-symlink cursor parent-directory identity, or proves that parent remains absent, across external provider IO and every subsequent semantic boundary through retained acknowledgement; replacing the directory or creating a fresh parent cannot inherit checkpoint authority even if the main file is preserved, complementing the independent cursor-file and descriptor-bound store protections' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Windows complete-regression pull-request lane now uses two deterministic exact-node pytest execution shards while retaining full collection in each job; exact-head and step-inventory reviewers require both named shards green, so cancellation, omission, skip or failure of either shard remains release-blocking rather than being mistaken for complete regression' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Pull-request release jobs now bind checkout and verification to the immutable requested head rather than an implicit merge ref. The offline inventory reviewer requires exact workflow/event/source/run-attempt/job membership and stable bounded input while keeping every authority flag false. This is source and inventory consistency, not hosted-service attestation, job-step integrity, artifact-byte provenance, native Windows acceptance or independent release approval.')
+    if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The complete Windows regression pull-request lane is deterministically split across two exact-node execution shards after full collection in each job; both exact names and their complete checkout/compile/test step sequences are mandatory in offline inventory review, and either shard missing or non-green remains a denial. This reduces per-job timeout exposure without reducing collected test scope, but hosted success, native Windows application behavior and independent release approval remain separate.')
+    if stage['id']=='D9' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; bounded linked-ledger burst percentiles now carry an exact process-local measurement-window attestation whose monotonic sample count, elapsed window, dequeued/completed/expired/flushed outcome partition and emergency-halt inclusion must reconcile with the public burst report; a clock regression fails closed rather than becoming expiry, while market/broker latency and throughput authority remain explicitly false' if item.id in ('M3','M5') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the mandatory disposable forward release profile now executes isolated missing-source, stale-quote, regressed-clock and invalid-clock treatments through the actual runner, requires every session to pause and release ownership with zero orders, and binds exact bounded fetch/cycle/reason counts while automatic retry and every external authority remain false; standalone feed admission rejects polymorphic mappings and invalid runtime clocks before baseline mutation, and the research decision lane distinguishes clock regression from ordinary expiry' if item.id in ('M3','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; those four fault treatments now run through the actual worker loop, retain the PAUSED session while its worker and process ownership are still active, observe zero post-pause fetches, terminate before ordinary cleanup and prove a cold runner remains disabled and fetch-free until an explicit distinct healthy session reacquires released ownership; the failed session remains orderless and its scoped evidence hash is unchanged' if item.id in ('M3','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the internal single-attempt paper POST boundary now re-samples the exact BTC/USD eligibility and size/quantity/price increments after both durable reservations, consuming changed or ineligible terms as NOT_SENT before transport; the local decision benchmark rejects invalid, regressing and non-advancing measurement clocks instead of manufacturing a passing rate' if item.id in ('M3','M8','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the actual paper-forward worker now schedules cycle starts against fixed monotonic deadlines instead of adding cycle duration to every interval, durably records bounded overruns and resets from completion without catch-up bursts, and pauses before further fetches if the independent scheduler clock is invalid, regresses or stalls; the mandatory forward release profile binds nominal, overrun and fail-closed actual-worker evidence while provider, retry, sustained-market and release authority remain false' if item.id in ('M3','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; pull-request repository security now passes the immutable exact base and candidate commits into the trusted base policy, preserving complete reachable-history inspection while enforcing finite per-object and newly reachable delta limits; push and manual runs bind the exact source to itself for a zero delta without weakening the complete scan' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the protected local-paper reducing intent is now one immutable full-position mandate across multiple fresh-quote slices and explicit runner sessions: every slice retains the $200 ceiling, exact session/cycle, monotonic fill sequence and current-position/cumulative-reduction equality; cold replay reuses exactly one valid mandate without a new ID, session review separates modeled slice costs, and the independent emergency halt terminally cancels pending work without liquidating' if item.id in ('M4','M5','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the complete per-session review is now sealed by a privacy-safe receipt that binds both replay-validated order snapshots, quote/event heads, the event reconciliation, final reason set and exact independent-cut evidence state; generic halts cannot impersonate an independent cut, malformed or changing cut evidence fails closed, and clean forward/recovery fixtures consume the receipt without granting source, broker, account, sustained-trial or release authority' if item.id in ('M4','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every modeled quote expiry now retains one replayable no-fill attempt bound to exact session, cycle, order, side, event and quote digest, and per-session review requires an exact matching expired-without-fill outcome before local consistency can pass' if item.id in ('M4','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; each durable no-fill attempt is now cross-bound to its independent forward VETO by a canonical digest over every retained attempt field; the mandatory forward profile terminates a real child after the durable commit and before the VETO, then requires cold replay to preserve the position, fill sequence and resumable mandate while retaining an explicit review gap without automatic repair' if item.id in ('M4','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
 
 def snapshot():
     return dict(read_only=True, revision=REVISION, progress_summary=PROGRESS_SUMMARY, progress_diagram=PROGRESS_DIAGRAM, project='Nexus Operative', repository='S4-cyber/Nexus-Operative',
@@ -941,7 +1241,7 @@ def snapshot():
                     automatic_policy_promotion=False,order_routing_enabled=False),
                 delivery_stages=[{**stage,'depends_on':list(stage['depends_on'])} for stage in DELIVERY_STAGES],
                 production_scope='Secure provider-held funding, governed autonomous execution and computer-off operation are product goals. All agreed production workflows require acceptance before 1.0; live activation always requires separate authorization.',
-                settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], next_steps=list(NEXT),
+                settings_scope='TARGET_DESIGN_NOT_EFFECTIVE_RUNTIME', settings=dict(SETTINGS), milestones=[asdict(m) for m in MILESTONES], milestone_execution_plan=execution_plan(), milestone_work_batches=next_work_batches(), next_steps=list(NEXT),
                 supporting_track='Global market expansion and secure computer-off cloud continuity are explicit staged goals; venue/data/risk and hosting acceptance remain required.',
                 strategic_goals=[dict(id='G1',title='Global opportunity expansion',status='PLANNED',goal='Broaden assets, markets and providers through the existing 12-avenue expansion initiative; validate source rights, eligibility, liquidity, costs and reproducible paper evidence before enabling each route.'),
                                  dict(id='G2',title='Computer-off cloud operation',status='PLANNED_NOT_DEPLOYED',goal='Run the headless paper engine independently of the desktop, with authenticated remote observation, durable reconciliation, one execution owner, encrypted transport/storage/backups, credential isolation and tested shutdown/recovery.',cost_preference='Free-tier only; avoid a separate dedicated account where a supported existing account can be reused. No verified anonymous always-on option selected; never silently enable billing.',acceptance='Prove durable storage, quota/outage behavior, remote halt, desktop/cloud fencing, key recovery and multi-day computer-off paper operation. See CLOUD_OPERATION.md.'),
@@ -950,8 +1250,179 @@ def snapshot():
                 resume='Read AGENTS.md, ROADMAP.md, LAUNCH_DRIVE.md and VERSIONING.md; verify remote branch head, CI and current source before editing.')
 
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; one disposable linked-ledger drill now survives two ordered process deaths on the same history: a durable modeled BUY before its forward outcome, explicit review/cancellation, then a reducing-exit no-fill attempt before its VETO; cold replay requires both gaps, stable first-gap evidence, monotonic fills, exact remaining-position equality and disabled/unowned forward state without repair, retry or restart' if item.id=='M4' else
+        '; repeated-interruption evidence now preserves the first fill gap across a second no-fill crash and requires both sessions to remain independently review-required, while all provider, broker, live and release authority stays false' if item.id=='M7' else
+        '; the mandatory forward profile now binds a same-history two-crash recovery treatment with exact exit codes, immutable first-gap evidence, no-fill digest replay and denied automatic/external authority' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; one exact-head same-host reconciliation now holds broker-request writer exclusion while replaying the complete retained counterfactual plan and request summary, revalidates the fresh stopped forward receipt, event reconciliation, order snapshots and full modeled-fill source, then rechecks pathname identity and bounded file bytes on exit; stale heads, changed source evidence and legacy unbound plans fail closed without journal mutation, credential access, provider IO or routing authority' if item.id in ('M4','M8','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; one strict offline POST/GET/Activity-SSE uncertainty matrix now requires the exact disposable component schemas together: GET authentication denial and lost recovery acknowledgement, POST single-attempt safety and unknown-outcome windows plus terminal original-ID recovery, and SSE bounded backoff, independent emergency-stop revocation, cursor races, lost acknowledgements and byte-stable cold replay; every provider, credential, storage-retention, broker, funds, live and release authority remains false' if item.id in ('M4','M8','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; retained forward-trial coverage now defers interval eligibility until after the chronological cross-session consistency pass, removes both intervals adjacent to a conflicting boundary point, and uses retained context outside the requested window without leaking that context into in-window disagreement counts; rapidly rotating sessions can no longer report nominal full coverage by resetting price-jump state' if item.id in ('M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; equal-time cross-session quote disagreements now reject every supplied conflicting observation instead of granting lexical-first authority, and rejected observations cannot become the chronological reference for later coverage; requested-window disagreement counts remain scoped while every dependent interval fails closed' if item.id in ('M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; executable-price continuity now checks bid, ask and last across ordinary feed observations and retained cross-session trial boundaries, so an unchanged last trade cannot conceal a strategy or modeled-fill price jump' if item.id in ('M3','M7','M9') else
+        '; every cut-guarded durable order transaction now rechecks the independent emergency latch after its final apply and before SQLite commit, rolling back the order journal and linked portfolio when the cut wins that seam' if item.id=='M4' else
+        '; retained known-fee reserve composition now detaches all four supplied account observations before component review or balance arithmetic, preventing caller mutation from binding different manifests across the composed result' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; simulated tier-entry admission now reads its durable permission switch and budget/allocation cap inputs from one authoritative SQLite snapshot, preventing a stale enabled result from being combined with later settings' if item.id=='M3' else
+        '; paper-forward runtime now retains repeated exchange timestamps as ineligible incidents without advancing feed or coverage baselines, and the disposable forward drill requires the duplicate to be rejected' if item.id=='M7' else
+        '; direct post-reconciliation and fee-reference compositions now validate and detach all four supplied account observations before component review or replay, preventing caller mutation from selecting transient manifests' if item.id=='M8' else
+        '; retained forward-trial review now requires strictly advancing exchange timestamps, so repeated ticks cannot contribute eligible observations, coverage intervals or an incident-free 72-hour result' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Retained trial coverage now excludes intervals adjacent to cross-session-disqualified observations and validates requested-window boundaries with retained neighboring context. This is local operational-evidence correctness, not genuine-feed provenance, sustained-trial acceptance, performance or release permission.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; detached canonical forward-trial reconciliation bundles now commit to every modeled execution while exporting no raw order id or modeled economics, bind the exact stopped session/quote/event heads and reconciliation seal to two equal stable order snapshots, and are reviewed with the history under one relationship-distinct bounded file-set guard; missing, extra, duplicate, stale, forged, aliased or mutated bundles fail closed, while an exact supplied bundle clears only its narrow local bundle-binding gap and grants no journal authenticity, broker, account, market, sustained-trial, funding, live or release authority' if item.id=='M4' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Retained trial review can now consume one explicit privacy-safe canonical reconciliation bundle. Each contributing stopped session must bind the complete modeled-execution-set digest, exact quote/event heads and counts, sealed reconciliation and equal stable order snapshots under one guarded file-set read. Only the execution count not bound to that supplied local bundle remains this narrow operational incident; all source, journal-authenticity, broker, account, market-realism, sustained, funding, live, cloud and release authority remains false. Local hashes remain rewritable and are not independent acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Equal-time cross-session price disagreements now reject all conflicting supplied observations without an arbitrary session winner, and none of those rejected points can establish a later chronological reference. This remains conservative local evidence review, not source attestation or sustained-trial acceptance.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Feed admission and retained cross-session trial review now apply the same bounded jump check to bid, ask and last; a stable last trade cannot conceal a large executable-price shift. Cut-guarded durable order transactions also recheck the independent latch after their final mutation and before commit, rolling back both order and linked-portfolio state when the cut wins. These are offline fail-closed controls, not genuine-market or sustained-trial acceptance.' if stage['id']=='D3' else
+        ' Known-fee reserve composition now validates and detaches every supplied account observation before any component review or arithmetic, preventing caller-owned mutation from mixing manifests. This is local supplied-evidence integrity, not provider/account/funds acceptance.' if stage['id']=='D4' else
+        ' Executable-price trial continuity and the final pre-commit emergency-cut fence now have dedicated offline regressions. This does not establish native durability, market realism, independent acceptance or release permission.'),
+    ) if stage['id'] in ('D3','D4','D8') else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Tier entry now derives its permission and exact cap from one durable settings snapshot, while duplicate exchange ticks remain retained but ineligible and cannot update runtime feed state. This is local fail-closed admission evidence, not genuine-market or sustained-operation acceptance.' if stage['id']=='D3' else
+        ' Direct post-reconciliation and fee-reference reviews now detach all four validated observations before component review and replay. This is caller-mutation resistance over supplied local evidence, not provider/account/fee/funds acceptance.' if stage['id']=='D4' else
+        ' Retained trial review now treats non-advancing exchange timestamps as incidents rather than coverage. A 72-hour sequence made from repeated timestamp pairs cannot satisfy the incident-free target. This is conservative local evidence review, not source attestation or sustained-trial acceptance.'),
+    ) if stage['id'] in ('D3','D4','D8') else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The mandatory reconciliation profile now carries one exact-schema offline matrix across the single-attempt POST, bounded GET and Activity SSE uncertainty treatments. Missing cells, polymorphic values and promoted authority fail closed. This is compact injected local coverage, not provider identity, authorized paper-account acceptance, broker-wide pacing, genuine stream delivery, sustained operation or release permission.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Current modeled fills are independently bound across the durable order journal and forward event chain at full event/economic detail. A cut published after a runtime-clock callback or between atomic quote-order steps revokes stale mutation authority and rolls back the whole local transaction. This is offline local consistency and emergency-stop hardening, not actual provider execution, broker acceptance, market realism or release permission.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Paper-forward session preparation now replays retained quote chains and hydrates the highest accepted exchange timestamp plus its price baseline before a new session can start. A cold restart therefore cannot reuse a boundary tick or immediately reset executable-price continuity. This is local supplied-history hardening, not genuine-feed or broker acceptance.' if stage['id']=='D3' else
+        ' Retained trial review now enforces exchange-time progression across session boundaries, tracks even price-rejected supplied ticks against later reuse, and removes intervals adjacent to a repeated or regressed point. Rapid session rotation cannot manufacture incident-free 72-hour coverage by resetting the marker. This is conservative local evidence review, not sustained-trial acceptance.'),
+    ) if stage['id'] in ('D3','D8') else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; paper-forward fresh exchange timestamps now enter a dedicated append-only chain that FULL-syncs before price-guard evaluation, and cold restart derives its monotonic floor from those admissions even when process death leaves no quote/outcome row; new-format quotes bind the exact session/cycle, sanitized quote digest, source, policy and evaluation/exchange times, while legacy sessions remain explicitly distinguishable and readable' if item.id in ('M3','M4') else
+        '; paper-forward diagnostics now reserve and report the independent exchange-admission capacity without pruning, and retained trial review binds the admission chain into its stable snapshot while treating a crash-tail marker as a review incident with zero coverage authority' if item.id=='M5' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' A FULL-synced exchange-admission chain now closes the process-death seam between freshness admission and price review: restart consumes a committed tail marker even when no quote/outcome row survived, while eligible and price-vetoed quotes must bind the exact marker. This is local reconciliation integrity, not genuine-source or broker acceptance.' if stage['id']=='D3' else
+        ' Retained trial review includes exchange-admission heads/counts in its stable binding; unmatched crash tails are operational incidents, add no coverage and cannot be replayed into a later session. This is conservative local evidence accounting, not a passed sustained trial.'),
+    ) if stage['id'] in ('D3','D8') else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Every structurally valid fresh exchange tick now consumes the monotonic runtime and cold-restart marker even when its prices are rejected, while only eligible quotes seed the price guard. Repricing the same timestamp can no longer convert a veto into strategy input. This is local fail-closed feed handling, not genuine-source or broker acceptance.' if stage['id']=='D3' else
+        ' Retained trial review now carries rejected fresh ticks through the global cross-session exchange floor without granting them price-reference or coverage authority. A later eligible observation cannot reuse that timestamp to manufacture coverage. This is conservative local trial accounting, not sustained-trial acceptance.'),
+    ) if stage['id'] in ('D3','D8') else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct simulated BUY admission now obtains SQLite writer reservation before its integrity audit and performs the audit, exposure/cash checks and mutation in that one transaction, preventing another process from corrupting the chain between a passing audit and new exposure while preserving reducing SELL exits' if item.id in ('M3','M4') else
+        '; standalone paper-ledger integrity review now holds one explicit read snapshot, and the exact-head Windows saved-evidence job has a finite 45-minute outer budget after v0.340.386 CI exhausted the former 15-minute budget during bounded profile execution; per-profile child limits remain fail closed' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Direct simulated BUY admission now reserves the ledger writer before running its integrity governor, so a passing audit and new-exposure mutation share one authoritative transaction. Reducing SELL exits remain available. This is offline local risk/accounting integrity, not actual broker execution or funds acceptance.' if stage['id']=='D3' else
+        ' The exact-head saved-evidence Windows job now has measured finite orchestration headroom after the prior 15-minute cap cancelled active bounded profiles. Profile child deadlines remain fail closed; fresh exact-source CI is still required and this change grants no Windows, installer or release authority.'),
+    ) if stage['id'] in ('D3','D8') else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; every standalone and API emergency cut now treats the in-process gateway return only as a warm acknowledgement and independently reopens/replays the exact order journal before reporting durable cleanup confirmed; absent, replaced, malformed or still-unhalted history remains UNCONFIRMED while the independent latch and runner stop stay active' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Emergency-stop completion now requires both the exact warm gateway acknowledgement and a fresh durable journal replay proving retained history and halted state. A false success return, lost commit or valid unhalted replacement cannot produce VERIFIED; intake remains latched and cleanup is explicitly retryable. This is bounded local fail-closed evidence, not native interruption, broker-account or sustained-operation acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; disconnected broker balance review now rejects polymorphic collection, record, account and key evidence before byte budgeting or detachment, preventing caller hooks from influencing supplied financial reconciliation' if item.id=='M4' else
+        '; release-trial report publication now exclusively creates a restrictive no-follow output descriptor, refuses existing paths and symbolic links, samples the canonical non-symlink parent identity, creates relative to the exact parent descriptor on POSIX, and repeatedly rechecks the public parent and leaf around file and directory sync before success' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Windows installer smoke now gives combined redirected-output drainage one fixed 10-second post-exit deadline and fails closed instead of waiting indefinitely, reports the maximum 300-second root-process wait and 10-second drain as separate budgets, and explicitly leaves process-tree containment unverified' if item.id in ('M1','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; standalone emergency-cut completion now performs a second fresh durable order-journal replay after final latch reassertion, binds both replays to the same regular single-link journal object and keeps public durable confirmation false until that replay finishes, so a sanctioned same-inode reset, journal replacement or final-latch fault cannot reuse stale halt evidence; the latch remains asserted and the public result stays UNCONFIRMED' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Standalone emergency-stop completion now requires the first durable halt replay and a second fresh replay after final latch reassertion, both bound to the same regular single-link journal object. A same-inode explicit reset, replacement or final-latch fault in that sampled window keeps intake latched but downgrades cleanup to UNCONFIRMED. This is bounded local fail-closed evidence, not an atomic cross-process lease, native interruption or broker acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Disconnected broker balance reconciliation now admits only exact built-in collections, records, accounts and string keys before budgeting and detachment. This is caller-mutation and polymorphic-hook resistance for supplied local evidence, not provider/account/funds acceptance.' if stage['id']=='D4' else
+        ' Saved release-trial reports now reject parent aliases, bind the exact public parent and report identities, and on POSIX create relative to the parent descriptor before syncing both the file and new directory entry. Windows retains exclusive creation, file sync and repeated sampled parent/leaf checks; it does not establish native reparse-point, ACL, directory-publication or power-loss acceptance. This is local report-publication integrity, not artifact provenance, hosted CI success, native acceptance or release approval.'))
+    if stage['id'] in ('D4','D8') else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; retained provider activity now treats a terminal fill with positive remainder or a partial fill with zero remainder as an explicit reconciliation disagreement while preserving the supplied record for review; the contradiction propagates through durable activity review and withholds local request/activity agreement' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Retained fill completion type must now agree with the reported remaining quantity before supplied durable activity can support local request/activity agreement. Contradictory records remain readable and explicitly blocked; this is local evidence consistency, not provider identity, fill/fee/hold/funds reconciliation, authorized-account acceptance or routing authority.')
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; bounded standalone emergency replay now distinguishes a temporarily unavailable Windows journal-identity observation from a definitive alias, structural failure or replacement, retrying only the unavailable read within the existing three-attempt ceiling while every mismatch, unhalted replay and third unavailable sample remains immediately unconfirmed' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Standalone emergency replay now keeps transient Windows journal-identity read denial separate from definitive replacement. Only unavailable read-only observations consume the fixed three-attempt ceiling; a mismatch or negative replay still fails immediately, and the halt mutation remains single-shot. This is bounded local Windows fault handling, not native Windows acceptance, an atomic cross-process lease or broker acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; artifact-manifest verification now pins one exact non-aliased distribution directory across the full reviewed set, retains every leaf handle before hashing, performs two complete digest passes and rejects directory, parent or leaf-generation changes before certification, preventing a passing set from being assembled across generations' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Artifact-manifest verification now requires one stable non-aliased distribution directory and retains every artifact handle for the entire reviewed set. POSIX leaves are opened relative to one no-follow directory descriptor; all platforms recheck public and retained identities and complete two digest passes before certification. This is offline artifact-integrity hardening, not native Windows/installer acceptance, signing, provenance or release approval.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; bounded Windows emergency replay now yields for fixed 20 ms and 50 ms intervals only between transient unavailable read-only samples while retaining the strict three-attempt ceiling, immediate mismatch/negative rejection and exactly one halt mutation' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' After exact PR #130 hosted Windows shards still failed intermittent malformed-intent cleanup confirmation, the same strict three-attempt replay now includes bounded 20 ms and 50 ms pauses only between transient unavailable read-only observations. Definitive mismatch, negative replay and the third unavailable sample still fail immediately; the durable halt mutation is never retried. Exact-child hosted verification remains required.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; retained forward-trial review now requires every BUY/SELL event to carry quote evidence, rejects an outcome timestamped before its bound quote, counts in-window modeled executions separately and treats them as operational incidents until explicitly bound to durable order/fill reconciliation; raw declared-public coverage remains visible, but incident-free coverage and every authority flag remain false; Windows regression fixtures now accept kernel denial of a distribution-directory swap as safe rejection and isolate malformed emergency-intent schema checks from native cold-replay availability while still requiring one halt attempt and two independent replay confirmations; production verification and emergency-stop logic are unchanged' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Durable BUY/SELL events now require quote-evidence binding, and an outcome preceding its bound quote makes the retained trace incomplete. In-window modeled executions remain explicit operational incidents until a future exact-snapshot composition binds each execution to durable order/fill reconciliation. Raw declared coverage is preserved for diagnosis, but it cannot become incident-free sustained-trial evidence. This is fail-closed local evidence classification, not broker, market, account, performance or release acceptance.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = 'v0.340.306 preserves caller-selected leaf names while freezing parent directories in the provider POST activity, fee-reference and known-fee reserve read-only compositions. Existing no-follow identity and bounded-fingerprint guards now see selected leaf symlinks and hardlinks rather than a silently resolved target. Twenty-seven new parametrized regression cases cover initial selected-leaf symlinks, mid-review symlink replacement and hardlink aliases with private journal preservation assertions. Existing exact heads, store binding, independent replay, fail-closed authority denials, OFF defaults, risk limits, account checks and independent emergency stop remain mandatory. This is sampled local path-scope hardening, not an atomic multi-file snapshot, ACL or administrator boundary, broker/account or source acceptance, genuine-feed realism, a sustained 72-hour trial, profitability, native ordinary-profile acceptance, funding/live/cloud readiness or release approval. No button or editable parameter was added; seven tabs and existing black/bright-purple bottom-right hover help remain unchanged. Rough implementation remains weighted 38% (30–45%, low confidence), with 0/9 major stages fully accepted.'
+CURRENT_HARDENING = "v0.340.412 preserves the development risk-tier portal controls and detached trial-reconciliation stack in one two-parent history, then closes the independent evidence-boundary review findings. Reconciliation publication now enforces a closed primitive schema, exact non-negative count relationships, fill and no-fill completion, coherent stopped-session cut/halt evidence, and a recomputed event seal. The trial reader rejects non-object canonical JSON, reconciliation symlink leaves, parsed bytes that differ from the original fingerprint, and correctly rehashed semantic contradictions. Omitted bundles retain a blocked legacy missing-fill diagnostic; supplied bundles require the complete contributing modeled history. Execution-set hashing and credit use one outcome predicate, so scheduler-classified BUY/SELL events remain unbound incidents. This is stricter rewritable local consistency, not proof of journal authenticity, broker/account/source acceptance, genuine-market or sustained-trial acceptance, performance, profitability, funding, cloud, native Windows/installer or release approval. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior and independent emergency-stop access remain unchanged. No control was added relative to development; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():
@@ -970,6 +1441,7 @@ def markdown():
         '| Stage | Relative scope weight | Rough implementation | Acceptance |','| --- | --- | --- | --- |']
     lines += [f"| {row['id']}: {row['title']} | {row['weight_percent']}% | {row['implementation_estimate_percent']}% | {row['acceptance_status']} |" for row in estimate['stages']]
     lines += ['',estimate['update_policy'],'',f"Assessment basis: commit `{estimate['basis_commit']}`; exact weighted index {estimate['weighted_index_percent']} before rounding. This is an assessment, not an independently measured completion percentage or permission."]
+    lines += ['', *milestone_task_markdown_lines()]
     lines += ['', '## Remaining milestone acceptance checklist', '',
         'This is a read-only work plan, not an executable workflow or trading permission. Steps remain REVIEW_REQUIRED until separately evidenced and reviewed. Dependencies describe acceptance sequencing; development can proceed in parallel. The next major operational gate is D4, alongside sustained D3 trials.']
     stages_by_id = {stage['id']: stage for stage in d['delivery_stages']}

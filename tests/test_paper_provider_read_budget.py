@@ -28,6 +28,282 @@ def test_missing_inspection_is_read_only_and_authority_false(tmp_path):
     assert not state['broker_wide_quota_verified'] and not state['ready_for_routing']
 
 
+def test_failed_first_transaction_restores_absence_and_exact_retry(tmp_path):
+    path=tmp_path/'provider.sqlite3';budget=PaperProviderReadBudget(path)
+    with budget.ownership() as owner:
+        with pytest.raises(ValueError,match='HEAD_CHANGED'):
+            budget.begin(account_id=ACCOUNT,account_before_head_sha256=ZERO,
+                operation='BTC_ASSET_RULES',admission=lambda:1000,
+                ownership=owner,expected_head='f'*64)
+    assert not path.exists()
+    assert all(not path.with_name(path.name+suffix).exists() for suffix in
+        ('-journal','-wal','-shm'))
+    complete(budget)
+    assert path.is_file() and budget.inspect()['completed_sessions']==1
+
+
+def test_constructor_pins_parent_alias_before_first_write(tmp_path):
+    original=tmp_path/'original';replacement=tmp_path/'replacement'
+    original.mkdir();replacement.mkdir();alias=tmp_path/'selected'
+    try:alias.symlink_to(original,target_is_directory=True)
+    except OSError:pytest.skip('directory symlink unavailable')
+    budget=PaperProviderReadBudget(alias/'provider.sqlite3')
+    alias.unlink();alias.symlink_to(replacement,target_is_directory=True)
+    assert budget.path==original.resolve()/'provider.sqlite3'
+    complete(budget)
+    assert budget.path.is_file()
+    assert not (replacement/'provider.sqlite3').exists()
+
+
+def test_first_write_cleanup_uses_captured_path_after_object_retarget(
+        tmp_path,monkeypatch):
+    path=tmp_path/'provider.sqlite3';decoy=tmp_path/'decoy.sqlite3'
+    decoy.write_bytes(b'do-not-delete');budget=PaperProviderReadBudget(path)
+    def connect(*_args,**_kwargs):
+        budget.path=decoy
+        raise sqlite3.OperationalError('injected retargeted connect failure')
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,account_before_head_sha256=ZERO,
+                operation='BTC_ASSET_RULES',admission=lambda:1000,
+                ownership=owner)
+    assert not path.exists()
+    assert decoy.read_bytes()==b'do-not-delete'
+
+
+def test_first_write_refuses_main_file_replacement_before_sqlite_setup(
+        tmp_path,monkeypatch):
+    path=tmp_path/'provider.sqlite3';replacement=tmp_path/'replacement.sqlite3'
+    sqlite3.connect(replacement).close();replacement_bytes=replacement.read_bytes()
+    budget=PaperProviderReadBudget(path);original=subject.sqlite3.connect
+    def replace_then_connect(*args,**kwargs):
+        os.replace(replacement,path)
+        return original(*args,**kwargs)
+    monkeypatch.setattr(subject.sqlite3,'connect',replace_then_connect)
+    with pytest.raises(ValueError,match='UNCOMMITTED_CLEANUP_UNCERTAIN'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,account_before_head_sha256=ZERO,
+                operation='BTC_ASSET_RULES',admission=lambda:1000,
+                ownership=owner)
+    assert path.read_bytes()==replacement_bytes
+
+
+def test_read_refuses_valid_foreign_sqlite_connection(tmp_path,monkeypatch):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3');complete(budget)
+    foreign=PaperProviderReadBudget(tmp_path/'foreign.sqlite3');complete(foreign)
+    original=subject.sqlite3.connect;before=budget.path.read_bytes()
+    def connect_foreign(*_args,**_kwargs):
+        return original(foreign.path)
+    monkeypatch.setattr(subject.sqlite3,'connect',connect_foreign)
+    with pytest.raises(ValueError,match='CONNECTION_BINDING_CHANGED'):
+        budget.inspect()
+    assert budget.path.read_bytes()==before
+
+
+def test_active_ownership_retarget_rolls_back_exact_first_write(tmp_path):
+    path=tmp_path/'provider.sqlite3';decoy=tmp_path/'decoy.sqlite3'
+    budget=PaperProviderReadBudget(path)
+    def retarget():
+        budget.path=decoy
+        return 1000
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,account_before_head_sha256=ZERO,
+                operation='BTC_ASSET_RULES',admission=retarget,
+                ownership=owner)
+    assert not path.exists() and not decoy.exists()
+
+
+def test_existing_write_context_rejects_uncommitted_return(tmp_path):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3');complete(budget)
+    before=budget.path.read_bytes()
+    with pytest.raises(ValueError,match='UNCOMMITTED_TRANSACTION'):
+        with budget._write_connection():
+            pass
+    assert budget.path.read_bytes()==before
+
+
+def test_committed_write_ack_rechecks_main_identity(tmp_path,monkeypatch):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3');complete(budget)
+    head=budget.inspect()['head_sha256'];armed=False
+    original=subject._require_file_identity
+    def require(path,identity):
+        original(path,identity)
+        if armed:subject._fail('FILE_CHANGED')
+    monkeypatch.setattr(subject,'_require_file_identity',require)
+    def admission():
+        nonlocal armed
+        armed=True
+        return 1061
+    with budget.ownership() as owner:
+        with pytest.raises(ValueError,match='FILE_CHANGED'):
+            budget.begin(account_id=ACCOUNT,
+                account_before_head_sha256='b'*64,
+                operation='ACCOUNT_INVENTORY',admission=admission,
+                ownership=owner,expected_head=head)
+    armed=False
+    state=budget.inspect()
+    assert state['sessions']==2 and state['pending_token'] is not None
+    assert state['ready_for_routing'] is False
+
+
+def _continuity_connection(counter,path=None):
+    class ContinuityConnection(sqlite3.Connection):
+        def serialize(self,*args,**kwargs):
+            result=super().serialize(*args,**kwargs)
+            counter.append(len(result));return result
+
+        def close(self):
+            super().close()
+            if path is not None:
+                observed=path.stat()
+                os.utime(path,ns=(observed.st_atime_ns,
+                    observed.st_mtime_ns+1_000_000_000))
+    return ContinuityConnection
+
+
+def test_committed_write_ack_rechecks_main_content(tmp_path,monkeypatch):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3');complete(budget)
+    head=budget.inspect()['head_sha256'];counter=[]
+    original_connect=subject.sqlite3.connect
+    original_fingerprint=subject._main_fingerprint
+    def connect(database,*args,**kwargs):
+        if '?mode=rw' in str(database):
+            kwargs['factory']=_continuity_connection(counter)
+        return original_connect(database,*args,**kwargs)
+    def changed(path):
+        result=original_fingerprint(path)
+        if counter:
+            altered=list(result);altered[7]='f'*64;return tuple(altered)
+        return result
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    monkeypatch.setattr(subject,'_main_fingerprint',changed)
+    with budget.ownership() as owner:
+        with pytest.raises(ValueError,match='CONNECTION_CONTENT_CHANGED'):
+            budget.begin(account_id=ACCOUNT,
+                account_before_head_sha256='b'*64,
+                operation='ACCOUNT_INVENTORY',admission=lambda:1061,
+                ownership=owner,expected_head=head)
+    assert len(counter)==1
+    monkeypatch.setattr(subject,'_main_fingerprint',original_fingerprint)
+    state=budget.inspect()
+    assert state['sessions']==2 and state['pending_token'] is not None
+    assert state['ready_for_routing'] is False
+
+
+def test_committed_write_ack_rechecks_content_after_close(tmp_path,monkeypatch):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3');complete(budget)
+    head=budget.inspect()['head_sha256'];counter=[]
+    original=subject.sqlite3.connect
+    def connect(database,*args,**kwargs):
+        if '?mode=rw' in str(database):
+            kwargs['factory']=_continuity_connection(counter,budget.path)
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    with budget.ownership() as owner:
+        with pytest.raises(ValueError,match='FILE_SET_CHANGED'):
+            budget.begin(account_id=ACCOUNT,
+                account_before_head_sha256='b'*64,
+                operation='ACCOUNT_INVENTORY',admission=lambda:1061,
+                ownership=owner,expected_head=head)
+    state=budget.inspect()
+    assert len(counter)==1 and state['sessions']==2
+    assert state['pending_token'] is not None and not state['ready_for_routing']
+
+
+def test_uncommitted_write_never_serializes_for_acknowledgement(
+        tmp_path,monkeypatch):
+    budget=PaperProviderReadBudget(tmp_path/'provider.sqlite3');complete(budget)
+    original=subject.sqlite3.connect
+    class NoSerialize(sqlite3.Connection):
+        def serialize(self,*_args,**_kwargs):
+            raise AssertionError('uncommitted bytes must not be acknowledged')
+    def connect(database,*args,**kwargs):
+        if '?mode=rw' in str(database):kwargs['factory']=NoSerialize
+        return original(database,*args,**kwargs)
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    with pytest.raises(ValueError,match='UNCOMMITTED_TRANSACTION'):
+        with budget._write_connection():pass
+
+
+def test_main_replacement_during_transaction_cannot_acknowledge(
+        tmp_path):
+    path=tmp_path/'provider.sqlite3';replacement=tmp_path/'replacement.sqlite3'
+    budget=PaperProviderReadBudget(path);complete(budget)
+    head=budget.inspect()['head_sha256']
+    with sqlite3.connect(replacement) as db:
+        db.execute('CREATE TABLE decoy (value TEXT)')
+        db.execute('INSERT INTO decoy VALUES (\'retain\')')
+    replacement_bytes=replacement.read_bytes()
+    def admission():
+        try:os.replace(replacement,path)
+        except OSError:pytest.skip('open SQLite main replacement denied')
+        return 1061
+    with pytest.raises(ValueError,match='FILE_CHANGED'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,
+                account_before_head_sha256='b'*64,
+                operation='ACCOUNT_INVENTORY',admission=admission,
+                ownership=owner,expected_head=head)
+    assert path.read_bytes()==replacement_bytes
+
+
+@pytest.mark.parametrize('field',('provider_scope','provider_digest'))
+def test_active_ownership_rejects_provider_scope_mutation(tmp_path,field):
+    path=tmp_path/'provider.sqlite3';budget=PaperProviderReadBudget(path)
+    def mutate():
+        setattr(budget,field,'OTHER_PAPER' if field=='provider_scope' else 'f'*64)
+        return 1000
+    with pytest.raises(ValueError,match='STORE_BINDING_CHANGED'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,account_before_head_sha256=ZERO,
+                operation='BTC_ASSET_RULES',admission=mutate,
+                ownership=owner)
+    assert not path.exists()
+
+
+def test_fresh_connection_failure_restores_absence_and_exact_retry(
+        tmp_path,monkeypatch):
+    path=tmp_path/'provider.sqlite3';budget=PaperProviderReadBudget(path)
+    original=subject.sqlite3.connect;failed=False
+    def connect(*args,**kwargs):
+        nonlocal failed
+        if not failed:
+            failed=True
+            raise sqlite3.OperationalError('injected first connect failure')
+        return original(*args,**kwargs)
+    monkeypatch.setattr(subject.sqlite3,'connect',connect)
+    with pytest.raises(sqlite3.OperationalError,
+            match='injected first connect failure'):
+        with budget.ownership() as owner:
+            budget.begin(account_id=ACCOUNT,account_before_head_sha256=ZERO,
+                operation='BTC_ASSET_RULES',admission=lambda:1000,
+                ownership=owner)
+    assert failed and not path.exists()
+    complete(budget)
+    assert path.is_file() and budget.inspect()['completed_sessions']==1
+
+
+def test_uncommitted_cleanup_never_deletes_ambiguous_state(tmp_path):
+    path=tmp_path/'provider.sqlite3';path.touch(mode=0o600)
+    observed=path.lstat()
+    identity=(str(path.resolve()),observed.st_dev,observed.st_ino)
+
+    replacement=tmp_path/'replacement.sqlite3'
+    replacement.touch(mode=0o600);os.replace(replacement,path)
+    with pytest.raises(ValueError,match='UNCOMMITTED_CLEANUP_UNCERTAIN'):
+        subject._discard_uncommitted_new(path,identity)
+    assert path.exists()
+
+    observed=path.lstat()
+    identity=(str(path.resolve()),observed.st_dev,observed.st_ino)
+    sidecar=path.with_name(path.name+'-journal');sidecar.write_bytes(b'private')
+    with pytest.raises(ValueError,match='UNCOMMITTED_CLEANUP_UNCERTAIN'):
+        subject._discard_uncommitted_new(path,identity)
+    assert path.exists() and sidecar.read_bytes()==b'private'
+
+
 @pytest.mark.parametrize('body_error',(False,True))
 def test_provider_ownership_rechecks_lock_path_on_context_exit(
         tmp_path,body_error,monkeypatch):

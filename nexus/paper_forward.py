@@ -8,6 +8,7 @@ import json
 import math
 import os
 import sqlite3
+import stat
 import threading
 import time
 import uuid
@@ -18,20 +19,64 @@ from decimal import Decimal, ROUND_DOWN
 from pathlib import Path
 from nexus.durable_orders import gateway
 from nexus.feed_guard import FeedGuard
-from nexus.public_data import read_ticker
+from nexus.public_data import PUBLIC_PRICE_MAX, PUBLIC_PRICE_MIN, read_ticker
 from nexus.tier_permissions import require_entry, TIERS
+from nexus.execution_capacity import resumable_exit_mandate
 from nexus.state import load_settings
 from nexus.paper_policy import admit, POLICY
-from nexus import emergency_intent,forward_evidence,forward_sessions
+from nexus import emergency_intent,forward_evidence,forward_event_evidence,forward_sessions
+from nexus.forward_reconciliation_review import (reconcile as reconcile_forward_session,
+    review_receipt as seal_forward_review)
 from nexus.forward_ownership import ForwardOwnership
+from nexus.sqlite_journal_guard import (
+    capture_file_identities, check_existing, committed_main_fingerprint,
+    require_main_connection, sync_committed_main)
 
 INTERVAL=POLICY['interval_seconds']
+STOP_JOIN_TIMEOUT=6
 RANKING_INTERVAL=POLICY['ranking_seconds']
 PRODUCT=POLICY['product']
 CLOCK_DISCONTINUITY_TOLERANCE_SECONDS=2
 MAX_WALL_CLOCK_SECONDS=253402300799
 SESSION_LIMIT=1000
+MAX_DATABASE_BYTES=256*1024*1024
 DB_BUSY_TIMEOUT_MS=10_000
+COMMIT_DURABILITY_CHECKS=('commit_durability_failure_retained_for_review',
+    'commit_sync_preserves_process_control')
+COMMIT_DURABILITY_PUBLIC_KEYS=frozenset(('source','passed',
+    *COMMIT_DURABILITY_CHECKS,'actual_provider_access','broker_connected',
+    'live_orders_enabled','sustained_forward_accepted','release_approved'))
+QUOTE_FIELDS=frozenset(('provider','product','bid','ask','last','received_at',
+    'exchange_time','read_only','orders_allowed'))
+
+
+def _require_quote(quote):
+    """Require the exact production-adapter output types before any coercion."""
+    if (type(quote) is not dict or
+            any(type(key) is not str for key in quote) or
+            not QUOTE_FIELDS.issubset(quote)):
+        raise ValueError('INVALID_FORWARD_QUOTE')
+    if (type(quote['provider']) is not str or
+            quote['provider']!='coinbase_exchange_public' or
+            type(quote['product']) is not str or quote['product']!=PRODUCT or
+            type(quote['exchange_time']) is not str or
+            type(quote['read_only']) is not bool or quote['read_only'] is not True or
+            type(quote['orders_allowed']) is not bool or quote['orders_allowed'] is not False):
+        raise ValueError('INVALID_FORWARD_QUOTE')
+    for field in ('bid','ask','last'):
+        value=quote[field]
+        if (type(value) not in (int,float) or
+                (type(value) is float and not math.isfinite(value))):
+            raise ValueError('INVALID_FORWARD_QUOTE')
+        numeric=Decimal(value) if type(value) is int else Decimal(str(value))
+        if not PUBLIC_PRICE_MIN <= numeric <= PUBLIC_PRICE_MAX:
+            raise ValueError('INVALID_FORWARD_QUOTE')
+    received=quote['received_at']
+    if (type(received) not in (int,float) or
+            (type(received) is float and not math.isfinite(received)) or
+            not 0<=received<MAX_WALL_CLOCK_SECONDS):
+        raise ValueError('INVALID_FORWARD_QUOTE')
+    return quote
 
 
 def _database_busy(error):
@@ -59,12 +104,19 @@ class OrderCleanupFailure(Exception):
         super().__init__('ORDER_CLEANUP_FAILED_REVIEW_REQUIRED')
 
 
+class ExchangeAdmissionFailure(Exception):
+    """The durable timestamp marker was not acknowledged; no quote may run."""
+
+
 class PaperForwardRunner:
-    def __init__(self,orders=gateway,fetcher=read_ticker,clock=time.time,monotonic_clock=None):
+    def __init__(self,orders=gateway,fetcher=read_ticker,clock=time.time,monotonic_clock=None,
+            scheduler_clock=None,scheduler_wait=None):
         self.orders=orders;self.fetcher=fetcher;self.clock=clock
         self.monotonic_clock=monotonic_clock or (time.monotonic if clock is time.time else clock)
         self._clock_anchor=None
         self._stop=threading.Event();self._stop.set()
+        self.scheduler_clock=scheduler_clock or time.monotonic
+        self.scheduler_wait=scheduler_wait or self._stop.wait
         self._cut_requested=threading.Event()
         self._thread=None;self._lock=threading.RLock();self._cycle_lock=threading.Lock()
         self._execution_lock=threading.RLock();self._control_lock=threading.Lock()
@@ -72,7 +124,7 @@ class PaperForwardRunner:
         self._guard=FeedGuard();self._stamp=None;self._last_rank=0
         self._failures=0;self._cycles=0;self._last=None;self._error=None
         self._policy=admit(POLICY["id"])
-        self._observation_hash=None
+        self._observation_hash=None;self._exchange_admission_hash=None
         self._ownership=None
 
     @staticmethod
@@ -85,20 +137,58 @@ class PaperForwardRunner:
         if not valid or (wall and not 0<=value<MAX_WALL_CLOCK_SECONDS):return None
         return value
 
-    def _db(self):
-        root=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))
-        root.mkdir(parents=True,exist_ok=True)
+    def _scheduler_value(self):
+        value=self._clock_value(self.scheduler_clock)
+        return value if value is not None and 0<=value<MAX_WALL_CLOCK_SECONDS else None
+
+    @staticmethod
+    def _write_path():
+        """Freeze one exact non-symlink data root for this write attempt."""
+        root=Path(os.environ.get('NEXUS_PORTABLE_DATA',
+            str(Path.home()/'.nexus-operative'))).expanduser()
+        try:root.mkdir(parents=True,exist_ok=True)
+        except OSError:raise ValueError('PAPER_FORWARD_STORAGE_ROOT_UNAVAILABLE') from None
+        try:
+            before=root.lstat()
+            if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+                raise ValueError('PAPER_FORWARD_STORAGE_ROOT_UNAVAILABLE')
+            resolved=root.resolve(strict=True);after=root.lstat()
+            if (stat.S_ISLNK(after.st_mode) or not stat.S_ISDIR(after.st_mode) or
+                    not os.path.samestat(before,after)):
+                raise ValueError('PAPER_FORWARD_STORAGE_ROOT_CHANGED')
+            return resolved/'paper_forward.sqlite3'
+        except ValueError:raise
+        except (OSError,RuntimeError,TypeError):
+            raise ValueError('PAPER_FORWARD_STORAGE_ROOT_CHANGED') from None
+
+    def _db(self,*,_details=False):
+        bound_path=self._write_path();new=False
+        if not check_existing(bound_path,MAX_DATABASE_BYTES,'PAPER_FORWARD_'):
+            try:
+                descriptor=os.open(bound_path,os.O_CREAT|os.O_EXCL|os.O_WRONLY,0o600)
+                try:os.close(descriptor)
+                except BaseException:
+                    raise
+                new=True
+            except FileExistsError:pass
+            check_existing(bound_path,MAX_DATABASE_BYTES,'PAPER_FORWARD_')
         db=None
         try:
-            db=sqlite3.connect(root/'paper_forward.sqlite3',timeout=DB_BUSY_TIMEOUT_MS/1000)
+            db=sqlite3.connect(bound_path.as_uri()+'?mode=rw',uri=True,
+                timeout=DB_BUSY_TIMEOUT_MS/1000)
+            require_main_connection(db,bound_path,'PAPER_FORWARD_')
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            db.execute('PRAGMA journal_mode=DELETE')
             db.execute('PRAGMA synchronous=FULL')
+            page_size=db.execute('PRAGMA page_size').fetchone()[0]
+            db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES//page_size}')
             db.execute('CREATE TABLE IF NOT EXISTS cycles(id INTEGER PRIMARY KEY,at REAL NOT NULL,detail TEXT NOT NULL)')
             db.execute("""CREATE TABLE IF NOT EXISTS sessions(
                 id TEXT PRIMARY KEY,started_at REAL NOT NULL,updated_at REAL NOT NULL,
                 state TEXT NOT NULL,policy_json TEXT NOT NULL,counts_json TEXT NOT NULL,last_json TEXT NOT NULL)""")
             forward_evidence.schema(db)
-            return db
+            forward_event_evidence.schema(db)
+            return (db,new,bound_path) if _details else db
         except sqlite3.OperationalError as error:
             if db is not None:db.close()
             if _database_busy(error):_busy()
@@ -108,14 +198,46 @@ class PaperForwardRunner:
             raise
 
     @contextmanager
+    def _write_db(self):
+        """Acknowledge only one exact committed and explicitly flushed main."""
+        db,new,bound_path=self._db(_details=True)
+        try:
+            identity=capture_file_identities((bound_path,),'PAPER_FORWARD_')[0]
+        except BaseException:
+            db.close();raise
+        try:yield db
+        except BaseException:
+            db.close();raise
+        else:
+            error=None;fingerprint=None;uncommitted=db.in_transaction
+            try:
+                require_main_connection(db,bound_path,'PAPER_FORWARD_')
+                if not uncommitted:
+                    fingerprint=committed_main_fingerprint(db,bound_path,
+                        MAX_DATABASE_BYTES,'PAPER_FORWARD_')
+            except BaseException as caught:error=caught
+            try:db.close()
+            except BaseException as caught:
+                if error is None:error=caught
+            if error is not None:raise error
+            if fingerprint is not None:
+                sync_committed_main(bound_path,identity,fingerprint,
+                    MAX_DATABASE_BYTES,'PAPER_FORWARD_',new=new)
+            if uncommitted:
+                raise ValueError('PAPER_FORWARD_UNCOMMITTED_TRANSACTION') from None
+
+    @contextmanager
     def _read_db(self):
         """Observe existing evidence without creating storage or migrating it."""
         path=Path(os.environ.get('NEXUS_PORTABLE_DATA',str(Path.home()/'.nexus-operative')))/'paper_forward.sqlite3'
-        if path.is_symlink():raise ValueError('FORWARD_HISTORY_SYMLINK')
-        try:path.stat()
+        try:observed=path.lstat()
         except FileNotFoundError:
             yield None
             return
+        if stat.S_ISLNK(observed.st_mode):raise ValueError('FORWARD_HISTORY_SYMLINK')
+        if not stat.S_ISREG(observed.st_mode):
+            raise ValueError('FORWARD_HISTORY_REGULAR_FILE_REQUIRED')
+        if observed.st_nlink!=1:raise ValueError('FORWARD_HISTORY_HARDLINK')
         db=None
         try:
             db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
@@ -129,6 +251,146 @@ class PaperForwardRunner:
         finally:
             if db is not None:db.close()
 
+    @staticmethod
+    def _retained_feed_baseline(db,policy):
+        """Recover independent exchange and accepted-price restart baselines.
+
+        Every structurally valid fresh tick consumes the exchange marker even
+        when its prices were rejected.  Only a recorded eligible tick may seed
+        the price guard.  This prevents a rejected exchange timestamp from being
+        replayed later with different prices while retaining the conservative
+        last accepted price reference.  This is local supplied evidence, not
+        source attestation.
+        """
+        if db is None:return None
+        observations=[]
+        admission_names=forward_evidence.admission_table_names(db)
+        if (admission_names and
+                (admission_names!=forward_evidence.ADMISSION_TABLES or
+                    not forward_evidence.admission_schema_valid(db))):
+            raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+        sessions=db.execute(
+            'SELECT id,started_at,state FROM sessions ORDER BY started_at,id').fetchall()
+        for session,started_at,state in sessions:
+            evidence=forward_evidence.review(db,session)
+            if not evidence['integrity_ok']:
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            admission=(forward_evidence.review_exchange_admissions(db,session)
+                if admission_names else None)
+            if admission is not None and not admission['integrity_ok']:
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            admissions={} if admission is None else {
+                point['cycle']:point for point in admission['points']}
+            quotes={point['cycle']:point for point in evidence['points']}
+            for point in evidence['points']:
+                eligible=point.get('quote_eligible') is True
+                try:
+                    if point.get('source_mode') not in (
+                                'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED',
+                                'INJECTED_TRANSPORT_UNATTESTED'):
+                        raise ValueError()
+                    quote=_require_quote(point['quote'])
+                    at=point['evaluated_at']
+                    if (type(at) not in (int,float) or
+                            type(at) is float and not math.isfinite(at) or
+                            not 0<=at<MAX_WALL_CLOCK_SECONDS):
+                        raise ValueError()
+                    exchange=datetime.fromisoformat(
+                        quote['exchange_time'].replace('Z','+00:00'))
+                    if exchange.tzinfo is None:raise ValueError()
+                    stamp=exchange.timestamp()
+                    if not math.isfinite(stamp) or not 0<=stamp<MAX_WALL_CLOCK_SECONDS:
+                        raise ValueError()
+                    received=quote['received_at']
+                    if not (0<=at-received<=policy['receive_age_seconds'] and
+                            0<=at-stamp<=policy['exchange_age_seconds']):
+                        raise ValueError()
+                except (KeyError,TypeError,ValueError,OverflowError,OSError):
+                    if eligible:
+                        raise ValueError(
+                            'FORWARD_RETAINED_FEED_BASELINE_INVALID') from None
+                    continue
+                if eligible and point.get('error_type') is not None:
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                binding=point.get('exchange_admission_sha256')
+                marker=admissions.get(point['cycle'])
+                if admission is None:
+                    observations.append((at,started_at,session,point['cycle'],
+                        stamp,quote,eligible))
+                    continue
+                if binding is None:
+                    # Duplicate/regressed, malformed and stale observations
+                    # are retained but never receive a fresh admission.
+                    if eligible or marker is not None:
+                        raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                    continue
+                if marker is None or binding!=marker.get('_digest'):
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                if (marker.get('evaluated_at')!=at or
+                        marker.get('exchange_time')!=quote['exchange_time'] or
+                        marker.get('exchange_at')!=stamp or
+                        marker.get('quote_sha256')!=forward_evidence.quote_sha256(quote) or
+                        marker.get('source_mode')!=point.get('source_mode') or
+                        marker.get('policy_sha256')!=point.get('policy_sha256')):
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            if admission is not None:
+                highest=max(admissions,default=0)
+                for cycle,marker in admissions.items():
+                    try:
+                        at=marker['evaluated_at'];stamp=marker['exchange_at']
+                        if (type(at) not in (int,float) or not math.isfinite(at) or
+                                not 0<=at<MAX_WALL_CLOCK_SECONDS or
+                                type(stamp) not in (int,float) or not math.isfinite(stamp) or
+                                not 0<=stamp<MAX_WALL_CLOCK_SECONDS or
+                                not 0<=at-stamp<=policy['exchange_age_seconds'] or
+                                marker['policy_sha256']!=policy['policy_sha256'] or
+                                marker['source_mode'] not in (
+                                    'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED',
+                                    'INJECTED_TRANSPORT_UNATTESTED')):
+                            raise ValueError()
+                        parsed=datetime.fromisoformat(
+                            marker['exchange_time'].replace('Z','+00:00'))
+                        if parsed.tzinfo is None or parsed.timestamp()!=stamp:
+                            raise ValueError()
+                    except (KeyError,TypeError,ValueError,OverflowError,OSError):
+                        raise ValueError(
+                            'FORWARD_RETAINED_FEED_BASELINE_INVALID') from None
+                    point=quotes.get(cycle)
+                    if point is None:
+                        if state!='RUNNING' or cycle!=highest:
+                            raise ValueError(
+                                'FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                        quote=None;eligible=False
+                    else:
+                        quote=point['quote'];eligible=point.get(
+                            'quote_eligible') is True
+                    observations.append((at,started_at,session,cycle,stamp,
+                        quote,eligible))
+        if not observations:return None
+        guard=FeedGuard();exchange_floor=None;price_baseline=None
+        for at,started_at,session,cycle,stamp,quote,eligible in sorted(
+                observations,key=lambda item:item[:4]):
+            if exchange_floor is not None and stamp<=exchange_floor:
+                if eligible:
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+                continue
+            # Fresh rejected observations consume only the timestamp. They
+            # cannot become the reference price for a later observation.
+            exchange_floor=stamp
+            if not eligible:continue
+            if quote is None:
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            if guard.evaluate(quote,at)['decision']=='VETO':
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
+            price_baseline=(at,session,cycle,quote)
+        if exchange_floor is None:return None
+        if price_baseline is None:
+            return dict(exchange_at=exchange_floor,evaluated_at=None,
+                session=None,cycle=None,quote=None)
+        at,session,cycle,quote=price_baseline
+        return dict(exchange_at=exchange_floor,evaluated_at=at,
+            session=session,cycle=cycle,quote=quote)
+
     def _record(self,decision,reason,**extra):
         self._require_ownership()
         observed=self._clock_value(self.clock,wall=True)
@@ -136,11 +398,15 @@ class PaperForwardRunner:
         recorded=observed if valid else (self._clock_anchor[0] if self._clock_anchor else 0)
         if not valid and decision not in ('STOP','PAUSED'):
             decision='PAUSED';reason='INVALID_RUNTIME_CLOCK'
+            # Outcome-specific evidence cannot be relabelled as a lifecycle
+            # pause. The durable attempt remains review-required and unbound.
+            extra.pop('no_fill_attempt_sha256',None)
+            extra.pop('modeled_fill_sha256',None)
             self._error=reason;self._stop.set()
         row=dict(at=recorded,clock_sample_valid=valid,session=self._session,cycle=self._cycles,quote_evidence_sha256=self._observation_hash,decision=decision,reason=reason,
                  product=PRODUCT,tier=self._tier,simulation_only=True,**extra)
         row['policy_id']=self._policy['id'];row['policy_sha256']=self._policy['policy_sha256']
-        with closing(self._db()) as db:
+        with self._write_db() as db:
             with _transaction(db):
                 db.execute('BEGIN IMMEDIATE')
                 old=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
@@ -164,6 +430,9 @@ class PaperForwardRunner:
                 elif decision=='STOP':state='STOPPED'
                 db.execute('INSERT OR REPLACE INTO sessions VALUES (?,?,?,?,?,?,?)',
                            (self._session,started,row['at'],state,json.dumps(self._policy,sort_keys=True),json.dumps(counts,sort_keys=True),json.dumps(row,allow_nan=False)))
+                if decision=='START':
+                    forward_evidence.initialize_exchange_admissions(db,self._session)
+                forward_event_evidence.append(db,row)
                 db.execute('INSERT INTO cycles(at,detail) VALUES (?,?)',(row['at'],json.dumps(row,allow_nan=False)))
                 db.execute('DELETE FROM cycles WHERE id NOT IN (SELECT id FROM cycles ORDER BY id DESC LIMIT 1000)')
         self._require_ownership()
@@ -173,14 +442,31 @@ class PaperForwardRunner:
     def _record_quote(self,quote,eligible,error=None):
         self._require_ownership()
         if self._clock_anchor is None:raise ValueError('INVALID_RUNTIME_CLOCK')
-        with closing(self._db()) as db:
+        with self._write_db() as db:
             with _transaction(db):
                 db.execute('BEGIN IMMEDIATE')
                 candidate=forward_evidence.append(db,self._session,self._cycles,self._clock_anchor[0],quote,eligible,
                     'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
-                    self._policy['policy_sha256'],error)
+                    self._policy['policy_sha256'],error,self._exchange_admission_hash)
         self._require_ownership()
         self._observation_hash=candidate
+
+    def _record_exchange_admission(self,quote,stamp):
+        """FULL-sync a consumed fresh timestamp before any price evaluation."""
+        self._require_ownership()
+        if self._clock_anchor is None:raise ExchangeAdmissionFailure()
+        try:
+            with self._write_db() as db:
+                with _transaction(db):
+                    db.execute('BEGIN IMMEDIATE')
+                    candidate=forward_evidence.append_exchange_admission(db,
+                        self._session,self._cycles,self._clock_anchor[0],quote,
+                        'PUBLIC_READER_SINGLE_SOURCE_UNATTESTED' if self.fetcher is read_ticker else 'INJECTED_TRANSPORT_UNATTESTED',
+                        self._policy['policy_sha256'],stamp)
+        except (OSError,sqlite3.Error,ValueError):
+            raise ExchangeAdmissionFailure() from None
+        self._require_ownership()
+        self._exchange_admission_hash=candidate
 
     def request_cut(self):
         """Signal only: no locks owned by execution, IO, ownership release or acknowledgment."""
@@ -223,9 +509,23 @@ class PaperForwardRunner:
                 if reason:raise ValueError(reason)
                 selected_policy=admit(policy_id)
                 if tier not in TIERS:raise ValueError('UNKNOWN_RISK_TIER')
-                storage=self.storage_capacity()
+                # Ownership serializes cooperating writers while capacity and
+                # the restart baseline are sampled from one retained snapshot.
+                with self._read_db() as db:
+                    storage=self._capacity_snapshot(db)
+                    retained_baseline=self._retained_feed_baseline(
+                        db,selected_policy)
+                retained_guard=FeedGuard()
+                if (retained_baseline is not None and
+                        retained_baseline['quote'] is not None and
+                        retained_guard.evaluate(retained_baseline['quote'],
+                            retained_baseline['evaluated_at'])['decision']=='VETO'):
+                    raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
                 if not storage['session_intake_allowed']:raise ValueError('FORWARD_SESSION_HISTORY_CAP')
                 if not storage['quote_intake_allowed']:raise ValueError('FORWARD_QUOTE_EVIDENCE_CAP')
+                if not storage['exchange_admission_intake_allowed']:
+                    raise ValueError('FORWARD_EXCHANGE_ADMISSION_CAP')
+                if storage['forward_events_remaining']<2:raise ValueError('FORWARD_EVENT_EVIDENCE_CAP')
                 report=self.orders.recovery_report()
                 existing_positions=(report['execution_account']['account'] or {}).get('positions',{})
                 if not existing_positions:require_entry(tier,1)
@@ -240,16 +540,29 @@ class PaperForwardRunner:
                     report=self.orders.recovery_report()
                 if any(p!=PRODUCT for p in report['execution_account']['account']['positions']):
                     raise ValueError('FORWARD_RUNNER_REQUIRES_BTC_ONLY_ACCOUNT')
-                if any(o['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') for o in report['orders']):
+                mandate=resumable_exit_mandate(report['orders'],
+                    report['execution_account']['account']['positions'])
+                if any(o['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED') and
+                        o is not mandate for o in report['orders']):
                     raise ValueError('REVIEW_OUTSTANDING_PAPER_ORDERS_FIRST')
                 holding=bool(report['execution_account']['account']['positions'])
-                if not report['capacity']['lifecycle_intake_allowed'] or report['capacity']['ordinary_commands_remaining']<(4 if holding else 12) or report['capacity']['intents_remaining']<(1 if holding else 2):
+                intent_capacity=(report['capacity']['exit_intents_remaining'] if holding else
+                    min(report['capacity']['ordinary_intents_remaining'],
+                        report['capacity']['exit_intents_remaining']))
+                if (not report['capacity']['lifecycle_intake_allowed'] or
+                        report['capacity']['ordinary_commands_remaining']<(4 if holding else 12) or
+                        intent_capacity<1 and mandate is None):
                     raise ValueError('INSUFFICIENT_FORWARD_JOURNAL_CAPACITY')
                 if self._cut_active():raise ValueError('EMERGENCY_CUT_REQUESTED')
                 self._policy=selected_policy
                 self._session=uuid.uuid4().hex[:16];self._tier=tier
-                self._prices.clear();self._guard=FeedGuard();self._stamp=None;self._last_rank=0
-                self._cycles=0;self._failures=0;self._error=None;self._observation_hash=None;self._stop.clear()
+                self._prices.clear();self._guard=retained_guard
+                self._stamp=(None if retained_baseline is None else
+                    retained_baseline['exchange_at'])
+                self._last_rank=0
+                self._cycles=0;self._failures=0;self._error=None
+                self._observation_hash=None;self._exchange_admission_hash=None
+                self._stop.clear()
                 try:self._record('START','EXPERIMENTAL_MOMENTUM_PAPER_POLICY')
                 except (OSError,sqlite3.Error,ValueError):
                     self._stop.set();self._error='START_DIAGNOSTIC_STORAGE_FAILURE';raise
@@ -278,25 +591,113 @@ class PaperForwardRunner:
             # Fence the full local order sequence before acknowledging stop.
             with self._execution_lock:pass
             worker=self._thread
-            if worker and worker.is_alive() and worker is not threading.current_thread():worker.join(timeout=6)
-            if was_enabled and self._session:
-                try:self._record('STOP',reason)
-                except (OSError,sqlite3.Error,ValueError):self._error='STOP_DIAGNOSTIC_STORAGE_FAILURE'
-            if self._cycle_lock.acquire(blocking=False):
-                try:self._release_stopped_ownership()
-                finally:self._cycle_lock.release()
+            if worker and worker.is_alive() and worker is not threading.current_thread():
+                worker.join(timeout=STOP_JOIN_TIMEOUT)
+                if worker.is_alive():
+                    self._error='STOP_QUIESCENCE_TIMEOUT'
+                    raise ValueError('PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT')
+            try:
+                if was_enabled and self._session:
+                    try:self._record('STOP',reason)
+                    except (OSError,sqlite3.Error,ValueError):self._error='STOP_DIAGNOSTIC_STORAGE_FAILURE'
+            finally:
+                # Process-control signals from the terminal diagnostic must
+                # remain visible without stranding the local ownership lease.
+                if self._cycle_lock.acquire(blocking=False):
+                    try:self._release_stopped_ownership()
+                    finally:self._cycle_lock.release()
             return self.status()
 
     def _run(self):
-        while not self._intake_stopped():
-            try:self.single_cycle()
-            except Exception as exc:
-                # Unknown worker failures pause rather than creating an unmonitored loop.
-                self._error=type(exc).__name__;self._stop.set()
-                try:self._record('PAUSED','UNHANDLED_WORKER_FAILURE',error_type=type(exc).__name__)
-                except (OSError,sqlite3.Error,ValueError):pass
-            self._stop.wait(INTERVAL)
-        self._release_stopped_ownership()
+        try:
+            sampled=self._scheduler_value()
+            if sampled is None:
+                self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                return
+            deadline=sampled
+            previous=sampled
+            while not self._intake_stopped():
+                started=self._scheduler_value()
+                if started is None:
+                    self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                    return
+                if started<previous:
+                    self._pause_scheduler('SCHEDULER_CLOCK_REGRESSION')
+                    return
+                previous=started
+                try:outcome=self.single_cycle()
+                except Exception as exc:
+                    # Unknown worker failures pause rather than creating an unmonitored loop.
+                    self._error=type(exc).__name__;self._stop.set()
+                    try:self._record('PAUSED','UNHANDLED_WORKER_FAILURE',error_type=type(exc).__name__)
+                    except (OSError,sqlite3.Error,ValueError):pass
+                else:
+                    if outcome.get('reason')=='CYCLE_BUSY':
+                        self._pause_scheduler('WORKER_CYCLE_CONCURRENCY')
+                        return
+                if self._intake_stopped():return
+                completed=self._scheduler_value()
+                if completed is None:
+                    self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                    return
+                if completed<previous:
+                    self._pause_scheduler('SCHEDULER_CLOCK_REGRESSION')
+                    return
+                previous=completed
+                nominal=deadline+INTERVAL
+                if completed>nominal:
+                    try:self._record('HOLD','SCHEDULER_OVERRUN',
+                            scheduler_interval_seconds=INTERVAL,
+                            scheduler_cycle_duration_seconds=completed-started,
+                            scheduler_overrun_seconds=completed-nominal,
+                            scheduler_clock_valid=True,burst_catchup_allowed=False)
+                    except (OSError,sqlite3.Error,ValueError):
+                        self._error='SCHEDULER_EVIDENCE_STORAGE_FAILURE';self._stop.set()
+                        return
+                    if self._intake_stopped():return
+                    deadline=completed+INTERVAL
+                    after_record=self._scheduler_value()
+                    if after_record is None:
+                        self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                        return
+                    if after_record<previous:
+                        self._pause_scheduler('SCHEDULER_CLOCK_REGRESSION')
+                        return
+                    previous=after_record
+                    if previous>deadline:deadline=previous+INTERVAL
+                else:deadline=nominal
+                while not self._intake_stopped() and previous<deadline:
+                    before=previous
+                    try:self.scheduler_wait(deadline-before)
+                    except Exception:
+                        self._pause_scheduler('SCHEDULER_WAIT_FAILURE')
+                        return
+                    if self._intake_stopped():return
+                    after=self._scheduler_value()
+                    if after is None:
+                        self._pause_scheduler('INVALID_SCHEDULER_CLOCK')
+                        return
+                    if after<before:
+                        self._pause_scheduler('SCHEDULER_CLOCK_REGRESSION')
+                        return
+                    if after==before:
+                        self._pause_scheduler('SCHEDULER_CLOCK_STALLED')
+                        return
+                    previous=after
+        finally:
+            # Never leave a dead worker enabled or retaining its process
+            # owner. BaseException remains observable by threading.excepthook.
+            self._stop.set()
+            self._release_stopped_ownership()
+
+    def _pause_scheduler(self,reason):
+        """Retain a sanitized durable stop when worker scheduling is untrustworthy."""
+        self._prices.clear();self._last_rank=0;self._error=reason;self._stop.set()
+        try:
+            return self._record('PAUSED',reason,scheduler_clock_valid=False,
+                scheduler_interval_seconds=INTERVAL,burst_catchup_allowed=False)
+        except (OSError,sqlite3.Error,ValueError):
+            return dict(decision='PAUSED',reason=reason)
 
     def _execute(self,*args):
         with self._execution_lock:return self._execute_locked(*args)
@@ -311,14 +712,35 @@ class PaperForwardRunner:
             raise ValueError('STALE_OR_FUTURE_EXCHANGE_QUOTE_AT_FILL')
         return now
 
-    def _execute_locked(self,side,quantity,bid,ask,received,now,notional,exchange_at):
+    def _execute_locked(self,side,quantity,bid,ask,received,now,notional,exchange_at,
+                        expected_position_quantity=None):
         self._require_ownership()
         clock_reason=self._clock_check()
         if clock_reason:return self._pause_clock(clock_reason)
         if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_BEFORE_SUBMIT')
         oid='pf_'+self._session+'_'+str(self._cycles)+'_'+side
         self._require_ownership()
-        self.orders.submit(oid,PRODUCT,side,str(notional),tier=self._tier)
+        if side=='SELL':
+            report=self.orders.recovery_report()
+            mandate=resumable_exit_mandate(report['orders'],
+                report['execution_account']['account']['positions'])
+            if mandate is None:
+                mandate_notional=notional
+                mandate_quantity=expected_position_quantity
+                mandate_expected=expected_position_quantity
+                mandate_tier=self._tier
+                sequence=1
+            else:
+                oid=mandate['id'];mandate_notional=mandate['notional']
+                mandate_quantity=mandate['reduction_quantity']
+                mandate_expected=mandate['expected_position_quantity']
+                mandate_tier=mandate['tier']
+                sequence=mandate.get('reduction_slice_count',0)+1
+            self.orders.submit_reducing(oid,PRODUCT,str(mandate_notional),
+                str(mandate_quantity),str(mandate_expected),tier=mandate_tier)
+        else:
+            self.orders.submit(oid,PRODUCT,side,str(notional),tier=self._tier)
+            sequence=1
         try:
             if self._intake_stopped():return dict(decision='HOLD',reason='RUNNER_STOPPED_AFTER_SUBMIT')
             self._require_ownership()
@@ -329,14 +751,19 @@ class PaperForwardRunner:
             self._require_ownership()
             clock_reason=self._clock_check()
             if clock_reason:return self._pause_clock(clock_reason)
-            result=self.orders.simulate_quote_fill(oid,'fill',1,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],execution_clock=lambda:self._execution_now(exchange_at))
+            event_id='slice_'+str(sequence) if side=='SELL' else 'fill'
+            result=self.orders.simulate_quote_fill(oid,event_id,sequence,str(quantity),str(bid),str(ask),str(quantity),received,now,fee_bps=self._policy['fee_bps'],slippage_bps=self._policy['slippage_bps'],evidence_cycle=self._cycles,evidence_session=self._session,evidence_quote_sha256=self._observation_hash,execution_clock=lambda:self._execution_now(exchange_at))
             if result.get('expired'):
                 self._prices.clear();self._last_rank=0
-                return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid)
+                return self._record('VETO','ORDER_EXPIRED_WITHOUT_FILL',order_id=oid,
+                    no_fill_attempt_sha256=result['no_fill_attempt_sha256'])
             return self._record(side,'MODELED_PUBLIC_QUOTE_FILL',order_id=oid,
-                                liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
+                                liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False,
+                                modeled_fill_sha256=result['modeled_fill_sha256'])
         finally:
-            try:self.orders.cancel(oid)
+            try:
+                if side=='SELL':self.orders.cancel(oid,preserve_reducing_mandate=True)
+                else:self.orders.cancel(oid)
             except (OSError,sqlite3.Error,ValueError) as exc:
                 self._stop.set()
                 raise OrderCleanupFailure(oid,exc) from exc
@@ -364,8 +791,9 @@ class PaperForwardRunner:
             if self._intake_stopped():return dict(decision='HOLD',reason='PAPER_FORWARD_STOPPED')
             self._require_ownership()
             self._cycles+=1
-            self._observation_hash=None
-            with closing(self._db()) as db:
+            self._observation_hash=None;self._exchange_admission_hash=None
+            with self._read_db() as db:
+                if db is None:raise ValueError('FORWARD_SESSION_MISSING')
                 metadata=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(self._session,)).fetchone()
                 if metadata is None:raise ValueError('FORWARD_SESSION_MISSING')
                 stored_policy,_,_=forward_sessions.parse(*metadata)
@@ -376,16 +804,30 @@ class PaperForwardRunner:
             storage=self.storage_capacity()
             if not storage['quote_intake_allowed']:
                 self._stop.set();return self._record('PAUSED','FORWARD_QUOTE_EVIDENCE_CAP')
+            if not storage['exchange_admission_intake_allowed']:
+                self._stop.set();return self._record('PAUSED','FORWARD_EXCHANGE_ADMISSION_CAP')
+            # Preserve a primary outcome, possible scheduler-overrun record and
+            # one fail-closed terminal record. Capacity is never reclaimed by
+            # pruning durable evidence.
+            if storage['forward_events_remaining']<3:
+                self._stop.set();return self._record('PAUSED','FORWARD_EVENT_EVIDENCE_CAP')
             report=self.orders.recovery_report()
             self._require_ownership()
             if report['halted'] or not report['portfolio_reconciled']:
                 self._stop.set();return self._record('PAUSED','HALT_OR_RECONCILIATION_VETO')
             has_position=bool(report['execution_account']['account']['positions'])
             required_writes=4 if has_position else 12
-            required_ids=1 if has_position else 2
-            if report['capacity']['ordinary_commands_remaining']<required_writes or report['capacity']['intents_remaining']<required_ids or not report['capacity']['new_intents_allowed']:
+            mandate=resumable_exit_mandate(report['orders'],
+                report['execution_account']['account']['positions'])
+            id_capacity=(report['capacity']['exit_intents_remaining'] if has_position else
+                min(report['capacity']['ordinary_intents_remaining'],
+                    report['capacity']['exit_intents_remaining']))
+            if (report['capacity']['ordinary_commands_remaining']<required_writes or
+                    (id_capacity<1 and mandate is None) or
+                    (not has_position and not report['capacity']['new_intents_allowed'])):
                 self._stop.set();return self._record('PAUSED','JOURNAL_OR_ID_CAPACITY_VETO')
             quote=None
+            admitted_quote=None
             try:
                 self._require_ownership()
                 quote=self.fetcher(PRODUCT)
@@ -393,35 +835,46 @@ class PaperForwardRunner:
                 clock_reason=self._clock_check()
                 if clock_reason:return self._pause_clock(clock_reason)
                 now=self._clock_anchor[0]
-                if not isinstance(quote,dict):raise ValueError('MISSING_FORWARD_QUOTE')
+                quote=_require_quote(quote);admitted_quote=quote
                 if self._intake_stopped():return dict(decision='HOLD',reason='STOPPED_DURING_FETCH')
-                feed=self._guard.evaluate(quote,now)
-                if quote.get('product')!=PRODUCT:raise ValueError('QUOTE_PRODUCT_MISMATCH')
-                if not isinstance(quote.get('exchange_time'),str):raise ValueError('INVALID_EXCHANGE_TIMESTAMP')
                 exchange=datetime.fromisoformat(quote['exchange_time'].replace('Z','+00:00'))
                 if exchange.tzinfo is None:raise ValueError('QUOTE_TIMEZONE_MISSING')
                 stamp=exchange.timestamp()
-                received=float(quote['received_at'])
-                if feed['decision']=='VETO' or not 0<=now-received<=self._policy['receive_age_seconds'] or not 0<=now-stamp<=self._policy['exchange_age_seconds']:
+                received=quote['received_at']
+                if self._stamp is not None and stamp<=self._stamp:
+                    reason=('DUPLICATE_EXCHANGE_TICK' if stamp==self._stamp else
+                        'EXCHANGE_TIME_REGRESSION')
+                    # A repeated/regressed exchange tick is retained but never
+                    # advances either the price guard or trial-coverage state.
+                    self._record_quote(quote,False,reason)
+                    if stamp==self._stamp:return self._record('HOLD',reason)
+                    self._prices.clear();self._last_rank=0
+                    self._failures+=1
+                    if self._failures>=self._policy['consecutive_failure_limit']:
+                        self._stop.set()
+                    return self._record('PAUSED' if self._stop.is_set() else
+                        'VETO',reason)
+                if (not 0<=now-received<=self._policy['receive_age_seconds'] or
+                        not 0<=now-stamp<=self._policy['exchange_age_seconds']):
+                    raise ValueError('STALE_OR_UNVERIFIED_FORWARD_QUOTE')
+                # A fresh tick is consumed before price/spread review. A vetoed
+                # price can never be replayed later under the same exchange
+                # timestamp with different values.
+                self._record_exchange_admission(quote,stamp)
+                self._stamp=stamp
+                feed=self._guard.evaluate(quote,now)
+                if feed['decision']=='VETO':
                     raise ValueError('STALE_OR_UNVERIFIED_FORWARD_QUOTE')
                 bid=Decimal(str(quote['bid']));ask=Decimal(str(quote['ask']))
                 if not bid.is_finite() or not ask.is_finite():raise ValueError('INVALID_QUOTE')
             except (ValueError,KeyError,TypeError,OSError,TimeoutError) as exc:
-                self._record_quote(quote,False,type(exc).__name__)
+                self._record_quote(admitted_quote,False,type(exc).__name__)
                 self._prices.clear();self._last_rank=0
                 self._failures+=1;self._error=type(exc).__name__
                 if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()
                 return self._record('PAUSED' if self._stop.is_set() else 'VETO','QUOTE_UNAVAILABLE_OR_INVALID',consecutive_failures=self._failures)
-            regressed=self._stamp is not None and stamp<self._stamp
-            self._record_quote(quote,not regressed,'EXCHANGE_TIME_REGRESSION' if regressed else None)
-            if stamp==self._stamp:return self._record('HOLD','DUPLICATE_EXCHANGE_TICK')
-            if self._stamp is not None and stamp<self._stamp:
-                self._prices.clear();self._last_rank=0
-                self._failures+=1
-                if self._failures>=self._policy['consecutive_failure_limit']:self._stop.set()
-                return self._record('PAUSED' if self._stop.is_set() else 'VETO','EXCHANGE_TIME_REGRESSION')
+            self._record_quote(quote,True)
             self._failures=0;self._error=None
-            self._stamp=stamp
             if self._prices and now-self._prices[-1][0]>2*INTERVAL:self._prices.clear();self._last_rank=0
             self._prices.append((now,(bid+ask)/2))
             account=report['execution_account']['account']
@@ -452,7 +905,7 @@ class PaperForwardRunner:
                 move=(self._prices[-1][1]/self._prices[0][1]-1)*10000
                 if move<self._policy['entry_threshold_bps']:return self._record('HOLD','EXPERIMENTAL_ENTRY_THRESHOLD_NOT_MET')
                 amount=min(Decimal(self._policy['maximum_entry_usd']),Decimal(account['initial'])*Decimal(self._policy['initial_entry_fraction_bps'])/10000)
-                try:require_entry(self._tier,str(amount))
+                try:require_entry(self._tier,amount)
                 except ValueError as exc:return self._record('VETO',str(exc))
                 if Decimal(account['cash'])<=Decimal(account['initial'])*(1-Decimal(self._policy['capital_loss_bps'])/10000):
                     self._stop.set();return self._record('PAUSED','INITIAL_CAPITAL_LOSS_THRESHOLD')
@@ -462,7 +915,8 @@ class PaperForwardRunner:
             if quantity<=0:return self._record('VETO','QUANTITY_BELOW_PRECISION')
             # The immutable lifetime starts at the quote observation, not a
             # later wall-clock value; all timestamps are preserved in the model.
-            try:return self._execute(side,quantity,bid,ask,received,received,amount,stamp)
+            try:return self._execute(side,quantity,bid,ask,received,received,amount,stamp,
+                                     qty if side=='SELL' else None)
             except OrderCleanupFailure as exc:
                 self._prices.clear();self._last_rank=0;self._error=str(exc)
                 return self._record('PAUSED',str(exc),order_id=exc.order_id,
@@ -473,8 +927,14 @@ class PaperForwardRunner:
                 if reason in ('INVALID_RUNTIME_CLOCK','RUNTIME_CLOCK_DISCONTINUITY'):return self._pause_clock(reason)
                 if reason in ('STALE_OR_FUTURE_SYNTHETIC_QUOTE','STALE_OR_FUTURE_EXCHANGE_QUOTE_AT_FILL'):self._prices.clear();self._last_rank=0
                 if reason=='RUNNER_STOPPED_BEFORE_FILL':return dict(decision='HOLD',reason=reason)
+                # The independent cut owns the durable halt/cancel audit. Do
+                # not attempt an optional forward-session write after that
+                # authority has closed runner ownership: the write can race
+                # the completed cut and obscure the authoritative veto as a
+                # generic storage failure even though the fill rolled back.
+                if reason=='EMERGENCY_CUT_REQUESTED':return dict(decision='VETO',reason=reason)
                 return self._record('VETO',reason)
-        except (OSError,sqlite3.Error,ValueError) as exc:
+        except (OSError,sqlite3.Error,ValueError,ExchangeAdmissionFailure) as exc:
             self._error=type(exc).__name__;self._stop.set()
             return dict(decision='PAUSED',reason='FORWARD_STORAGE_OR_INTEGRITY_FAILURE')
         finally:
@@ -494,20 +954,70 @@ class PaperForwardRunner:
     def evidence_report(self,session_id):
         import re
         if not isinstance(session_id,str) or not re.fullmatch(r'[a-f0-9]{16}',session_id):raise ValueError('INVALID_FORWARD_SESSION_ID')
+        def sample_cut():
+            latch,identity=emergency_intent.review_sample(self.orders._path())
+            return dict(latch=latch,signal=self._cut_requested.is_set()),identity
+        cut_before,cut_identity=sample_cut()
         order_snapshot=self.orders.session_orders_snapshot(session_id)
         with self._read_db() as db:
             if db is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             session=db.execute('SELECT started_at,updated_at,state,policy_json,counts_json,last_json FROM sessions WHERE id=?',(session_id,)).fetchone()
             if session is None:raise ValueError('UNKNOWN_FORWARD_SESSION')
             quotes=forward_evidence.review(db,session_id)
+            admission_tables=forward_evidence.admission_table_names(db)
+            if admission_tables and (admission_tables!=forward_evidence.ADMISSION_TABLES or
+                    not forward_evidence.admission_schema_valid(db)):
+                raise ValueError('FORWARD_EXCHANGE_ADMISSION_SCHEMA')
+            if admission_tables:
+                admissions=forward_evidence.review_exchange_admissions(
+                    db,session_id)
+            else:admissions=None
+            event_tables=forward_event_evidence.table_names(db)
+            if event_tables==forward_event_evidence.TABLES and forward_event_evidence.schema_valid(db):
+                events=forward_event_evidence.review(db,session_id)
+            else:
+                events=dict(integrity_ok=False,reasons=['DURABLE_EVENT_TABLES_MISSING_OR_INVALID'],
+                    events=0,head_sha256=None,points=[])
         final_order_snapshot=self.orders.session_orders_snapshot(session_id)
+        cut_after,_=sample_cut()
+        latch_unverified=('PRESENT_UNVERIFIED' in
+            (cut_before['latch']['status'],cut_after['latch']['status']))
+        # A stable in-process signal cannot sanitize a malformed independent
+        # latch.  Presence remains a cut request, but the combined review must
+        # fail closed until both observations are structurally trustworthy.
+        signal_stable=(cut_before['signal'] and cut_after['signal'] and
+            not latch_unverified)
+        canonical_stable=(cut_before['latch']['canonical'] and
+            cut_after['latch']['canonical'] and
+            emergency_intent.same_canonical(self.orders._path(),cut_identity))
+        clear_stable=(not cut_before['signal'] and not cut_after['signal'] and
+            cut_before['latch']['status']==cut_after['latch']['status']=='CLEAR')
+        cut_stable=bool(signal_stable or canonical_stable or clear_stable)
+        # Prefer the independently durable canonical latch when both sources
+        # are stable so the selected source and attached record digest agree.
+        cut_binding_source=('CANONICAL_LATCH' if canonical_stable else
+            'PROCESS_SIGNAL' if signal_stable else 'NONE')
+        cut_evidence=dict(before_status=cut_before['latch']['status'],
+            after_status=cut_after['latch']['status'],
+            requested_before=cut_before['signal'] or cut_before['latch']['requested'],
+            requested_after=cut_after['signal'] or cut_after['latch']['requested'],
+            stable=cut_stable,binding_verified=cut_binding_source!='NONE',
+            binding_source=cut_binding_source,
+            record_sha256=cut_before['latch']['record_sha256'] if canonical_stable else None)
         orders=order_snapshot['orders']
         policy,counts,last=forward_sessions.parse(*session)
         checked=forward_evidence.crosscheck(quotes,orders,counts,policy)
+        admission_checked=forward_evidence.crosscheck_exchange_admissions(
+            admissions,quotes,session[2],policy['policy_sha256'])
+        event_summary,event_reasons=reconcile_forward_session(session=session_id,
+            started_at=session[0],updated_at=session[1],state=session[2],counts=counts,
+            last=last,quotes=quotes,events=events,order_snapshot=order_snapshot,
+            final_order_snapshot=final_order_snapshot,cut_evidence=cut_evidence)
         terminal=forward_sessions.binding_reasons(last,session[2],session_id,policy,
             quotes['head_sha256'],quotes['observations'],quotes['points'][-1]['cycle'] if quotes['points'] else 0,
             quotes['parent_head_sha256'])
-        reasons=quotes['reasons']+checked['reasons']+terminal
+        reasons=(quotes['reasons']+checked['reasons']+terminal+event_reasons+
+            admission_checked['reasons'])
         journal_snapshot_stable=(order_snapshot['journal_present']==final_order_snapshot['journal_present']
             and order_snapshot['commands']==final_order_snapshot['commands']
             and order_snapshot['journal_sha256']==final_order_snapshot['journal_sha256'])
@@ -515,27 +1025,43 @@ class PaperForwardRunner:
             and order_snapshot['portfolio_rows']==final_order_snapshot['portfolio_rows']
             and order_snapshot['portfolio_sha256']==final_order_snapshot['portfolio_sha256'])
         order_snapshot_stable=(journal_snapshot_stable and portfolio_snapshot_stable
-            and order_snapshot['snapshot_sha256']==final_order_snapshot['snapshot_sha256'])
+            and order_snapshot['snapshot_sha256']==final_order_snapshot['snapshot_sha256']
+            and order_snapshot['halted']==final_order_snapshot['halted'])
         if not journal_snapshot_stable:reasons.append('ORDER_JOURNAL_CHANGED_DURING_REVIEW')
         if not portfolio_snapshot_stable:reasons.append('LINKED_PORTFOLIO_CHANGED_DURING_REVIEW')
+        if order_snapshot['halted']!=final_order_snapshot['halted']:
+            reasons.append('ORDER_HALT_STATE_CHANGED_DURING_REVIEW')
+        if order_snapshot['snapshot_sha256']!=final_order_snapshot['snapshot_sha256']:
+            reasons.append('ORDER_RECONCILIATION_SNAPSHOT_CHANGED_DURING_REVIEW')
         if last['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED':reasons.append('ORDER_CLEANUP_REQUIRES_REVIEW')
         import hashlib
         policy_digest=hashlib.sha256(forward_evidence.canonical({k:v for k,v in policy.items() if k!='policy_sha256'}).encode()).hexdigest()
         if policy_digest!=policy.get('policy_sha256'):reasons.append('SESSION_POLICY_FINGERPRINT_DISAGREEMENT')
         if not quotes['observations']:reasons.append('NO_RECORDED_QUOTE_EVIDENCE')
         if any(p['policy_sha256']!=policy['policy_sha256'] for p in quotes['points']):reasons.append('QUOTE_POLICY_FINGERPRINT_DISAGREEMENT')
+        reasons=sorted(set(reasons))
         summary={k:v for k,v in quotes.items() if k!='points'}
+        receipt=seal_forward_review(session=session_id,started_at=session[0],updated_at=session[1],
+            state=session[2],policy=policy,counts=counts,last=last,quotes=summary,
+            events=event_summary,initial_order_snapshot=order_snapshot,
+            final_order_snapshot=final_order_snapshot,cut_evidence=cut_evidence,
+            journal_stable=journal_snapshot_stable,
+            portfolio_stable=portfolio_snapshot_stable,order_snapshot_stable=order_snapshot_stable,
+            reasons=reasons)
         return dict(mode='READ_ONLY_FORWARD_EVIDENCE_REVIEW',read_only=True,session=session_id,
                     started_at=session[0],updated_at=session[1],stored_state=session[2],policy=policy,
                     counters=counts,quote_evidence=summary,execution_crosscheck=checked,
+                    exchange_admission_evidence=admission_checked,
+                    durable_event_evidence=event_summary,review_receipt=receipt,
                     order_journal_snapshot=dict(journal_present=order_snapshot['journal_present'],
                         commands=order_snapshot['commands'],portfolio_linked=order_snapshot['portfolio_linked'],
+                        halted=order_snapshot['halted'],
                         portfolio_rows=order_snapshot['portfolio_rows'],snapshot_sha256=order_snapshot['snapshot_sha256'],
                         journal_stable_during_review=journal_snapshot_stable,
                         portfolio_stable_during_review=portfolio_snapshot_stable,
                         stable_during_review=order_snapshot_stable),
                     provisional_active_session=session_id==self._session and not self._stop.is_set(),
-                    local_consistency_ok=not reasons,reasons=sorted(set(reasons)),
+                    local_consistency_ok=not reasons,reasons=reasons,
                     live_orders_enabled=False,release_approved=False,strategy_validated=False,
                     limitations='Local consistency diagnostics, not independent market attestation or sustained-run acceptance. Injected transports are labeled separately. Counters may miss a committed fill after a process crash; the order ledger is authoritative. Two replay-validated order-and-linked-ledger snapshots bracket the separate forward-database read; any observed reconciliation snapshot change fails the review closed. Local hashes cannot prevent coordinated database rewrites. Review while stopped for a stable cross-database snapshot.')
 
@@ -577,19 +1103,37 @@ class PaperForwardRunner:
 
     @staticmethod
     def _capacity_snapshot(db):
-        sessions=quotes=0
+        sessions=quotes=events=admissions=0
         if db is not None:
             sessions=db.execute('SELECT COUNT(*) FROM sessions').fetchone()[0]
             quotes=db.execute('SELECT COUNT(*) FROM forward_quotes').fetchone()[0]
+            admission_names=forward_evidence.admission_table_names(db)
+            if admission_names and not forward_evidence.admission_schema_valid(db):
+                raise ValueError('FORWARD_EXCHANGE_ADMISSION_SCHEMA')
+            if admission_names:
+                admissions=db.execute(
+                    'SELECT COUNT(*) FROM forward_exchange_admissions').fetchone()[0]
+            event_names=forward_event_evidence.table_names(db)
+            if event_names and not forward_event_evidence.schema_valid(db):
+                raise ValueError('FORWARD_EVENT_SCHEMA')
+            if event_names:
+                events=db.execute('SELECT COUNT(*) FROM forward_events').fetchone()[0]
         sessions_left=max(0,SESSION_LIMIT-sessions);quotes_left=max(0,forward_evidence.LIMIT-quotes)
+        events_left=max(0,forward_event_evidence.LIMIT-events)
+        admissions_left=max(0,forward_evidence.ADMISSION_LIMIT-admissions)
         warnings=[]
-        for label,left,limit in (('SESSION_HISTORY',sessions_left,SESSION_LIMIT),('QUOTE_EVIDENCE',quotes_left,forward_evidence.LIMIT)):
+        for label,left,limit in (('SESSION_HISTORY',sessions_left,SESSION_LIMIT),('QUOTE_EVIDENCE',quotes_left,forward_evidence.LIMIT),('EXCHANGE_ADMISSION',admissions_left,forward_evidence.ADMISSION_LIMIT),('EVENT_EVIDENCE',events_left,forward_event_evidence.LIMIT)):
             if left==0:warnings.append(label+'_FULL')
             elif left<=max(1,limit//10):warnings.append(label+'_NEAR_LIMIT')
         return dict(read_only=True,sessions_retained=sessions,session_limit=SESSION_LIMIT,sessions_remaining=sessions_left,
                     quote_observations_retained=quotes,quote_limit=forward_evidence.LIMIT,quote_observations_remaining=quotes_left,
+                    exchange_admissions_retained=admissions,exchange_admission_limit=forward_evidence.ADMISSION_LIMIT,
+                    exchange_admissions_remaining=admissions_left,
+                    forward_events_retained=events,event_limit=forward_event_evidence.LIMIT,forward_events_remaining=events_left,
                     session_intake_allowed=sessions_left>0,quote_intake_allowed=quotes_left>0,
-                    new_session_storage_available=sessions_left>0 and quotes_left>0,warnings=warnings,
+                    exchange_admission_intake_allowed=admissions_left>0,
+                    event_intake_allowed=events_left>0,
+                    new_session_storage_available=sessions_left>0 and quotes_left>0 and admissions_left>0 and events_left>=2,warnings=warnings,
                     automatic_deletion=False,automatic_archival=False,
                     scope='Storage admission diagnostics only; does not grant execution permission or guarantee future exit evidence capacity. Back up and review limits; never delete retained evidence to admit a run.')
 
@@ -608,6 +1152,74 @@ class PaperForwardRunner:
             capacity=self._capacity_snapshot(db)
             history=self._history_snapshot(db)
         return dict(history=history,storage_capacity=capacity)
+
+
+def commit_durability_fixture_report():
+    """Disposable retained-session proof; no public feed or broker access."""
+    import tempfile
+    from nexus import sqlite_journal_guard as durability
+    from nexus.durable_orders import DurableOrderGateway
+    from nexus.tier_permissions import configure
+
+    previous=os.environ.get('NEXUS_PORTABLE_DATA');original=durability.os.fsync
+
+    def exercise(root,interruption=False):
+        root=Path(root);os.environ['NEXUS_PORTABLE_DATA']=str(root)
+        configure('terrestrial',True)
+        store=root/'paper_forward.sqlite3';observed=False
+
+        def fsync(descriptor):
+            nonlocal observed
+            if store.exists():
+                try:opened=os.fstat(descriptor);current=store.stat()
+                except OSError:pass
+                else:
+                    if ((opened.st_dev,opened.st_ino)==
+                            (current.st_dev,current.st_ino)):
+                        observed=True
+                        if interruption:raise KeyboardInterrupt
+                        raise OSError('injected private forward flush failure')
+            return original(descriptor)
+
+        candidate=PaperForwardRunner(DurableOrderGateway(root/'orders.sqlite3'),
+            fetcher=lambda product:None,clock=lambda:1000)
+        durability.os.fsync=fsync;failure=None
+        try:candidate.prepare('terrestrial')
+        except BaseException as error:failure=error
+        finally:durability.os.fsync=original
+        cold=PaperForwardRunner(DurableOrderGateway(root/'orders.sqlite3'),
+            fetcher=lambda product:None,clock=lambda:1000)
+        sessions=cold.sessions()['sessions']
+        retained=(len(sessions)==1 and sessions[0]['stored_state']=='RUNNING' and
+            sessions[0]['effective_state']=='INTERRUPTED_OR_PRIOR_SESSION' and
+            sessions[0]['requires_review'] is True)
+        return dict(observed=observed,failure=failure,retained=retained,
+            disabled=candidate.status()['enabled'] is False,
+            ownership_released=candidate.status()['ownership_held'] is False)
+
+    try:
+        with tempfile.TemporaryDirectory(
+                prefix='nexus-forward-commit-durability-') as temporary:
+            failed=exercise(Path(temporary)/'failure')
+            interrupted=exercise(Path(temporary)/'interrupt',True)
+    finally:
+        durability.os.fsync=original
+        if previous is None:os.environ.pop('NEXUS_PORTABLE_DATA',None)
+        else:os.environ['NEXUS_PORTABLE_DATA']=previous
+    checks=dict(
+        commit_durability_failure_retained_for_review=failed['observed'] and
+            type(failed['failure']) is ValueError and
+            str(failed['failure'])=='PAPER_FORWARD_COMMIT_DURABILITY_UNCERTAIN' and
+            failed['retained'] and failed['disabled'] and
+            failed['ownership_released'],
+        commit_sync_preserves_process_control=interrupted['observed'] and
+            type(interrupted['failure']) is KeyboardInterrupt and
+            interrupted['retained'] and interrupted['disabled'] and
+            interrupted['ownership_released'])
+    return dict(source='TEMPORARY_INJECTED_FORWARD_COMMIT_DURABILITY_FIXTURE',
+        passed=all(checks.values()),**checks,actual_provider_access=False,
+        broker_connected=False,live_orders_enabled=False,
+        sustained_forward_accepted=False,release_approved=False)
 
 
 runner=PaperForwardRunner()

@@ -31,6 +31,18 @@ def test_fixture_requires_manifest_identity_and_exceptional_exit_fences():
     assert all(result[key] is False for key in reviewer.FLAGS)
 
 
+def test_fixture_relativizes_frozen_paths_against_physical_root(tmp_path):
+    physical=tmp_path/'physical';physical.mkdir()
+    alias=tmp_path/'alias'
+    try:alias.symlink_to(physical,target_is_directory=True)
+    except OSError:pytest.skip('directory symlinks unavailable')
+    manifest=subject._fixture(alias)
+    value=json.loads(manifest.read_text())
+    assert value['provider_budget']=='provider.sqlite3'
+    assert value['accounts'][0]['pacing']=='account/pacing.sqlite3'
+    assert subject.review_file(manifest)['local_provider_results_consistent']
+
+
 def history_manifest(path):
     value=json.loads(path.read_text())
     value['profile']=subject.HISTORY_PROFILE

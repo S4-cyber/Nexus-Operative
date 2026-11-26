@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import json
+import stat
 from urllib.error import HTTPError
 
 import pytest
@@ -86,6 +87,20 @@ def test_http_phase_rejects_unreviewed_diagnostic_label_before_operation():
     assert called == []
 
 
+def test_paper_tools_phase_preserves_only_reviewed_fixed_substage_code():
+    def reviewed():
+        raise ValueError('PACKAGED_PAPER_TOOLS_PROVIDER_BUDGET_RECOVERY')
+    with pytest.raises(trials.ReleaseTrialError, match=
+            '^RELEASE_TRIAL_HTTP_PACKAGED_PAPER_TOOLS_PROVIDER_BUDGET_RECOVERY$'):
+        trials._paper_tools_phase(reviewed)
+
+    private='PACKAGED_PAPER_TOOLS_PRIVATE_PATH_OR_SECRET'
+    def unreviewed():
+        raise ValueError(private)
+    with pytest.raises(ValueError,match=private):
+        trials._paper_tools_phase(unreviewed)
+
+
 def test_real_http_process_starts_stopped_without_data_credentials_or_external_io(tmp_path):
     env = {**os.environ, 'NEXUS_PORTABLE_DATA': str(tmp_path)}
     code = 'import json; from nexus.release_trials import _http_trial; print(json.dumps(_http_trial()))'
@@ -164,6 +179,55 @@ def test_http_trial_readiness_requires_local_owner_quiescence_check():
     result=http_report();result['trial_readiness_owner_quiescence_checked']=False
     with pytest.raises(ValueError,match='HTTP_TRIAL_READINESS_READ'):
         trials._validate('http',result)
+
+
+def test_http_authority_inventory_rejects_unknown_mutation_and_authority_claim():
+    result=http_report()
+    result['authority_inventory']['mutating_routes'].append(dict(
+        method='POST',path='/api/funding/transfer',
+        authority_class='BANK_TRANSFER',capability='BANK_TRANSFER'))
+    result['authority_inventory']['mutating_route_count']+=1
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_INVENTORY_SCHEMA'):
+        trials._validate('http',result)
+    result=http_report()
+    result['authority_inventory']['bank_transfer_route_present']=True
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_DENIALS'):
+        trials._validate('http',result)
+
+
+def test_http_authority_inventory_consumes_exact_route_classification():
+    result=http_report()
+    result['authority_inventory']['mutating_routes'][0]['capability']='BROKER_ORDRE'
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_MUTATING_ROUTES'):
+        trials._validate('http',result)
+    result=http_report();result['authority_inventory']['unconsumed']=True
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_INVENTORY_SCHEMA'):
+        trials._validate('http',result)
+
+
+@pytest.mark.parametrize('mutation',[
+    lambda rows:rows.pop(),
+    lambda rows:rows[0].update(capability='BROKER_LIVE_ORDER_POST'),
+    lambda rows:rows[0].update(app_route_bound=True),
+    lambda rows:rows[0].update(automatic_resume=True),
+    lambda rows:rows[0].update(release_approved=True),
+])
+def test_http_authority_inventory_consumes_exact_external_transports(mutation):
+    result=http_report();rows=result['authority_inventory']['external_transport_boundaries']
+    mutation(rows)
+    with pytest.raises(ValueError,match='HTTP_AUTHORITY_EXTERNAL_TRANSPORTS'):
+        trials._validate('http',result)
+
+
+@pytest.mark.parametrize(('field','value'),[
+    ('broker_order_transport_present',False),('ai_advisory_transport_present',False),
+    ('bank_transfer_transport_present',True),('cloud_control_transport_present',True),
+])
+def test_http_authority_transport_presence_cannot_be_hidden_or_promoted(field,value):
+    result=http_report();result['authority_inventory'][field]=value
+    code=('HTTP_AUTHORITY_DENIALS' if value is True else
+        'HTTP_AUTHORITY_EXTERNAL_TRANSPORTS')
+    with pytest.raises(ValueError,match=code):trials._validate('http',result)
 
 
 @pytest.mark.parametrize(('host_os','native_checked','tool_invocations'), [
@@ -261,6 +325,20 @@ def test_capacity_trial_consumes_exact_bounded_scope():
     cases.append((changed,'CAPACITY_BURST_COUNTS'))
     changed=copy.deepcopy(result);changed['burst_treatment']['queue_wait_latency']['p99_ms']=float('inf')
     cases.append((changed,'CAPACITY_BURST_TIMING'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['timing_attestation']['extra']=0
+    cases.append((changed,'CAPACITY_BURST_TIMING_ATTESTATION'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['timing_attestation']['clock_samples']+=1
+    cases.append((changed,'CAPACITY_BURST_TIMING_ATTESTATION'))
+    changed=copy.deepcopy(result);changed['atomic_burst_treatment']['timing_attestation']['throughput_claimed']=True
+    cases.append((changed,'CAPACITY_BURST_TIMING_ATTESTATION'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['timing_attestation']['window_elapsed_ms']=float('inf')
+    cases.append((changed,'CAPACITY_BURST_TIMING_ATTESTATION'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['durable_capacity']['extra']=0
+    cases.append((changed,'CAPACITY_BURST_RESERVE_SCHEMA'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['durable_capacity']['control_commands_reserved']=1000
+    cases.append((changed,'CAPACITY_BURST_RESERVE_BOUNDS'))
+    changed=copy.deepcopy(result);changed['burst_treatment']['capacity_bounds_verified']=1
+    cases.append((changed,'CAPACITY_BURST_SCOPE'))
     changed=copy.deepcopy(result);changed['execution_quality']['unconsumed']=True
     cases.append((changed,'EXECUTION_QUALITY_SCHEMA'))
     changed=copy.deepcopy(result);changed['execution_quality']['passed']=1
@@ -274,15 +352,17 @@ def test_capacity_trial_consumes_exact_bounded_scope():
 
 
 def test_source_fingerprint_tracks_source_test_and_workflow_changes(tmp_path):
-    for name in ('nexus','tests','tools','.github/workflows','dashboard','installer'):
+    for name in ('nexus','tests','tools','ops','.github/workflows','dashboard','installer'):
         (tmp_path/name).mkdir(parents=True)
     for name in ('pyproject.toml','dashboard/portal_preview.html','installer/NexusOperative.iss','nexus/core.py',
-                 'tests/test_core.py','tools/installer.ps1','.github/workflows/test.yml'):
+                 'tests/test_core.py','tools/installer.ps1','ops/inventory.mjs',
+                 '.github/workflows/test.yml','.github/workflows/authority.yaml'):
         (tmp_path/name).write_text('original')
     original = trials.source_digest(tmp_path)
     (tmp_path/'report.json').write_text('generated output')
     assert trials.source_digest(tmp_path) == original
-    for name in ('nexus/core.py','tests/test_core.py','tools/installer.ps1','.github/workflows/test.yml'):
+    for name in ('nexus/core.py','tests/test_core.py','tools/installer.ps1','ops/inventory.mjs',
+                 '.github/workflows/test.yml','.github/workflows/authority.yaml'):
         (tmp_path/name).write_text('changed')
         assert trials.source_digest(tmp_path) != original
         (tmp_path/name).write_text('original')
@@ -291,17 +371,30 @@ def test_source_fingerprint_tracks_source_test_and_workflow_changes(tmp_path):
 def test_source_fingerprint_is_stable_across_git_checkout_line_endings(tmp_path):
     lf=tmp_path/'lf';crlf=tmp_path/'crlf'
     for root in (lf,crlf):
-        for name in ('nexus','tests','tools','.github/workflows','dashboard','installer'):
+        for name in ('nexus','tests','tools','ops','.github/workflows','dashboard','installer'):
             (root/name).mkdir(parents=True)
     names=('pyproject.toml','dashboard/portal_preview.html','installer/NexusOperative.iss',
-        'nexus/core.py','tests/test_core.py','tools/installer.ps1',
-        '.github/workflows/test.yml')
+        'nexus/core.py','tests/test_core.py','tools/installer.ps1','ops/inventory.mjs',
+        '.github/workflows/test.yml','.github/workflows/authority.yaml')
     for name in names:
         (lf/name).write_bytes(b'first\nsecond\n')
         (crlf/name).write_bytes(b'first\r\nsecond\r\n')
     assert trials.source_digest(lf)==trials.source_digest(crlf)
     (crlf/'nexus/core.py').write_bytes(b'first\rsecond\r\n')
     assert trials.source_digest(lf)!=trials.source_digest(crlf)
+
+
+def test_source_fingerprint_rejects_symlinked_input(tmp_path):
+    for name in ('nexus','tests','tools','ops','.github/workflows','dashboard','installer'):
+        (tmp_path/name).mkdir(parents=True)
+    for name in ('pyproject.toml','dashboard/portal_preview.html','installer/NexusOperative.iss',
+                 'tests/test_core.py','tools/installer.ps1','ops/inventory.mjs','.github/workflows/test.yml'):
+        (tmp_path/name).write_text('reviewed')
+    external=tmp_path.parent/'external-source.py';external.write_text('outside reviewed tree')
+    try:(tmp_path/'nexus/core.py').symlink_to(external)
+    except OSError:pytest.skip('file symlink unavailable')
+    with pytest.raises(ValueError,match='RELEASE_SOURCE_FILE_INVALID'):
+        trials.source_digest(tmp_path)
 
 
 def test_nonzero_child_failure_is_sanitized_and_never_reported_as_passed(monkeypatch):
@@ -339,6 +432,27 @@ def test_release_trial_timeout_is_profile_specific_and_sanitized(monkeypatch):
     assert 'SECRET' not in str(error.value)
 
 
+@pytest.mark.parametrize(('system','profile','expected'), [
+    ('Linux','reconciliation_acceptance',240),
+    ('Windows','forward',240),
+    ('Windows','reconciliation_acceptance',600),
+])
+def test_release_trial_timeout_has_bounded_windows_reconciliation_headroom(
+        monkeypatch, system, profile, expected):
+    monkeypatch.setattr(trials.platform, 'system', lambda: system)
+    assert trials._profile_timeout_seconds(profile) == expected
+
+
+@pytest.mark.parametrize('expected_version',['0.1.0',True])
+def test_expected_version_mismatch_fails_before_source_or_profiles(
+        monkeypatch,expected_version):
+    monkeypatch.setattr(trials,'source_digest',
+        lambda _root:pytest.fail('version mismatch must precede source reads'))
+    with pytest.raises(trials.ReleaseTrialError,
+            match='^RELEASE_TRIAL_VERSION_MISMATCH$'):
+        trials.run(expected_version=expected_version)
+
+
 @pytest.mark.parametrize(('error','expected'), [
     (trials.ReleaseTrialError('RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED'),
      'Release trials failed: RELEASE_TRIAL_ACTIVITY_ACCEPTANCE_CHILD_FAILED\n'),
@@ -346,11 +460,174 @@ def test_release_trial_timeout_is_profile_specific_and_sanitized(monkeypatch):
      'Release trials failed: RELEASE_TRIAL_INTERNAL_ERROR\n'),
 ])
 def test_release_trial_cli_emits_only_sanitized_failure_codes(monkeypatch, capsys, error, expected):
-    monkeypatch.setattr(trials, 'run', lambda: (_ for _ in ()).throw(error))
+    monkeypatch.setattr(trials, 'run', lambda **_kwargs: (_ for _ in ()).throw(error))
     monkeypatch.setattr(sys, 'argv', ['release_trials'])
     with pytest.raises(SystemExit) as stopped:
         trials.main()
     assert stopped.value.code == 1 and capsys.readouterr().err == expected
+
+
+@pytest.mark.parametrize('existing_kind',['file','symlink'])
+def test_release_trial_output_never_overwrites_an_existing_path(
+        tmp_path, monkeypatch, capsys, existing_kind):
+    output=tmp_path/'release-report.json';target=tmp_path/'retained-private-evidence.json'
+    target.write_text('retained')
+    if existing_kind=='file':output.write_text('existing')
+    else:
+        try:output.symlink_to(target)
+        except OSError:pytest.skip('file symlink unavailable')
+    monkeypatch.setattr(trials,'run',lambda **_kwargs:{'passed':True})
+    monkeypatch.setattr(sys,'argv',['release_trials','--output',str(output)])
+    with pytest.raises(SystemExit) as stopped:trials.main()
+    assert stopped.value.code==1
+    assert capsys.readouterr().err=='Release trials failed: RELEASE_TRIAL_INTERNAL_ERROR\n'
+    assert target.read_text()=='retained'
+    if existing_kind=='file':assert output.read_text()=='existing'
+
+
+def test_release_trial_output_is_restrictive_and_synced(tmp_path, monkeypatch):
+    output=tmp_path/'release-report.json';synced=[];original=trials.os.fsync
+    def track(descriptor):
+        mode=os.fstat(descriptor).st_mode
+        synced.append('directory' if stat.S_ISDIR(mode) else 'file')
+        return original(descriptor)
+    monkeypatch.setattr(trials.os,'fsync',track)
+    trials._write_output(output,'{"passed": true}\n')
+    expected=['file'] if os.name=='nt' else ['file','directory']
+    assert output.read_text()=='{"passed": true}\n' and synced==expected
+    if os.name!='nt':assert output.stat().st_mode & 0o777==0o600
+
+
+def test_release_trial_output_rejects_symlinked_parent(tmp_path):
+    actual=tmp_path/'actual';actual.mkdir()
+    alias=tmp_path/'alias'
+    try:alias.symlink_to(actual,target_is_directory=True)
+    except OSError:pytest.skip('directory symlink unavailable')
+    with pytest.raises(OSError):
+        trials._write_output(alias/'release-report.json','{"passed": true}\n')
+    assert not (actual/'release-report.json').exists()
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX descriptor-relative create')
+def test_release_trial_output_parent_swap_before_leaf_create_is_not_acknowledged(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();retired=tmp_path/'retired'
+    output=public/'release-report.json';replacement=[]
+    original=trials.os.open
+    def swap(value,flags,*args,**kwargs):
+        if kwargs.get('dir_fd') is not None and not replacement:
+            public.rename(retired);public.mkdir();replacement.append(True)
+        return original(value,flags,*args,**kwargs)
+    monkeypatch.setattr(trials.os,'open',swap)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert replacement==[True] and not output.exists()
+    assert list(public.iterdir())==[]
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent-directory fsync')
+def test_release_trial_output_parent_swap_after_file_sync_is_not_acknowledged(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();retired=tmp_path/'retired'
+    output=public/'release-report.json';replacement=[]
+    original=trials.os.fsync
+    def swap(descriptor):
+        result=original(descriptor)
+        if stat.S_ISREG(os.fstat(descriptor).st_mode) and not replacement:
+            public.rename(retired);public.mkdir();replacement.append(True)
+        return result
+    monkeypatch.setattr(trials.os,'fsync',swap)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert replacement==[True] and not output.exists()
+    assert (retired/'release-report.json').read_text()=='{"passed": true}\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent-directory descriptor')
+def test_release_trial_output_rejects_substituted_parent_descriptor(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();foreign=tmp_path/'foreign';foreign.mkdir()
+    output=public/'release-report.json';original=trials.os.open
+    def substitute(value,flags,*args,**kwargs):
+        if flags & getattr(os,'O_DIRECTORY',0):
+            return original(foreign,flags,*args,**kwargs)
+        return original(value,flags,*args,**kwargs)
+    monkeypatch.setattr(trials.os,'open',substitute)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert not output.exists() and list(foreign.iterdir())==[]
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent-directory fsync')
+def test_release_trial_output_parent_sync_failure_is_not_acknowledged(
+        tmp_path, monkeypatch):
+    output=tmp_path/'release-report.json';original=trials.os.fsync
+    def fail_directory(descriptor):
+        if stat.S_ISDIR(os.fstat(descriptor).st_mode):
+            raise OSError('injected directory sync failure')
+        return original(descriptor)
+    monkeypatch.setattr(trials.os,'fsync',fail_directory)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert output.read_text()=='{"passed": true}\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent rename fixture')
+def test_release_trial_output_final_leaf_sample_is_bracketed_by_parent_recheck(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();retired=tmp_path/'retired'
+    output=public/'release-report.json';calls=[]
+    original=trials._output_file_matches
+    def swap_after_leaf_sample(path,descriptor):
+        result=original(path,descriptor);calls.append(result)
+        if len(calls)==3:
+            public.rename(retired);public.mkdir()
+        return result
+    monkeypatch.setattr(trials,'_output_file_matches',swap_after_leaf_sample)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert calls==[True,True,True] and not output.exists()
+    assert (retired/'release-report.json').read_text()=='{"passed": true}\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX leaf rename fixture')
+def test_release_trial_output_leaf_fstat_is_bracketed_by_public_leaf_recheck(
+        tmp_path, monkeypatch):
+    output=tmp_path/'release-report.json';retired=tmp_path/'retired.json';calls=[]
+    original=trials.os.fstat
+    def swap_during_fstat(descriptor):
+        info=original(descriptor)
+        if stat.S_ISREG(info.st_mode):
+            calls.append(True)
+            if len(calls)==3:
+                output.rename(retired)
+                output.write_text('replacement')
+        return info
+    monkeypatch.setattr(trials.os,'fstat',swap_during_fstat)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert calls==[True,True,True]
+    assert output.read_text()=='replacement'
+    assert retired.read_text()=='{"passed": true}\n'
+
+
+@pytest.mark.skipif(os.name=='nt',reason='POSIX parent rename fixture')
+def test_release_trial_output_parent_resolve_is_bracketed_by_identity_samples(
+        tmp_path, monkeypatch):
+    public=tmp_path/'public';public.mkdir();retired=tmp_path/'retired'
+    output=public/'release-report.json';calls=[]
+    original=trials.Path.resolve
+    def swap_during_resolve(path,*args,**kwargs):
+        if path==public:
+            calls.append(True)
+            if len(calls)==8:
+                public.rename(retired);public.mkdir()
+        return original(path,*args,**kwargs)
+    monkeypatch.setattr(trials.Path,'resolve',swap_during_resolve)
+    with pytest.raises(OSError):
+        trials._write_output(output,'{"passed": true}\n')
+    assert len(calls)==8 and not output.exists()
+    assert (retired/'release-report.json').read_text()=='{"passed": true}\n'
 
 
 @pytest.mark.parametrize('has_intent', [False, True])
@@ -430,6 +707,7 @@ def test_pacing_profile_requires_single_attempt_submission_transport_fences():
     for field in ('marker_committed_before_post','exactly_one_post','response_retained',
                   'account_and_position_capacity_resampled',
                   'post_reservation_risk_resampled',
+                  'post_reservation_asset_resampled',
                   'post_transport_credentials_rechecked',
                   'request_and_post_budget_store_bindings_pinned',
                   'request_and_post_budget_file_identities_pinned',
@@ -452,6 +730,7 @@ def test_pacing_profile_requires_single_attempt_submission_transport_fences():
                   'alpaca_post_budget_scope_required',
                   'late_risk_change_blocked_before_reservation',
                   'post_reservation_risk_change_blocked_before_post',
+                  'post_reservation_asset_change_blocked_before_post',
                   'transport_loss_preserved_for_original_id_lookup','repeat_submission_blocked',
                   'output_never_sendable'):
         changed=copy.deepcopy(result);changed['single_attempt_submission_transport'][field]=False
@@ -514,6 +793,21 @@ def test_pacing_profile_requires_provider_read_recovery_fences():
         changed=copy.deepcopy(result)
         changed['provider_read_budget_recovery'][field]=True
         with pytest.raises(ValueError,match='PROVIDER_READ_RECOVERY_AUTHORITY'):
+            trials._validate('pacing',changed)
+
+
+def test_pacing_profile_requires_provider_budget_acknowledgement_fences():
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    from nexus.paper_provider_budget_ack_evidence import CHECKS,FLAGS
+    for field in CHECKS:
+        changed=copy.deepcopy(result)
+        changed['provider_budget_write_acknowledgement'][field]=False
+        with pytest.raises(ValueError,match='PROVIDER_BUDGET_ACK_FENCES'):
+            trials._validate('pacing',changed)
+    for field in FLAGS:
+        changed=copy.deepcopy(result)
+        changed['provider_budget_write_acknowledgement'][field]=True
+        with pytest.raises(ValueError,match='PROVIDER_BUDGET_ACK_AUTHORITY'):
             trials._validate('pacing',changed)
 
 
@@ -753,6 +1047,16 @@ def test_activity_profile_requires_exact_public_schemas():
         trials._validate('activity',changed)
 
 
+def test_activity_profile_requires_fill_type_remainder_negative_fence():
+    result=trials._execute('activity')
+    trials._validate('activity',result)
+    assert result['contradictory_fill_remainder_rejected'] is True
+    changed=copy.deepcopy(result)
+    changed['contradictory_fill_remainder_rejected']=False
+    with pytest.raises(ValueError,match='ACTIVITY_PROFILE'):
+        trials._validate('activity',changed)
+
+
 def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authority():
     from nexus.paper_reconciliation_acceptance import fixture_report
     result=trials._execute('reconciliation_acceptance');trials._validate('reconciliation_acceptance',result)
@@ -795,6 +1099,11 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('provider_post_known_fee_reserve','primary_replay_matches'),False,'PROVIDER_POST_KNOWN_FEE_RESERVE'),
         (('provider_post_known_fee_reserve','private_extension'),True,'PROVIDER_POST_KNOWN_FEE_RESERVE'),
         (('provider_post_known_fee_reserve','spendable_funds_verified'),True,'PROVIDER_POST_KNOWN_FEE_RESERVE_AUTHORITY'),
+        (('transport_uncertainty_matrix','post_unknown_outcome_retained_for_original_id'),False,'TRANSPORT_UNCERTAINTY_MATRIX'),
+        (('transport_uncertainty_matrix','sse_emergency_stop_independent'),False,'TRANSPORT_UNCERTAINTY_MATRIX'),
+        (('transport_uncertainty_matrix','surfaces_verified'),True,'TRANSPORT_UNCERTAINTY_MATRIX'),
+        (('transport_uncertainty_matrix','private_extension'),True,'TRANSPORT_UNCERTAINTY_MATRIX'),
+        (('transport_uncertainty_matrix','ready_for_routing'),True,'TRANSPORT_UNCERTAINTY_MATRIX_AUTHORITY'),
         (('supplied_activity_sse_links','exact_parent_link_bound'),False,'SUPPLIED_ACTIVITY_SSE_LINKS'),
         (('supplied_activity_sse_links','provider_source_attested'),True,'SUPPLIED_ACTIVITY_SSE_LINKS_AUTHORITY'),
         (('supplied_activity_sse_reconnect','duplicate_redelivery_idempotent'),False,'SUPPLIED_ACTIVITY_SSE_RECONNECT'),
@@ -810,6 +1119,9 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('explicit_activity_sse_checkpoint','checkpoint_exception_scope_pinned'),False,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT'),
         (('explicit_activity_sse_checkpoint','semantic_review_exception_scope_pinned'),False,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT'),
         (('explicit_activity_sse_checkpoint','malformed_checkpoint_acknowledgement_retained'),False,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT'),
+        (('explicit_activity_sse_checkpoint','cold_checkpoint_binding_disagreement_retained'),False,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT'),
+        (('explicit_activity_sse_checkpoint','cursor_file_replacement_rejected'),False,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT'),
+        (('explicit_activity_sse_checkpoint','cursor_directory_creation_rejected'),False,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT'),
         (('explicit_activity_sse_checkpoint','ready_for_routing'),True,'EXPLICIT_ACTIVITY_SSE_CHECKPOINT_AUTHORITY'),
         (('explicit_activity_sse_reconnect_budget','first_failure_retained_without_retry'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','lost_reservation_ack_replays_without_provider_request'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
@@ -829,6 +1141,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('explicit_activity_sse_reconnect_budget','pending_checkpoint_exception_rechecks_settled_files'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','reconciliation_exception_rechecks_settled_files'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','checkpoint_reconciliation_replay_is_byte_stable'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
+        (('explicit_activity_sse_reconnect_budget','type_confused_replays_rejected'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','emergency_stop_retires_pending_without_external_access'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','emergency_stop_closes_retry_wait_without_new_attempt'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
         (('explicit_activity_sse_reconnect_budget','emergency_stop_blocks_retry_schedule_during_result'),False,'EXPLICIT_ACTIVITY_SSE_RECONNECT_BUDGET'),
@@ -943,6 +1256,7 @@ def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authori
         (('journal_file_identities_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('journal_store_bindings_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('semantic_reader_failures_rechecked',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
+        (('selected_journal_leaf_links_rejected',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('identity_replacement_failure_rejected',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('store_retarget_rejected',),False,'RECONCILIATION_ACCEPTANCE_BINDING'),
         (('stability_guard_bound',),False,'RECONCILIATION_STABILITY_GUARD'),
@@ -1484,6 +1798,28 @@ def test_security_policy_files_are_bound_to_source_fingerprint(tmp_path):
         path.write_text('updated policy');assert trials.source_digest(tmp_path)!=added
 
 
+def test_exchange_admission_crash_fixture_closes_windows_sensitive_connections(
+        tmp_path,monkeypatch):
+    """Temporary-directory cleanup must not inherit open SQLite handles."""
+    from contextlib import contextmanager,closing
+    import sqlite3
+    from nexus import forward_drill
+    opened=[]
+
+    @contextmanager
+    def tracking(resource):
+        opened.append(resource)
+        with closing(resource) as managed:
+            yield managed
+
+    monkeypatch.setattr(forward_drill,'closing',tracking)
+    result=forward_drill._exchange_admission_crash(tmp_path/'crash')
+    assert result['passed'] and len(opened)==2
+    for connection in opened:
+        with pytest.raises(sqlite3.ProgrammingError,match='closed'):
+            connection.execute('SELECT 1')
+
+
 def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_acceptance():
     from pathlib import Path
     from nexus.release_roadmap import REVISION
@@ -1492,12 +1828,29 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     result=json.loads(path.read_text())['profiles']['forward'];trials._validate('forward',result)
     for target,field,code in ((result,'unconsumed','FORWARD_PROFILE_SCHEMA'),
         (result['recovered'],'unconsumed','FORWARD_RECOVERY_SCHEMA'),
+        (result['fault_injection'],'unconsumed','FORWARD_FAULT_SCHEMA'),
+        (result['fault_injection']['process_control_cleanup'],'unconsumed',
+            'FORWARD_PROCESS_CONTROL_SCHEMA'),
+        (result['scheduler_cadence'],'unconsumed','FORWARD_SCHEDULER_CADENCE_SCHEMA'),
+        (result['scheduler_cadence']['nominal'],'unconsumed',
+            'FORWARD_SCHEDULER_CADENCE_CASE_SCHEMA'),
+        (result['exchange_admission_crash'],'unconsumed',
+            'FORWARD_EXCHANGE_ADMISSION_CRASH_SCHEMA'),
         (result['recovered']['sessions'][0],'unconsumed','FORWARD_SESSION_SCHEMA'),
         (result['cycle_latency'],'unconsumed','FORWARD_LATENCY_SCHEMA'),
         (result['recovered']['coverage_review'],'unconsumed','FORWARD_COVERAGE_SCHEMA')):
         changed=copy.deepcopy(result)
         if target is result:changed[field]=True
         elif target is result['recovered']:changed['recovered'][field]=True
+        elif target is result['fault_injection']:changed['fault_injection'][field]=True
+        elif target is result['fault_injection']['process_control_cleanup']:
+            changed['fault_injection']['process_control_cleanup'][field]=True
+        elif target is result['scheduler_cadence']:
+            changed['scheduler_cadence'][field]=True
+        elif target is result['scheduler_cadence']['nominal']:
+            changed['scheduler_cadence']['nominal'][field]=True
+        elif target is result['exchange_admission_crash']:
+            changed['exchange_admission_crash'][field]=True
         elif target is result['recovered']['sessions'][0]:changed['recovered']['sessions'][0][field]=True
         elif target is result['cycle_latency']:changed['cycle_latency'][field]=True
         else:changed['recovered']['coverage_review'][field]=True
@@ -1506,15 +1859,90 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     with pytest.raises(ValueError,match='FORWARD_SCOPE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['broker_connected']=1
     with pytest.raises(ValueError,match='FORWARD_AUTHORITY'):trials._validate('forward',changed)
+    for name,field,value in (
+        ('nominal','start_intervals',[7.0,7.0]),
+        ('overrun','cycle_starts',[100.0,105.0]),
+        ('overrun','overrun_seconds',0.0),
+        ('invalid_clock','fetches',1),
+        ('clock_regression','scheduler_reasons',[]),
+        ('stalled_clock','ownership_released',False),
+        ('nominal','burst_catchup_allowed',True)):
+        changed=copy.deepcopy(result);changed['scheduler_cadence'][name][field]=value
+        with pytest.raises(ValueError,match='FORWARD_SCHEDULER_CADENCE_EVIDENCE'):
+            trials._validate('forward',changed)
+    changed=copy.deepcopy(result);changed['scheduler_cadence']['passed']=1
+    with pytest.raises(ValueError,match='FORWARD_SCHEDULER_CADENCE_EVIDENCE'):
+        trials._validate('forward',changed)
+    changed=copy.deepcopy(result);changed['scheduler_cadence']['live_orders_enabled']=True
+    with pytest.raises(ValueError,match='FORWARD_SCHEDULER_CADENCE_AUTHORITY'):
+        trials._validate('forward',changed)
+    for field,value in (('process_terminated',False),
+        ('marker_count_stable',False),('tail_review_required',False),
+        ('trial_coverage_granted',True),('exit_code',80)):
+        changed=copy.deepcopy(result)
+        changed['exchange_admission_crash'][field]=value
+        with pytest.raises(ValueError,match=
+                'FORWARD_EXCHANGE_ADMISSION_CRASH_EVIDENCE'):
+            trials._validate('forward',changed)
+    changed=copy.deepcopy(result);changed['fault_injection']['source_loss']['fetches']=2
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    for field,value in (('post_pause_fetches',1),('worker_started',False),
+        ('order_hash_preserved',False),('evidence_hash_preserved',False),('cold_reopen_disabled',False),
+        ('healthy_reason','AUTOMATIC_RESTART')):
+        changed=copy.deepcopy(result);changed['fault_injection']['source_loss'][field]=value
+        with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    changed['fault_injection']['clock_regression']['review_reasons']=[]
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    changed['fault_injection']['invalid_clock']['reopened_evidence_sha256']='0'*64
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    changed['fault_injection']['stale_quote']['reopened_orders_sha256']='0'*64
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result);changed['fault_injection']['live_orders_enabled']=True
+    with pytest.raises(ValueError,match='FORWARD_FAULT_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    changed['fault_injection']['process_control_cleanup']['keyboard_interrupt']['ownership_released']=False
+    with pytest.raises(ValueError,match='FORWARD_PROCESS_CONTROL_EVIDENCE'):
+        trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['sessions'][0]['session']=result['recovered']['sessions'][1]['session']
     with pytest.raises(ValueError,match='FORWARD_SESSION_BINDING'):trials._validate('forward',changed)
+    for field,value,code in (
+        ('review_receipt_sha256','0'*63,'FORWARD_SESSION_BINDING'),
+        ('review_reason_codes_sha256','0'*63,'FORWARD_SESSION_BINDING'),
+        ('cut_evidence_stable',False,'FORWARD_SESSION_EVIDENCE'),
+        ('cut_binding_verified',True,'FORWARD_SESSION_EVIDENCE'),
+        ('order_snapshot_stable',False,'FORWARD_SESSION_EVIDENCE')):
+        changed=copy.deepcopy(result);changed['recovered']['sessions'][0][field]=value
+        with pytest.raises(ValueError,match=code):trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['cycle_latency']['p50_ms']=changed['cycle_latency']['p99_ms']+1
     with pytest.raises(ValueError,match='FORWARD_LATENCY_SCHEMA'):trials._validate('forward',changed)
     for field,value in (('retained_observations',279),('after','1970-01-01T00:16:41Z'),
         ('review_reasons',[]),('evidence_snapshot_sha256','0'*63),
-        ('over_limit_coverage_gaps',0),('over_limit_coverage_gap_seconds','1299')):
+        ('over_limit_coverage_gaps',0),('over_limit_coverage_gap_seconds','1299'),
+        ('modeled_execution_events_in_window',39),
+        ('bundle_bound_modeled_execution_events_in_window',1),
+        ('unreconciled_modeled_execution_events_in_window',39),
+        ('reconciliation_bundle_sha256','0'*64),
+        ('retained_exchange_admissions',0),('exchange_admissions_in_window',0),
+        ('exchange_admission_incidents_in_window',999),
+        ('retained_exchange_admissions',True)):
         changed=copy.deepcopy(result);changed['recovered']['coverage_review'][field]=value
         with pytest.raises(ValueError,match='FORWARD_COVERAGE_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    for field in ('modeled_execution_events_in_window',
+            'bundle_bound_modeled_execution_events_in_window',
+            'unreconciled_modeled_execution_events_in_window',
+            'reconciliation_bundle_sha256'):
+        changed=copy.deepcopy(result);del changed['recovered']['coverage_review'][field]
+        with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCHEMA'):
+            trials._validate('forward',changed)
+    for field in ('retained_exchange_admissions','exchange_admissions_in_window',
+            'exchange_admission_incidents_in_window'):
+        changed=copy.deepcopy(result);del changed['recovered']['coverage_review'][field]
+        with pytest.raises(ValueError,match='FORWARD_COVERAGE_EVIDENCE'):
+            trials._validate('forward',changed)
     changed=copy.deepcopy(result);changed['recovered']['coverage_review']['declared_public_covered_seconds']='1'
     with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCOPE'):trials._validate('forward',changed)
     for field,value in (('incident_free_coverage_target_met',True),
@@ -1554,6 +1982,14 @@ def test_recovery_trial_consumes_exact_restored_scope():
         ('source_modes',['PUBLIC_READER_SINGLE_SOURCE_UNATTESTED'],'RESTORE_ACCOUNTING'),
         ('policy_sha256','0'*64,'RECOVERY_EVIDENCE_BINDING'),
         ('account_sha256','0'*63,'RECOVERY_EVIDENCE_BINDING')):
+        changed=copy.deepcopy(result);changed['recovered'][field]=value
+        with pytest.raises(ValueError,match=code):trials._validate('recovery',changed)
+    for field,value,code in (
+        ('review_receipt_sha256','0'*63,'RECOVERY_EVIDENCE_BINDING'),
+        ('review_reason_codes_sha256','0'*63,'RECOVERY_EVIDENCE_BINDING'),
+        ('cut_evidence_stable',False,'RESTORE_ACCOUNTING'),
+        ('cut_binding_verified',True,'RESTORE_ACCOUNTING'),
+        ('order_snapshot_stable',False,'RESTORE_ACCOUNTING')):
         changed=copy.deepcopy(result);changed['recovered'][field]=value
         with pytest.raises(ValueError,match=code):trials._validate('recovery',changed)
 

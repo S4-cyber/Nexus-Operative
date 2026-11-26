@@ -19,6 +19,18 @@ def test_stale_crossed_and_future_quotes_rejected():
     with pytest.raises(ValueError):parse_ticker("BTC-USD",payload(bid="110",ask="100"),received=NOW)
     with pytest.raises(ValueError):parse_ticker("BTC-USD",payload(seconds=10),received=NOW)
 
+
+@pytest.mark.parametrize(('field','value'),[
+    ('bid','1e10000'),('ask','1e10000'),('price','1e10000'),
+    ('bid','1e-10000'),('ask','1e-10000'),('price','1e-10000'),
+])
+def test_price_envelope_rejects_float_overflow_and_underflow(field,value):
+    response=payload();response[field]=value
+    with pytest.raises(ValueError,match='Incomplete or invalid public quote'):
+        parse_ticker('BTC-USD',response,received=NOW)
+    with pytest.raises(ValueError,match='Public market quote unavailable or invalid'):
+        read_ticker('BTC-USD',fetch=lambda _:response,now=NOW)
+
 def test_product_allowlist_prevents_ssrf():
     called=[]
     def fetch(url):
@@ -29,6 +41,22 @@ def test_product_allowlist_prevents_ssrf():
     q=read_ticker("ETH-USD",fetch=fetch,now=NOW)
     assert q["product"]=="ETH-USD"
     assert called==["https://api.exchange.coinbase.com/products/ETH-USD/ticker"]
+
+def test_product_allowlist_rejects_equality_forging_path_before_transport():
+    class ForgedProduct(str):
+        def __hash__(self):return hash('BTC-USD')
+        def __eq__(self,other):return other=='BTC-USD'
+    product=ForgedProduct('BTC-USD/../../accounts?ignored=')
+    called=[]
+    with pytest.raises(ValueError,match='Product not on public allowlist'):
+        read_ticker(product,fetch=lambda url:called.append(url),now=NOW)
+    with pytest.raises(ValueError,match='Product not on public allowlist'):
+        parse_ticker(product,payload(),received=NOW)
+    assert not called
+
+@pytest.mark.parametrize('product',('BTC-USD','ETH-USD','SOL-USD'))
+def test_exact_builtin_products_remain_allowlisted(product):
+    assert parse_ticker(product,payload(),received=NOW)['product']==product
 
 def test_transport_failure_does_not_return_fake_quote():
     def down(_):raise TimeoutError()

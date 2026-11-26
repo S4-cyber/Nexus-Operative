@@ -18,6 +18,20 @@ def test_invalid_allocation_rejected(tmp_path, monkeypatch):
     with pytest.raises(ValueError):
         save_settings({"paper_budget":-3,"terrestrial_allocation":60,"solar_allocation":30,"universal_allocation":10})
 
+
+@pytest.mark.parametrize('values',[
+    {**DEFAULTS,'paper_budget':type('ForgedBudget',(float,),{
+        '__gt__':lambda self,other:True,'__le__':lambda self,other:True})(-1)},
+    {**DEFAULTS,'terrestrial_allocation':type('ForgedAllocation',(int,),{
+        '__ge__':lambda self,other:True,'__le__':lambda self,other:True})(-1),
+        'solar_allocation':50,'universal_allocation':51},
+],ids=['budget-subclass','allocation-subclass'])
+def test_polymorphic_settings_are_rejected_before_persistent_mutation(tmp_path,monkeypatch,values):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));save_settings(DEFAULTS)
+    path=tmp_path/'portal_settings.sqlite3';before=path.read_bytes()
+    with pytest.raises(ValueError):save_settings(values)
+    assert path.read_bytes()==before and load_settings()==DEFAULTS
+
 def test_api_settings_and_no_live_money(tmp_path, monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
     c=TestClient(app)

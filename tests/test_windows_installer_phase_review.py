@@ -1,9 +1,16 @@
 from datetime import datetime, timedelta, timezone
 import json
+import os
 
 import pytest
 
 from tools import windows_installer_phase_review as review
+
+
+def test_phase_jsonl_hardlink_is_rejected(tmp_path):
+    path=tmp_path/'phase.jsonl';path.write_text('{}\n');os.link(path,tmp_path/'alias.jsonl')
+    with pytest.raises(review.PhaseEvidenceError,match='file'):
+        review._read(path)
 
 
 VERSION = "0.340.108"
@@ -17,12 +24,14 @@ def evidence(*, status="completed", duration=1, timeout_delta=0):
     records = []
     for label, timeout in review.EXPECTED_PHASES:
         records.append(dict(mode="INSTALLER_SMOKE_PHASE", label=label, status="started",
-            timeout_seconds=timeout, timestamp_utc=current.isoformat().replace("+00:00", "Z"),
+            timeout_seconds=timeout, output_drain_timeout_seconds=10,
+            timestamp_utc=current.isoformat().replace("+00:00", "Z"),
             session_id=SESSION_ID, source_commit=SOURCE_COMMIT, version=VERSION,
             installer_sha256=INSTALLER_SHA256))
         current += timedelta(seconds=duration)
         records.append(dict(mode="INSTALLER_SMOKE_PHASE", label=label, status=status,
-            timeout_seconds=timeout + timeout_delta, timestamp_utc=current.isoformat().replace("+00:00", "Z"),
+            timeout_seconds=timeout + timeout_delta, output_drain_timeout_seconds=10,
+            timestamp_utc=current.isoformat().replace("+00:00", "Z"),
             session_id=SESSION_ID, source_commit=SOURCE_COMMIT, version=VERSION,
             installer_sha256=INSTALLER_SHA256))
         current += timedelta(seconds=1)
@@ -33,7 +42,8 @@ def test_successful_phase_evidence_requires_exact_complete_sequence():
     result = verify(evidence())
     assert result["passed"] is result["sequence_complete"] is result["timeouts_respected"] is True
     assert result["phases_verified"] == 10 and result["records_verified"] == 20
-    assert result["maximum_timeout_seconds"] == 300
+    assert result["maximum_root_process_timeout_seconds"] == 300
+    assert result["output_drain_timeout_seconds"] == 10
     assert result["maximum_observed_duration_seconds"] == 1
     assert result["version"] == VERSION and result["source_commit"] == SOURCE_COMMIT
     assert result["installer_sha256"] == INSTALLER_SHA256 and result["session_id"] == SESSION_ID
@@ -51,6 +61,7 @@ def test_successful_phase_evidence_requires_exact_complete_sequence():
     lambda rows: [rows[1], rows[0], *rows[2:]],
     lambda rows: [rows[0], {**rows[1], "status": "failed"}, *rows[2:]],
     lambda rows: [rows[0], {**rows[1], "timeout_seconds": 299}, *rows[2:]],
+    lambda rows: [rows[0], {**rows[1], "output_drain_timeout_seconds": 9}, *rows[2:]],
     lambda rows: [{**rows[0], "extra": True}, *rows[1:]],
 ))
 def test_phase_evidence_rejects_missing_duplicate_or_changed_records(mutation):
@@ -105,3 +116,10 @@ def test_phase_review_cli_writes_only_verified_summary(tmp_path, capsys, monkeyp
     result = verify(evidence())
     with pytest.raises(review.PhaseEvidenceError):
         review._write(output, result)
+
+
+def test_installer_digest_rejects_hardlinked_alias(tmp_path):
+    installer=tmp_path/'installer.exe';installer.write_bytes(b'installer fixture')
+    os.link(installer,tmp_path/'retained-alias.exe')
+    with pytest.raises(review.PhaseEvidenceError,match='installer file'):
+        review._installer_digest(installer)

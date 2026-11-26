@@ -23,7 +23,8 @@ from nexus.local_owner_scope import (
     owner_marker_valid, posix_owner_directory_safe, posix_owner_file_safe,
     prepare_owner_file)
 from nexus.paper_read_pacing import OPERATIONS, OPERATION_PATTERNS
-from nexus.sqlite_journal_guard import check_existing
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints, check_existing, require_file_fingerprints)
 
 SCHEMA = 'nexus.paper-provider-read-budget.v1'
 RECOVERY_POLICY = 'nexus.paper-provider-read-budget-recovery.v1'
@@ -65,51 +66,409 @@ def _digest(value, code):
     return value
 
 
+def _frozen_path(value, code='PATH_INVALID'):
+    """Pin one selected parent while retaining the final leaf for lstat."""
+    try:
+        selected = Path(value).absolute()
+        return selected.parent.resolve() / selected.name
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        _fail(code)
+
+
+def _file_identity(path, code='FILE_CHANGED'):
+    """Capture one regular single-link main-file identity without following."""
+    try:
+        path = Path(path); observed = path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink != 1):
+            raise RuntimeError
+        return str(path.resolve()), observed.st_dev, observed.st_ino
+    except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+        _fail(code)
+
+
+def _require_file_identity(path, identity):
+    if _file_identity(path) != identity:
+        _fail('FILE_CHANGED')
+
+
+def _require_main_connection(db, path):
+    """Reject a valid SQLite handle that is not the captured main pathname."""
+    try:
+        rows = db.execute('PRAGMA database_list').fetchall()
+        if (len(rows) != 1 or len(rows[0]) != 3 or
+                type(rows[0][0]) is not int or rows[0][1] != 'main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                _frozen_path(rows[0][2], 'CONNECTION_BINDING_CHANGED') != path):
+            _fail('CONNECTION_BINDING_CHANGED')
+    except ValueError:
+        raise
+    except (AttributeError, OSError, RuntimeError, sqlite3.Error, TypeError):
+        _fail('CONNECTION_BINDING_CHANGED')
+
+
+def _main_fingerprint(path):
+    """Return one exact bounded quiescent main-file fingerprint."""
+    return capture_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+        'PAPER_PROVIDER_READ_BUDGET_')[0]
+
+
+def _require_main_connection_content(db, path):
+    """Require serialized main bytes to match stable pathname bytes."""
+    expected = _main_fingerprint(path)
+    try:
+        serialized = db.serialize(name='main')
+        observed = _main_fingerprint(path)
+        if (observed != expected or type(serialized) is not bytes or
+                len(serialized) != expected[3] or
+                hashlib.sha256(serialized).hexdigest() != expected[7]):
+            _fail('CONNECTION_CONTENT_CHANGED')
+        return (observed,)
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        try:
+            db.execute('SELECT 1 FROM sqlite_schema LIMIT 1').fetchone()
+        except sqlite3.Error as probe:
+            if (isinstance(probe, sqlite3.OperationalError) and
+                    _database_busy(probe)):
+                _fail('DATABASE_BUSY')
+        _fail('CONNECTION_CONTENT_CHANGED')
+    except (MemoryError, OSError, OverflowError, RuntimeError,
+            sqlite3.Error, TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
+
+
+def _active_fingerprint_boundary(item, host=None):
+    """Use fields shared by pathname and open-handle APIs on this host."""
+    host = os.name if host is None else host
+    return (item.st_dev, item.st_ino, item.st_size, item.st_mtime_ns,
+        item.st_ctime_ns if host != 'nt' else None, item.st_nlink)
+
+
+def _committed_fingerprint_boundary(fingerprint, host=None):
+    """Normalize a one-file pathname fingerprint for descriptor comparison."""
+    host = os.name if host is None else host
+    if (type(fingerprint) is not tuple or len(fingerprint) != 1 or
+            type(fingerprint[0]) is not tuple or len(fingerprint[0]) != 8):
+        raise RuntimeError
+    path, device, inode, size, mtime, ctime, links, digest = fingerprint[0]
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device, inode, size, mtime, ctime, links)) or
+            re.fullmatch(r'[0-9a-f]{64}', digest) is None):
+        raise RuntimeError
+    return (path, device, inode, size, mtime,
+        ctime if host != 'nt' else None, links, digest)
+
+
+def _descriptor_file_fingerprint(descriptor, resolved):
+    """Hash bounded bytes through the exact writable committed descriptor."""
+    before = os.fstat(descriptor)
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+            not 1 <= before.st_size <= MAX_DATABASE_BYTES):
+        raise RuntimeError
+    original_offset = os.lseek(descriptor, 0, os.SEEK_CUR)
+    digest = hashlib.sha256(); remaining = MAX_DATABASE_BYTES + 1
+    try:
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        while remaining:
+            block = os.read(descriptor, min(1024 * 1024, remaining))
+            if not block:
+                break
+            digest.update(block); remaining -= len(block)
+    finally:
+        os.lseek(descriptor, original_offset, os.SEEK_SET)
+    after = os.fstat(descriptor)
+    if (remaining == 0 or
+            _active_fingerprint_boundary(before) !=
+                _active_fingerprint_boundary(after) or
+            before.st_ctime_ns != after.st_ctime_ns):
+        raise RuntimeError
+    return (str(resolved), after.st_dev, after.st_ino, after.st_size,
+        after.st_mtime_ns, after.st_ctime_ns if os.name != 'nt' else None,
+        after.st_nlink, digest.hexdigest())
+
+
+def _sync_parent_directory(resolved):
+    """Flush only the exact POSIX parent directory identity."""
+    parent = resolved.parent; before = parent.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise RuntimeError
+    expected = (before.st_dev, before.st_ino)
+    flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
+        getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0))
+    descriptor = os.open(parent, flags)
+    try:
+        opened = os.fstat(descriptor)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != expected):
+            raise RuntimeError
+        os.fsync(descriptor)
+        final = os.fstat(descriptor); observed = parent.lstat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (final.st_dev, final.st_ino) != expected or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISDIR(observed.st_mode) or
+                (observed.st_dev, observed.st_ino) != expected):
+            raise RuntimeError
+    finally:
+        os.close(descriptor)
+
+
+def _sync_committed_store(path, identity, fingerprint, *, new):
+    """Flush the exact committed main file and a new POSIX directory entry."""
+    try:
+        if (type(new) is not bool or type(identity) is not tuple or
+                len(identity) != 3 or type(identity[0]) is not str):
+            raise RuntimeError
+        path = Path(path); resolved = path.resolve()
+        expected_path, expected_device, expected_inode = identity
+        if str(resolved) != expected_path:
+            raise RuntimeError
+        expected_descriptor = _committed_fingerprint_boundary(fingerprint)
+        _require_file_identity(path, identity)
+        require_file_fingerprints((path,), (MAX_DATABASE_BYTES,), fingerprint,
+            'PAPER_PROVIDER_READ_BUDGET_')
+        flags = (os.O_RDWR | getattr(os, 'O_BINARY', 0) |
+            getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+        descriptor = os.open(resolved, flags)
+        try:
+            before = os.fstat(descriptor)
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                    not 1 <= before.st_size <= MAX_DATABASE_BYTES or
+                    (before.st_dev, before.st_ino) !=
+                        (expected_device, expected_inode)):
+                raise RuntimeError
+            if (_descriptor_file_fingerprint(descriptor, resolved) !=
+                    expected_descriptor):
+                raise RuntimeError
+            os.fsync(descriptor)
+            if (_descriptor_file_fingerprint(descriptor, resolved) !=
+                    expected_descriptor):
+                raise RuntimeError
+        finally:
+            os.close(descriptor)
+        _require_file_identity(path, identity)
+        require_file_fingerprints((path,), (MAX_DATABASE_BYTES,), fingerprint,
+            'PAPER_PROVIDER_READ_BUDGET_')
+        if new and os.name != 'nt':
+            _sync_parent_directory(resolved)
+            _require_file_identity(path, identity)
+            require_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+                fingerprint, 'PAPER_PROVIDER_READ_BUDGET_')
+    except Exception:
+        _fail('COMMIT_DURABILITY_UNCERTAIN')
+
+
+def _discard_uncommitted_new(path, identity):
+    """Remove only the exact empty file from an aborted first transaction."""
+    path = Path(path)
+    sidecars = tuple(Path(str(path) + suffix) for suffix in
+                     ('-journal', '-wal', '-shm'))
+    try:
+        if (type(identity) is not tuple or len(identity) != 3 or
+                type(identity[0]) is not str):
+            raise RuntimeError
+        observed = path.lstat()
+        if ((str(path.resolve()), observed.st_dev, observed.st_ino) != identity or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or observed.st_nlink != 1 or
+                observed.st_size != 0):
+            raise RuntimeError
+        for sidecar in sidecars:
+            try:
+                sidecar.lstat()
+            except FileNotFoundError:
+                continue
+            raise RuntimeError
+        path.unlink()
+        for candidate in (path, *sidecars):
+            try:
+                candidate.lstat()
+            except FileNotFoundError:
+                continue
+            raise RuntimeError
+    except (OSError, RuntimeError, TypeError, ValueError):
+        _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+
+
 class PaperProviderReadBudget:
     """Hash-chained local budget shared across account pacing journals."""
 
     def __init__(self, path, provider_scope='ALPACA_PAPER'):
         if type(provider_scope) is not str or re.fullmatch(r'[A-Z][A-Z0-9_]{0,63}', provider_scope) is None:
             _fail('PROVIDER_SCOPE_INVALID')
-        self.path = Path(path)
+        self.path = _frozen_path(path)
         self.provider_scope = provider_scope
         self.provider_digest = hashlib.sha256(provider_scope.encode()).hexdigest()
         self._active_completion = None
 
-    def _path_check(self):
-        check_existing(self.path, MAX_DATABASE_BYTES, 'PAPER_PROVIDER_READ_BUDGET_')
+    def _capture_binding(self):
+        """Bind mutable public attributes to one selected journal scope."""
+        path = _frozen_path(self.path, 'STORE_BINDING_CHANGED')
+        scope = self.provider_scope
+        digest = self.provider_digest
+        if (type(scope) is not str or
+                re.fullmatch(r'[A-Z][A-Z0-9_]{0,63}', scope) is None or
+                type(digest) is not str or
+                hashlib.sha256(scope.encode()).hexdigest() != digest):
+            _fail('STORE_BINDING_CHANGED')
+        return path, scope, digest
 
-    def _connect(self, write=False):
-        self._path_check(); new = False
-        if write and not self.path.exists():
-            self.path.parent.mkdir(parents=True, exist_ok=True)
+    def _require_binding(self, binding):
+        try:
+            path, scope, digest = binding
+            if (self._capture_binding() != (path, scope, digest) or
+                    self.path != path):
+                _fail('STORE_BINDING_CHANGED')
+        except ValueError:
+            raise
+        except (AttributeError, OSError, RuntimeError, TypeError):
+            _fail('STORE_BINDING_CHANGED')
+
+    def _path_check(self, path=None):
+        check_existing(self.path if path is None else path,
+            MAX_DATABASE_BYTES, 'PAPER_PROVIDER_READ_BUDGET_')
+
+    def _open(self, write=False):
+        binding = self._capture_binding(); bound_path = binding[0]
+        self._path_check(bound_path); self._require_binding(binding)
+        new = False; created_identity = None; db = None
+        try:
+            main_identity = _file_identity(bound_path)
+        except ValueError as error:
+            if (str(error) != 'PAPER_PROVIDER_READ_BUDGET_FILE_CHANGED' or
+                    bound_path.exists()):
+                raise
+            main_identity = None
+        if write and not bound_path.exists():
+            bound_path.parent.mkdir(parents=True, exist_ok=True)
+            self._require_binding(binding)
             try:
-                fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-                os.close(fd); new = True
+                fd = os.open(bound_path,
+                    os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
             except FileExistsError:
                 pass
-            self._path_check()
-        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
-                             uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
+            else:
+                new = True
+                try:
+                    opened = os.fstat(fd)
+                    created_identity = (str(bound_path.resolve()),
+                                        opened.st_dev, opened.st_ino)
+                    main_identity = created_identity
+                finally:
+                    os.close(fd)
+            self._path_check(bound_path); self._require_binding(binding)
         try:
-            db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
+            self._require_binding(binding)
+            if main_identity is not None:
+                _require_file_identity(bound_path, main_identity)
+            db = sqlite3.connect(bound_path.resolve().as_uri() +
+                                 ('?mode=rw' if write else '?mode=ro'),
+                                 uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
+            def setup(statement):
+                self._require_binding(binding)
+                _require_file_identity(bound_path, main_identity)
+                result = db.execute(statement)
+                _require_main_connection(db, bound_path)
+                _require_file_identity(bound_path, main_identity)
+                self._require_binding(binding)
+                return result
+            _require_main_connection(db, bound_path)
+            setup(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
-                db.execute('PRAGMA journal_mode=DELETE'); db.execute('PRAGMA synchronous=FULL')
-                page_size = db.execute('PRAGMA page_size').fetchone()[0]
-                db.execute(f'PRAGMA max_page_count={MAX_DATABASE_BYTES // page_size}')
-                db.execute('BEGIN IMMEDIATE')
+                setup('PRAGMA journal_mode=DELETE'); setup('PRAGMA synchronous=FULL')
+                page_size = setup('PRAGMA page_size').fetchone()[0]
+                setup(f'PRAGMA max_page_count={MAX_DATABASE_BYTES // page_size}')
+                setup('BEGIN IMMEDIATE')
                 if new:
-                    db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
-                    self._append(db, 0, dict(schema=SCHEMA, provider_sha256=self.provider_digest), ZERO)
-            return db
+                    setup('CREATE TABLE events (seq INTEGER PRIMARY KEY, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
+                    self._append(db, 0, dict(schema=SCHEMA,
+                        provider_sha256=binding[2]), ZERO)
+                    self._require_binding(binding)
+            return db, new, created_identity, binding, main_identity
         except sqlite3.OperationalError as error:
-            db.close()
+            if db is not None:
+                try:
+                    db.close()
+                except BaseException:
+                    if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new: _discard_uncommitted_new(bound_path, created_identity)
+            self._require_binding(binding)
             if _database_busy(error):
                 _fail('DATABASE_BUSY')
             raise
         except BaseException:
-            db.close()
+            if db is not None:
+                try:
+                    db.close()
+                except BaseException:
+                    if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                    raise
+            if new: _discard_uncommitted_new(bound_path, created_identity)
+            self._require_binding(binding)
             raise
+
+    def _connect(self):
+        db, _new, _created, _binding, _main = self._open()
+        return db
+
+    @contextmanager
+    def _write_connection(self):
+        """Require the captured main file through write acknowledgement."""
+        db, new, created_identity, binding, main_identity = self._open(write=True)
+        bound_path = binding[0]
+        try:
+            yield db
+        except BaseException:
+            try:
+                db.close()
+            except BaseException:
+                if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                raise
+            if new: _discard_uncommitted_new(bound_path, created_identity)
+            self._require_binding(binding)
+            if not new:
+                _require_file_identity(bound_path, main_identity)
+            raise
+        else:
+            acknowledgement_error = None
+            committed_fingerprint = None
+            uncommitted = db.in_transaction
+            try:
+                self._require_binding(binding)
+                _require_main_connection(db, bound_path)
+                _require_file_identity(bound_path, main_identity)
+                if not uncommitted:
+                    committed_fingerprint = _require_main_connection_content(
+                        db, bound_path)
+                self._require_binding(binding)
+            except BaseException as error:
+                acknowledgement_error = error
+            try:
+                db.close()
+            except BaseException:
+                if new: _fail('UNCOMMITTED_CLEANUP_UNCERTAIN')
+                raise
+            if new and uncommitted:
+                _discard_uncommitted_new(bound_path, created_identity)
+            if acknowledgement_error is not None:
+                raise acknowledgement_error
+            self._require_binding(binding)
+            if not (new and uncommitted):
+                _require_file_identity(bound_path, main_identity)
+            if committed_fingerprint is not None:
+                require_file_fingerprints((bound_path,),
+                    (MAX_DATABASE_BYTES,), committed_fingerprint,
+                    'PAPER_PROVIDER_READ_BUDGET_')
+                _sync_committed_store(bound_path, main_identity,
+                    committed_fingerprint, new=new)
+            if uncommitted:
+                _fail('UNCOMMITTED_TRANSACTION')
 
     @staticmethod
     def _append(db, seq, body, previous):
@@ -318,7 +677,7 @@ class PaperProviderReadBudget:
         if type(operation) is not str or operation not in OPERATIONS: _fail('OPERATION_INVALID')
         if expected_head is not None: _digest(expected_head, 'HEAD_INVALID')
         self._owned(ownership)
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _transaction(db):
                 state = self._load(db); self._owned(ownership); now = clock(admission()); self._admit(state, now)
                 if expected_head is not None and state['head_sha256'] != expected_head: _fail('HEAD_CHANGED')
@@ -334,7 +693,7 @@ class PaperProviderReadBudget:
     def finish(self, token, *, account_after_head_sha256, actual_gets, admission,
                ownership, status_code=None, transport_error=None, retry_after=None):
         after = _digest(account_after_head_sha256, 'ACCOUNT_HEAD_INVALID'); self._owned(ownership)
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _transaction(db):
                 state = self._load(db); pending = state['pending']
                 if pending is None or token != pending['token']: _fail('TOKEN_DISAGREEMENT')
@@ -359,7 +718,7 @@ class PaperProviderReadBudget:
         _digest(token, 'TOKEN_INVALID'); _digest(expected_head, 'HEAD_INVALID')
         if confirm_interrupted is not True: _fail('CONFIRMATION_REQUIRED')
         with self.ownership() as owner:
-            with closing(self._connect(write=True)) as db:
+            with self._write_connection() as db:
                 with _transaction(db):
                     state = self._load(db); self._owned(owner); now = clock(admission())
                     pending = state['pending']
@@ -383,7 +742,7 @@ class PaperProviderReadBudget:
         if confirm_block_reviewed is not True or confirm_uncertainty_preserved is not True:
             _fail('CONFIRMATION_REQUIRED')
         self._owned(ownership)
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _transaction(db):
                 state = self._load(db); self._owned(ownership); now = clock(admission())
                 if state['head_sha256'] != head: _fail('HEAD_DISAGREEMENT')
@@ -421,12 +780,15 @@ class PaperProviderReadBudget:
 class _ProviderOwnership:
     def __init__(self, budget):
         self.budget = budget
-        self.path = budget.path.resolve().with_name(budget.path.name + '.owner.lock')
+        self.budget_binding = budget._capture_binding()
+        bound_path = self.budget_binding[0]
+        self.path = bound_path.with_name(bound_path.name + '.owner.lock')
         self.fd = None; self.lease = None; self.directory_identity = None
         self.entry_parent_identity = None
         self.process_owner = ProcessOwnerClaim(self.path)
 
     def validate(self):
+        self.budget._require_binding(self.budget_binding)
         if (self.fd is None or self.directory_identity is None or
                 self.entry_parent_identity is None): _fail('OWNER_REQUIRED')
         if not owner_entry_parent_matches(self.path.parent.parent,
@@ -455,11 +817,13 @@ class _ProviderOwnership:
 
     def identity(self):
         self.validate(); info = os.fstat(self.fd)
-        return sha(dict(journal_path=str(self.budget.path.resolve()), lock_device=info.st_dev, lock_inode=info.st_ino))
+        return sha(dict(journal_path=str(self.budget_binding[0]),
+                        lock_device=info.st_dev, lock_inode=info.st_ino))
 
     def __enter__(self):
         if self.fd is not None: _fail('OWNER_ALREADY_HELD')
-        self.budget._path_check()
+        self.budget._require_binding(self.budget_binding)
+        self.budget._path_check(self.budget_binding[0])
         if self.path.is_symlink(): _fail('OWNER_SYMLINK')
         if not self.process_owner.acquire():
             _fail('OWNER_BUSY_OR_UNAVAILABLE')

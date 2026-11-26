@@ -32,6 +32,7 @@ EXPECTED_PHASES = (
 )
 RECORD_KEYS = {
     "mode", "label", "status", "timeout_seconds", "timestamp_utc",
+    "output_drain_timeout_seconds",
     "session_id", "source_commit", "version", "installer_sha256",
 }
 SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
@@ -121,6 +122,8 @@ def verify(raw, *, expected_version, expected_source_commit, expected_installer_
                 or record["status"] != status
                 or type(record["timeout_seconds"]) is not int
                 or record["timeout_seconds"] != timeout_seconds
+                or type(record["output_drain_timeout_seconds"]) is not int
+                or record["output_drain_timeout_seconds"] != 10
                 or record["version"] != expected_version
                 or record["source_commit"] != expected_source_commit
                 or record["installer_sha256"] != expected_installer_sha256
@@ -156,7 +159,8 @@ def verify(raw, *, expected_version, expected_source_commit, expected_installer_
         "single_session_bound": True,
         "sequence_complete": True,
         "timeouts_respected": True,
-        "maximum_timeout_seconds": max(timeout for _, timeout in EXPECTED_PHASES),
+        "maximum_root_process_timeout_seconds": max(timeout for _, timeout in EXPECTED_PHASES),
+        "output_drain_timeout_seconds": 10,
         "maximum_observed_duration_seconds": round(maximum_duration, 3),
         "native_windows_acceptance": False,
         "actual_broker_acceptance": False,
@@ -177,11 +181,12 @@ def _read(path):
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
     with os.fdopen(os.open(path, flags), "rb") as stream:
         before = os.fstat(stream.fileno())
-        if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_BYTES:
+        if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1
+                or before.st_size > MAX_BYTES):
             raise PhaseEvidenceError("file")
         raw = stream.read(MAX_BYTES + 1)
         after = os.fstat(stream.fileno())
-    fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")
+    fields = ("st_dev", "st_ino", "st_nlink", "st_size", "st_mtime_ns", "st_ctime_ns")
     if any(getattr(before, field) != getattr(after, field) for field in fields):
         raise PhaseEvidenceError("file changed")
     return raw
@@ -191,12 +196,17 @@ def _installer_digest(path):
     path = Path(path)
     if path.is_symlink():
         raise PhaseEvidenceError("installer file")
+    observed = path.lstat()
+    if not stat.S_ISREG(observed.st_mode) or observed.st_nlink != 1 or not 1 <= observed.st_size <= MAX_INSTALLER_BYTES:
+        raise PhaseEvidenceError("installer file")
     flags = os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
     digest = hashlib.sha256()
     total = 0
     with os.fdopen(os.open(path, flags), "rb") as stream:
         before = os.fstat(stream.fileno())
-        if not stat.S_ISREG(before.st_mode) or not 1 <= before.st_size <= MAX_INSTALLER_BYTES:
+        if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                (observed.st_dev,observed.st_ino)!=(before.st_dev,before.st_ino) or
+                not 1 <= before.st_size <= MAX_INSTALLER_BYTES):
             raise PhaseEvidenceError("installer file")
         while True:
             chunk = stream.read(1024 * 1024)
@@ -207,7 +217,7 @@ def _installer_digest(path):
                 raise PhaseEvidenceError("installer size")
             digest.update(chunk)
         after = os.fstat(stream.fileno())
-    fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")
+    fields = ("st_dev", "st_ino", "st_nlink", "st_size", "st_mtime_ns", "st_ctime_ns")
     if total != before.st_size or any(getattr(before, field) != getattr(after, field) for field in fields):
         raise PhaseEvidenceError("installer changed")
     return digest.hexdigest()

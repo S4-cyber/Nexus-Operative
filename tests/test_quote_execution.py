@@ -32,9 +32,12 @@ def test_adverse_spread_slippage_and_fees():
 def test_linked_quote_fill_restart_and_duplicate(tmp_path,monkeypatch):
     g=setup(tmp_path,monkeypatch)
     first=fill(g)
+    assert len(first['modeled_fill_sha256'])==64
     g=DurableOrderGateway(g.path)
     before=state()
-    assert fill(g)['idempotent_replay']
+    replay=fill(g)
+    assert replay['idempotent_replay']
+    assert replay['modeled_fill_sha256']==first['modeled_fill_sha256']
     assert state()==before
     assert first['status']=='SIMULATED_PARTIALLY_FILLED'
     assert audit_portfolio()['integrity_ok']

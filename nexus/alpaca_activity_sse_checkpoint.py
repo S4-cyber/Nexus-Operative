@@ -9,6 +9,7 @@ order.
 """
 import copy
 import json
+import stat
 import tempfile
 from pathlib import Path
 
@@ -16,8 +17,12 @@ from nexus import alpaca_activity_sse_reconnect_review as reconnect
 from nexus import alpaca_activity_sse_review as envelope
 from nexus import alpaca_activity_sse_transport as transport
 from nexus.alpaca_activity_sse_cursor_store import (
-    ZERO, ActivitySSECursorStore)
+    FLAGS as CURSOR_STORE_FLAGS, MAX_DATABASE_BYTES, ZERO,
+    ActivitySSECursorStore)
 from nexus.alpaca_paper_contract import canonical, sha
+from nexus.sqlite_journal_guard import (
+    capture_file_fingerprints, capture_file_identities,
+    require_file_fingerprints, require_file_identities)
 
 
 POLICY = 'nexus.explicit-alpaca-paper-activity-sse-checkpoint.v1'
@@ -34,6 +39,8 @@ FLAGS = ('provider_source_attested', 'stream_delivery_verified',
     'fee_coverage_complete', 'broker_account_reconciled',
     'ready_for_routing', 'live_orders_enabled', 'money_movement_enabled',
     'release_approved')
+_NO_CURSOR_FILE_BINDING = object()
+_NO_CURSOR_DIRECTORY_BINDING = object()
 
 
 class ActivitySSECheckpointError(ValueError):
@@ -46,10 +53,10 @@ def _fail(code):
 
 
 def _frozen_events(value, code):
-    if type(value) is not list:
-        _fail(code)
     try:
-        frozen = copy.deepcopy(value)
+        # Validate exact built-in containers/keys/scalars before invoking any
+        # caller-controlled copy protocol.  _budget returns a detached snapshot.
+        frozen = envelope._budget(value)
         # Prove that the private input is canonical-JSON serializable before IO.
         json.loads(canonical(frozen))
     except Exception:
@@ -109,7 +116,90 @@ def _require_store_binding(store, binding):
         _fail('CURSOR_STORE_CHANGED')
 
 
-def _checked_store_call(callback, store, binding, error_code=None):
+def _capture_cursor_directory_binding(path):
+    """Freeze one selected cursor parent or prove it remains absent."""
+    try:
+        observed = path.lstat()
+    except FileNotFoundError:
+        return None
+    except OSError:
+        _fail('CURSOR_DIRECTORY_UNAVAILABLE')
+    try:
+        if stat.S_ISLNK(observed.st_mode) or not stat.S_ISDIR(
+                observed.st_mode):
+            _fail('CURSOR_DIRECTORY_UNAVAILABLE')
+        resolved = path.resolve()
+        final = resolved.stat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (observed.st_dev, observed.st_ino) !=
+                (final.st_dev, final.st_ino)):
+            _fail('CURSOR_DIRECTORY_UNAVAILABLE')
+        return (str(resolved), final.st_dev, final.st_ino)
+    except ActivitySSECheckpointError:
+        raise
+    except (OSError, RuntimeError, TypeError):
+        _fail('CURSOR_DIRECTORY_UNAVAILABLE')
+
+
+def _require_cursor_directory_binding(path, binding):
+    if binding is None:
+        try:
+            path.lstat()
+        except FileNotFoundError:
+            return
+        except OSError:
+            pass
+        _fail('CURSOR_DIRECTORY_CHANGED')
+    try:
+        current = _capture_cursor_directory_binding(path)
+    except ActivitySSECheckpointError:
+        _fail('CURSOR_DIRECTORY_CHANGED')
+    if current != binding:
+        _fail('CURSOR_DIRECTORY_CHANGED')
+
+
+def _capture_cursor_file_binding(path, initialized):
+    """Freeze an existing cursor main file or prove the fresh path absent."""
+    if initialized is not True:
+        try:
+            path.lstat()
+        except FileNotFoundError:
+            return None
+        except OSError:
+            _fail('CURSOR_FILE_UNAVAILABLE')
+        _fail('CURSOR_FILE_UNAVAILABLE')
+    try:
+        return (capture_file_identities((path,),
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_'),
+                capture_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_'))
+    except ValueError:
+        _fail('CURSOR_FILE_UNAVAILABLE')
+
+
+def _require_cursor_file_binding(path, binding):
+    """Reject path creation/replacement or byte drift across external IO."""
+    if binding is None:
+        try:
+            path.lstat()
+        except FileNotFoundError:
+            return
+        except OSError:
+            pass
+        _fail('CURSOR_FILE_CHANGED')
+    try:
+        identities, fingerprints = binding
+        require_file_identities((path,), identities,
+            'ALPACA_ACTIVITY_SSE_CHECKPOINT_')
+        require_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+            fingerprints, 'ALPACA_ACTIVITY_SSE_CHECKPOINT_')
+    except (TypeError, ValueError):
+        _fail('CURSOR_FILE_CHANGED')
+
+
+def _checked_store_call(callback, store, binding, error_code=None,
+        cursor_file_binding=_NO_CURSOR_FILE_BINDING,
+        cursor_directory_binding=_NO_CURSOR_DIRECTORY_BINDING):
     """Finalize one ordinary callback against the exact captured store."""
     try:
         result = callback()
@@ -119,10 +209,20 @@ def _checked_store_call(callback, store, binding, error_code=None):
         if not isinstance(error, Exception):
             raise
         _require_store_binding(store, binding)
+        if cursor_directory_binding is not _NO_CURSOR_DIRECTORY_BINDING:
+            _require_cursor_directory_binding(
+                binding[1].absolute().parent, cursor_directory_binding)
+        if cursor_file_binding is not _NO_CURSOR_FILE_BINDING:
+            _require_cursor_file_binding(binding[2], cursor_file_binding)
         if error_code is not None:
             _fail(error_code)
         raise
     _require_store_binding(store, binding)
+    if cursor_directory_binding is not _NO_CURSOR_DIRECTORY_BINDING:
+        _require_cursor_directory_binding(
+            binding[1].absolute().parent, cursor_directory_binding)
+    if cursor_file_binding is not _NO_CURSOR_FILE_BINDING:
+        _require_cursor_file_binding(binding[2], cursor_file_binding)
     return result
 
 
@@ -132,48 +232,309 @@ def _digest(value):
 
 
 def _initial_review_result(value):
-    if type(value) is not dict or not _digest(value.get('account_sha256')):
+    keys = frozenset((
+        'mode', 'status', 'read_only', 'input_sha256', 'account_sha256',
+        'events_reviewed', 'trades_reviewed', 'fees_reviewed',
+        'linked_parent_trades', 'linked_orders', 'event_ids_unique',
+        'ref_ids_unique', 'event_cursor_order_strict',
+        'all_admitted_fees_parent_linked',
+        'corrections_and_busts_admitted',
+        'bulk_or_unlinked_fees_admitted', 'schema_scope',
+        *envelope.FLAGS, 'limitations'))
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != keys or
+                type(value['mode']) is not str or
+                value['mode'] !=
+                    'SUPPLIED_ALPACA_ACTIVITY_SSE_LINK_REVIEW' or
+                type(value['status']) is not str or
+                value['status'] != 'REVIEW_REQUIRED' or
+                type(value['schema_scope']) is not str or
+                value['schema_scope'] !=
+                    'BTC_USD_TRD_FILL_AND_ONE_TO_ONE_USD_FEE_ONLY' or
+                type(value['limitations']) is not str or
+                value['read_only'] is not True or
+                not _digest(value['input_sha256']) or
+                not _digest(value['account_sha256']) or
+                any(value[field] is not True for field in (
+                    'event_ids_unique', 'ref_ids_unique',
+                    'event_cursor_order_strict',
+                    'all_admitted_fees_parent_linked')) or
+                value['corrections_and_busts_admitted'] is not False or
+                value['bulk_or_unlinked_fees_admitted'] is not False or
+                any(value[flag] is not False for flag in envelope.FLAGS)):
+            raise ValueError
+        counts = ('events_reviewed', 'trades_reviewed', 'fees_reviewed',
+            'linked_parent_trades', 'linked_orders')
+        if (any(type(value[field]) is not int or value[field] < 1
+                for field in counts) or
+                value['events_reviewed'] !=
+                    value['trades_reviewed'] + value['fees_reviewed'] or
+                value['linked_parent_trades'] > value['trades_reviewed'] or
+                value['linked_orders'] > value['trades_reviewed']):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
         _fail('INITIAL_REVIEW_INVALID')
     return value
 
 
 def _transport_result(value):
-    if type(value) is not tuple or len(value) != 2:
+    if (type(value) is not tuple or len(value) != 2 or
+            type(value[0]) is not dict or not value[0] or
+            type(value[1]) is not list or not value[1]):
         _fail('TRANSPORT_RESULT_INVALID')
-    review, replay = value
-    if (type(review) is not dict or
-            not _digest(review.get('input_sha256')) or
-            type(review.get('source')) is not str or
-            not 0 < len(review['source']) <= 64 or
-            type(review.get('gap_or_server_error_observed')) is not bool or
-            type(review.get('reconnect_review_required')) is not bool or
-            type(review.get('actual_provider_access')) is not bool or
-            type(review.get('actual_stream_connection')) is not bool):
-        _fail('TRANSPORT_RESULT_INVALID')
-    return review, replay
+    return value
 
 
-def _reconnect_review_result(value):
+def _transport_review_result(value, replay, *, account_sha256,
+        persisted_event_id, injected):
+    """Validate the complete private transport boundary before mutation."""
+    denied_flags = tuple(flag for flag in transport.wire.FLAGS if flag not in
+        ('actual_provider_access', 'actual_stream_connection'))
+    keys = frozenset((
+        'mode', 'status', 'read_only', 'input_sha256', 'account_sha256',
+        'sources', 'request_target_exact', 'response_metadata_valid',
+        'utf8_and_sse_framing_valid', 'chunk_count', 'bytes_reviewed',
+        'events_reviewed', 'trades_reviewed', 'fees_reviewed',
+        'heartbeat_comments', 'comments_reviewed',
+        'dropped_messages_reported', 'internal_error_comments',
+        'gap_or_server_error_observed', 'reconnect_review_required',
+        'first_event_id_sha256', 'last_event_id_sha256',
+        'since_id_sha256', 'cursor_window_forward',
+        'all_admitted_fees_parent_linked', *transport.wire.FLAGS,
+        'limitations', 'transport_policy', 'source',
+        'explicit_authorization', 'single_get_attempt',
+        'bounded_segment_complete', 'stream_opened', 'automatic_retry',
+        'cursor_written', 'ledger_applied'))
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != keys or
+                any(type(value[field]) is not str for field in (
+                    'mode', 'status', 'account_sha256', 'input_sha256',
+                    'first_event_id_sha256', 'last_event_id_sha256',
+                    'since_id_sha256', 'transport_policy', 'source',
+                    'limitations')) or
+                type(value['sources']) is not tuple or
+                any(type(source) is not str for source in value['sources']) or
+                value['mode'] != 'EXPLICIT_ALPACA_ACTIVITY_SSE_TRANSPORT' or
+                value['read_only'] is not True or
+                value['account_sha256'] != account_sha256 or
+                value['sources'] != transport.wire.SOURCES or
+                value['transport_policy'] != transport.POLICY or
+                value['limitations'] != transport.LIMITATIONS or
+                value['source'] != ('INJECTED_UNATTESTED' if injected else
+                    'PAPER_HTTPS_READS') or
+                any(value[field] is not True for field in (
+                    'request_target_exact', 'response_metadata_valid',
+                    'utf8_and_sse_framing_valid', 'cursor_window_forward',
+                    'all_admitted_fees_parent_linked',
+                    'explicit_authorization', 'single_get_attempt',
+                    'bounded_segment_complete', 'stream_opened')) or
+                any(value[field] is not False for field in (
+                    *denied_flags, 'automatic_retry',
+                    'cursor_written', 'ledger_applied'))):
+            raise ValueError
+        if not _digest(value['input_sha256']) or any(not _digest(value[key])
+                for key in ('first_event_id_sha256',
+                    'last_event_id_sha256', 'since_id_sha256')):
+            raise ValueError
+        if type(replay) is not list or not replay:
+            raise TypeError
+        if (value['first_event_id_sha256'] != sha(replay[0]['event_id']) or
+                value['last_event_id_sha256'] != sha(
+                    replay[-1]['event_id']) or
+                value['since_id_sha256'] != sha(persisted_event_id)):
+            raise ValueError
+        counts = ('chunk_count', 'bytes_reviewed', 'events_reviewed',
+            'trades_reviewed', 'fees_reviewed', 'heartbeat_comments',
+            'comments_reviewed', 'dropped_messages_reported',
+            'internal_error_comments')
+        if any(type(value[key]) is not int or value[key] < 0
+                for key in counts):
+            raise TypeError
+        if (not 1 <= value['chunk_count'] <= transport.wire.MAX_CHUNKS or
+                not 1 <= value['bytes_reviewed'] <= transport.wire.MAX_BYTES or
+                value['events_reviewed'] != len(replay) or
+                not 1 <= value['events_reviewed'] <=
+                    transport.wire.MAX_EVENTS or
+                value['trades_reviewed'] + value['fees_reviewed'] !=
+                    value['events_reviewed'] or
+                value['comments_reviewed'] > value['bytes_reviewed'] // 2 or
+                value['dropped_messages_reported'] >
+                    999_999_999_999 * value['comments_reviewed'] or
+                value['comments_reviewed'] <
+                    value['heartbeat_comments'] +
+                    value['internal_error_comments'] +
+                    (1 if value['dropped_messages_reported'] else 0) or
+                (value['dropped_messages_reported'] == 0 and
+                    value['comments_reviewed'] !=
+                        value['heartbeat_comments'] +
+                        value['internal_error_comments'])):
+            raise ValueError
+        interrupted = (value['dropped_messages_reported'] > 0 or
+            value['internal_error_comments'] > 0)
+        if (value['gap_or_server_error_observed'] is not interrupted or
+                value['reconnect_review_required'] is not interrupted or
+                value['status'] != ('RECONNECT_REVIEW_REQUIRED'
+                    if interrupted else 'REVIEW_REQUIRED') or
+                value['actual_provider_access'] is not (not injected) or
+                value['actual_stream_connection'] is not (not injected)):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        _fail('TRANSPORT_RESULT_INVALID')
+    return value
+
+
+def _reconnect_review_result(value, *, account_sha256, reconnect_reason,
+        persisted_event_id, next_cursor, initial_count, replay_count):
     counts = ('initial_events_reviewed', 'replay_events_reviewed',
-        'redelivered_events_deduplicated', 'new_events_processed')
-    if (type(value) is not dict or not _digest(value.get('input_sha256')) or
-            any(type(value.get(key)) is not int or
-                not 0 < value[key] <= 2000 for key in counts)):
+        'redelivered_events_deduplicated', 'new_events_processed',
+        'unique_events_reviewed', 'unique_trades_reviewed',
+        'unique_fees_reviewed', 'linked_orders')
+    true_fields = ('exact_since_id_reused',
+        'duplicate_ref_ids_idempotent', 'duplicate_payloads_immutable',
+        'cursor_advanced', 'all_unique_fees_parent_linked')
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != reconnect.RESULT_KEYS or
+                any(type(value[field]) is not str for field in (
+                    'mode', 'status', 'input_sha256', 'account_sha256',
+                    'reconnect_reason', 'persisted_cursor_sha256',
+                    'reconnect_since_id_sha256', 'next_cursor_sha256',
+                    'limitations')) or
+                type(value['sources']) is not tuple or
+                any(type(source) is not str for source in value['sources']) or
+                value['mode'] !=
+                    'SUPPLIED_ALPACA_ACTIVITY_SSE_RECONNECT_REVIEW' or
+                value['status'] != 'REVIEW_REQUIRED' or
+                value['read_only'] is not True or
+                not _digest(value['input_sha256']) or
+                value['account_sha256'] != account_sha256 or
+                value['reconnect_reason'] != reconnect_reason or
+                value['sources'] != reconnect.SOURCES or
+                value['limitations'] != reconnect.LIMITATIONS or
+                value['persisted_cursor_sha256'] !=
+                    sha(persisted_event_id) or
+                value['reconnect_since_id_sha256'] !=
+                    sha(persisted_event_id) or
+                value['next_cursor_sha256'] != sha(next_cursor) or
+                any(value[field] is not True for field in true_fields) or
+                any(value[flag] is not False for flag in reconnect.FLAGS) or
+                any(type(value[field]) is not int or
+                    not 0 < value[field] <= envelope.MAX_EVENTS * 2
+                    for field in counts)):
+            raise ValueError
+        if (value['initial_events_reviewed'] != initial_count or
+                value['replay_events_reviewed'] != replay_count or
+                value['redelivered_events_deduplicated'] +
+                    value['new_events_processed'] != replay_count or
+                value['unique_events_reviewed'] !=
+                    initial_count + value['new_events_processed'] or
+                value['unique_trades_reviewed'] +
+                    value['unique_fees_reviewed'] !=
+                    value['unique_events_reviewed'] or
+                value['linked_orders'] > value['unique_trades_reviewed']):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
         _fail('RECONNECT_REVIEW_INVALID')
     return value
 
 
-def _checkpoint_receipt(value, account_sha256):
-    if (type(value) is not dict or
-            value.get('account_sha256') != account_sha256 or
-            any(not _digest(value.get(key)) for key in (
-                'head_sha256', 'receipt_sha256', 'cursor_sha256')) or
-            any(type(value.get(key)) is not bool for key in (
-                'duplicate', 'reconnect_reservation_bound',
-                'transport_input_bound', 'complete_review_counts_bound')) or
-            value.get('local_cursor_checkpoint_committed') is not True or
-            value.get('process_restart_recoverable') is not True or
-            any(value.get(flag) is not False for flag in FLAGS)):
+def _checkpoint_receipt(value, *, account_sha256, next_cursor,
+        reconnect_reservation_bound):
+    """Require the complete cursor-store return before acknowledging it."""
+    keys = frozenset((
+        'mode', 'status', 'account_sha256', 'head_sha256',
+        'cursor_sha256', 'receipt_sha256', 'duplicate',
+        'reconnect_reservation_bound', 'transport_input_bound',
+        'complete_review_counts_bound',
+        'local_cursor_checkpoint_committed',
+        'process_restart_recoverable', *CURSOR_STORE_FLAGS))
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != keys or
+                type(value['mode']) is not str or value['mode'] !=
+                    'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_CHECKPOINT' or
+                type(value['status']) is not str or
+                value['status'] != 'REVIEW_REQUIRED' or
+                not _digest(value['account_sha256']) or
+                value['account_sha256'] != account_sha256 or
+                any(not _digest(value[key]) for key in (
+                    'head_sha256', 'receipt_sha256', 'cursor_sha256')) or
+                value['cursor_sha256'] != sha(next_cursor) or
+                type(value['duplicate']) is not bool or
+                value['reconnect_reservation_bound'] is not
+                    reconnect_reservation_bound or
+                value['transport_input_bound'] is not True or
+                value['complete_review_counts_bound'] is not True or
+                value['local_cursor_checkpoint_committed'] is not True or
+                value['process_restart_recoverable'] is not True or
+                any(value[flag] is not False for flag in CURSOR_STORE_FLAGS)):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        _fail('CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN')
+    return value
+
+
+def _checkpoint_binding(value, *, receipt, account_sha256, expected_head,
+        next_cursor, transport_input_sha256, review,
+        reconnect_reservation_token):
+    """Bind the returned receipt to one cold replay of retained state."""
+    keys = frozenset((
+        'mode', 'status', 'account_sha256', 'head_sha256',
+        'expected_head_sha256', 'checkpoint_receipt_sha256',
+        'cursor_sha256', 'transport_input_sha256',
+        'transport_input_bound', 'review_input_sha256',
+        'initial_events_reviewed', 'replay_events_reviewed',
+        'redelivered_events_deduplicated', 'new_events_processed',
+        'reconnect_reservation_sha256', 'reconnect_reservation_bound',
+        'complete_review_counts_bound', 'read_only', *CURSOR_STORE_FLAGS))
+    count_fields = ('initial_events_reviewed', 'replay_events_reviewed',
+        'redelivered_events_deduplicated', 'new_events_processed')
+    reservation_sha256 = (None if reconnect_reservation_token is None else
+        sha(reconnect_reservation_token))
+    try:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != keys or
+                type(value['mode']) is not str or value['mode'] !=
+                    'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING' or
+                type(value['status']) is not str or
+                value['status'] != 'REVIEW_REQUIRED' or
+                not _digest(value['account_sha256']) or
+                any(not _digest(value[key]) for key in (
+                    'head_sha256', 'expected_head_sha256',
+                    'checkpoint_receipt_sha256', 'cursor_sha256',
+                    'transport_input_sha256', 'review_input_sha256')) or
+                value['account_sha256'] != account_sha256 or
+                value['head_sha256'] != receipt['head_sha256'] or
+                value['expected_head_sha256'] != expected_head or
+                value['checkpoint_receipt_sha256'] !=
+                    receipt['receipt_sha256'] or
+                value['cursor_sha256'] != receipt['cursor_sha256'] or
+                value['cursor_sha256'] != sha(next_cursor) or
+                value['transport_input_sha256'] != transport_input_sha256 or
+                value['review_input_sha256'] != review['input_sha256'] or
+                ((reservation_sha256 is None and
+                    value['reconnect_reservation_sha256'] is not None) or
+                 (reservation_sha256 is not None and
+                    (not _digest(value['reconnect_reservation_sha256']) or
+                     value['reconnect_reservation_sha256'] !=
+                        reservation_sha256))) or
+                value['transport_input_bound'] is not True or
+                value['reconnect_reservation_bound'] is not
+                    (reconnect_reservation_token is not None) or
+                value['complete_review_counts_bound'] is not True or
+                value['read_only'] is not True or
+                any(type(value[key]) is not int or
+                    value[key] != review[key] for key in count_fields) or
+                any(value[flag] is not False for flag in CURSOR_STORE_FLAGS)):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
         _fail('CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN')
     return value
 
@@ -205,6 +566,9 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         _fail('READ_AUTHORIZATION_REQUIRED')
     if confirm_cursor_checkpoint is not True:
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
+    if (type(reconnect_reason) is not str or
+            reconnect_reason not in reconnect.REASONS):
+        _fail('RECONNECT_REASON_INVALID')
     if type(cursor_store) is not ActivitySSECursorStore:
         _fail('CURSOR_STORE_INVALID')
     store_binding = _capture_store_binding(cursor_store)
@@ -245,9 +609,15 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
     if (before['initialized'] and
             before['current_event_id'] != persisted):
         _fail('PERSISTED_CURSOR_DISAGREEMENT')
+    cursor_file_binding = _capture_cursor_file_binding(
+        store_binding[2], before['initialized'])
+    cursor_directory_binding = _capture_cursor_directory_binding(
+        store_binding[1].absolute().parent)
     admitted = _checked_store_call(
         lambda: _safety(permission_check, emergency_stop_check,
-            credential_check), cursor_store, store_binding)
+            credential_check), cursor_store, store_binding,
+            cursor_file_binding=cursor_file_binding,
+            cursor_directory_binding=cursor_directory_binding)
     if not admitted:
         _fail('ADMISSION_REVOKED')
 
@@ -263,10 +633,21 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
         options['elapsed_clock'] = elapsed_clock
     transport_review, replay = _checked_store_call(
         lambda: _transport_result(transport._collect_once_private(
-            api_key, api_secret, **options)), cursor_store, store_binding)
+            api_key, api_secret, **options)), cursor_store, store_binding,
+        cursor_file_binding=cursor_file_binding,
+        cursor_directory_binding=cursor_directory_binding)
     replay = _checked_store_call(
         lambda: _frozen_events(replay, 'REPLAY_EVENTS_INVALID'),
-        cursor_store, store_binding)
+        cursor_store, store_binding,
+        cursor_file_binding=cursor_file_binding,
+        cursor_directory_binding=cursor_directory_binding)
+    transport_review = _checked_store_call(
+        lambda: _transport_review_result(transport_review, replay,
+            account_sha256=initial_review['account_sha256'],
+            persisted_event_id=persisted, injected=opener is not None),
+        cursor_store, store_binding,
+        cursor_file_binding=cursor_file_binding,
+        cursor_directory_binding=cursor_directory_binding)
     if (transport_review['gap_or_server_error_observed'] or
             transport_review['reconnect_review_required']):
         _fail('INTERRUPTED_SEGMENT_INELIGIBLE')
@@ -276,14 +657,23 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
                 expected_account_id=expected_account_id,
                 persisted_event_id=persisted,
                 reconnect_since_id=persisted,
-                reconnect_reason=reconnect_reason)),
-            cursor_store, store_binding)
+                reconnect_reason=reconnect_reason),
+                account_sha256=store_binding[3],
+                reconnect_reason=reconnect_reason,
+                persisted_event_id=persisted,
+                next_cursor=replay[-1]['event_id'],
+                initial_count=len(initial), replay_count=len(replay)),
+            cursor_store, store_binding,
+            cursor_file_binding=cursor_file_binding,
+            cursor_directory_binding=cursor_directory_binding)
     except ActivitySSECheckpointError:
         raise
     except Exception:
         _fail('RECONNECT_REVIEW_FAILED')
     unchanged = _checked_store_call(cursor_store.inspect, cursor_store,
-        store_binding, 'CURSOR_STORE_REVIEW_FAILED')
+        store_binding, 'CURSOR_STORE_REVIEW_FAILED',
+        cursor_file_binding=cursor_file_binding,
+        cursor_directory_binding=cursor_directory_binding)
     if (unchanged['head_sha256'] != expected_cursor_head or
             unchanged['current_event_id'] != before['current_event_id']):
         _fail('CURSOR_HEAD_CHANGED')
@@ -302,15 +692,37 @@ def collect_and_checkpoint_once(api_key, api_secret, *, expected_account_id,
             return None
         return review_input_sha256
 
+    next_cursor = replay[-1]['event_id']
+    _require_cursor_directory_binding(
+        store_binding[1].absolute().parent, cursor_directory_binding)
+    _require_cursor_file_binding(store_binding[2], cursor_file_binding)
     saved = _checked_store_call(
         lambda: _checkpoint_receipt(cursor_store.checkpoint(checked,
-            previous_cursor=persisted,
-            next_cursor=replay[-1]['event_id'],
+            previous_cursor=persisted, next_cursor=next_cursor,
             expected_head=expected_cursor_head, admission=admission,
             reconnect_reservation_token=reservation,
             transport_input_sha256=transport_input_sha256),
-            store_binding[3]),
+            account_sha256=store_binding[3], next_cursor=next_cursor,
+            reconnect_reservation_bound=reservation is not None),
         cursor_store, store_binding)
+    committed_directory_binding = _capture_cursor_directory_binding(
+        store_binding[1].absolute().parent)
+    committed_file_binding = _capture_cursor_file_binding(
+        store_binding[2], True)
+    cold_binding = _checked_store_call(
+        cursor_store.latest_checkpoint_binding, cursor_store, store_binding,
+        'CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN',
+        cursor_file_binding=committed_file_binding,
+        cursor_directory_binding=committed_directory_binding)
+    _checked_store_call(
+        lambda: _checkpoint_binding(cold_binding, receipt=saved,
+            account_sha256=store_binding[3],
+            expected_head=expected_cursor_head, next_cursor=next_cursor,
+            transport_input_sha256=transport_input_sha256, review=checked,
+            reconnect_reservation_token=reservation),
+        cursor_store, store_binding,
+        cursor_file_binding=committed_file_binding,
+        cursor_directory_binding=committed_directory_binding)
     return dict(mode='EXPLICIT_ALPACA_ACTIVITY_SSE_CHECKPOINT',
         status='REVIEW_REQUIRED', policy=POLICY,
         source=transport_review['source'],
@@ -490,8 +902,8 @@ def fixture_report():
         acknowledgement_checkpoint = acknowledgement_store.checkpoint
 
         def commit_with_malformed_acknowledgement(*args, **kwargs):
-            acknowledgement_checkpoint(*args, **kwargs)
-            return {'account_sha256': acknowledgement_store.account_sha256}
+            saved = acknowledgement_checkpoint(*args, **kwargs)
+            return {**saved, 'unexpected_private_extension': False}
 
         acknowledgement_store.checkpoint = \
             commit_with_malformed_acknowledgement
@@ -513,6 +925,99 @@ def fixture_report():
             acknowledgement_error = str(error)
         acknowledgement_recovery = ActivitySSECursorStore(
             acknowledgement_path, account).inspect()
+        binding_path = Path(folder) / 'binding-pinned.sqlite3'
+        binding_store = ActivitySSECursorStore(binding_path, account)
+        retained_binding = binding_store.latest_checkpoint_binding
+
+        def mismatched_retained_binding():
+            return {**retained_binding(), 'head_sha256': 'f' * 64}
+
+        binding_store.latest_checkpoint_binding = \
+            mismatched_retained_binding
+        binding_error = None
+        try:
+            collect_and_checkpoint_once(
+                'fixture_key_only_123', 'fixture_secret_only_123',
+                expected_account_id=account, initial_events=first,
+                reconnect_reason='CONNECTION_DROPPED',
+                cursor_store=binding_store, expected_cursor_head=ZERO,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True, opener=Opener(),
+                wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+                permission_check=lambda: True,
+                emergency_stop_check=lambda: False,
+                credential_check=lambda: True)
+        except ActivitySSECheckpointError as error:
+            binding_error = str(error)
+        binding_recovery = ActivitySSECursorStore(
+            binding_path, account).inspect()
+        replacement_path = Path(folder) / 'replacement.sqlite3'
+
+        class ReplacingOpener(Opener):
+            def open(self, request, timeout):
+                replacement_path.write_bytes(store.path.read_bytes())
+                replacement_path.replace(store.path)
+                return super().open(request, timeout)
+
+        file_replacement_error = None
+        try:
+            collect_and_checkpoint_once(
+                'fixture_key_only_123', 'fixture_secret_only_123',
+                expected_account_id=account,
+                initial_events=[*first, copy.deepcopy(fee)],
+                reconnect_reason='CONNECTION_DROPPED', cursor_store=store,
+                expected_cursor_head=result['checkpoint_head_sha256'],
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True, opener=ReplacingOpener(),
+                wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+                permission_check=lambda: True,
+                emergency_stop_check=lambda: False,
+                credential_check=lambda: True)
+        except ActivitySSECheckpointError as error:
+            file_replacement_error = str(error)
+        file_replacement_recovery = ActivitySSECursorStore(
+            store.path, account).inspect()
+        fresh_directory = Path(folder) / 'created-during-io'
+        directory_path = fresh_directory / 'cursor.sqlite3'
+        directory_store = ActivitySSECursorStore(directory_path, account)
+
+        class DirectoryCreatingOpener(Opener):
+            def open(self, request, timeout):
+                fresh_directory.mkdir()
+                return super().open(request, timeout)
+
+        directory_creation_error = None
+        try:
+            collect_and_checkpoint_once(
+                'fixture_key_only_123', 'fixture_secret_only_123',
+                expected_account_id=account, initial_events=first,
+                reconnect_reason='CONNECTION_DROPPED',
+                cursor_store=directory_store, expected_cursor_head=ZERO,
+                confirm_read_only_paper=True,
+                confirm_cursor_checkpoint=True,
+                opener=DirectoryCreatingOpener(),
+                wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+                permission_check=lambda: True,
+                emergency_stop_check=lambda: False,
+                credential_check=lambda: True)
+        except ActivitySSECheckpointError as error:
+            directory_creation_error = str(error)
+        boundary_review, boundary_replay = transport._collect_once_private(
+            'fixture_key_only_123', 'fixture_secret_only_123',
+            expected_account_id=account, since_id=first[-1]['event_id'],
+            confirm_read_only_paper=True, opener=Opener(),
+            wall_clock=lambda: 1000, elapsed_clock=lambda: 50,
+            permission_check=lambda: True,
+            emergency_stop_check=lambda: False,
+            credential_check=lambda: True)
+        boundary_error = None
+        try:
+            _transport_review_result(
+                {**boundary_review, 'provider_source_attested': True},
+                boundary_replay, account_sha256=sha(account),
+                persisted_event_id=first[-1]['event_id'], injected=True)
+        except ActivitySSECheckpointError as error:
+            boundary_error = str(error)
         encoded = json.dumps(result, sort_keys=True)
         checks = dict(single_injected_get=len(opener.requests) == 1,
             duplicate_redelivery_and_advance=
@@ -540,6 +1045,24 @@ def fixture_report():
                     'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
                     'CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN' and
                 acknowledgement_recovery['retained_checkpoints'] == 1,
+            cold_checkpoint_binding_disagreement_retained=
+                binding_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
+                    'CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN' and
+                binding_recovery['retained_checkpoints'] == 1,
+            cursor_file_replacement_rejected=
+                file_replacement_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_CURSOR_FILE_CHANGED' and
+                file_replacement_recovery['retained_checkpoints'] == 1,
+            cursor_directory_creation_rejected=
+                directory_creation_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
+                    'CURSOR_DIRECTORY_CHANGED' and
+                fresh_directory.is_dir() and not directory_path.exists(),
+            transport_boundary_rejects_promoted_acknowledgement=
+                boundary_error ==
+                    'ALPACA_ACTIVITY_SSE_CHECKPOINT_'
+                    'TRANSPORT_RESULT_INVALID',
             no_private_identifier_or_credential_echo=all(token not in encoded
                 for token in (account, '01K0000', '11111111',
                     'fixture_key_only_123', 'fixture_secret_only_123')),

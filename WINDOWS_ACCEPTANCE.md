@@ -1,5 +1,33 @@
 # Windows distribution and acceptance evidence
 
+## Installer semantic-result evidence
+
+The distribution now includes `installer-result-review.json` alongside
+`artifact-manifest.json`, `distribution-binding-review.json`,
+`windows-owner-profile-probe.ps1` and `windows-owner-profile-review.py`. The
+inner manifest and distribution review bind the exact result-review bytes,
+digest, version, source commit, installer digest, phase session and required
+semantic assertions. Keep all files from one exact distribution together; do
+not substitute a result review from another run.
+
+After generating the private ordinary-user probe, run the bundled reviewer with
+all shipped evidence inputs:
+
+```powershell
+$manifest = Get-Content -Raw .\artifact-manifest.json | ConvertFrom-Json
+$expectedVersion = [string]$manifest.version
+$expectedSourceCommit = [string]$manifest.source_commit
+python .\windows-owner-profile-review.py --probe .\owner-profile-probe.json --distribution-binding .\distribution-binding-review.json --installer-result-review .\installer-result-review.json --artifact-manifest .\artifact-manifest.json --distribution-envelope .\distribution-envelope.json --probe-tool .\windows-owner-profile-probe.ps1 --review-tool .\windows-owner-profile-review.py --expected-version $expectedVersion --expected-source-commit $expectedSourceCommit --output .\owner-profile-review.json
+```
+
+This command validates a self-reported owner probe against the exact shipped
+chain. Before running it, independently compare `$expectedSourceCommit` with
+the intended GitHub Actions run and source review; the manifest is an identity
+input, not independent source authentication. Do not type a remembered version
+or commit from a different distribution. It does not establish clean-machine,
+native-window, power-loss, broker, market, funds, live, cloud or release
+acceptance.
+
 ## v0.340.50 owner ordinary-profile/ACL evidence candidate
 
 The Windows distribution now includes `windows-owner-profile-probe.ps1`, `windows-owner-profile-review.py`, `artifact-manifest.json` and `distribution-binding-review.json`. The probe refuses elevation and non-default per-user LocalAppData install/data locations, exercises inherited-ACL create/read, exclusive lock, replace, rename/delete and cleanup behavior, and emits no username, SID or path. The reviewer binds that allowlisted probe to the exact CI-reviewed installer, installed executable, source/version and both manifest-shipped tools.
@@ -167,7 +195,7 @@ This checks file integrity against that manifest. It is not code signing, a malw
 
 ## Automated coverage
 
-CI uses a disposable install directory and explicit disposable data directory. It checks silent installation, installed backend version, bundled PORTAL, default paused/stopped state, no broker/live authority, a durable emergency halt, same-version reinstall, recovery of that halt, and silent uninstall. It compares the data journal before/after reinstall and uninstall and preserves a separate sentinel. It terminates the entire onefile process tree between launches. Installer logs, startup logs and result JSON are uploaded as `NexusOperative-Installer-Smoke-Evidence`, including available logs on failure.
+CI uses a disposable install directory and explicit disposable data directory. It checks silent installation, installed backend version, bundled PORTAL, default paused/stopped state, no broker/live authority, a durable emergency halt, same-version reinstall, recovery of that halt, and silent uninstall. It compares the data journal before/after reinstall and uninstall and preserves a separate sentinel. It attempts descendant cleanup between launches, but successful root waits do not prove process-tree containment; exact result evidence therefore keeps containment unverified. Installer logs, startup logs and result JSON are uploaded as `NexusOperative-Installer-Smoke-Evidence`, including available logs on failure.
 
 This is a Windows CI runner test using browser mode and a data-path override. It does not verify the native WebView window, default user data location, cross-version migrations, ordinary-user installer interaction or every clean-machine configuration. Passing status must come from the workflow for the exact source commit; source-process Linux smoke results do not establish installed Windows behavior.
 

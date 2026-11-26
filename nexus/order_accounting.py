@@ -8,7 +8,10 @@ import hashlib
 import json
 from bisect import bisect_left
 from decimal import Decimal, InvalidOperation
-from nexus.order_gateway import OrderGateway
+from nexus.order_gateway import (
+    OrderGateway, _require_event_id, _require_event_kind, _require_order_id)
+from nexus import order_gateway
+from nexus.execution_capacity import EXIT_INTENT_RESERVE
 
 
 def number(value, zero=False):
@@ -31,6 +34,112 @@ MAX_RETIRED_ORDER_ID_FINGERPRINTS=100000
 ZERO_SHA256='0'*64
 RETIRED_ID_POLICY='nexus.retired-order-id-fingerprint.v1'
 RETIRED_ID_BASELINE_KIND='OPERATOR_REVIEWED_UNATTESTED'
+NO_FILL_ATTEMPT_PROFILE='nexus.no-fill-attempt.v1'
+MODELED_FILL_PROFILE='nexus.modeled-fill.v1'
+
+
+def no_fill_attempt_sha256(attempt):
+    """Bind every retained field of one normalized no-fill attempt.
+
+    The digest is derived evidence, not mutable accounting state. Callers
+    retain the canonical attempt in the order journal and may independently
+    carry this digest in another evidence chain.
+    """
+    if type(attempt) is not dict:
+        raise ValueError('INVALID_NO_FILL_ATTEMPT')
+    required={'order_id','side','event_id','sequence','reason','evaluated_at','expires_at'}
+    forward={'evidence_cycle','evidence_session','evidence_quote_sha256'}
+    if (not required<=set(attempt) or set(attempt)-required-forward or
+            bool(set(attempt)&forward) != (forward<=set(attempt))):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT')
+    try:
+        _require_order_id(attempt['order_id']);_require_event_id(attempt['event_id'])
+        evaluated=number(attempt['evaluated_at']);expires=number(attempt['expires_at'])
+    except (ValueError,TypeError,KeyError):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT') from None
+    if (attempt['side'] not in ('BUY','SELL') or
+            type(attempt['sequence']) is not int or not 1<=attempt['sequence']<=1000 or
+            attempt['reason']!='ORDER_EXPIRED_WITHOUT_FILL' or
+            type(attempt['evaluated_at']) is not str or
+            type(attempt['expires_at']) is not str or evaluated<expires or
+            attempt['evaluated_at']!=str(evaluated.normalize()) or
+            attempt['expires_at']!=str(expires.normalize())):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT')
+    if forward<=set(attempt) and (
+            type(attempt['evidence_cycle']) is not int or attempt['evidence_cycle']<1 or
+            type(attempt['evidence_session']) is not str or
+            len(attempt['evidence_session'])!=16 or
+            any(character not in '0123456789abcdef'
+                for character in attempt['evidence_session']) or
+            type(attempt['evidence_quote_sha256']) is not str or
+            len(attempt['evidence_quote_sha256'])!=64 or
+            any(character not in '0123456789abcdef'
+                for character in attempt['evidence_quote_sha256'])):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT')
+    payload=dict(profile=NO_FILL_ATTEMPT_PROFILE,attempt=attempt)
+    try:
+        canonical=json.dumps(payload,sort_keys=True,separators=(',',':'),allow_nan=False)
+    except (TypeError,ValueError):
+        raise ValueError('INVALID_NO_FILL_ATTEMPT') from None
+    return hashlib.sha256(canonical.encode()).hexdigest()
+
+
+def modeled_fill_sha256(fill):
+    """Bind the complete deterministic economics of one modeled fill.
+
+    The order journal remains authoritative. This independently reproducible
+    digest lets another evidence chain prove that it observed the exact same
+    event, model assumptions, and forward quote identity without copying those
+    private accounting details into that chain.
+    """
+    if type(fill) is not dict:
+        raise ValueError('INVALID_MODELED_FILL')
+    required={'order_id','side','event_id','sequence','quantity','price','fee','assumptions'}
+    forward={'evidence_cycle','evidence_session','evidence_quote_sha256'}
+    if (not required<=set(fill) or set(fill)-required-forward or
+            bool(set(fill)&forward) != (forward<=set(fill))):
+        raise ValueError('INVALID_MODELED_FILL')
+    assumptions=fill.get('assumptions')
+    assumption_fields={'bid','ask','available_quantity','quote_at','evaluated_at',
+                       'fee_bps','slippage_bps'}
+    if type(assumptions) is not dict or set(assumptions)!=assumption_fields:
+        raise ValueError('INVALID_MODELED_FILL')
+    try:
+        numeric=(('quantity',False),('price',False),('fee',True))
+        assumption_numeric=(('bid',False),('ask',False),('available_quantity',False),
+            ('quote_at',False),('evaluated_at',False),('fee_bps',True),
+            ('slippage_bps',True))
+        _require_order_id(fill['order_id']);_require_event_id(fill['event_id'])
+        for key,zero in numeric:
+            value=number(fill[key],zero=zero)
+            if type(fill[key]) is not str or fill[key]!=str(value.normalize()):
+                raise ValueError()
+        for key,zero in assumption_numeric:
+            value=number(assumptions[key],zero=zero)
+            if type(assumptions[key]) is not str or assumptions[key]!=str(value.normalize()):
+                raise ValueError()
+    except (ValueError,TypeError,KeyError):
+        raise ValueError('INVALID_MODELED_FILL') from None
+    if (fill['side'] not in ('BUY','SELL') or
+            type(fill['sequence']) is not int or not 1<=fill['sequence']<=1000):
+        raise ValueError('INVALID_MODELED_FILL')
+    if forward<=set(fill) and (
+            type(fill['evidence_cycle']) is not int or fill['evidence_cycle']<1 or
+            type(fill['evidence_session']) is not str or
+            len(fill['evidence_session'])!=16 or
+            any(character not in '0123456789abcdef'
+                for character in fill['evidence_session']) or
+            type(fill['evidence_quote_sha256']) is not str or
+            len(fill['evidence_quote_sha256'])!=64 or
+            any(character not in '0123456789abcdef'
+                for character in fill['evidence_quote_sha256'])):
+        raise ValueError('INVALID_MODELED_FILL')
+    payload=dict(profile=MODELED_FILL_PROFILE,fill=fill)
+    try:
+        canonical=json.dumps(payload,sort_keys=True,separators=(',',':'),allow_nan=False)
+    except (TypeError,ValueError):
+        raise ValueError('INVALID_MODELED_FILL') from None
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 def order_id_fingerprint(client_order_id):
@@ -40,7 +149,7 @@ def order_id_fingerprint(client_order_id):
     never permit reuse. The original ID is not copied into a fresh epoch, but
     low-entropy IDs can still be guessed and remain private operational data.
     """
-    if not isinstance(client_order_id,str):raise ValueError('INVALID_ORDER_ID')
+    _require_order_id(client_order_id)
     return hashlib.sha256((RETIRED_ID_POLICY+'\0'+client_order_id).encode()).hexdigest()[:32]
 
 
@@ -55,6 +164,7 @@ class AccountingOrderGateway(OrderGateway):
         self.portfolio_linked = False
         self.order_terms = {}
         self.quote_events = {}
+        self.no_fill_events = {}
         self._applying_quote = False
         self.archived_intents = {}
         self.archive_batches = {}
@@ -100,25 +210,51 @@ class AccountingOrderGateway(OrderGateway):
             return {**copy.deepcopy(self.epoch_lineage),'idempotent_replay':True}
         if (not self.halted or not self.portfolio_linked or self.account is None or
             self.account['positions'] or self.intents or self.archived_intents or self.executions or
-            self.quote_events or self.order_terms or self.archive_batches):
+            self.quote_events or self.no_fill_events or self.order_terms or self.archive_batches):
             raise ValueError('REPLACEMENT_EPOCH_REQUIRES_FRESH_HALTED_FLAT_ACCOUNT')
         self.epoch_lineage=lineage
         if fingerprints is not None:self.retired_order_id_fingerprints=fingerprints
         return {**copy.deepcopy(lineage),'idempotent_replay':False}
 
-    def submit(self,client_order_id,*args,**kwargs):
+    def submit(self,client_order_id,product,side,notional,provider='nexus_local_paper',tier=None):
         fingerprint=order_id_fingerprint(client_order_id)
-        index=bisect_left(self.retired_order_id_fingerprints,fingerprint)
-        if (index<len(self.retired_order_id_fingerprints) and
-            self.retired_order_id_fingerprints[index]==fingerprint):
-            raise ValueError('RETIRED_ORDER_ID_REUSE')
-        return super().submit(client_order_id,*args,**kwargs)
+        with self.lock:
+            index=bisect_left(self.retired_order_id_fingerprints,fingerprint)
+            if (index<len(self.retired_order_id_fingerprints) and
+                self.retired_order_id_fingerprints[index]==fingerprint):
+                raise ValueError('RETIRED_ORDER_ID_REUSE')
+            if (self.lookup(client_order_id) is None and self.portfolio_linked and
+                    len(self.intents)>=max(0,order_gateway.MAX_INTENTS-EXIT_INTENT_RESERVE)):
+                raise ValueError('EXIT_INTENT_RESERVE_PROTECTED')
+            return super().submit(client_order_id,product,side,notional,provider,tier)
+
+    def submit_reducing(self,client_order_id,product,notional,quantity,
+                        expected_position_quantity,provider='nexus_local_paper',tier=None):
+        fingerprint=order_id_fingerprint(client_order_id)
+        reduction=number(quantity);expected=number(expected_position_quantity)
+        extra=dict(intent_scope='POSITION_REDUCING_EXIT',
+                   reduction_quantity=str(reduction.normalize()),
+                   expected_position_quantity=str(expected.normalize()))
+        with self.lock:
+            index=bisect_left(self.retired_order_id_fingerprints,fingerprint)
+            if (index<len(self.retired_order_id_fingerprints) and
+                self.retired_order_id_fingerprints[index]==fingerprint):
+                raise ValueError('RETIRED_ORDER_ID_REUSE')
+            if self.lookup(client_order_id) is None:
+                position=(self.account or {}).get('positions',{}).get(product)
+                if (not self.portfolio_linked or type(product) is not str or
+                        type(provider) is not str or provider!='nexus_local_paper' or
+                        type(position) is not dict or set(position)!={'quantity','entry'} or
+                        number(position['quantity'])!=expected or reduction>expected):
+                    raise ValueError('EXIT_INTENT_RESERVE_DENIED')
+            return super()._submit(client_order_id,product,'SELL',notional,provider,tier,extra)
 
     def lookup(self,client_order_id):
+        _require_order_id(client_order_id)
         return self.intents.get(client_order_id) or self.archived_intents.get(client_order_id)
 
     def archive_terminal(self,batch_id,sequence_boundary):
-        if not isinstance(batch_id,str) or not 1<=len(batch_id)<=64 or not batch_id.isascii() or not batch_id.replace('-','').replace('_','').isalnum():
+        if type(batch_id) is not str or not 1<=len(batch_id)<=64 or not batch_id.isascii() or not batch_id.replace('-','').replace('_','').isalnum():
             raise ValueError('INVALID_ARCHIVE_BATCH_ID')
         if batch_id in self.archive_batches:
             return {**copy.deepcopy(self.archive_batches[batch_id]),'idempotent_replay':True}
@@ -137,6 +273,8 @@ class AccountingOrderGateway(OrderGateway):
                       executions=[[list(k),v] for k,v in sorted(self.executions.items()) if k[0] in self.intents],
                       quote_events=[[list(k),v] for k,v in sorted(self.quote_events.items()) if k[0] in self.intents],
                       terms={oid:self.order_terms[oid] for oid in ids if oid in self.order_terms})
+        no_fills=[[list(k),v] for k,v in sorted(self.no_fill_events.items()) if k[2] in self.intents]
+        if no_fills:evidence['no_fill_events']=no_fills
         digest=hashlib.sha256(json.dumps(evidence,sort_keys=True,separators=(',',':'),allow_nan=False).encode()).hexdigest()
         manifest=dict(batch_id=batch_id,sequence_boundary=sequence_boundary,order_ids=ids,order_count=len(ids),evidence_sha256=digest)
         self.archived_intents.update(self.intents)
@@ -165,6 +303,7 @@ class AccountingOrderGateway(OrderGateway):
         return {"linked":True,"idempotent_replay":False}
 
     def set_execution_terms(self, client_order_id, created_at, ttl_seconds):
+        _require_order_id(client_order_id)
         created=number(created_at);ttl=number(ttl_seconds)
         if ttl>3600 or created+ttl>Decimal('1e12'):raise ValueError('ORDER_TTL_LIMIT')
         terms=dict(created_at=str(created.normalize()),expires_at=str((created+ttl).normalize()))
@@ -172,56 +311,120 @@ class AccountingOrderGateway(OrderGateway):
             record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             if client_order_id in self.order_terms:
-                if self.order_terms[client_order_id]!=terms:raise ValueError('ORDER_TERMS_CONFLICT')
-                return {**copy.deepcopy(record),'idempotent_replay':True}
+                if self.order_terms[client_order_id]==terms:
+                    return {**copy.deepcopy(record),'idempotent_replay':True}
+                if (record.get('intent_scope')!='POSITION_REDUCING_EXIT' or
+                        record['status'] not in ('SIMULATED_ACK_ONLY','SIMULATED_REDUCTION_PENDING') or
+                        created<=Decimal(self.order_terms[client_order_id]['created_at'])):
+                    raise ValueError('ORDER_TERMS_CONFLICT')
             if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
-            if record['status']!='SIMULATED_ACK_ONLY' or record['lifecycle_events']:
+            if (record.get('intent_scope')!='POSITION_REDUCING_EXIT' and
+                    (record['status']!='SIMULATED_ACK_ONLY' or record['lifecycle_events'])):
                 raise ValueError('TERMS_REQUIRE_UNFILLED_ORDER')
             self.order_terms[client_order_id]=terms
             return {**copy.deepcopy(record),'idempotent_replay':False}
 
     def expire_order(self, client_order_id, evaluated_at):
+        _require_order_id(client_order_id)
         now=number(evaluated_at)
         with self.lock:
             record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             if client_order_id not in self.order_terms:raise ValueError('MISSING_EXECUTION_TERMS')
             if now<Decimal(self.order_terms[client_order_id]['expires_at']):raise ValueError('ORDER_NOT_EXPIRED')
+            # A reducing mandate survives across bounded quote slices. Expiry
+            # applies to the current slice's terms, not to the immutable
+            # full-position exit intent. Report the no-fill boundary to the
+            # runner while retaining the mandate for a fresh later quote.
+            if (record.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+                    record['status']=='SIMULATED_REDUCTION_PENDING'):
+                return {**copy.deepcopy(record),'expired':True,
+                        'slice_expired':True,'mandate_resumable':True,
+                        'idempotent_replay':True}
             changed=record['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED')
             if changed:record['status']='SIMULATED_EXPIRED'
             return {**copy.deepcopy(record),'expired':record['status']=='SIMULATED_EXPIRED','idempotent_replay':not changed}
 
     def simulate_quote_fill(self, client_order_id, event_id, sequence, quantity, bid, ask,
-                            available_quantity, quote_at, evaluated_at, fee_bps=10, slippage_bps=5):
+                            available_quantity, quote_at, evaluated_at, fee_bps=10, slippage_bps=5,
+                            evidence_cycle=None,evidence_session=None,evidence_quote_sha256=None):
         from nexus.quote_execution import plan
+        _require_order_id(client_order_id);_require_event_id(event_id)
         if type(sequence) is not int or not 1<=sequence<=1000:raise ValueError('INVALID_EVENT_SEQUENCE')
-        if not isinstance(event_id,str) or not 1<=len(event_id)<=64 or not event_id.isascii() or not event_id.replace('-','').replace('_','').isalnum():
-            raise ValueError('INVALID_EVENT_ID')
+        if evidence_cycle is not None and (type(evidence_cycle) is not int or evidence_cycle<1):
+            raise ValueError('INVALID_FORWARD_EVIDENCE_CYCLE')
+        if (evidence_session is not None and
+                (type(evidence_session) is not str or len(evidence_session)!=16 or
+                 any(character not in '0123456789abcdef' for character in evidence_session))):
+            raise ValueError('INVALID_FORWARD_EVIDENCE_SESSION')
+        if (evidence_quote_sha256 is not None and
+                (type(evidence_quote_sha256) is not str or len(evidence_quote_sha256)!=64 or
+                 any(character not in '0123456789abcdef' for character in evidence_quote_sha256))):
+            raise ValueError('INVALID_FORWARD_QUOTE_EVIDENCE_DIGEST')
+        if len({evidence_cycle is None,evidence_session is None,evidence_quote_sha256 is None})!=1:
+            raise ValueError('INCOMPLETE_FORWARD_EVIDENCE_IDENTITY')
         with self.lock:
             record=self.lookup(client_order_id)
             if record is None:raise ValueError('UNKNOWN_ORDER_ID')
             modeled=plan(record['side'],quantity,bid,ask,available_quantity,quote_at,evaluated_at,fee_bps,slippage_bps)
             detail=dict(sequence=sequence,**modeled)
+            if evidence_cycle is not None:detail['evidence_cycle']=evidence_cycle
+            if evidence_session is not None:detail['evidence_session']=evidence_session
+            if evidence_quote_sha256 is not None:detail['evidence_quote_sha256']=evidence_quote_sha256
             key=(client_order_id,event_id)
+            attempt_key=(evidence_session or '',evidence_cycle or 0,client_order_id,event_id)
+            if attempt_key in self.no_fill_events:
+                no_fill=dict(order_id=client_order_id,side=record['side'],event_id=event_id,
+                    sequence=sequence,reason='ORDER_EXPIRED_WITHOUT_FILL',
+                    evaluated_at=str(number(evaluated_at).normalize()),
+                    expires_at=self.no_fill_events[attempt_key]['expires_at'])
+                if evidence_cycle is not None:no_fill['evidence_cycle']=evidence_cycle
+                if evidence_session is not None:no_fill['evidence_session']=evidence_session
+                if evidence_quote_sha256 is not None:no_fill['evidence_quote_sha256']=evidence_quote_sha256
+                if self.no_fill_events[attempt_key]!=no_fill:
+                    raise ValueError('DUPLICATE_NO_FILL_EVENT_CONFLICT')
+                return {**copy.deepcopy(record),'expired':True,'no_fill_recorded':True,
+                        'no_fill_attempt_sha256':no_fill_attempt_sha256(no_fill),
+                        'idempotent_replay':True}
             if key in self.quote_events:
                 if self.quote_events[key]!=detail:raise ValueError('DUPLICATE_QUOTE_EVENT_CONFLICT')
-                return {**copy.deepcopy(record),'idempotent_replay':True}
+                fill=dict(order_id=client_order_id,side=record['side'],event_id=event_id,
+                          **copy.deepcopy(detail))
+                return {**copy.deepcopy(record),
+                        'modeled_fill_sha256':modeled_fill_sha256(fill),
+                        'idempotent_replay':True}
             if client_order_id not in self.order_terms:raise ValueError('MISSING_EXECUTION_TERMS')
             if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
             if number(quote_at)<Decimal(self.order_terms[client_order_id]['created_at']):raise ValueError('QUOTE_PRECEDES_ORDER')
             previous_times=[Decimal(v['assumptions']['evaluated_at']) for (oid,_),v in self.quote_events.items() if oid==client_order_id]
+            previous_times.extend(Decimal(v['evaluated_at']) for (_,_,oid,_),v in self.no_fill_events.items()
+                if oid==client_order_id)
             if previous_times and number(evaluated_at)<max(previous_times):raise ValueError('QUOTE_TIME_REGRESSION')
             if number(evaluated_at)>=Decimal(self.order_terms[client_order_id]['expires_at']):
-                return self.expire_order(client_order_id,evaluated_at)
+                no_fill=dict(order_id=client_order_id,side=record['side'],event_id=event_id,
+                    sequence=sequence,reason='ORDER_EXPIRED_WITHOUT_FILL',
+                    evaluated_at=str(number(evaluated_at).normalize()),
+                    expires_at=self.order_terms[client_order_id]['expires_at'])
+                if evidence_cycle is not None:no_fill['evidence_cycle']=evidence_cycle
+                if evidence_session is not None:no_fill['evidence_session']=evidence_session
+                if evidence_quote_sha256 is not None:no_fill['evidence_quote_sha256']=evidence_quote_sha256
+                self.no_fill_events[attempt_key]=no_fill
+                return {**self.expire_order(client_order_id,evaluated_at),
+                        'no_fill_recorded':True,
+                        'no_fill_attempt_sha256':no_fill_attempt_sha256(no_fill),
+                        'idempotent_replay':False}
             self._applying_quote=True
             try:
                 result=self.simulate_priced_fill(client_order_id,event_id,sequence,modeled['quantity'],modeled['price'],modeled['fee'])
             finally:
                 self._applying_quote=False
             self.quote_events[key]=detail
-            return result
+            fill=dict(order_id=client_order_id,side=record['side'],event_id=event_id,
+                      **copy.deepcopy(detail))
+            return {**result,'modeled_fill_sha256':modeled_fill_sha256(fill)}
 
     def simulate_event(self, client_order_id, event_id, sequence, kind, fill_notional='0', fee='0'):
+        _require_order_id(client_order_id);_require_event_id(event_id);_require_event_kind(kind)
         if client_order_id in self.order_terms and kind=='FILL':
             raise ValueError('TIMED_ORDER_REQUIRES_QUOTE_MODEL')
         return super().simulate_event(client_order_id,event_id,sequence,kind,fill_notional,fee)
@@ -230,11 +433,20 @@ class AccountingOrderGateway(OrderGateway):
         now=number(evaluated_at)
         with self.lock:
             due=[oid for oid,terms in self.order_terms.items()
-                 if now>=Decimal(terms['expires_at']) and self.intents.get(oid,{}).get('status') in ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED')]
+                 if now>=Decimal(terms['expires_at']) and
+                 self.intents.get(oid,{}).get('status') in
+                 ('SIMULATED_ACK_ONLY','SIMULATED_PARTIALLY_FILLED',
+                  'SIMULATED_REDUCTION_PENDING')]
+            resumable=[oid for oid in due if
+                self.intents[oid].get('intent_scope')=='POSITION_REDUCING_EXIT' and
+                self.intents[oid]['status']=='SIMULATED_REDUCTION_PENDING']
             for oid in due:self.expire_order(oid,evaluated_at)
-            return dict(expired_order_ids=due,expired_count=len(due),live_orders_enabled=False)
+            return dict(expired_order_ids=due,expired_count=len(due),
+                        resumable_mandate_ids=resumable,
+                        live_orders_enabled=False)
 
     def simulate_priced_fill(self, client_order_id, event_id, sequence, quantity, price, fee='0'):
+        _require_order_id(client_order_id);_require_event_id(event_id)
         if client_order_id in self.order_terms and not self._applying_quote:
             raise ValueError('TIMED_ORDER_REQUIRES_QUOTE_MODEL')
         if type(sequence) is not int or not 1 <= sequence <= 1000:
@@ -252,6 +464,17 @@ class AccountingOrderGateway(OrderGateway):
             record = self.lookup(client_order_id)
             if record is None:
                 raise ValueError('UNKNOWN_ORDER_ID')
+            reducing=record.get('intent_scope')=='POSITION_REDUCING_EXIT'
+            if reducing:
+                filled=sum((Decimal(detail['quantity']) for (oid,_),detail in self.executions.items()
+                            if oid==client_order_id),Decimal(0))
+                current=self.account['positions'].get(record['product'])
+                if (type(current) is not dict or set(current)!={'quantity','entry'} or
+                        Decimal(current['quantity'])!=
+                        Decimal(record['expected_position_quantity'])-filled):
+                    raise ValueError('REDUCING_EXIT_POSITION_CHANGED')
+                if filled+qty>Decimal(record['reduction_quantity']):
+                    raise ValueError('REDUCING_EXIT_QUANTITY_EXCEEDED')
             # Mixing reference-only and quantity-based fills in one order is ambiguous.
             if any((client_order_id, eid) not in self.executions for eid, event in record['lifecycle_events'].items() if event['kind']=='FILL'):
                 raise ValueError('ORDER_HAS_UNPRICED_FILLS')
@@ -273,15 +496,68 @@ class AccountingOrderGateway(OrderGateway):
                 delta = amount - cost
                 if cash + delta < 0:
                     raise ValueError('INSUFFICIENT_SIMULATED_CASH')
-            result = super().simulate_event(client_order_id, event_id, sequence, 'FILL', str(amount), str(cost))
-            if result['idempotent_replay']:
-                raise ValueError('EVENT_ALREADY_EXISTS_WITHOUT_EXECUTION')
+            if reducing:
+                events=record['lifecycle_events']
+                if sequence!=len(events)+1:raise ValueError('OUT_OF_ORDER_EVENT')
+                if self.halted:raise ValueError('EMERGENCY_HALT_ACTIVE')
+                if record['status'] not in ('SIMULATED_ACK_ONLY','SIMULATED_REDUCTION_PENDING'):
+                    raise ValueError('ORDER_TERMINAL')
+                # The immutable intent notional is a per-slice ceiling. The
+                # cumulative mandate remains quantity-bound to the original
+                # reconciled holding, so a price move never relaxes $200/slice.
+                if amount>Decimal(record['notional']):
+                    raise ValueError('REDUCING_EXIT_SLICE_NOTIONAL_EXCEEDED')
+                event={'sequence':sequence,'kind':'FILL','fill_notional':str(amount.normalize()),
+                       'fee':str(cost.normalize())}
+                cumulative=filled+qty
+                record['simulated_filled_notional']=str(
+                    Decimal(record['simulated_filled_notional'])+amount)
+                record['simulated_fee_total']=str(
+                    Decimal(record['simulated_fee_total'])+cost)
+                record['reduction_filled_quantity']=str(cumulative.normalize())
+                record['reduction_slice_count']=sequence
+                record['status']=('SIMULATED_FILLED' if
+                    cumulative==Decimal(record['reduction_quantity']) else
+                    'SIMULATED_REDUCTION_PENDING')
+                events[event_id]=event
+                result={**copy.deepcopy(record),'idempotent_replay':False}
+            else:
+                result = super().simulate_event(client_order_id, event_id, sequence, 'FILL', str(amount), str(cost))
+                if result['idempotent_replay']:
+                    raise ValueError('EVENT_ALREADY_EXISTS_WITHOUT_EXECUTION')
             self.account['cash'] = str(cash + delta)
             if new_qty:
                 self.account['positions'][record['product']] = dict(quantity=str(new_qty), entry=str(entry))
             else:
                 self.account['positions'].pop(record['product'], None)
             self.executions[key] = detail
+            return result
+
+    def cancel(self,client_order_id,preserve_reducing_mandate=False):
+        if type(preserve_reducing_mandate) is not bool:
+            raise ValueError('INVALID_REDUCING_MANDATE_CANCEL_MODE')
+        with self.lock:
+            record=self.lookup(client_order_id)
+            if (preserve_reducing_mandate and record is not None and
+                    record.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+                    record['status'] in ('SIMULATED_ACK_ONLY','SIMULATED_REDUCTION_PENDING')):
+                # Cancel the completed synthetic slice without retiring the
+                # immutable internal mandate that owns the protected intent ID.
+                return {**copy.deepcopy(record),'sent_to_broker':False,
+                        'slice_cancelled':True,'mandate_resumable':True}
+            if preserve_reducing_mandate:
+                if record is None:raise ValueError('UNKNOWN_ORDER_ID')
+                if record.get('intent_scope')!='POSITION_REDUCING_EXIT':
+                    raise ValueError('REDUCING_MANDATE_REQUIRED')
+            return super().cancel(client_order_id)
+
+    def emergency_halt(self):
+        with self.lock:
+            result=super().emergency_halt()
+            for record in self.intents.values():
+                if (record.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+                        record['status']=='SIMULATED_REDUCTION_PENDING'):
+                    record['status']='SIMULATED_CANCELLED'
             return result
 
     def account_report(self):

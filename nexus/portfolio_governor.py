@@ -5,9 +5,30 @@ It cannot prove that historical prices or fills were real. Failed integrity
 checks prohibit additional PAPER purchases; live trading remains impossible.
 """
 from decimal import Decimal, InvalidOperation
-from contextlib import nullcontext
-from nexus.paper_portfolio import LOCK, _connect, PRODUCTS, D, FEE
+import sqlite3
+from contextlib import contextmanager
+from nexus.paper_portfolio import (LOCK, _connect, _database_busy, _busy,
+    PRODUCTS, D, FEE)
 from nexus.transaction_seals import verify_seals
+
+
+@contextmanager
+def _audit_connection(connection):
+    """Own one explicit read snapshot when no caller transaction is supplied."""
+    if connection is not None:
+        yield connection
+        return
+    db=_connect()
+    try:
+        db.execute('BEGIN')
+        yield db
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):_busy()
+        raise
+    finally:
+        try:
+            if db.in_transaction:db.rollback()
+        finally:db.close()
 
 def checked(raw, *, positive=False):
     try:
@@ -20,7 +41,7 @@ def checked(raw, *, positive=False):
 
 def audit_portfolio(connection=None):
     reasons=[]
-    with LOCK,(nullcontext(connection) if connection is not None else _connect()) as db:
+    with LOCK,_audit_connection(connection) as db:
         meta=dict(db.execute("SELECT key,value FROM meta"))
         entries=db.execute("SELECT id,action,product,cash_delta FROM ledger ORDER BY id").fetchall()
         positions=db.execute("SELECT product,quantity,entry FROM positions ORDER BY product").fetchall()

@@ -1,9 +1,38 @@
 import pytest
+from decimal import Decimal
 from fastapi.testclient import TestClient
 from nexus.app import app
 from nexus import app as backend
 from nexus.tier_permissions import current,configure,require_entry
 from nexus.tier_performance import tier_performance
+
+
+class EqualText(str):
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
+@pytest.mark.parametrize('notional',(
+    0,-1,True,None,'10',float('nan'),float('inf'),
+    Decimal('NaN'),Decimal('Infinity')))
+def test_invalid_entry_value_fails_before_settings_or_permission_read(
+        tmp_path,monkeypatch,notional):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr('nexus.tier_permissions.current',
+        lambda:pytest.fail('tier permission state read'))
+    with pytest.raises(ValueError,match='^RISK_TIER_INTENT_INVALID$'):
+        require_entry('terrestrial',notional)
+    assert not tuple(tmp_path.iterdir())
+
+
+def test_type_confused_tier_fails_before_notional_or_settings_read(
+        tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr('nexus.tier_permissions.current',
+        lambda:pytest.fail('tier permission state read'))
+    with pytest.raises(ValueError,match='^UNKNOWN_RISK_TIER$'):
+        require_entry(EqualText('terrestrial'),10)
+    assert not tuple(tmp_path.iterdir())
 
 def test_new_install_terrestrial_preset_and_caps_are_independent(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
@@ -21,6 +50,34 @@ def test_new_install_terrestrial_preset_and_caps_are_independent(tmp_path,monkey
         require_entry("solar",201)
     with pytest.raises(ValueError,match="DISENGAGED"):
         require_entry("universal",10)
+
+
+def test_entry_admission_ignores_stale_permission_read_after_disable(
+        tmp_path, monkeypatch):
+    import sqlite3
+    from nexus import tier_permissions
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA', str(tmp_path))
+    configure('terrestrial', True)
+    stale = current()
+    with sqlite3.connect(tmp_path / 'portal_settings.sqlite3') as db, db:
+        db.execute("UPDATE tier_permissions SET enabled=0 WHERE tier='terrestrial'")
+
+    # Reproduce the former split-read race: a stale enabled result is still
+    # available after the durable OFF commit. Admission must use one fresh
+    # settings-and-permission snapshot, never stale current() plus later caps.
+    monkeypatch.setattr(tier_permissions, 'current', lambda: stale)
+    original_snapshot = tier_permissions._policy_snapshot
+    calls = 0
+
+    def counted_snapshot():
+        nonlocal calls
+        calls += 1
+        return original_snapshot()
+
+    monkeypatch.setattr(tier_permissions, '_policy_snapshot', counted_snapshot)
+    with pytest.raises(ValueError, match='^RISK_TIER_DISENGAGED$'):
+        tier_permissions.require_entry('terrestrial', 10)
+    assert calls == 1
 
 def test_tier_buy_is_blocked_unless_engaged_and_portal_active(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
@@ -47,6 +104,30 @@ def test_tier_buy_is_blocked_unless_engaged_and_portal_active(tmp_path,monkeypat
     assert c.put("/api/tiers/solar/permission",json={"enabled":True}).status_code==409
     c.post("/api/simulate/halt/reset",json={"confirm_reset":True})
     c.post("/api/portal",json={"enabled":False})
+
+
+@pytest.mark.parametrize('notional',[True,'1',None,[],{}])
+def test_simulated_order_notional_rejects_coercion_without_journal_write(tmp_path,monkeypatch,notional):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));client=TestClient(app)
+    before=tuple(tmp_path.iterdir())
+    response=client.post('/api/execution/intent/simulate',json={
+        'client_order_id':'strict_notional','product':'BTC-USD','side':'BUY',
+        'notional':notional,'provider':'nexus_local_paper','tier':'terrestrial'})
+    assert response.status_code==422 and tuple(tmp_path.iterdir())==before
+
+
+@pytest.mark.parametrize('notional',[1,1.5])
+def test_simulated_order_notional_accepts_json_numbers(tmp_path,monkeypatch,notional):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    monkeypatch.setattr(backend,'_halted',False);monkeypatch.setattr(backend,'_paused',True)
+    monkeypatch.setattr(backend.observer,'start',lambda:None)
+    monkeypatch.setattr(backend.refresh_worker,'start',lambda *a,**k:None)
+    monkeypatch.setattr(backend.observer,'stop',lambda:None)
+    client=TestClient(app);client.post('/api/portal',json={'enabled':True})
+    response=client.post('/api/execution/intent/simulate',json={
+        'client_order_id':'numeric_notional','product':'BTC-USD','side':'SELL',
+        'notional':notional,'provider':'nexus_local_paper','tier':'terrestrial'})
+    assert response.status_code==200
 
 def test_performance_readout_fails_closed_without_valid_history(tmp_path,monkeypatch):
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
@@ -98,6 +179,47 @@ def test_paper_ledger_buy_requires_selected_engaged_tier(tmp_path,monkeypatch):
     c.put("/api/tiers/terrestrial/permission",json={"enabled":False})
     assert c.post("/api/paper/portfolio/sell",json={"product":"BTC-USD"}).status_code==200
     c.post("/api/portal",json={"enabled":False})
+
+def test_emergency_cut_keeps_reducing_paper_exit_available(tmp_path,monkeypatch):
+    from nexus import emergency_intent
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    monkeypatch.setattr(backend.observer,"start",lambda:None)
+    monkeypatch.setattr(backend.refresh_worker,"start",lambda *a,**k:None)
+    monkeypatch.setattr(backend.observer,"stop",lambda:None)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+    buy={"product":"BTC-USD","notional":10,"tier":"terrestrial"}
+    assert client.post("/api/paper/portfolio/buy",json=buy).status_code==200
+    emergency_intent.path(backend.research_order_gateway._path()).write_bytes(emergency_intent.RECORD)
+    assert client.post("/api/paper/portfolio/buy",json=buy).status_code==409
+    closed=client.post("/api/paper/portfolio/sell",json={"product":"BTC-USD"})
+    assert closed.status_code==200 and closed.json()["positions"]==[]
+    assert backend._execution_halted() is True
+
+def test_emergency_cut_exit_still_fails_closed_on_invalid_quote(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_paused",False)
+    good={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+          "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+          "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(good))
+    client=TestClient(app)
+    client.post("/api/paper/portfolio/init",json={"paper_capital":10000})
+    configure("terrestrial",True)
+    assert client.post("/api/paper/portfolio/buy",json={"product":"BTC-USD","notional":10,"tier":"terrestrial"}).status_code==200
+    monkeypatch.setattr(backend,"_halted",True)
+    monkeypatch.setattr(backend,"read_ticker",lambda product:(_ for _ in ()).throw(ValueError("QUOTE_STALE")))
+    assert client.post("/api/paper/portfolio/sell",json={"product":"BTC-USD"}).status_code==422
+    assert len(client.get("/api/paper/portfolio").json()["positions"])==1
 
 def test_ledger_ui_has_explicit_tier_selector():
     html=TestClient(app).get("/portal").text

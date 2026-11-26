@@ -39,6 +39,18 @@ def test_clean_full_history_and_no_content_echo(tmp_path):
     assert report['paths_checked']==1
 
 
+@pytest.mark.parametrize('history',[False,True])
+def test_tracked_symlink_is_rejected_in_current_and_history_modes(tmp_path,history):
+    root=repository(tmp_path);target=root/'target.txt';target.write_text('public')
+    link=root/'linked.txt'
+    try:link.symlink_to('target.txt')
+    except OSError:pytest.skip('file symlink unavailable')
+    git(root,'add','--','target.txt','linked.txt');git(root,'commit','-m','symlink fixture')
+    result=audit.audit(root,history=history)
+    assert not result['passed']
+    assert any(item['rule']=='NON_REGULAR_GIT_ENTRY' for item in result['findings'])
+
+
 def test_removed_private_path_is_still_blocked(tmp_path):
     root=repository(tmp_path);path=commit(root,'.env.local',b'not-a-real-secret')
     path.unlink();git(root,'add','-u');git(root,'commit','-m','removed fixture')
@@ -58,6 +70,87 @@ def test_export_renamed_as_json_is_blocked_but_offline_fixture_report_is_allowed
     assert any(x['rule']=='PRIVATE_FINANCIAL_REPORT' for x in audit.audit(root,history=True)['findings'])
     commit(root,'validation/report.json',json.dumps({'mode':'BOUNDED_OFFLINE_RELEASE_TRIALS','fixture':True}).encode())
     assert not audit.audit(root,history=True)['passed']
+
+
+@pytest.mark.parametrize(('raw','rule'),[
+    (b'{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE","mode":"BOUNDED_OFFLINE_RELEASE_TRIALS","account_id":"private-fixture"}',
+     'AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"mode":"BOUNDED_OFFLINE_RELEASE_TRIALS","mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE","account_id":"private-fixture"}',
+     'AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"safe":{"value":1,"value":2}}','AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"value":NaN}','AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"value":Infinity}','AMBIGUOUS_JSON_REQUIRES_REVIEW'),
+    (b'{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"',
+     'MALFORMED_JSON_REQUIRES_REVIEW'),
+    (b'\xef\xbb\xbf{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"',
+     'MALFORMED_JSON_REQUIRES_REVIEW'),
+    ('{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"'.encode('utf-16'),
+     'MALFORMED_JSON_REQUIRES_REVIEW'),
+])
+def test_ambiguous_or_malformed_json_shaped_blob_requires_review(raw,rule):
+    assert audit.json_rule(raw)==rule
+
+
+@pytest.mark.parametrize('raw',[
+    b'const value = {mode: "public"};',
+    b'def public():\n    return {"mode":"fixture"}\n',
+    b'not json {"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"',
+    b'[build-system]\nrequires = ["setuptools"]\n',
+])
+def test_ordinary_non_json_source_is_not_misclassified(raw):
+    assert audit.json_rule(raw) is None
+
+
+def test_malformed_json_array_still_requires_review():
+    assert audit.json_rule(b'[{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"') == (
+        'MALFORMED_JSON_REQUIRES_REVIEW')
+
+
+def test_repaired_historical_malformed_json_is_grandfathered_but_new_delta_is_not(tmp_path):
+    root=repository(tmp_path)
+    path=commit(root,'report.json',b'{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"')
+    path.write_text('{"mode":"BOUNDED_OFFLINE_RELEASE_TRIALS"}\n')
+    git(root,'add','--','report.json');git(root,'commit','-m','repair')
+    baseline=git(root,'rev-parse','HEAD').strip().decode()
+    commit(root,'source.py',b'print("public")\n')
+    candidate=git(root,'rev-parse','HEAD').strip().decode()
+    assert audit.audit(root,history=True,baseline_commit=baseline,
+        candidate_commit=candidate)['passed']
+
+    path.write_bytes(b'[{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE"')
+    git(root,'add','--','report.json');git(root,'commit','-m','new malformed')
+    changed=git(root,'rev-parse','HEAD').strip().decode()
+    report=audit.audit(root,history=True,baseline_commit=candidate,
+        candidate_commit=changed)
+    assert not report['passed']
+    assert any(item['rule']=='MALFORMED_JSON_REQUIRES_REVIEW'
+               for item in report['findings'])
+
+
+def test_ambiguous_json_finding_never_echoes_private_content_or_path(tmp_path):
+    root=repository(tmp_path);private='private-account-fixture'
+    commit(root,'renamed-private-report.txt',(
+        '{"mode":"PAPER_ACCOUNT_ACCEPTANCE_PROBE",'
+        '"mode":"BOUNDED_OFFLINE_RELEASE_TRIALS","account_id":"'+private+'"}').encode())
+    report=audit.audit(root,history=True);encoded=json.dumps(report)
+    assert not report['passed']
+    assert any(item['rule']=='AMBIGUOUS_JSON_REQUIRES_REVIEW'
+               for item in report['findings'])
+    assert private not in encoded and 'renamed-private-report.txt' not in encoded
+
+@pytest.mark.parametrize('history',[False,True])
+def test_bom_prefixed_private_json_is_blocked_when_renamed(tmp_path,history):
+    root=repository(tmp_path)
+    private='private-account-fixture'
+    raw=b'\xef\xbb\xbf'+json.dumps({
+        'mode':'PAPER_ACCOUNT_ACCEPTANCE_PROBE',
+        'account_sha256':private,
+    }).encode()
+    commit(root,'ordinary.txt',raw)
+    result=audit.audit(root,history=history)
+    assert not result['passed']
+    assert any(item['rule']=='PRIVATE_FINANCIAL_REPORT' for item in result['findings'])
+    assert private not in json.dumps(result)
 
 
 def test_private_retired_order_id_baseline_is_blocked_even_when_renamed(tmp_path):
@@ -102,7 +195,15 @@ def test_current_workflows_have_immutable_actions_and_no_privileged_secret_conte
 def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanner():
     text=(ROOT/'.github/workflows/public-repo-security.yml').read_text()
     assert 'fetch-depth: 0' in text and 'github.event.pull_request.base.sha || github.sha' in text
+    assert 'ref: ${{ github.event.pull_request.head.sha || github.sha }}' in text
+    assert 'name: Bind scan to exact source commit' in text
+    assert 'EXPECTED_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}' in text
+    assert 'git -C scan rev-parse HEAD' in text
     assert 'python3 policy/tools/public_repo_audit.py --repository scan --history' in text
+    assert 'BASELINE_COMMIT: ${{ github.event.pull_request.base.sha || github.sha }}' in text
+    assert 'CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}' in text
+    assert '--baseline-commit "$BASELINE_COMMIT"' in text
+    assert '--candidate-commit "$CANDIDATE_COMMIT"' in text
     assert 'sha256sum --check --strict' in text and "--log-opts='--all'" in text
     assert '--redact=100' in text and '--log-level fatal' in text
     assert '--ignore-gitleaks-allow' in text and '--gitleaks-ignore-path /dev/null' in text
@@ -117,12 +218,27 @@ def test_pr_security_uses_trusted_policy_full_history_and_checksum_pinned_scanne
     'SUPPLIED_EXECUTION_QUALITY_REVIEW','PAPER_EXECUTION_QUALITY_REVIEW','READ_ONLY_PAPER_BTC_QUOTE_OBSERVATION','PAPER_REQUEST_QUOTE_HISTORY','PAPER_REQUEST_QUOTE_RECEIPT','PAPER_QUOTE_CAPTURE_STATUS','EXPLICIT_PAPER_QUOTE_CAPTURE','PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW',
     'PAPER_PROVIDER_READ_BUDGET_REVIEWED_RECOVERY','PAPER_READ_PACING_REVIEWED_RECOVERY',
     'PAPER_ACCOUNT_RESPONSE_NORMALIZATION_REVIEW','PAPER_ACTIVITY_RESPONSE_NORMALIZATION_REVIEW',
-    'PAPER_EXACT_RESPONSE_BUNDLE_REVIEW'])
+    'PAPER_EXACT_RESPONSE_BUNDLE_REVIEW','READ_ONLY_BROKER_SUBMISSION_REVIEW'])
 def test_standalone_operational_trial_report_is_private_even_when_renamed(tmp_path,mode):
     root=repository(tmp_path)
     commit(root,'ordinary.txt',json.dumps({'mode':mode,'fixture':True}).encode())
     result=audit.audit(root,history=True)
     assert not result['passed'] and any(f['rule']=='PRIVATE_FINANCIAL_REPORT' for f in result['findings'])
+
+
+def test_real_broker_submission_review_is_private_in_history(tmp_path):
+    from nexus.broker_request_journal import BrokerRequestJournal
+
+    report=BrokerRequestJournal(
+        tmp_path/'private.sqlite3',
+        '01234567-89ab-cdef-0123-456789abcdef',
+    ).submission_review('nx_private_order_001',evaluated_at=1000)
+    root=tmp_path/'repo';root.mkdir()
+    repository(root);commit(root,'ordinary.json',json.dumps(report).encode())
+    result=audit.audit(root,history=True)
+    assert not result['passed']
+    assert any(f['rule']=='PRIVATE_FINANCIAL_REPORT' for f in result['findings'])
+    assert 'nx_private_order_001' not in json.dumps(result)
 
 
 def test_quote_evidence_ciphertext_and_plaintext_profile_are_private_when_renamed(tmp_path):
@@ -140,10 +256,81 @@ def test_aggregate_history_byte_cap_still_refuses_without_skipping_objects(tmp_p
     with pytest.raises(ValueError,match='HISTORY_BYTE_CAP'):audit.audit(root,history=True)
 
 
+def test_per_object_cap_is_finite_and_fail_closed(tmp_path,monkeypatch):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    monkeypatch.setattr(audit,'MAX_OBJECT_BYTES',1)
+    with pytest.raises(ValueError,match='OBJECT_BYTE_CAP'):audit.audit(root,history=True)
+
+
+def test_exact_base_to_candidate_delta_is_measured_after_complete_history_scan(tmp_path):
+    root=repository(tmp_path);commit(root,'base.txt',b'base public fixture')
+    baseline=git(root,'rev-parse','HEAD').strip().decode()
+    commit(root,'candidate.txt',b'candidate public fixture')
+    candidate=git(root,'rev-parse','HEAD').strip().decode()
+    expected=len({line.split(b' ',1)[0] for line in
+        git(root,'rev-list','--objects',candidate,'^'+baseline).splitlines()})
+    report=audit.audit(root,history=True,baseline_commit=baseline,
+        candidate_commit=candidate)
+    assert report['passed'] and report['blobs_checked']==2
+    assert report['baseline_commit']==baseline and report['candidate_commit']==candidate
+    assert report['delta_objects_checked']==expected and report['delta_bytes_checked']>0
+
+
+@pytest.mark.parametrize(('field','reason'),[
+    ('baseline','INVALID_BASELINE_COMMIT'),
+    ('candidate','INVALID_CANDIDATE_COMMIT'),
+])
+def test_delta_commits_require_exact_lowercase_object_ids(tmp_path,field,reason):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    head=git(root,'rev-parse','HEAD').strip().decode()
+    values=dict(baseline_commit=head,candidate_commit=head);values[field+'_commit']='HEAD'
+    with pytest.raises(ValueError,match=reason):audit.audit(root,history=True,**values)
+
+
+def test_missing_and_unrelated_delta_commits_fail_closed(tmp_path):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    head=git(root,'rev-parse','HEAD').strip().decode()
+    missing='0'*len(head)
+    with pytest.raises(ValueError,match='BASELINE_COMMIT_UNAVAILABLE'):
+        audit.audit(root,history=True,baseline_commit=missing,candidate_commit=head)
+    tree=git(root,'write-tree').strip().decode()
+    unrelated=subprocess.run(['git','-C',str(root),'commit-tree',tree],input=b'unrelated\n',
+        check=True,capture_output=True).stdout.strip().decode()
+    with pytest.raises(ValueError,match='BASELINE_NOT_ANCESTOR'):
+        audit.audit(root,history=True,baseline_commit=head,candidate_commit=unrelated)
+
+
+def test_delta_requires_both_commits_and_complete_history(tmp_path):
+    root=repository(tmp_path);commit(root,'public.txt',b'public fixture')
+    head=git(root,'rev-parse','HEAD').strip().decode()
+    with pytest.raises(ValueError,match='DELTA_COMMIT_PAIR_REQUIRED'):
+        audit.audit(root,history=True,baseline_commit=head)
+    with pytest.raises(ValueError,match='DELTA_REQUIRES_HISTORY'):
+        audit.audit(root,baseline_commit=head,candidate_commit=head)
+
+
+@pytest.mark.parametrize(('limit','reason'),[
+    ('MAX_DELTA_BYTES','DELTA_BYTE_CAP'),
+    ('MAX_DELTA_OBJECTS','DELTA_OBJECT_CAP'),
+])
+def test_candidate_delta_caps_fail_closed(tmp_path,monkeypatch,limit,reason):
+    root=repository(tmp_path);commit(root,'base.txt',b'base public fixture')
+    baseline=git(root,'rev-parse','HEAD').strip().decode()
+    commit(root,'candidate.txt',b'candidate public fixture')
+    candidate=git(root,'rev-parse','HEAD').strip().decode()
+    monkeypatch.setattr(audit,limit,0)
+    with pytest.raises(ValueError,match=reason):
+        audit.audit(root,history=True,baseline_commit=baseline,
+            candidate_commit=candidate)
+
+
 def test_history_budget_is_finite_and_above_measured_reachable_history():
-    measured_bytes=1_202_605_780
-    assert audit.MAX_BYTES == 1536 * 1024 * 1024
-    assert measured_bytes < audit.MAX_BYTES < 2 * 1024 * 1024 * 1024
+    measured_bytes=1_467_457_423
+    assert audit.MAX_BYTES == 4 * 1024 * 1024 * 1024
+    assert audit.MAX_OBJECT_BYTES == 16 * 1024 * 1024
+    assert audit.MAX_DELTA_BYTES == 64 * 1024 * 1024
+    assert audit.MAX_DELTA_OBJECTS == 4096
+    assert measured_bytes < audit.MAX_BYTES <= 4 * 1024 * 1024 * 1024
 
 
 @pytest.mark.parametrize('reason,expected',[('HISTORY_BYTE_CAP','HISTORY_BYTE_CAP'),

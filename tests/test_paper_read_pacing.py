@@ -323,7 +323,16 @@ def test_competing_processes_cannot_both_reserve_same_ready_journal(gate):
     results = [p.communicate(timeout=20) for p in processes]
     assert sorted(p.returncode for p in processes) == [0, 1]
     assert sum(b'ADMITTED' in out for out, err in results) == 1
-    assert sum(b'PENDING_REVIEW' in err for out, err in results) == 1
+    loser = next(err for (out, err), process in zip(results, processes)
+        if process.returncode != 0)
+    # The second writer either loses the nonblocking OS lease, replays the
+    # committed reservation, or observes the exact pathname bytes changing
+    # while the first commit is released. All are fixed fail-closed denials;
+    # a second admission or raw SQLite backend error is not.
+    reasons = (b'OWNER_BUSY_OR_UNAVAILABLE', b'PENDING_REVIEW',
+        b'CONNECTION_CONTENT_CHANGED')
+    assert sum(reason in loser for reason in reasons) == 1
+    assert b'sqlite3.OperationalError' not in loser
     assert gate.inspect()['sessions'] == 2 and gate.inspect()['events'] == 3
 
 

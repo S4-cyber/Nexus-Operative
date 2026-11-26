@@ -19,7 +19,8 @@ REVIEW_PUBLIC_KEYS=frozenset(('mode','status','read_only','account_sha256',
     'normalization_evaluated','activity_normalization',
     'collection_observation_review','requested_window_review','review_reasons',
     'source','limitations',*REVIEW_FLAGS))
-FIXTURE_CHECKS=('passed','isolated_temporary_storage')
+FIXTURE_CHECKS=('passed','isolated_temporary_storage',
+    'contradictory_fill_remainder_rejected')
 FIXTURE_FLAGS=('application_accounts_changed','broker_connected',
     'live_orders_enabled','release_approved')
 PUBLIC_FIXTURE_KEYS=frozenset(('mode','source','review',*FIXTURE_CHECKS,
@@ -143,6 +144,18 @@ def fixture_report():
         report = store.review()
         if report['review_reasons'] != ['ACTIVITY_COVERAGE_UNVERIFIED', 'FEE_LINK_AND_TIMING_UNVERIFIED']:
             raise ValueError('BROKER_ACTIVITY_REVIEW_FIXTURE_DISAGREEMENT')
+        contradictory = BrokerActivityStore(
+            Path(temporary)/'contradictory-activities.db',
+            'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
+        contradictory.retain([first], [initial_order], **scope)
+        contradictory.retain([dict(second, type='partial_fill')] + rows[1:],
+            orders, **scope)
+        contradiction = contradictory.review()
+        rejected = ('FILL_TYPE_REMAINDER_DISAGREEMENT' in
+            contradiction['review_reasons'] and
+            contradiction['broker_account_reconciled'] is False)
     return dict(mode='DISPOSABLE_MERGED_ACTIVITY_REVIEW', passed=True, source='FIXED_SYNTHETIC_REST_EXAMPLE',
-                review=report, isolated_temporary_storage=True, application_accounts_changed=False,
+                review=report, isolated_temporary_storage=True,
+                contradictory_fill_remainder_rejected=rejected,
+                application_accounts_changed=False,
                 broker_connected=False, live_orders_enabled=False, release_approved=False)

@@ -927,6 +927,7 @@ def attempt(*, expected_account_id, initial_events_path, cursor_path,
     if (confirm_reconnect_attempt is not True or
             confirm_read_only_paper is not True or
             confirm_cursor_checkpoint is not True or
+            type(reconnect_reason) is not str or
             reconnect_reason not in REASONS):
         _fail()
     account, cursor, budget, order, journal_scope = _scope(expected_account_id,

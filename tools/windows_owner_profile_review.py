@@ -1,9 +1,9 @@
 """Review a privacy-safe ordinary-user Windows profile/ACL probe.
 
 The probe is owner-operated and self-reported.  This reviewer binds it to the
-exact installer, installed executable and manifest-shipped probe/reviewer
-tools without promoting it to independent native, broker or release
-acceptance.
+exact installer, installer semantic result, installed executable and
+manifest-shipped probe/reviewer tools without promoting it to independent
+native, broker or release acceptance.
 """
 from __future__ import annotations
 
@@ -29,6 +29,32 @@ ARCHITECTURES = {"X64", "Arm64", "X86"}
 PROBE_PROFILE = "nexus.windows-owner-profile-probe.v1"
 PROBE_NAME = "windows-owner-profile-probe.ps1"
 REVIEWER_NAME = "windows-owner-profile-review.py"
+ARTIFACT_MANIFEST_NAME = "artifact-manifest.json"
+DISTRIBUTION_BINDING_NAME = "distribution-binding-review.json"
+INSTALLER_RESULT_REVIEW_NAME = "installer-result-review.json"
+INSTALLER_RESULT_LIMITATIONS = (
+    "Successful CI installer semantic checks with bounded redirected-output drainage only; descendant "
+    "containment is not verified; not clean-machine, native-window, ordinary-user, power-loss, broker, "
+    "market, funds or release acceptance."
+)
+INSTALLER_RESULT_TRUE = {
+    "passed", "first_run_paper_defaults", "saved_setup_survived_reinstall",
+    "saved_setup_survived_restart", "setup_preserved_on_uninstall",
+    "default_windows_data_recovery", "default_data_preserved_on_uninstall",
+    "prior_version_data_recovery", "packaged_backup_recovery", "same_version_reinstall",
+    "halt_recovered", "uninstall_preserved_data", "external_process_output_drains_bounded",
+    "phase_evidence_recorded", "phase_evidence_bound", "exact_source_bound",
+    "installer_digest_bound", "single_session_bound",
+}
+INSTALLER_RESULT_FALSE = {
+    "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified", "native_windows_acceptance",
+    "actual_broker_acceptance", "live_orders_enabled", "money_movement_enabled", "release_approved",
+}
+INSTALLER_RESULT_KEYS = {
+    "mode", "version", "source_commit", "installer_sha256", "session_id",
+    "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
+    "output_drain_timeout_seconds", "limitations",
+} | INSTALLER_RESULT_TRUE | INSTALLER_RESULT_FALSE
 PROBE_LIMITATIONS = (
     "Owner-operated single-profile effective-access probe only; no usernames, SIDs, paths, account data or "
     "credentials retained. Self-reported machine evidence is not independent attestation, native-window, "
@@ -55,7 +81,9 @@ PROBE_FALSE = {
 }
 BINDING_KEYS = {
     "mode", "passed", "version", "source_commit", "installer_name", "installer_bytes",
-    "installer_sha256", "phase_evidence_bound", "artifact_manifest_bound", "final_installer_rehashed",
+    "installer_sha256", "installer_result_session_id", "installer_result_review_bytes",
+    "installer_result_review_sha256", "phase_evidence_bound", "installer_result_review_bound",
+    "installer_result_semantics_bound", "artifact_manifest_bound", "final_installer_rehashed",
     "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
     "money_movement_enabled", "release_approved", "limitations",
 }
@@ -93,21 +121,26 @@ def _read_bytes(path, limit):
     return raw
 
 
-def _load_json(path):
+def _load_json_raw(path):
     try:
         raw = _read_bytes(path, MAX_JSON_BYTES)
-        return json.loads(
+        value = json.loads(
             raw.decode("utf-8-sig"), object_pairs_hook=_pairs,
             parse_float=lambda _: (_ for _ in ()).throw(OwnerProfileReviewError("number")),
             parse_constant=lambda _: (_ for _ in ()).throw(OwnerProfileReviewError("number")),
         )
+        return value, raw
     except (UnicodeError, json.JSONDecodeError, OwnerProfileReviewError, RecursionError):
         raise OwnerProfileReviewError("json") from None
 
 
-def _tool(path, expected_name):
+def _load_json(path):
+    return _load_json_raw(path)[0]
+
+
+def _tool(path, expected_name=None):
     path = Path(path)
-    if path.name != expected_name:
+    if expected_name is not None and path.name != expected_name:
         raise OwnerProfileReviewError("tool name")
     raw = _read_bytes(path, MAX_TOOL_BYTES)
     return len(raw), hashlib.sha256(raw).hexdigest()
@@ -154,35 +187,92 @@ def _manifest_entries(manifest, *, version, source_commit):
     return result
 
 
-def verify(probe, binding, manifest, *, expected_version, expected_source_commit,
-           probe_tool, reviewer_tool):
+def _distribution_envelope(envelope, *, version, source_commit,
+                           artifact_manifest_raw, distribution_binding_raw):
+    entries = _manifest_entries(envelope, version=version, source_commit=source_commit)
+    expected = {
+        ARTIFACT_MANIFEST_NAME: (
+            len(artifact_manifest_raw), hashlib.sha256(artifact_manifest_raw).hexdigest()),
+        DISTRIBUTION_BINDING_NAME: (
+            len(distribution_binding_raw), hashlib.sha256(distribution_binding_raw).hexdigest()),
+    }
+    if entries != expected:
+        raise OwnerProfileReviewError("distribution envelope")
+    return entries
+
+
+def verify(probe, binding, installer_result, manifest, envelope, *, artifact_manifest_raw,
+           distribution_binding_raw, installer_result_raw, expected_version, expected_source_commit,
+           probe_tool, reviewer_tool, executing_reviewer_tool):
     if type(expected_version) is not str or VERSION.fullmatch(expected_version) is None:
         raise OwnerProfileReviewError("expected version")
     if type(expected_source_commit) is not str or SOURCE.fullmatch(expected_source_commit) is None:
         raise OwnerProfileReviewError("expected source")
-    for value in (probe_tool, reviewer_tool):
+    for value in (probe_tool, reviewer_tool, executing_reviewer_tool):
         if (type(value) is not tuple or len(value) != 2 or type(value[0]) is not int or value[0] < 1
                 or type(value[1]) is not str or SHA256.fullmatch(value[1]) is None):
             raise OwnerProfileReviewError("tool binding")
+    if executing_reviewer_tool != reviewer_tool:
+        raise OwnerProfileReviewError("executing reviewer binding")
     if type(probe) is not dict or set(probe) != PROBE_KEYS:
         raise OwnerProfileReviewError("probe shape")
     if type(binding) is not dict or set(binding) != BINDING_KEYS:
         raise OwnerProfileReviewError("binding shape")
+    if type(installer_result) is not dict or set(installer_result) != INSTALLER_RESULT_KEYS:
+        raise OwnerProfileReviewError("installer result shape")
+    if (type(artifact_manifest_raw) is not bytes or type(distribution_binding_raw) is not bytes
+            or type(installer_result_raw) is not bytes):
+        raise OwnerProfileReviewError("distribution bytes")
     if (binding["mode"] != "VERIFIED_INSTALLER_DISTRIBUTION_BINDING" or binding["passed"] is not True
             or binding["version"] != expected_version or binding["source_commit"] != expected_source_commit
             or binding["installer_name"] != f"NexusOperative-Setup-{expected_version}.exe"
             or type(binding["installer_bytes"]) is not int or binding["installer_bytes"] < 1
             or type(binding["installer_sha256"]) is not str or SHA256.fullmatch(binding["installer_sha256"]) is None
+            or _session(binding["installer_result_session_id"]) != binding["installer_result_session_id"]
+            or type(binding["installer_result_review_bytes"]) is not int
+            or binding["installer_result_review_bytes"] < 1
+            or type(binding["installer_result_review_sha256"]) is not str
+            or SHA256.fullmatch(binding["installer_result_review_sha256"]) is None
             or any(binding[key] is not True for key in (
-                "phase_evidence_bound", "artifact_manifest_bound", "final_installer_rehashed"))
+                "phase_evidence_bound", "installer_result_review_bound",
+                "installer_result_semantics_bound", "artifact_manifest_bound",
+                "final_installer_rehashed"))
             or any(binding[key] is not False for key in (
                 "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
                 "money_movement_enabled", "release_approved"))
             or type(binding["limitations"]) is not str or not binding["limitations"]):
         raise OwnerProfileReviewError("binding")
+    if (installer_result["mode"] != "VERIFIED_INSTALLER_RESULT_EVIDENCE"
+            or installer_result["version"] != expected_version
+            or installer_result["source_commit"] != expected_source_commit
+            or installer_result["installer_sha256"] != binding["installer_sha256"]
+            or installer_result["session_id"] != binding["installer_result_session_id"]
+            or _session(installer_result["session_id"]) != installer_result["session_id"]
+            or type(installer_result["raw_result_bytes"]) is not int
+            or installer_result["raw_result_bytes"] < 1
+            or type(installer_result["raw_result_sha256"]) is not str
+            or SHA256.fullmatch(installer_result["raw_result_sha256"]) is None
+            or type(installer_result["maximum_root_process_timeout_seconds"]) is not int
+            or installer_result["maximum_root_process_timeout_seconds"] != 300
+            or type(installer_result["output_drain_timeout_seconds"]) is not int
+            or installer_result["output_drain_timeout_seconds"] != 10
+            or installer_result["limitations"] != INSTALLER_RESULT_LIMITATIONS
+            or any(installer_result[key] is not True for key in INSTALLER_RESULT_TRUE)
+            or any(installer_result[key] is not False for key in INSTALLER_RESULT_FALSE)):
+        raise OwnerProfileReviewError("installer result")
+    installer_result_info = (
+        len(installer_result_raw), hashlib.sha256(installer_result_raw).hexdigest())
+    if installer_result_info != (
+            binding["installer_result_review_bytes"], binding["installer_result_review_sha256"]):
+        raise OwnerProfileReviewError("installer result binding")
+    _distribution_envelope(envelope, version=expected_version,
+        source_commit=expected_source_commit,
+        artifact_manifest_raw=artifact_manifest_raw,
+        distribution_binding_raw=distribution_binding_raw)
     entries = _manifest_entries(manifest, version=expected_version, source_commit=expected_source_commit)
     required_entries = {
         binding["installer_name"]: (binding["installer_bytes"], binding["installer_sha256"]),
+        INSTALLER_RESULT_REVIEW_NAME: installer_result_info,
         "NexusOperative.exe": None,
         PROBE_NAME: probe_tool,
         REVIEWER_NAME: reviewer_tool,
@@ -219,9 +309,15 @@ def verify(probe, binding, manifest, *, expected_version, expected_source_commit
         "windows_version": probe["windows_version"],
         "architecture": probe["architecture"],
         "exact_distribution_bound": True,
+        "distribution_envelope_bound": True,
+        "artifact_manifest_file_bound": True,
+        "distribution_binding_file_bound": True,
+        "installer_result_review_bound": True,
+        "installer_result_semantics_bound": True,
         "installed_executable_bound": True,
         "probe_tool_manifest_bound": True,
         "review_tool_manifest_bound": True,
+        "executing_reviewer_bound": True,
         "ordinary_user_profile_checked": True,
         "effective_acl_operations_checked": True,
         "private_paths_retained": False,
@@ -270,7 +366,9 @@ def main():
     parser = _Parser(description=__doc__)
     parser.add_argument("--probe", required=True)
     parser.add_argument("--distribution-binding", required=True)
+    parser.add_argument("--installer-result-review", required=True)
     parser.add_argument("--artifact-manifest", required=True)
+    parser.add_argument("--distribution-envelope", required=True)
     parser.add_argument("--probe-tool", required=True)
     parser.add_argument("--review-tool", required=True)
     parser.add_argument("--expected-version", required=True)
@@ -280,11 +378,21 @@ def main():
     try:
         probe_tool = _tool(args.probe_tool, PROBE_NAME)
         reviewer_tool = _tool(args.review_tool, REVIEWER_NAME)
+        # The source module uses underscores while the shipped copy uses the
+        # public hyphenated artifact name. Bind executing bytes independently
+        # of that packaging rename; --review-tool still enforces artifact name.
+        executing_reviewer_tool = _tool(Path(__file__).resolve())
+        binding, binding_raw = _load_json_raw(args.distribution_binding)
+        installer_result, installer_result_raw = _load_json_raw(args.installer_result_review)
+        artifact_manifest, artifact_manifest_raw = _load_json_raw(args.artifact_manifest)
         result = verify(
-            _load_json(args.probe), _load_json(args.distribution_binding),
-            _load_json(args.artifact_manifest), expected_version=args.expected_version,
+            _load_json(args.probe), binding, installer_result, artifact_manifest,
+            _load_json(args.distribution_envelope),
+            artifact_manifest_raw=artifact_manifest_raw,
+            distribution_binding_raw=binding_raw, installer_result_raw=installer_result_raw,
+            expected_version=args.expected_version,
             expected_source_commit=args.expected_source_commit, probe_tool=probe_tool,
-            reviewer_tool=reviewer_tool,
+            reviewer_tool=reviewer_tool, executing_reviewer_tool=executing_reviewer_tool,
         )
         _write(args.output, result)
     except (OSError, OwnerProfileReviewError, MemoryError, RecursionError):

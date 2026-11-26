@@ -1,9 +1,156 @@
 """Independent local intent durability and conservative startup; no external IO."""
+import ctypes
 import os
 import stat
+from pathlib import Path
 import pytest
 from nexus import app as api, emergency_intent as intent
 from test_emergency_storage import control, rig
+
+
+def test_windows_directory_lease_excludes_delete_sharing_and_closes(
+        tmp_path,monkeypatch):
+    calls=[]
+    class Function:
+        argtypes=None;restype=None
+        def __init__(self,name,result):self.name=name;self.result=result
+        def __call__(self,*args):
+            calls.append((self.name,args))
+            if self.name=='inspect':
+                args[1]._obj.dwFileAttributes=0x10 if args[0]==37 else 0
+                args[1]._obj.nNumberOfLinks=1
+            return self.result
+    handles=iter((37,38))
+    class Create:
+        argtypes=None;restype=None
+        def __call__(self,*args):
+            calls.append(('create',args));return next(handles)
+    create=Create();inspect=Function('inspect',True)
+    close=Function('close',True)
+    class Kernel:
+        CreateFileW=create;GetFileInformationByHandle=inspect;CloseHandle=close
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
+    lease=intent._windows_pin_directory(tmp_path)
+    assert isinstance(lease,intent._WindowsDirectoryLease)
+    selected,access,sharing,security,disposition,flags,template=calls[0][1]
+    assert calls[0][0]=='create' and selected==str(tmp_path.absolute()) and access==0x80
+    assert sharing==0x3 and not sharing&0x4
+    assert security is None and disposition==3
+    assert flags==0x02200000 and template is None
+    assert calls[1][0]=='inspect' and calls[1][1][0]==37
+    child,child_access,child_sharing,_,child_disposition,child_flags,_=calls[2][1]
+    assert calls[2][0]=='create'
+    assert child==str((tmp_path/intent.WINDOWS_LEASE_NAME).absolute())
+    assert child_access==0x80 and child_sharing==0x3 and not child_sharing&0x4
+    assert child_disposition==4 and child_flags==0x00200000
+    assert calls[3][0]=='inspect' and calls[3][1][0]==38
+    lease.close()
+    assert calls[4:]==[('close',(38,)),('close',(37,))]
+    assert lease.handle is None and lease.child_handle is None
+    lease.close();assert len(calls)==6
+
+
+@pytest.mark.parametrize('attributes',[0,0x10|0x400])
+def test_windows_directory_lease_rejects_non_directory_or_reparse_target(
+        tmp_path,monkeypatch,attributes):
+    closed=[]
+    class Function:
+        argtypes=None;restype=None
+        def __init__(self,call):self.call=call
+        def __call__(self,*args):return self.call(*args)
+    def inspect(handle,information):
+        information._obj.dwFileAttributes=attributes if handle==39 else 0
+        information._obj.nNumberOfLinks=1
+        return True
+    class Kernel:
+        CreateFileW=Function(lambda path,*_args:39 if path==str(tmp_path.absolute()) else 40)
+        GetFileInformationByHandle=Function(inspect)
+        CloseHandle=Function(lambda handle:closed.append(handle) or True)
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent._windows_pin_directory(tmp_path)
+    assert closed==[39]
+
+
+@pytest.mark.parametrize(('attributes','links'),[(0x10,1),(0x400,1),(0,2)])
+def test_windows_directory_lease_rejects_unsafe_child_guard(
+        tmp_path,monkeypatch,attributes,links):
+    closed=[]
+    class Function:
+        argtypes=None;restype=None
+        def __init__(self,call):self.call=call
+        def __call__(self,*args):return self.call(*args)
+    def inspect(handle,information):
+        information._obj.dwFileAttributes=0x10 if handle==45 else attributes
+        information._obj.nNumberOfLinks=1 if handle==45 else links
+        return True
+    class Kernel:
+        CreateFileW=Function(lambda path,*_args:45 if path==str(tmp_path.absolute()) else 46)
+        GetFileInformationByHandle=Function(inspect)
+        CloseHandle=Function(lambda handle:closed.append(handle) or True)
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent._windows_pin_directory(tmp_path)
+    assert closed==[46,45]
+
+
+def test_windows_directory_lease_closes_both_handles_after_child_open_failure(
+        tmp_path,monkeypatch):
+    closed=[]
+    class Function:
+        argtypes=None;restype=None
+        def __init__(self,call):self.call=call
+        def __call__(self,*args):return self.call(*args)
+    def create(path,*_args):
+        return 47 if path==str(tmp_path.absolute()) else ctypes.c_void_p(-1).value
+    def inspect(_handle,information):
+        information._obj.dwFileAttributes=0x10
+        return True
+    class Kernel:
+        CreateFileW=Function(create)
+        GetFileInformationByHandle=Function(inspect)
+        CloseHandle=Function(lambda handle:closed.append(handle) or True)
+    monkeypatch.setattr(ctypes,'WinDLL',lambda *_args,**_kwargs:Kernel(),raising=False)
+    monkeypatch.setattr(ctypes,'get_last_error',lambda:5,raising=False)
+    monkeypatch.setattr(ctypes,'WinError',lambda error:OSError(error,'denied'),raising=False)
+    with pytest.raises(OSError):intent._windows_pin_directory(tmp_path)
+    assert closed==[47]
+
+
+def test_windows_directory_lease_uses_path_operations_and_closes(
+        tmp_path,monkeypatch):
+    order=tmp_path/'orders.sqlite3';closed=[];handles=iter((41,42))
+    def lease(_directory):
+        return intent._WindowsDirectoryLease(next(handles),lambda handle:closed.append(handle) or True)
+    monkeypatch.setattr(intent,'_pin_directory',lease)
+    intent.persist(order)
+    assert intent.path(order).read_bytes()==intent.RECORD and closed==[41]
+    intent.clear(order)
+    assert not intent.path(order).exists() and closed==[41,42]
+
+
+def test_windows_directory_lease_parent_drift_fails_before_entry(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';root.mkdir();order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    closed=[];lease=intent._WindowsDirectoryLease(43,lambda handle:closed.append(handle) or True)
+    def pin_then_replace(_directory):
+        root.rename(retired);root.mkdir();return lease
+    monkeypatch.setattr(intent,'_pin_directory',pin_then_replace)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.persist(order)
+    assert not intent.path(order).exists() and closed==[43]
+
+
+@pytest.mark.skipif(os.name!='nt',reason='native Win32 directory lease acceptance')
+def test_native_windows_directory_lease_blocks_parent_rename(tmp_path):
+    root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
+    lease=intent._windows_pin_directory(root)
+    try:
+        with pytest.raises(OSError):root.rename(retired)
+        assert root.is_dir() and not retired.exists()
+    finally:lease.close()
+    root.rename(retired)
+    assert retired.is_dir() and not root.exists()
 
 
 @pytest.mark.parametrize('contents',[b'',intent.RECORD,b'broken\x00private'])
@@ -76,6 +223,23 @@ def test_reset_failure_after_intent_unlink_reestablishes_both_durable_barriers(c
     monkeypatch.setattr(intent,'clear',original)
     assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==200
     assert not target.exists() and not r.status()['cut_requested'] and not r.status()['enabled']
+
+
+def test_reset_audit_failure_reestablishes_cut_and_durable_halt(control,monkeypatch):
+    c,g,r,*_=control
+    assert c.post('/api/simulate/halt').status_code==200
+    original=api.audit
+    def fail(_event):raise OSError('PRIVATE_AUDIT_PATH')
+    monkeypatch.setattr(api,'audit',fail)
+    reply=c.post('/api/simulate/halt/reset',json={'confirm_reset':True})
+    assert reply.status_code==503 and reply.json()['detail']=='HALT_RESET_AUDIT_UNAVAILABLE'
+    assert 'PRIVATE' not in reply.text
+    assert api._halted and not api._cut_confirmed and r.status()['cut_requested']
+    assert not r.status()['enabled'] and intent.requested(g._path())
+    assert g.recovery_report()['halted'] and api._recover_emergency_cut()==(True,True)
+    monkeypatch.setattr(api,'audit',original)
+    assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==200
+    assert not intent.requested(g._path()) and not r.status()['cut_requested']
 
 
 def test_intent_bounded_idempotent_and_existing_directory_is_not_silently_repaired(tmp_path):
@@ -159,3 +323,64 @@ def test_clear_never_acknowledges_replaced_parent(tmp_path,monkeypatch):
         intent.clear(order)
     assert swapped and intent.requested(order)
     assert not (retired/'emergency_cut.intent').exists()
+
+
+def test_descriptorless_persist_never_acknowledges_replaced_parent(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    root.mkdir();original=intent.os.fsync;rename_attempted=False
+    monkeypatch.setattr(intent,'_pin_directory',lambda _directory:None)
+    def swap_after_file_sync(fd):
+        nonlocal rename_attempted
+        if stat.S_ISREG(os.fstat(fd).st_mode) and not rename_attempted:
+            rename_attempted=True;root.rename(retired);root.mkdir()
+        return original(fd)
+    monkeypatch.setattr(intent.os,'fsync',swap_after_file_sync)
+    if os.name=='nt':
+        # Even without the directory lease, the still-open latch file denies
+        # this parent rename on Windows. That is a conservative failure, not a
+        # sampled-identity error, and the durable latch remains observable.
+        with pytest.raises(PermissionError):intent.persist(order)
+        assert rename_attempted and root.is_dir() and not retired.exists()
+        assert intent.path(order).read_bytes()==intent.RECORD
+        return
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.persist(order)
+    assert rename_attempted and (retired/'emergency_cut.intent').read_bytes()==intent.RECORD
+    assert not intent.requested(order)
+
+
+def test_descriptorless_clear_never_acknowledges_replaced_parent(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    intent.persist(order);original=intent.os.unlink;swapped=False
+    monkeypatch.setattr(intent,'_pin_directory',lambda _directory:None)
+    def unlink_then_replace(selected,*args,**kwargs):
+        nonlocal swapped
+        result=original(selected,*args,**kwargs)
+        if Path(selected)==intent.path(order) and not swapped:
+            swapped=True;root.rename(retired);root.mkdir()
+            intent.path(order).write_bytes(intent.RECORD)
+        return result
+    monkeypatch.setattr(intent.os,'unlink',unlink_then_replace)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.clear(order)
+    assert swapped and intent.requested(order)
+    assert not (retired/'emergency_cut.intent').exists()
+
+
+def test_descriptorless_missing_clear_rechecks_parent_before_acknowledgement(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';order=root/'orders.sqlite3';retired=tmp_path/'retired'
+    intent.persist(order);original=intent.os.unlink;swapped=False
+    monkeypatch.setattr(intent,'_pin_directory',lambda _directory:None)
+    def replace_before_missing_unlink(selected,*args,**kwargs):
+        nonlocal swapped
+        if Path(selected)==intent.path(order) and not swapped:
+            swapped=True;root.rename(retired);root.mkdir()
+        return original(selected,*args,**kwargs)
+    monkeypatch.setattr(intent.os,'unlink',replace_before_missing_unlink)
+    with pytest.raises(OSError,match='EMERGENCY_INTENT_DIRECTORY_CHANGED'):
+        intent.clear(order)
+    assert swapped and not intent.requested(order)
+    assert (retired/'emergency_cut.intent').read_bytes()==intent.RECORD

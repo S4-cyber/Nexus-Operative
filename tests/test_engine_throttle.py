@@ -183,7 +183,7 @@ def test_matrix_observation_can_continue_under_trading_cut(rig,monkeypatch):
 
 
 @pytest.mark.parametrize('side',['buy','sell'])
-def test_cut_fences_manual_quote_even_if_reset_before_response(rig,monkeypatch,side):
+def test_cut_fences_entry_but_not_reducing_exit_across_quote_race(rig,monkeypatch,side):
     c,g,r,w,starts,obs=rig;c.post('/api/portal',json={'enabled':True})
     entered=threading.Event();release=threading.Event();writes=[]
     def quote(*_):entered.set();assert release.wait(5);return {}
@@ -196,5 +196,5 @@ def test_cut_fences_manual_quote_even_if_reset_before_response(rig,monkeypatch,s
             assert c.post('/api/simulate/halt').status_code==200
             assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).status_code==200
         finally:release.set()
-        assert trade.result(10).status_code==409
-    assert not writes and w.status()['enabled']
+        assert trade.result(10).status_code==(409 if side=='buy' else 200)
+    assert (not writes if side=='buy' else len(writes)==1) and w.status()['enabled']

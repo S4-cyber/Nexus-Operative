@@ -31,16 +31,46 @@ def fixture(tmp_path):
     reviewer_tool.write_bytes((ROOT / "tools/windows_owner_profile_review.py").read_bytes())
     installer_info, executable_info = _sha(installer), _sha(executable)
     probe_info, reviewer_info = _sha(probe_tool), _sha(reviewer_tool)
+    installer_result = {
+        "mode": "VERIFIED_INSTALLER_RESULT_EVIDENCE", "version": VERSION,
+        "source_commit": SOURCE, "installer_sha256": installer_info[1],
+        "session_id": SESSION, "raw_result_bytes": 123,
+        "raw_result_sha256": "c" * 64, "maximum_root_process_timeout_seconds": 300,
+        "output_drain_timeout_seconds": 10,
+        "limitations": review.INSTALLER_RESULT_LIMITATIONS,
+        **{key: True for key in review.INSTALLER_RESULT_TRUE},
+        **{key: False for key in review.INSTALLER_RESULT_FALSE},
+    }
+    installer_result_path = tmp_path / review.INSTALLER_RESULT_REVIEW_NAME
+    installer_result_path.write_text(json.dumps(installer_result, sort_keys=True), encoding="utf-8")
+    installer_result_raw = installer_result_path.read_bytes()
+    installer_result_info = (len(installer_result_raw), hashlib.sha256(installer_result_raw).hexdigest())
     binding = {
         "mode": "VERIFIED_INSTALLER_DISTRIBUTION_BINDING", "passed": True,
         "version": VERSION, "source_commit": SOURCE, "installer_name": installer.name,
         "installer_bytes": installer_info[0], "installer_sha256": installer_info[1],
-        "phase_evidence_bound": True, "artifact_manifest_bound": True,
+        "installer_result_session_id": SESSION,
+        "installer_result_review_bytes": installer_result_info[0],
+        "installer_result_review_sha256": installer_result_info[1],
+        "phase_evidence_bound": True, "installer_result_review_bound": True,
+        "installer_result_semantics_bound": True, "artifact_manifest_bound": True,
         "final_installer_rehashed": True, "native_windows_acceptance": False,
         "actual_broker_acceptance": False, "live_orders_enabled": False,
         "money_movement_enabled": False, "release_approved": False, "limitations": "fixture",
     }
-    artifact = manifest([installer, executable, probe_tool, reviewer_tool], VERSION, SOURCE)
+    artifact = manifest(
+        [installer, executable, probe_tool, reviewer_tool, installer_result_path], VERSION, SOURCE)
+    artifact_raw = json.dumps(artifact, sort_keys=True).encode("utf-8")
+    binding_raw = json.dumps(binding, sort_keys=True).encode("utf-8")
+    envelope = {
+        "schema": "nexus.artifacts.v1", "version": VERSION, "source_commit": SOURCE,
+        "signed": False, "release_approved": False, "artifacts": [
+            {"name": review.ARTIFACT_MANIFEST_NAME, "bytes": len(artifact_raw),
+             "sha256": hashlib.sha256(artifact_raw).hexdigest()},
+            {"name": review.DISTRIBUTION_BINDING_NAME, "bytes": len(binding_raw),
+             "sha256": hashlib.sha256(binding_raw).hexdigest()},
+        ],
+    }
     probe = {
         "profile": review.PROBE_PROFILE, "version": VERSION, "source_commit": SOURCE,
         "installer_sha256": installer_info[1], "installed_executable_sha256": executable_info[1],
@@ -55,21 +85,35 @@ def fixture(tmp_path):
         "live_orders_enabled": False, "money_movement_enabled": False, "release_approved": False,
         "limitations": review.PROBE_LIMITATIONS,
     }
-    return probe, binding, artifact, probe_info, reviewer_info, probe_tool, reviewer_tool
+    return (probe, binding, artifact, probe_info, reviewer_info, probe_tool, reviewer_tool,
+            envelope, artifact_raw, binding_raw, installer_result, installer_result_raw)
 
 
 def verify(parts):
-    probe, binding, artifact, probe_info, reviewer_info, _, _ = parts
-    return review.verify(probe, binding, artifact, expected_version=VERSION,
-        expected_source_commit=SOURCE, probe_tool=probe_info, reviewer_tool=reviewer_info)
+    (probe, binding, artifact, probe_info, reviewer_info, _, _, envelope,
+     artifact_raw, binding_raw, installer_result, installer_result_raw) = parts
+    return review.verify(probe, binding, installer_result, artifact, envelope,
+        artifact_manifest_raw=artifact_raw, distribution_binding_raw=binding_raw,
+        installer_result_raw=installer_result_raw,
+        expected_version=VERSION, expected_source_commit=SOURCE,
+        probe_tool=probe_info, reviewer_tool=reviewer_info,
+        executing_reviewer_tool=reviewer_info)
 
 
 def test_exact_owner_profile_probe_is_bound_without_promoting_authority(tmp_path):
+    assert "external_process_output_drains_bounded" in review.INSTALLER_RESULT_TRUE
+    assert "process_tree_containment_verified" in review.INSTALLER_RESULT_FALSE
+    assert "all_external_processes_bounded" not in review.INSTALLER_RESULT_KEYS
+    assert "descendant containment" in review.INSTALLER_RESULT_LIMITATIONS
     result = verify(fixture(tmp_path))
     assert result["passed"] and result["ordinary_user_profile_checked"]
     assert result["effective_acl_operations_checked"] and result["exact_distribution_bound"]
+    assert result["distribution_envelope_bound"] and result["artifact_manifest_file_bound"]
+    assert result["distribution_binding_file_bound"]
+    assert result["installer_result_review_bound"] and result["installer_result_semantics_bound"]
     assert result["installed_executable_bound"] and result["probe_tool_manifest_bound"]
-    assert result["review_tool_manifest_bound"] and result["private_paths_retained"] is False
+    assert result["review_tool_manifest_bound"] and result["executing_reviewer_bound"]
+    assert result["private_paths_retained"] is False
     assert all(result[key] is False for key in (
         "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
         "money_movement_enabled", "release_approved"))
@@ -86,6 +130,8 @@ def test_exact_owner_profile_probe_is_bound_without_promoting_authority(tmp_path
     ("probe", "windows_version", "private"),
     ("probe", "limitations", "promoted"),
     ("binding", "passed", False),
+    ("binding", "installer_result_semantics_bound", False),
+    ("binding", "installer_result_review_sha256", "b" * 64),
     ("binding", "release_approved", True),
     ("binding", "installer_sha256", "b" * 64),
     ("manifest", "release_approved", True),
@@ -109,8 +155,59 @@ def test_missing_or_changed_manifest_tools_are_rejected(tmp_path):
     changed = list(parts[3])
     changed[1] = "b" * 64
     with pytest.raises(review.OwnerProfileReviewError):
-        review.verify(parts[0], parts[1], parts[2], expected_version=VERSION,
-            expected_source_commit=SOURCE, probe_tool=tuple(changed), reviewer_tool=parts[4])
+        review.verify(parts[0], parts[1], parts[10], parts[2], parts[7],
+            artifact_manifest_raw=parts[8], distribution_binding_raw=parts[9],
+            installer_result_raw=parts[11],
+            expected_version=VERSION, expected_source_commit=SOURCE,
+            probe_tool=tuple(changed), reviewer_tool=parts[4],
+            executing_reviewer_tool=parts[4])
+
+
+def test_installer_result_semantics_and_manifest_binding_are_required(tmp_path):
+    parts = fixture(tmp_path)
+    parts[10]["first_run_paper_defaults"] = False
+    with pytest.raises(review.OwnerProfileReviewError, match="installer result"):
+        verify(parts)
+
+    parts = fixture(tmp_path / "promoted")
+    parts[10]["release_approved"] = True
+    with pytest.raises(review.OwnerProfileReviewError, match="installer result"):
+        verify(parts)
+
+    parts = fixture(tmp_path / "missing")
+    parts[2]["artifacts"] = [entry for entry in parts[2]["artifacts"]
+        if entry["name"] != review.INSTALLER_RESULT_REVIEW_NAME]
+    with pytest.raises(review.OwnerProfileReviewError, match="manifest tool binding"):
+        verify(parts)
+
+    parts = list(fixture(tmp_path / "changed-bytes"))
+    parts[11] = parts[11] + b"\n"
+    with pytest.raises(review.OwnerProfileReviewError, match="installer result binding"):
+        verify(tuple(parts))
+
+
+def test_executing_reviewer_must_match_manifest_bound_shipped_reviewer(tmp_path):
+    parts=fixture(tmp_path)
+    changed=(parts[4][0]+1,'b'*64)
+    with pytest.raises(review.OwnerProfileReviewError,match='executing reviewer binding'):
+        review.verify(parts[0],parts[1],parts[10],parts[2],parts[7],
+            artifact_manifest_raw=parts[8],distribution_binding_raw=parts[9],
+            installer_result_raw=parts[11],
+            expected_version=VERSION,expected_source_commit=SOURCE,
+            probe_tool=parts[3],reviewer_tool=parts[4],
+            executing_reviewer_tool=changed)
+
+
+@pytest.mark.parametrize("target", ["binding", "manifest"])
+def test_semantically_equivalent_inner_file_substitution_breaks_outer_envelope(tmp_path, target):
+    parts = fixture(tmp_path)
+    changed = list(parts)
+    index = 9 if target == "binding" else 8
+    changed[index] = json.dumps(parts[1 if target == "binding" else 2],
+        sort_keys=True, indent=2).encode("utf-8")
+    assert json.loads(changed[index]) == (parts[1] if target == "binding" else parts[2])
+    with pytest.raises(review.OwnerProfileReviewError, match="distribution envelope"):
+        verify(tuple(changed))
 
 
 def test_probe_timestamp_session_and_exact_shape_are_strict(tmp_path):
@@ -128,16 +225,23 @@ def test_probe_timestamp_session_and_exact_shape_are_strict(tmp_path):
 
 def test_cli_refuses_duplicate_json_and_output_overwrite(tmp_path, monkeypatch, capsys):
     parts = fixture(tmp_path)
-    probe, binding, artifact, _, _, probe_tool, reviewer_tool = parts
+    (probe, binding, artifact, _, _, probe_tool, reviewer_tool, envelope,
+     artifact_raw, binding_raw, installer_result, installer_result_raw) = parts
     probe_path = tmp_path / "probe.json"
     binding_path = tmp_path / "binding.json"
     manifest_path = tmp_path / "manifest.json"
+    envelope_path = tmp_path / "distribution-envelope.json"
+    installer_result_path = tmp_path / review.INSTALLER_RESULT_REVIEW_NAME
     output = tmp_path / "review.json"
     probe_path.write_text(json.dumps(probe), encoding="utf-8")
-    binding_path.write_text(json.dumps(binding), encoding="utf-8")
-    manifest_path.write_text(json.dumps(artifact), encoding="utf-8")
+    binding_path.write_bytes(binding_raw)
+    manifest_path.write_bytes(artifact_raw)
+    envelope_path.write_text(json.dumps(envelope), encoding="utf-8")
+    installer_result_path.write_bytes(installer_result_raw)
     monkeypatch.setattr("sys.argv", ["owner-review", "--probe", str(probe_path),
         "--distribution-binding", str(binding_path), "--artifact-manifest", str(manifest_path),
+        "--installer-result-review", str(installer_result_path),
+        "--distribution-envelope", str(envelope_path),
         "--probe-tool", str(probe_tool), "--review-tool", str(reviewer_tool), "--expected-version", VERSION,
         "--expected-source-commit", SOURCE, "--output", str(output)])
     assert review.main() == 0
@@ -148,6 +252,31 @@ def test_cli_refuses_duplicate_json_and_output_overwrite(tmp_path, monkeypatch, 
     output.unlink()
     probe_path.write_bytes(b'{"profile":1,"profile":2}')
     assert review.main() == 1
+
+
+def test_cli_rejects_different_executing_reviewer_copy(tmp_path,monkeypatch,capsys):
+    parts=fixture(tmp_path)
+    (probe,binding,artifact,_,_,probe_tool,reviewer_tool,envelope,artifact_raw,binding_raw,
+     installer_result,installer_result_raw)=parts
+    probe_path=tmp_path/'probe.json';probe_path.write_text(json.dumps(probe),encoding='utf-8')
+    binding_path=tmp_path/'binding.json';binding_path.write_bytes(binding_raw)
+    manifest_path=tmp_path/'manifest.json';manifest_path.write_bytes(artifact_raw)
+    envelope_path=tmp_path/'distribution-envelope.json';envelope_path.write_text(json.dumps(envelope),encoding='utf-8')
+    installer_result_path=tmp_path/review.INSTALLER_RESULT_REVIEW_NAME
+    installer_result_path.write_bytes(installer_result_raw)
+    modified_dir=tmp_path/'executing';modified_dir.mkdir()
+    modified=modified_dir/review.REVIEWER_NAME
+    modified.write_bytes(reviewer_tool.read_bytes()+b'\n# different executing reviewer\n')
+    output=tmp_path/'review.json'
+    monkeypatch.setattr(review,'__file__',str(modified))
+    monkeypatch.setattr('sys.argv',['owner-review','--probe',str(probe_path),
+        '--distribution-binding',str(binding_path),'--artifact-manifest',str(manifest_path),
+        '--installer-result-review',str(installer_result_path),
+        '--distribution-envelope',str(envelope_path),'--probe-tool',str(probe_tool),
+        '--review-tool',str(reviewer_tool),'--expected-version',VERSION,
+        '--expected-source-commit',SOURCE,'--output',str(output)])
+    assert review.main()==1 and not output.exists()
+    assert 'OWNER_WINDOWS_PROFILE_REVIEW_FAILED' in capsys.readouterr().out
 
 
 def test_powershell_probe_retains_no_identity_or_path_fields():

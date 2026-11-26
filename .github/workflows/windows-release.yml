@@ -12,6 +12,11 @@ on:
         default: development/windows-portal-foundation
         options:
           - development/windows-portal-foundation
+      source_commit:
+        description: 'Optional exact 40-character commit descended from the current development head'
+        type: string
+        required: false
+        default: ''
 concurrency:
   group: nexus-windows-${{ github.ref }}
   cancel-in-progress: false
@@ -20,21 +25,46 @@ permissions:
 jobs:
   test-and-build:
     runs-on: windows-latest
-    # Exact v0.340.289 reached 5,064 passing tests after 59m06s before the old
-    # deadline. Full regression, PyInstaller, prior-version install/reinstall/
-    # uninstall and evidence generation remain one source-bound bounded lane.
-    timeout-minutes: 120
+    # Exact development run 43595758062 passed the complete regression,
+    # PyInstaller, install/reinstall, prior-version recovery, uninstall and
+    # phase review before the old 120m deadline cancelled the source-bound
+    # distribution-evidence tail. Keep one finite lane with measured margin.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           persist-credentials: false
-          ref: ${{ github.event_name == 'push' && github.sha || inputs.source_branch || 'development/windows-portal-foundation' }}
-      - name: Bind push evidence to the triggering source commit
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'push' && github.sha || inputs.source_commit || inputs.source_branch || 'development/windows-portal-foundation' }}
+      - name: Bind evidence to an exact reviewed source commit
+        env:
+          REQUESTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
         shell: pwsh
         run: |
           $actual = git rev-parse HEAD
-          if ('${{ github.event_name }}' -eq 'push' -and $actual -ne $env:GITHUB_SHA) {
+          $eventName = '${{ github.event_name }}'
+          $requested = "$env:REQUESTED_SOURCE_COMMIT".Trim()
+          if ($eventName -eq 'push' -and $actual -ne $env:GITHUB_SHA) {
             throw 'Checked-out source does not match triggering push SHA'
+          }
+          if ($eventName -eq 'workflow_dispatch') {
+            git fetch --no-tags origin development/windows-portal-foundation:refs/remotes/origin/development/windows-portal-foundation
+            if ($LASTEXITCODE -ne 0) { throw 'Could not refresh the reviewed development head' }
+            $development = git rev-parse refs/remotes/origin/development/windows-portal-foundation
+            if ($requested) {
+              if ($requested -cnotmatch '^[0-9a-f]{40}$') {
+                throw 'Manual source commit must be one exact lowercase 40-character SHA'
+              }
+              if ($actual -cne $requested) {
+                throw 'Checked-out source does not match requested exact commit'
+              }
+              git merge-base --is-ancestor $development $actual
+              if ($LASTEXITCODE -ne 0) {
+                throw 'Requested source commit is not descended from the current development head'
+              }
+            } elseif ($actual -ne $development) {
+              throw 'Mutable development dispatch did not resolve to its refreshed head'
+            }
           }
           Add-Content -Path $env:GITHUB_ENV -Value "NEXUS_SOURCE_COMMIT=$actual" -Encoding UTF8
       - name: Check out pinned prior-version recovery fixture source
@@ -108,13 +138,6 @@ jobs:
           } finally {
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
           }
-      - name: Upload standalone EXE
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: NexusOperative-Standalone-Windows
-          path: dist/NexusOperative.exe
-          if-no-files-found: error
-          retention-days: 30
       - name: Build installer (Inno Setup)
         shell: pwsh
         run: |
@@ -139,7 +162,10 @@ jobs:
           $installer = (Resolve-Path "release/NexusOperative-Setup-$version.exe").Path
           python tools/windows_installer_phase_review.py --input "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phases.jsonl" --installer $installer --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json"
           if ($LASTEXITCODE -ne 0) { throw 'Installer phase evidence validation failed' }
+          python tools/windows_installer_result_review.py --input "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result.json" --phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json" --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result-review.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Installer result evidence validation failed' }
       - name: Create distribution checksum manifest
+        timeout-minutes: 20
         shell: pwsh
         run: |
           $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
@@ -147,17 +173,36 @@ jobs:
           Copy-Item dist/NexusOperative.exe release/NexusOperative.exe
           Copy-Item tools/windows_owner_profile_probe.ps1 release/windows-owner-profile-probe.ps1
           Copy-Item tools/windows_owner_profile_review.py release/windows-owner-profile-review.py
-          python -m nexus.release_trials --output release/release-trial-evidence.json
+          Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/installer-result-review.json" release/installer-result-review.json
+          python -m nexus.release_trials --expected-version $version --output release/release-trial-evidence.json
           if ($LASTEXITCODE -ne 0) { throw 'Distribution offline trials failed' }
-          python -m nexus.release_evidence release/release-trial-evidence.json
+          python -m nexus.release_evidence release/release-trial-evidence.json --expected-version $version
           if ($LASTEXITCODE -ne 0) { throw 'Distribution evidence validation failed' }
-          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe" release/release-trial-evidence.json release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py
+          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/artifact-manifest.json release/NexusOperative.exe "release/NexusOperative-Setup-$version.exe" release/release-trial-evidence.json release/installer-result-review.json release/windows-owner-profile-probe.ps1 release/windows-owner-profile-review.py
           if ($LASTEXITCODE -ne 0) { throw 'Manifest creation failed' }
           python -m nexus.artifact_manifest verify release/artifact-manifest.json release
           if ($LASTEXITCODE -ne 0) { throw 'Manifest verification failed' }
-          python tools/windows_distribution_binding_review.py --phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json" --artifact-manifest release/artifact-manifest.json --installer "release/NexusOperative-Setup-$version.exe" --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json"
+          python tools/windows_distribution_binding_review.py --phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json" --installer-result-review release/installer-result-review.json --artifact-manifest release/artifact-manifest.json --installer "release/NexusOperative-Setup-$version.exe" --expected-version $version --expected-source-commit $env:NEXUS_SOURCE_COMMIT --output "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json"
           if ($LASTEXITCODE -ne 0) { throw 'Installer distribution binding validation failed' }
           Copy-Item "$env:RUNNER_TEMP/nexus-installer-evidence/distribution-binding-review.json" release/distribution-binding-review.json
+          python -m nexus.artifact_manifest create --version $version --commit $sourceCommit --output release/distribution-envelope.json release/artifact-manifest.json release/distribution-binding-review.json
+          if ($LASTEXITCODE -ne 0) { throw 'Distribution envelope creation failed' }
+          python -m nexus.artifact_manifest verify release/distribution-envelope.json release
+          if ($LASTEXITCODE -ne 0) { throw 'Distribution envelope verification failed' }
+      - name: Validate exact installer upload set
+        timeout-minutes: 1
+        shell: pwsh
+        run: |
+          $version = python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])"
+          $expected = (Resolve-Path "release/NexusOperative-Setup-$version.exe").Path
+          $installers = @(Get-ChildItem release -File -Filter 'NexusOperative-Setup-*.exe')
+          if ($installers.Count -ne 1 -or $installers[0].FullName -cne $expected) {
+            throw 'Distribution contains an unreviewed or ambiguous installer set'
+          }
+          python -m nexus.artifact_manifest verify release/artifact-manifest.json release
+          if ($LASTEXITCODE -ne 0) { throw 'Final artifact manifest verification failed' }
+          python -m nexus.artifact_manifest verify release/distribution-envelope.json release
+          if ($LASTEXITCODE -ne 0) { throw 'Final distribution envelope verification failed' }
       - name: Upload distribution with source and checksum manifest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -166,7 +211,9 @@ jobs:
             release/NexusOperative.exe
             release/NexusOperative-Setup-*.exe
             release/artifact-manifest.json
+            release/distribution-envelope.json
             release/release-trial-evidence.json
+            release/installer-result-review.json
             release/distribution-binding-review.json
             release/windows-owner-profile-probe.ps1
             release/windows-owner-profile-review.py
@@ -180,10 +227,4 @@ jobs:
           path: ${{ runner.temp }}/nexus-installer-evidence
           if-no-files-found: warn
           retention-days: 30
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: NexusOperative-Windows-Installer
-          path: release/NexusOperative-Setup-*.exe
-          if-no-files-found: error
-          retention-days: 7
 

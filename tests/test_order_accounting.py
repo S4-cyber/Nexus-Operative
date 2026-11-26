@@ -5,6 +5,11 @@ import pytest
 from nexus.durable_orders import DurableOrderGateway
 
 
+class EqualText(str):
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
 def setup(tmp_path):
     g = DurableOrderGateway(tmp_path/'orders.sqlite3')
     g.initialize_account('1000')
@@ -14,6 +19,22 @@ def setup(tmp_path):
 
 def account(g):
     return g.recovery_report()['execution_account']
+
+
+def test_accounting_paths_reject_type_confused_ids_before_mutation(tmp_path):
+    g=setup(tmp_path);before=g.recovery_report()
+    attempts=(
+        lambda:g.set_execution_terms(EqualText('buy'),1000,10),
+        lambda:g.expire_order(EqualText('buy'),1011),
+        lambda:g.simulate_priced_fill(EqualText('buy'),'fill',1,1,10),
+        lambda:g.simulate_priced_fill('buy',EqualText('fill'),1,1,10),
+        lambda:g.simulate_quote_fill(EqualText('buy'),'fill',1,1,10,10,1,1000,1000),
+        lambda:g.simulate_quote_fill('buy',EqualText('fill'),1,1,10,10,1,1000,1000),
+    )
+    for attempt in attempts:
+        with pytest.raises(ValueError,match='^ORDER_COMMAND_ARGUMENT_INVALID$'):
+            attempt()
+        assert g.recovery_report()==before
 
 
 def test_partial_buy_sell_and_restart(tmp_path):

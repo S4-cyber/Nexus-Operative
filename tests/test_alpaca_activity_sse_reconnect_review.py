@@ -11,6 +11,14 @@ from nexus.alpaca_activity_sse_review import _event
 ACCOUNT = '01234567-89ab-cdef-0123-456789abcdef'
 
 
+class EqualText(str):
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
 def transcript():
     initial = [
         _event('01K00000000000000000000001',
@@ -53,6 +61,20 @@ def test_exact_cursor_reuse_deduplicates_and_advances_without_authority():
     assert call(initial, replay) == result
 
 
+@pytest.mark.parametrize(('field','code'), [
+    ('persisted_event_id', 'PERSISTED_CURSOR_INVALID'),
+    ('reconnect_since_id', 'SINCE_ID_INVALID'),
+])
+def test_cursor_subclasses_fail_before_transcript_review(
+        monkeypatch, field, code):
+    initial, replay = transcript()
+    monkeypatch.setattr(subject, '_normalize',
+        lambda *args, **kwargs: pytest.fail('transcript reviewed'))
+    with pytest.raises(ValueError,
+            match='^ALPACA_ACTIVITY_SSE_RECONNECT_' + code + '$'):
+        call(initial, replay, **{field: EqualText(initial[-1]['event_id'])})
+
+
 @pytest.mark.parametrize(('mutation','code'), [
     (lambda initial, replay, args: args.update(
         reconnect_since_id='01K00000000000000000000001'),
@@ -62,6 +84,9 @@ def test_exact_cursor_reuse_deduplicates_and_advances_without_authority():
         reconnect_since_id=initial[0]['event_id']),
         'PERSISTED_CURSOR_NOT_LAST_PROCESSED'),
     (lambda initial, replay, args: args.update(reconnect_reason='UNKNOWN'),
+        'RECONNECT_REASON_INVALID'),
+    (lambda initial, replay, args: args.update(
+        reconnect_reason=EqualText('CONNECTION_DROPPED')),
         'RECONNECT_REASON_INVALID'),
     (lambda initial, replay, args: replay[0].update(net_amount='-201'),
         'REDELIVERY_IDENTITY_OR_CONTENT_CONFLICT'),

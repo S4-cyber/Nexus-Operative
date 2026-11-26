@@ -10,6 +10,28 @@ from decimal import Decimal,InvalidOperation
 ALLOWED_PROVIDERS=("nexus_local_paper","alpaca_paper","ibkr_paper","coinbase_advanced")
 MAX_INTENTS=1000
 
+
+def _require_order_id(value):
+    if (type(value) is not str or not 1<=len(value)<=64 or
+            not value.replace("-","").replace("_","").isalnum()):
+        raise ValueError("INVALID_ORDER_ID")
+    return value
+
+
+def _require_event_id(value):
+    if (type(value) is not str or not 1<=len(value)<=64 or
+            not value.isascii() or
+            not value.replace("-","").replace("_","").isalnum()):
+        raise ValueError("INVALID_EVENT_ID")
+    return value
+
+
+def _require_event_kind(value):
+    if type(value) is not str or value not in ("FILL","REJECT"):
+        raise ValueError("INVALID_EVENT_KIND")
+    return value
+
+
 def _positive(value):
     if isinstance(value,bool):raise ValueError("BOOLEAN_NOTIONAL")
     try:v=Decimal(str(value))
@@ -25,6 +47,7 @@ class OrderGateway:
         self.halted=False
 
     def lookup(self,client_order_id):
+        _require_order_id(client_order_id)
         return self.intents.get(client_order_id)
 
     def connections(self):
@@ -35,18 +58,26 @@ class OrderGateway:
             "live_orders_enabled":False,"broker_connected":False,
             "note":"External providers are placeholders; no credentials, broker calls or order routing."}
 
-    def submit(self,client_order_id,product,side,notional,provider="nexus_local_paper",tier=None):
-        if not isinstance(client_order_id,str) or not 1<=len(client_order_id)<=64 or not client_order_id.replace("-","").replace("_","").isalnum():
-            raise ValueError("INVALID_ORDER_ID")
-        if not isinstance(product,str) or product not in ("BTC-USD","ETH-USD","SOL-USD"):
+    def _submit(self,client_order_id,product,side,notional,provider="nexus_local_paper",tier=None,
+                extra_payload=None):
+        _require_order_id(client_order_id)
+        if type(product) is not str or product not in ("BTC-USD","ETH-USD","SOL-USD"):
             raise ValueError("PRODUCT_NOT_ELIGIBLE_FOR_SIMULATION")
-        if side not in ("BUY","SELL"):raise ValueError("INVALID_SIDE")
+        if type(side) is not str or side not in ("BUY","SELL"):
+            raise ValueError("INVALID_SIDE")
         amount=_positive(notional)
-        if provider not in ALLOWED_PROVIDERS:raise ValueError("UNKNOWN_PROVIDER")
-        if tier is not None and tier not in ("terrestrial","solar","universal"):raise ValueError("UNKNOWN_RISK_TIER")
+        if type(provider) is not str or provider not in ALLOWED_PROVIDERS:
+            raise ValueError("UNKNOWN_PROVIDER")
+        if (tier is not None and (type(tier) is not str or
+                tier not in ("terrestrial","solar","universal"))):
+            raise ValueError("UNKNOWN_RISK_TIER")
         payload={"id":client_order_id,"product":product,"side":side,
                  "notional":str(amount),"provider":provider,"tier":tier}
         payload["notional"]=str(amount.normalize())
+        if extra_payload is not None:
+            if type(extra_payload) is not dict or any(type(key) is not str for key in extra_payload):
+                raise ValueError("INVALID_INTENT_SCOPE")
+            payload.update(extra_payload)
         digest=hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest()
         with self.lock:
             old=self.lookup(client_order_id)
@@ -63,6 +94,9 @@ class OrderGateway:
             self.intents[client_order_id]=record
             return {**copy.deepcopy(record),"idempotent_replay":False}
 
+    def submit(self,client_order_id,product,side,notional,provider="nexus_local_paper",tier=None):
+        return self._submit(client_order_id,product,side,notional,provider,tier)
+
     def simulate_event(self,client_order_id,event_id,sequence,kind,fill_notional="0",fee="0"):
         """Apply an ordered offline lifecycle event; never updates a portfolio.
 
@@ -70,11 +104,11 @@ class OrderGateway:
         Fees are explicit synthetic costs. Replay returns current order state.
         Cancellation of a partial fill preserves its filled amount and costs.
         """
-        if not isinstance(event_id,str) or not 1<=len(event_id)<=64 or not event_id.isascii() or not event_id.replace("-","").replace("_","").isalnum():
-            raise ValueError("INVALID_EVENT_ID")
+        _require_order_id(client_order_id)
+        _require_event_id(event_id)
         if type(sequence) is not int or not 1<=sequence<=1000:
             raise ValueError("INVALID_EVENT_SEQUENCE")
-        if kind not in ("FILL","REJECT"):raise ValueError("INVALID_EVENT_KIND")
+        _require_event_kind(kind)
         def nonnegative(value):
             if isinstance(value,bool):raise ValueError("INVALID_EVENT_AMOUNT")
             try:amount=Decimal(str(value))
@@ -109,6 +143,7 @@ class OrderGateway:
             return {**copy.deepcopy(record),"idempotent_replay":False}
 
     def cancel(self,client_order_id):
+        _require_order_id(client_order_id)
         with self.lock:
             record=self.lookup(client_order_id)
             if record is None:raise ValueError("UNKNOWN_ORDER_ID")

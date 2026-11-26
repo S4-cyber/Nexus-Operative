@@ -19,6 +19,12 @@ jobs:
           path: scan
           fetch-depth: 0
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Bind scan to exact source commit
+        env:
+          EXPECTED_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git -C scan rev-parse HEAD)" = "$EXPECTED_SOURCE_COMMIT" || { echo 'Scanned source does not match the exact workflow source commit'; exit 1; }
       - name: Fetch trusted audit policy separately from pull request code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
@@ -29,7 +35,10 @@ jobs:
         run: |
           test -f policy/tools/public_repo_audit.py && test -f policy/tools/review_secret_scan.py && test -f policy/.gitleaks.toml || { echo 'Trusted base policy is not installed. Owner review/bootstrap required; PR code will not be used as policy.'; exit 1; }
       - name: Audit private artifacts in current and reachable historical objects
-        run: python3 policy/tools/public_repo_audit.py --repository scan --history --require-ref refs/remotes/origin/main --require-ref refs/remotes/origin/development/windows-portal-foundation
+        env:
+          BASELINE_COMMIT: ${{ github.event.pull_request.base.sha || github.sha }}
+          CANDIDATE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 policy/tools/public_repo_audit.py --repository scan --history --require-ref refs/remotes/origin/main --require-ref refs/remotes/origin/development/windows-portal-foundation --baseline-commit "$BASELINE_COMMIT" --candidate-commit "$CANDIDATE_COMMIT"
       - name: Install checksum-pinned Gitleaks
         shell: bash
         run: |

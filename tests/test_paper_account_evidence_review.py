@@ -17,6 +17,12 @@ from test_paper_request_activity_acceptance import prepared
 EPOCH=1792195200+18*3600
 
 
+class EqualText(str):
+    __hash__=str.__hash__
+    def __eq__(self,other):return True
+    def __ne__(self,other):return False
+
+
 def options(root,prices=('98','100')):
     result,_,_=prepared(root,prices)
     account=result['expected_account_id']
@@ -480,6 +486,31 @@ def test_public_summary_preserves_independent_diagnostic_disagreements(tmp_path,
 def test_public_summary_rejects_malformed_or_promoted_results(tmp_path,field,value):
     r=subject.review(**options(tmp_path));r[field]=value
     with pytest.raises(ValueError,match='PUBLIC_SUMMARY_INVALID'):subject.public_summary(r)
+
+
+@pytest.mark.parametrize('field,value',[
+    ('mode',EqualText('PRIVATE_MODE_TEXT')),
+    ('policy',EqualText('PRIVATE_POLICY_TEXT')),
+    ('status',EqualText('PRIVATE_STATUS_TEXT'))])
+def test_public_summary_rejects_equality_forging_text_before_public_copy(
+        tmp_path,field,value):
+    r=subject.review(**options(tmp_path));r[field]=value
+    with pytest.raises(ValueError,match='PUBLIC_SUMMARY_INVALID'):
+        subject.public_summary(r)
+
+
+def test_public_summary_rejects_non_builtin_keys_before_comparison(tmp_path):
+    r=subject.review(**options(tmp_path))
+    r[EqualText('private_extra')]='PRIVATE_TEXT'
+    with pytest.raises(ValueError,match='PUBLIC_SUMMARY_INVALID'):
+        subject.public_summary(r)
+
+
+def test_public_summary_rejects_non_builtin_gross_currency_keys(tmp_path):
+    r=subject.review(**options(tmp_path))
+    r['gross_only_minus_observed']={EqualText('USD'):'0','BTC':'0'}
+    with pytest.raises(ValueError,match='PUBLIC_SUMMARY_INVALID'):
+        subject.public_summary(r)
 
 
 def test_actual_current_public_cli_is_network_vault_silent_and_has_no_private_output(tmp_path):

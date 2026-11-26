@@ -7,7 +7,7 @@ import os
 import threading
 SERVICE="NexusOperativeResearch"
 ACCOUNT="OpenAIAdvisoryKey"
-_lock=threading.RLock()
+_lock=threading.Lock()
 _observation = None  # Process-local hint only; startup never inspects the OS store.
 
 def local_status():
@@ -32,7 +32,7 @@ def _vault():
         raise ValueError("TRUSTED_WINDOWS_VAULT_UNAVAILABLE") from exc
 
 def validate_secret(secret):
-    if not isinstance(secret,str) or not 20<=len(secret)<=256 or not secret.startswith("sk-") or any(not 33 <= ord(char) <= 126 for char in secret):
+    if type(secret) is not str or not 20<=len(secret)<=256 or not secret.startswith("sk-") or any(not 33 <= ord(char) <= 126 for char in secret):
         raise ValueError("INVALID_KEY_FORMAT")
     return secret
 
@@ -44,7 +44,9 @@ def install(secret):
         vault=_vault()
         try:
             vault.set_password(SERVICE,ACCOUNT,secret)
-            if vault.get_password(SERVICE,ACCOUNT) != secret:
+            stored=vault.get_password(SERVICE,ACCOUNT)
+            validate_secret(stored)
+            if stored != secret:
                 raise ValueError('UNCONFIRMED_VAULT_SAVE')
         except Exception as exc:raise ValueError("VAULT_SAVE_FAILED") from None
         _observation = True
@@ -62,6 +64,28 @@ def retrieve():
         except Exception:
             _observation = None
             return None
+
+def execute_saved(expected, callback):
+    """Invoke one paid action only while the exact saved secret is current.
+
+    Vault mutation shares this lock, so disconnect/install cannot return while
+    an already-authorized action is still using the prior saved credential.
+    """
+    global _observation
+    if type(expected) is not str or not callable(callback):
+        return False, None
+    with _lock:
+        try:
+            secret = _vault().get_password(SERVICE, ACCOUNT)
+            if secret is not None:
+                validate_secret(secret)
+            _observation = bool(secret)
+        except Exception:
+            _observation = None
+            return False, None
+        if secret != expected:
+            return False, None
+        return True, callback(secret)
 
 def configured():
     # Explicit legacy inspection; passive callers use local_status instead.

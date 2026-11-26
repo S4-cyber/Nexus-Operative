@@ -25,7 +25,7 @@ def _fail(code):
 
 
 def _uuid(value):
-    if not isinstance(value, str) or len(value) != 36:
+    if type(value) is not str or len(value) != 36:
         _fail('UUID_INVALID')
     try: return str(UUID(value))
     except ValueError: _fail('UUID_INVALID')
@@ -190,6 +190,8 @@ def normalize(activities, orders, *, expected_account_id):
             previous = Decimal(0); at = None; requested = None
             for fill in chain:
                 cumulative = number(fill['cumulative_quantity']); leaves = number(fill['leaves_quantity'], zero=True)
+                if ((fill['fill_type'] == 'partial_fill') != (leaves > 0)):
+                    reasons.add('FILL_TYPE_REMAINDER_DISAGREEMENT')
                 if cumulative != previous + number(fill['quantity']): reasons.add('CUMULATIVE_FILL_CHAIN_DISAGREEMENT')
                 if requested is not None and requested != cumulative + leaves: reasons.add('REMAINING_QUANTITY_DISAGREEMENT')
                 if at is not None and fill['occurred_at'] < at: reasons.add('CUMULATIVE_FILL_TIME_REGRESSION')

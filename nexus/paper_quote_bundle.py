@@ -27,6 +27,13 @@ CHECKS=('full_three_journal_replay','historical_prefixes_preserved','local_captu
     'normalized_result_binding_checked','normalized_result_disagreement_refused','encrypted_roundtrip','randomized_ciphertext','wrong_password_rejected','tampering_rejected','source_files_unchanged')
 PUBLIC_FIXTURE_KEYS=frozenset(('source','passed',*CHECKS,'cipher','kdf',
     'actual_provider_access','actual_vault_access',*FLAGS))
+PUBLIC_REVIEW_KEYS=frozenset(('mode','status','read_only','profile',
+    'account_sha256','bundle_sha256','heads','retained_requests',
+    'retained_quotes','retained_pacing_sessions',
+    'full_request_history_replayed','full_quote_history_replayed',
+    'full_pacing_history_replayed','local_capture_history_agreement',
+    'pacing_result_receipts_bound','pacing_request_targets_bound',
+    'pacing_normalized_results_bound',*FLAGS,'limitations'))
 
 
 def _fail(code):raise ValueError('PAPER_QUOTE_BUNDLE_'+code)
@@ -162,15 +169,26 @@ def unseal(raw,passphrase):
 
 
 def public_summary(review):
-    if review.get('mode')!='PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW' or review.get('local_capture_history_agreement') is not True:_fail('REVIEW_REQUIRED')
-    if (review.get('profile')!=PROFILE or review.get('status')!='REVIEW_REQUIRED' or review.get('read_only') is not True or
-        any(review.get(k) is not True for k in ('full_request_history_replayed','full_quote_history_replayed','full_pacing_history_replayed')) or
-        any(review.get(k) is not False for k in FLAGS)):_fail('AUTHORITY')
+    if (type(review) is not dict or
+            any(type(key) is not str for key in review) or
+            set(review)!=PUBLIC_REVIEW_KEYS):
+        _fail('REVIEW_REQUIRED')
+    mode=review['mode'];profile=review['profile'];status=review['status']
+    counts={key:review[key] for key in ('retained_requests',
+        'retained_quotes','retained_pacing_sessions')}
+    if (type(mode) is not str or mode!='PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW' or
+            review['local_capture_history_agreement'] is not True):
+        _fail('REVIEW_REQUIRED')
+    if (type(profile) is not str or profile!=PROFILE or
+            type(status) is not str or status!='REVIEW_REQUIRED' or
+            review['read_only'] is not True or
+            any(review[k] is not True for k in ('full_request_history_replayed','full_quote_history_replayed','full_pacing_history_replayed')) or
+            any(review[k] is not False for k in FLAGS)):_fail('AUTHORITY')
     for key,cap in (('retained_requests',requests.MAX_REQUESTS),('retained_quotes',quotes.MAX_RECORDS),('retained_pacing_sessions',pacing.MAX_SESSIONS)):
-        if type(review.get(key)) is not int or not 1<=review[key]<=cap:_fail('PUBLIC_COUNT')
-    if review['retained_quotes']!=review['retained_pacing_sessions']:_fail('PUBLIC_COUNT')
+        if type(counts[key]) is not int or not 1<=counts[key]<=cap:_fail('PUBLIC_COUNT')
+    if counts['retained_quotes']!=counts['retained_pacing_sessions']:_fail('PUBLIC_COUNT')
     return dict(mode='PUBLIC_QUOTE_BUNDLE_CONTENT_DIAGNOSTIC',status='REVIEW_REQUIRED',
-        retained_requests=review['retained_requests'],retained_quotes=review['retained_quotes'],retained_pacing_sessions=review['retained_pacing_sessions'],
+        retained_requests=counts['retained_requests'],retained_quotes=counts['retained_quotes'],retained_pacing_sessions=counts['retained_pacing_sessions'],
         full_copied_history_replayed=True,local_capture_history_agreement=True,**{k:False for k in FLAGS},
         scope='Aggregate copied-content replay only; no source/authenticity/currentness/provider/clock/fee/funds/order or release acceptance. No private account IDs, heads, prices, dates or paths included.')
 

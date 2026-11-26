@@ -2,7 +2,209 @@ import json
 import sqlite3
 import pytest
 from test_paper_forward import setup,warmup
-from nexus import forward_evidence
+from nexus import emergency_intent,forward_evidence,forward_event_evidence
+
+
+def event_record(**changes):
+    row=dict(at=1,clock_sample_valid=True,session='1'*16,cycle=0,
+        quote_evidence_sha256=None,decision='START',reason='TEST',product='BTC-USD',
+        tier='terrestrial',simulation_only=True,policy_id='fixture',policy_sha256='a'*64)
+    row.update(changes);return row
+
+
+def admission_quote():
+    return dict(provider='coinbase_exchange_public',product='BTC-USD',
+        bid=100,ask=100.01,last=100,received_at=1000,
+        exchange_time='1970-01-01T00:16:40+00:00',read_only=True,
+        orders_allowed=False)
+
+
+def test_exchange_admission_chain_binds_exact_quote_and_session_format():
+    session='1'*16;policy='a'*64;quote=admission_quote()
+    with sqlite3.connect(':memory:') as db:
+        forward_evidence.schema(db)
+        forward_evidence.initialize_exchange_admissions(db,session)
+        marker=forward_evidence.append_exchange_admission(db,session,1,1000,
+            quote,'INJECTED_TRANSPORT_UNATTESTED',policy,1000)
+        forward_evidence.append(db,session,1,1000,quote,True,
+            'INJECTED_TRANSPORT_UNATTESTED',policy,
+            exchange_admission_sha256=marker)
+        admissions=forward_evidence.review_exchange_admissions(db,session)
+        quotes=forward_evidence.review(db,session)
+        checked=forward_evidence.crosscheck_exchange_admissions(admissions,
+            quotes,'RUNNING',policy)
+    assert checked['integrity_ok'] and checked['matched_quotes']==1
+    assert checked['admissions']==1 and checked['unmatched_admissions']==0
+
+
+def test_exchange_admission_tail_is_review_required_not_quote_authority():
+    session='1'*16;policy='a'*64
+    with sqlite3.connect(':memory:') as db:
+        forward_evidence.schema(db)
+        forward_evidence.initialize_exchange_admissions(db,session)
+        forward_evidence.append_exchange_admission(db,session,1,1000,
+            admission_quote(),'INJECTED_TRANSPORT_UNATTESTED',policy,1000)
+        admissions=forward_evidence.review_exchange_admissions(db,session)
+        quotes=forward_evidence.review(db,session)
+        checked=forward_evidence.crosscheck_exchange_admissions(admissions,
+            quotes,'RUNNING',policy)
+    assert not checked['integrity_ok'] and checked['unmatched_admissions']==1
+    assert checked['reasons']==['EXCHANGE_ADMISSION_OUTCOME_MISSING']
+
+
+def test_exchange_admission_tamper_and_partial_schema_fail_closed():
+    session='1'*16
+    with sqlite3.connect(':memory:') as db:
+        forward_evidence.schema(db)
+        forward_evidence.initialize_exchange_admissions(db,session)
+        forward_evidence.append_exchange_admission(db,session,1,1000,
+            admission_quote(),'INJECTED_TRANSPORT_UNATTESTED','a'*64,1000)
+        db.execute("UPDATE forward_exchange_admission_heads SET head='bad'")
+        assert not forward_evidence.review_exchange_admissions(
+            db,session)['integrity_ok']
+        db.execute('DROP TABLE forward_exchange_admission_heads')
+        assert not forward_evidence.admission_schema_valid(db)
+        with pytest.raises(ValueError,match='FORWARD_EXCHANGE_ADMISSION_SCHEMA'):
+            forward_evidence.append_exchange_admission(db,session,2,1005,
+                admission_quote(),'INJECTED_TRANSPORT_UNATTESTED','a'*64,1005)
+
+
+def test_session_review_rejects_partial_exchange_admission_schema(
+        tmp_path,monkeypatch):
+    runner,_,_=setup(tmp_path,monkeypatch)
+    session=runner.status()['session']
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        db.execute('DROP TABLE forward_exchange_admission_heads')
+    with pytest.raises(ValueError,match='FORWARD_EXCHANGE_ADMISSION_SCHEMA'):
+        runner.evidence_report(session)
+
+
+def test_event_chain_preserves_two_records_on_one_cycle():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        forward_event_evidence.append(db,event_record())
+        forward_event_evidence.append(db,event_record(decision='HOLD',reason='SCHEDULER_OVERRUN'))
+        report=forward_event_evidence.review(db,'1'*16)
+    assert report['integrity_ok'] and report['events']==2
+    assert [point['sequence'] for point in report['points']]==[1,2]
+    assert [point['ordinal'] for point in report['points']]==[1,2]
+    assert report['points'][1]['kind']=='SCHEDULER'
+
+
+def test_event_head_corruption_blocks_append():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db);forward_event_evidence.append(db,event_record())
+        db.execute("UPDATE forward_event_heads SET head='bad'")
+        with pytest.raises(ValueError,match='FORWARD_EVENT_HEAD_CORRUPT'):
+            forward_event_evidence.append(db,event_record(decision='HOLD'))
+
+
+def test_event_payload_size_is_bounded():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_(SCHEMA|PAYLOAD_TOO_LARGE)'):
+            forward_event_evidence.append(db,event_record(reason='x'*5000))
+
+
+def test_unknown_event_decision_is_rejected():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,event_record(decision='UNKNOWN'))
+
+
+def test_no_fill_outcome_requires_exact_attempt_binding_on_append():
+    no_fill=event_record(cycle=1,quote_evidence_sha256='b'*64,
+        decision='VETO',reason='ORDER_EXPIRED_WITHOUT_FILL',order_id='exit')
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,no_fill)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,{**no_fill,
+                'no_fill_attempt_sha256':'not-a-digest'})
+        digest=forward_event_evidence.append(db,{**no_fill,
+            'no_fill_attempt_sha256':'c'*64})
+        assert len(digest)==64
+
+
+def test_no_fill_binding_is_forbidden_on_other_outcomes():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,event_record(
+                no_fill_attempt_sha256='c'*64))
+
+
+def test_modeled_fill_outcome_requires_exact_binding_on_append():
+    fill=event_record(cycle=1,quote_evidence_sha256='b'*64,
+        decision='BUY',reason='MODELED_PUBLIC_QUOTE_FILL',order_id='entry',
+        liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,fill)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,{**fill,
+                'modeled_fill_sha256':'not-a-digest'})
+        digest=forward_event_evidence.append(db,{**fill,
+            'modeled_fill_sha256':'c'*64})
+        assert len(digest)==64
+
+
+@pytest.mark.parametrize('decision',['BUY','SELL'])
+def test_modeled_fill_outcome_requires_quote_evidence_binding(decision):
+    fill=event_record(cycle=1,decision=decision,
+        reason='MODELED_PUBLIC_QUOTE_FILL',order_id='entry',
+        liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False,
+        modeled_fill_sha256='c'*64)
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,fill)
+
+
+def test_modeled_fill_binding_is_forbidden_on_other_outcomes():
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,event_record(
+                modeled_fill_sha256='c'*64))
+
+
+def test_legacy_unbound_modeled_fill_remains_readable_but_unbound():
+    record=event_record(cycle=1,quote_evidence_sha256='b'*64,
+        decision='BUY',reason='MODELED_PUBLIC_QUOTE_FILL',order_id='entry',
+        liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
+    payload=forward_event_evidence.canonical(dict(kind='OUTCOME',record=record))
+    digest=forward_event_evidence.digest(forward_event_evidence.GENESIS,payload)
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        db.execute('INSERT INTO forward_events VALUES (?,?,?,?,?,?,?,?)',
+            (record['session'],1,1,1,'OUTCOME',payload,
+             forward_event_evidence.GENESIS,digest))
+        db.execute('INSERT INTO forward_event_heads VALUES (?,?,?)',
+            (record['session'],1,digest))
+        report=forward_event_evidence.review(db,record['session'])
+    assert report['integrity_ok'] and report['events']==1
+    assert report['points'][0]['record'].get('modeled_fill_sha256') is None
+
+
+def test_legacy_unbound_no_fill_outcome_remains_readable():
+    record=event_record(cycle=1,quote_evidence_sha256='b'*64,
+        decision='VETO',reason='ORDER_EXPIRED_WITHOUT_FILL',order_id='exit')
+    payload=forward_event_evidence.canonical(dict(kind='OUTCOME',record=record))
+    digest=forward_event_evidence.digest(forward_event_evidence.GENESIS,payload)
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        db.execute('INSERT INTO forward_events VALUES (?,?,?,?,?,?,?,?)',
+            (record['session'],1,1,1,'OUTCOME',payload,
+             forward_event_evidence.GENESIS,digest))
+        db.execute('INSERT INTO forward_event_heads VALUES (?,?,?)',
+            (record['session'],1,digest))
+        report=forward_event_evidence.review(db,record['session'])
+    assert report['integrity_ok'] and report['events']==1
+    assert report['points'][0]['record'].get('no_fill_attempt_sha256') is None
 
 
 def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
@@ -26,6 +228,152 @@ def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     assert report['order_journal_snapshot']['journal_stable_during_review']
     assert report['order_journal_snapshot']['portfolio_stable_during_review']
     assert len(report['order_journal_snapshot']['snapshot_sha256'])==64
+    events=report['durable_event_evidence']
+    assert events['integrity_ok'] and events['event_trace_complete']
+    assert events['quote_outcome_bijection'] and events['durable_order_outcomes_reconciled']
+    assert events['durable_fill_attempts_bound']
+    assert events['quote_outcomes']==8 and events['modeled_order_outcomes']==2
+    assert events['events']==10 and events['lifecycle_events']==2
+    assert len(events['head_sha256'])==len(events['reconciliation_sha256'])==64
+    assert len(events['modeled_execution_set_sha256'])==64
+    receipt=report['review_receipt']
+    assert receipt['profile']=='nexus.forward-session-review-receipt.v1'
+    assert receipt['local_consistency_ok'] and receipt['reason_count']==0
+    assert receipt['order_snapshot_stable_during_review']
+    assert receipt['initial_order_snapshot_sha256']==receipt['final_order_snapshot_sha256']
+    assert receipt['quote_head_sha256']==report['quote_evidence']['head_sha256']
+    assert receipt['event_head_sha256']==events['head_sha256']
+    assert receipt['event_reconciliation_sha256']==events['reconciliation_sha256']
+    assert len(receipt['session_summary_sha256'])==64
+    assert len(receipt['reason_codes_sha256'])==len(receipt['receipt_sha256'])==64
+    assert not receipt['live_orders_enabled'] and not receipt['release_approved']
+
+
+def _rewrite_event_chain(db,mutate):
+    rows=db.execute('SELECT session,sequence,cycle,ordinal,kind,payload FROM forward_events ORDER BY session,sequence').fetchall()
+    previous_by_session={};last={}
+    for session,sequence,cycle,ordinal,kind,payload in rows:
+        data=json.loads(payload);mutate(data)
+        payload=forward_event_evidence.canonical(data)
+        previous=previous_by_session.get(session,forward_event_evidence.GENESIS)
+        digest=forward_event_evidence.digest(previous,payload)
+        db.execute('UPDATE forward_events SET payload=?,previous=?,digest=? WHERE session=? AND sequence=?',
+            (payload,previous,digest,session,sequence))
+        previous_by_session[session]=digest;last[session]=(sequence,digest)
+    for session,(events,head) in last.items():
+        db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',(events,head,session))
+
+
+def test_self_consistent_wrong_event_order_id_fails_three_way_reconciliation(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.stop();changed=False
+    def mutate(data):
+        nonlocal changed
+        if not changed and data['record']['decision']=='BUY':
+            data['record']['order_id']='pf_'+r.status()['session']+'_999_BUY';changed=True
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:_rewrite_event_chain(db,mutate)
+    assert changed
+    report=r.evidence_report(r.status()['session'])
+    assert report['durable_event_evidence']['event_trace_complete']
+    assert not report['durable_event_evidence']['durable_order_outcomes_reconciled']
+    assert 'DURABLE_ORDER_OUTCOME_DISAGREEMENT' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_missing_durable_event_tables_leave_legacy_session_readable_but_incomplete(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle();r.stop()
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        db.execute('DROP TABLE forward_events');db.execute('DROP TABLE forward_event_heads')
+    report=r.evidence_report(r.status()['session'])
+    assert report['quote_evidence']['observations']==1
+    assert not report['durable_event_evidence']['event_trace_complete']
+    assert not report['local_consistency_ok']
+
+
+def test_generic_durable_halt_is_not_promoted_to_independent_cut(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle();g.emergency_halt()
+    report=r.evidence_report(r.status()['session'])
+    assert not report['durable_event_evidence']['independent_cut_observed']
+    assert not report['durable_event_evidence']['cut_binding_verified']
+    assert report['order_journal_snapshot']['halted']
+    assert 'DURABLE_HALT_WITHOUT_INDEPENDENT_CUT_EVIDENCE' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_canonical_independent_cut_without_terminal_event_is_bound(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle()
+    emergency_intent.persist(g._path());g.emergency_halt()
+    report=r.evidence_report(r.status()['session']);events=report['durable_event_evidence']
+    assert events['independent_cut_observed'] and events['cut_binding_verified']
+    assert events['cut_binding_source']=='CANONICAL_LATCH'
+    assert events['cut_state_before']==events['cut_state_after']=='CANONICAL_REQUESTED'
+    assert 'INDEPENDENT_CUT_REQUIRES_SESSION_REVIEW' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_signal_only_cut_is_review_required_before_durable_halt(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.request_cut()
+    report=r.evidence_report(r.status()['session']);events=report['durable_event_evidence']
+    assert events['cut_binding_verified'] and events['cut_binding_source']=='PROCESS_SIGNAL'
+    assert not events['independent_cut_observed']
+    assert 'INDEPENDENT_CUT_WITHOUT_DURABLE_HALT' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_canonical_latch_precedes_process_signal_when_both_are_stable(
+        tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.stop()
+    r.request_cut();emergency_intent.persist(g._path());g.emergency_halt()
+    report=r.evidence_report(r.status()['session'])
+    events=report['durable_event_evidence'];receipt=report['review_receipt']
+    assert events['cut_binding_source']=='CANONICAL_LATCH'
+    assert events['cut_state_before']==events['cut_state_after']==\
+        'CANONICAL_REQUESTED'
+    assert receipt['cut_binding_source']=='CANONICAL_LATCH'
+    assert receipt['cut_record_sha256'] is not None
+    assert report['stored_state']=='STOPPED'
+
+
+def test_malformed_latch_is_fail_closed_but_not_verified(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);r.single_cycle()
+    emergency_intent.path(g._path()).write_bytes(b'broken')
+    report=r.evidence_report(r.status()['session']);events=report['durable_event_evidence']
+    assert events['cut_state_before']==events['cut_state_after']=='PRESENT_UNVERIFIED'
+    assert not events['cut_evidence_stable'] and not events['cut_binding_verified']
+    assert 'INDEPENDENT_CUT_EVIDENCE_UNSTABLE' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_process_signal_cannot_sanitize_malformed_latch(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.request_cut()
+    emergency_intent.path(g._path()).write_bytes(b'broken')
+    report=r.evidence_report(r.status()['session']);events=report['durable_event_evidence']
+    assert events['cut_state_before']==events['cut_state_after']=='PRESENT_UNVERIFIED'
+    assert not events['cut_evidence_stable'] and not events['cut_binding_verified']
+    assert events['cut_binding_source']=='NONE'
+    assert 'INDEPENDENT_CUT_EVIDENCE_UNSTABLE' in report['reasons']
+    assert not report['local_consistency_ok']
+
+
+def test_later_generic_halt_does_not_taint_stopped_history(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c);r.stop();g.emergency_halt()
+    report=r.evidence_report(r.status()['session'])
+    assert report['local_consistency_ok']
+    assert not report['durable_event_evidence']['independent_cut_observed']
+
+
+def test_cut_transition_during_review_is_unstable(tmp_path,monkeypatch):
+    r,g,c=setup(tmp_path,monkeypatch);warmup(r,c)
+    original=g.session_orders_snapshot;calls=0
+    def signal_after_first(value):
+        nonlocal calls
+        result=original(value);calls+=1
+        if calls==1:r.request_cut()
+        return result
+    monkeypatch.setattr(g,'session_orders_snapshot',signal_after_first)
+    report=r.evidence_report(r.status()['session'])
+    assert calls==2 and not report['durable_event_evidence']['cut_evidence_stable']
+    assert 'INDEPENDENT_CUT_EVIDENCE_UNSTABLE' in report['reasons']
+    assert not report['local_consistency_ok']
 
 
 def test_order_journal_change_during_review_fails_closed(tmp_path,monkeypatch):
@@ -42,6 +390,11 @@ def test_order_journal_change_during_review_fails_closed(tmp_path,monkeypatch):
     assert 'ORDER_JOURNAL_CHANGED_DURING_REVIEW' in report['reasons']
     assert 'LINKED_PORTFOLIO_CHANGED_DURING_REVIEW' not in report['reasons']
     assert not report['order_journal_snapshot']['stable_during_review']
+    receipt=report['review_receipt']
+    assert not receipt['local_consistency_ok'] and receipt['reason_count']>=1
+    assert not receipt['order_snapshot_stable_during_review']
+    assert receipt['initial_order_snapshot_sha256']!=receipt['final_order_snapshot_sha256']
+    assert receipt['halted_before'] is False and receipt['halted_after'] is True
 
 
 def test_linked_portfolio_change_during_review_fails_closed(tmp_path,monkeypatch):
@@ -62,6 +415,9 @@ def test_linked_portfolio_change_during_review_fails_closed(tmp_path,monkeypatch
     assert report['order_journal_snapshot']['journal_stable_during_review']
     assert not report['order_journal_snapshot']['portfolio_stable_during_review']
     assert not report['order_journal_snapshot']['stable_during_review']
+    receipt=report['review_receipt']
+    assert not receipt['order_snapshot_stable_during_review']
+    assert receipt['initial_order_snapshot_sha256']!=receipt['final_order_snapshot_sha256']
 
 
 def test_quote_payload_edit_and_tail_deletion_detected(tmp_path,monkeypatch):

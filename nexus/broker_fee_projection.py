@@ -41,20 +41,33 @@ def _timed_record(normalize,field):
 
 
 def identifier(value):
-    if not isinstance(value,str) or not re.fullmatch(r'[A-Za-z0-9_:-]{1,128}',value):raise ValueError('INVALID_BROKER_PROJECTION_ID')
+    if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_:-]{1,128}',value):raise ValueError('INVALID_BROKER_PROJECTION_ID')
     return value
 
 
 def broker_id(value):
+    if type(value) is not str:raise ValueError('INVALID_BROKER_PROJECTION_ORDER_ID')
     try:return str(UUID(value))
     except (ValueError,TypeError,AttributeError):raise ValueError('INVALID_BROKER_PROJECTION_ORDER_ID')
 
 
+def projection_number(value,zero=False):
+    """Normalize only exact built-in numeric evidence at this trust boundary."""
+    value_type=type(value)
+    if not (value_type is str or value_type is int or value_type is float or
+            value_type is Decimal):
+        raise ValueError('INVALID_BROKER_PROJECTION_NUMBER')
+    try:return number(value,zero=zero)
+    except ValueError:raise ValueError('INVALID_BROKER_PROJECTION_NUMBER') from None
+
+
 def unique(rows,limit,key,normalize):
-    if not isinstance(rows,list) or len(rows)>limit:raise ValueError('BROKER_PROJECTION_INPUT_CAP')
+    if type(rows) is not list or len(rows)>limit:raise ValueError('BROKER_PROJECTION_INPUT_CAP')
     result={};duplicates=0
     for raw in rows:
-        if not isinstance(raw,dict):raise ValueError('INVALID_BROKER_PROJECTION_RECORD')
+        if (type(raw) is not dict or
+                any(type(field) is not str for field in raw)):
+            raise ValueError('INVALID_BROKER_PROJECTION_RECORD')
         try:row=normalize(raw);identity=row[key]
         except (KeyError,TypeError,AttributeError):raise ValueError('INVALID_BROKER_PROJECTION_RECORD')
         if identity in result:
@@ -65,14 +78,19 @@ def unique(rows,limit,key,normalize):
 
 
 def order_record(raw):
-    if raw.get('symbol')!='BTC/USD' or raw.get('side') not in ('buy','sell') or raw.get('status') not in STATUSES:
+    if (type(raw.get('symbol')) is not str or
+            type(raw.get('side')) is not str or
+            type(raw.get('status')) is not str or
+            raw.get('symbol')!='BTC/USD' or
+            raw.get('side') not in ('buy','sell') or
+            raw.get('status') not in STATUSES):
         raise ValueError('BROKER_PROJECTION_ORDER_SCOPE')
-    requested=(number(raw['requested_quantity'])
+    requested=(projection_number(raw['requested_quantity'])
         if 'requested_quantity' in raw else None)
-    limit=(number(raw['limit_price']) if 'limit_price' in raw else None)
-    qty=number(raw['filled_quantity'],zero=True)
-    average=number(raw['average_fill_price']) if qty else None
-    if not qty and raw.get('average_fill_price') is not None and number(raw['average_fill_price'],zero=True)!=0:raise ValueError('BROKER_AVERAGE_WITHOUT_FILL')
+    limit=(projection_number(raw['limit_price']) if 'limit_price' in raw else None)
+    qty=projection_number(raw['filled_quantity'],zero=True)
+    average=projection_number(raw['average_fill_price']) if qty else None
+    if not qty and raw.get('average_fill_price') is not None and projection_number(raw['average_fill_price'],zero=True)!=0:raise ValueError('BROKER_AVERAGE_WITHOUT_FILL')
     if raw['status'] in ('accepted','pending_new','new','rejected') and qty:raise ValueError('BROKER_STATUS_QUANTITY_DISAGREEMENT')
     if raw['status'] in ('filled','partially_filled') and not qty:raise ValueError('BROKER_STATUS_QUANTITY_DISAGREEMENT')
     result=dict(broker_order_id=broker_id(raw['broker_order_id']),client_order_id=identifier(raw['client_order_id']),
@@ -85,21 +103,27 @@ def order_record(raw):
 
 
 def execution_record(raw):
-    if raw.get('product')!='BTC-USD' or raw.get('side') not in ('BUY','SELL'):raise ValueError('BROKER_PROJECTION_EXECUTION_SCOPE')
+    if (type(raw.get('product')) is not str or
+            type(raw.get('side')) is not str or
+            raw.get('product')!='BTC-USD' or
+            raw.get('side') not in ('BUY','SELL')):
+        raise ValueError('BROKER_PROJECTION_EXECUTION_SCOPE')
     return dict(execution_id=identifier(raw['execution_id']),broker_order_id=broker_id(raw['broker_order_id']),
-                client_order_id=identifier(raw['client_order_id']),side=raw['side'],quantity=text(number(raw['quantity'])),
-                price=text(number(raw['price'])),occurred_at=timestamp(raw['occurred_at']).isoformat())
+                client_order_id=identifier(raw['client_order_id']),side=raw['side'],quantity=text(projection_number(raw['quantity'])),
+                price=text(projection_number(raw['price'])),occurred_at=timestamp(raw['occurred_at']).isoformat())
 
 
 def fee_record(raw):
-    if raw.get('asset') not in ('BTC','USD'):raise ValueError('BROKER_PROJECTION_FEE_ASSET_UNSUPPORTED')
+    if type(raw.get('asset')) is not str or raw.get('asset') not in ('BTC','USD'):raise ValueError('BROKER_PROJECTION_FEE_ASSET_UNSUPPORTED')
     return dict(activity_id=identifier(raw['activity_id']),execution_id=identifier(raw['execution_id']),
-                asset=raw['asset'],amount=text(number(raw['amount'],zero=True)),occurred_at=timestamp(raw['occurred_at']).isoformat())
+                asset=raw['asset'],amount=text(projection_number(raw['amount'],zero=True)),occurred_at=timestamp(raw['occurred_at']).isoformat())
 
 
 def balances(raw):
-    if not isinstance(raw,dict) or set(raw)!={'USD','BTC'}:raise ValueError('BROKER_PROJECTION_BALANCE_SCOPE')
-    return {asset:number(raw[asset],zero=True) for asset in ('USD','BTC')}
+    if (type(raw) is not dict or any(type(key) is not str for key in raw) or
+            set(raw)!={'USD','BTC'}):
+        raise ValueError('BROKER_PROJECTION_BALANCE_SCOPE')
+    return {asset:projection_number(raw[asset],zero=True) for asset in ('USD','BTC')}
 
 
 def _project(orders,executions,fees,*,opening_balances,opening_at,observed_balances,observed_at,fee_coverage_complete=False):

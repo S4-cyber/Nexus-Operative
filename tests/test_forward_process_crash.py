@@ -41,6 +41,60 @@ raise SystemExit('crash hook was not reached')
 '''
 
 
+NO_FILL_SCRIPT=r'''
+import os
+from datetime import datetime,timezone
+from pathlib import Path
+from decimal import Decimal
+from nexus.durable_orders import DurableOrderGateway
+from nexus.paper_forward import PaperForwardRunner
+from nexus.tier_permissions import configure
+
+configure('terrestrial',True)
+root=Path(os.environ['NEXUS_PORTABLE_DATA'])
+g=DurableOrderGateway(root/'order_lifecycle.sqlite3')
+g.initialize_account(10000);g.link_portfolio()
+g.submit('entry','BTC-USD','BUY',100,tier='terrestrial')
+g.simulate_priced_fill('entry','fill',1,1,100)
+clock={'now':1000,'price':250}
+def quote(product):
+    return dict(product=product,provider='coinbase_exchange_public',read_only=True,
+        orders_allowed=False,bid=clock['price'],ask=clock['price']+.01,
+        last=clock['price'],received_at=clock['now'],
+        exchange_time=datetime.fromtimestamp(clock['now'],timezone.utc).isoformat())
+
+first=PaperForwardRunner(g,quote,lambda:clock['now']);first.prepare('terrestrial')
+configure('terrestrial',False)
+assert first.single_cycle()['decision']=='SELL'
+first.stop()
+
+cold=DurableOrderGateway(g.path)
+resumed=PaperForwardRunner(cold,quote,lambda:clock['now'])
+resumed.prepare('terrestrial');clock.update(now=1005,price=251)
+original=cold._restore;delayed=[False]
+def restore(db):
+    state=original(db);gateway=state[0]
+    pending=next((order for order in gateway.intents.values()
+        if order.get('intent_scope')=='POSITION_REDUCING_EXIT' and
+        order['status']=='SIMULATED_REDUCTION_PENDING'),None)
+    if (pending is not None and
+            Decimal(gateway.order_terms[pending['id']]['created_at'])==
+                Decimal(str(clock['now'])) and
+            pending.get('reduction_slice_count')==1 and not delayed[0]):
+        clock['now']+=2;delayed[0]=True
+    return state
+cold._restore=restore
+original_record=resumed._record
+def record(decision,reason,**extra):
+    if decision=='VETO' and reason=='ORDER_EXPIRED_WITHOUT_FILL':
+        os._exit(76)
+    return original_record(decision,reason,**extra)
+resumed._record=record
+resumed.single_cycle()
+raise SystemExit('no-fill crash hook was not reached')
+'''
+
+
 @pytest.mark.parametrize('phase,exit_code',[('before_fill',74),('after_fill',75)])
 def test_process_death_preserves_authoritative_ledger_and_requires_review(tmp_path,monkeypatch,phase,exit_code):
     result=subprocess.run([sys.executable,'-c',SCRIPT,phase],
@@ -64,10 +118,17 @@ def test_process_death_preserves_authoritative_ledger_and_requires_review(tmp_pa
         assert Decimal(pending['simulated_filled_notional'])>0
         assert recovery['execution_account']['account']['positions']
         assert 'SESSION_COUNTER_FILL_DISAGREEMENT' in evidence['reasons']
+        assert not evidence['durable_event_evidence']['durable_fill_attempts_bound']
+        assert 'DURABLE_FILL_ATTEMPT_DIGEST_DISAGREEMENT' in evidence['reasons']
     else:
         assert Decimal(pending['simulated_filled_notional'])==0
         assert not recovery['execution_account']['account']['positions']
-        assert evidence['local_consistency_ok']
+        # The quote committed before process death has no durable outcome.
+        # Keep the evidence readable, but never promote that gap to a
+        # complete per-session reconciliation.
+        assert not evidence['local_consistency_ok']
+        assert not evidence['durable_event_evidence']['quote_outcome_bijection']
+        assert 'QUOTE_OUTCOME_BIJECTION_DISAGREEMENT' in evidence['reasons']
     # Ownership was released by actual process death, but normal admission still
     # refuses the unreviewed pending order rather than resuming the old session.
     with pytest.raises(ValueError,match='REVIEW_OUTSTANDING_PAPER_ORDERS_FIRST'):
@@ -87,3 +148,37 @@ def test_process_death_preserves_authoritative_ledger_and_requires_review(tmp_pa
         assert 'SESSION_COUNTER_FILL_DISAGREEMENT' in restarted.evidence_report(session['session'])['reasons']
     else:
         with pytest.raises(ValueError,match='RISK_TIER_DISENGAGED'):restarted.prepare('terrestrial')
+
+
+def test_process_death_after_durable_no_fill_keeps_attempt_and_review_gap(
+        tmp_path,monkeypatch):
+    result=subprocess.run([sys.executable,'-c',NO_FILL_SCRIPT],
+        env={**os.environ,'NEXUS_PORTABLE_DATA':str(tmp_path)},
+        capture_output=True,text=True,timeout=30)
+    assert result.returncode==76,result.stderr
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    g=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
+    recovery=g.recovery_report();assert recovery['portfolio_reconciled']
+    mandate=next(order for order in recovery['orders']
+        if order.get('intent_scope')=='POSITION_REDUCING_EXIT')
+    assert mandate['status']=='SIMULATED_REDUCTION_PENDING'
+    assert mandate['reduction_slice_count']==1
+    position=recovery['execution_account']['account']['positions']['BTC-USD']
+    assert Decimal(position['quantity'])>0
+    attempts=g.order_report(mandate['id'])['no_fill_events']
+    assert len(attempts)==1 and attempts[0]['reason']=='ORDER_EXPIRED_WITHOUT_FILL'
+
+    restarted=PaperForwardRunner(g,lambda product:None,lambda:1010)
+    assert not restarted.status()['enabled'] and not restarted.status()['ownership_held']
+    interrupted=next(session for session in restarted.sessions()['sessions']
+        if session['effective_state']=='INTERRUPTED_OR_PRIOR_SESSION')
+    evidence=restarted.evidence_report(interrupted['session'])
+    assert evidence['quote_evidence']['observations']==1
+    events=evidence['durable_event_evidence']
+    assert not events['quote_outcome_bijection']
+    assert not events['durable_no_fill_outcomes_reconciled']
+    assert not events['durable_no_fill_attempts_bound']
+    assert 'QUOTE_OUTCOME_BIJECTION_DISAGREEMENT' in evidence['reasons']
+    assert 'DURABLE_NO_FILL_OUTCOME_DISAGREEMENT' in evidence['reasons']
+    assert 'DURABLE_NO_FILL_ATTEMPT_DIGEST_DISAGREEMENT' in evidence['reasons']
+    assert not evidence['local_consistency_ok']

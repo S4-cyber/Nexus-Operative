@@ -17,6 +17,26 @@ KEY = 'fixture_key_only_123'
 SECRET = 'fixture_secret_only_123'
 
 
+class EqualText(str):
+    """Hostile acknowledgement scalar that compares equal to everything."""
+
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
+class EqualTuple(tuple):
+    """Hostile acknowledgement sequence with forged equality."""
+
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
 def segments(suffix=''):
     first_trade = _event('01K00000000000000000000001',
         '11111111-1111-1111-1111-111111111111', 'TRD')
@@ -40,6 +60,28 @@ def segments(suffix=''):
     raw = (''.join('data: ' + canonical(row) + '\n\n'
         for row in replay) + suffix).encode()
     return initial, replay, raw
+
+
+def resumable_replay(previous, event_ids, ref_ids, order_ids, minute):
+    trade = _event(event_ids[0], ref_ids[0], 'TRD',
+        details={**previous['details'], 'order_id': order_ids[0],
+            'client_order_id': f'fixture_client_{minute}_a'},
+        at=f'2026-10-18T18:{minute}:00.100000000Z',
+        executed_at=f'2026-10-18T18:{minute}:00.000000000Z')
+    fee = _event(event_ids[1], ref_ids[1], 'FEE',
+        details={'parent_id': trade['ref_id'],
+            'system_date': '2026-10-18'},
+        at=f'2026-10-18T18:{int(minute) + 1:02d}:00.100000000Z',
+        executed_at=f'2026-10-18T18:{int(minute) + 1:02d}:00.000000000Z')
+    terminal = _event(event_ids[2], ref_ids[2], 'TRD',
+        details={**previous['details'], 'order_id': order_ids[1],
+            'client_order_id': f'fixture_client_{minute}_b'},
+        at=f'2026-10-18T18:{int(minute) + 2:02d}:00.100000000Z',
+        executed_at=f'2026-10-18T18:{int(minute) + 2:02d}:00.000000000Z')
+    replay = [copy.deepcopy(previous), trade, fee, terminal]
+    raw = ''.join('data: ' + canonical(row) + '\n\n'
+        for row in replay).encode()
+    return terminal, raw
 
 
 class Response:
@@ -206,16 +248,19 @@ def test_interrupted_wire_segment_never_checkpoints(tmp_path):
     assert not path.exists()
 
 
-def test_reconnect_reason_disagreement_never_checkpoints(tmp_path):
+@pytest.mark.parametrize('reason', (
+    'UNKNOWN', None, EqualText('CONNECTION_DROPPED')))
+def test_invalid_reconnect_reason_is_network_and_storage_silent(
+        tmp_path, reason):
     path = tmp_path / 'cursor.sqlite3'
     initial, _, raw = segments()
     opener = Opener(raw)
     with pytest.raises(subject.ActivitySSECheckpointError,
-            match='RECONNECT_REVIEW_FAILED'):
+            match='RECONNECT_REASON_INVALID'):
         run(tmp_path, initial_events=initial,
-            reconnect_reason='UNKNOWN',
+            reconnect_reason=reason,
             cursor_store=ActivitySSECursorStore(path, ACCOUNT), opener=opener)
-    assert len(opener.requests) == 1 and not path.exists()
+    assert not opener.requests and not path.exists()
 
 
 def test_malformed_initial_review_is_fixed_and_network_silent(
@@ -223,6 +268,65 @@ def test_malformed_initial_review_is_fixed_and_network_silent(
     path = tmp_path / 'cursor.sqlite3'
     monkeypatch.setattr(subject.envelope, 'review',
         lambda *args, **kwargs: {})
+    opener = Opener(segments()[2])
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='INITIAL_REVIEW_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT),
+            opener=opener)
+    assert not opener.requests and not path.exists()
+
+
+def test_polymorphic_initial_event_is_network_and_storage_silent(tmp_path):
+    class MappingSubclass(dict):
+        pass
+
+    path=tmp_path/'cursor.sqlite3';initial,_,raw=segments()
+    initial[0]=MappingSubclass(initial[0]);opener=Opener(raw)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='INITIAL_EVENTS_INVALID'):
+        run(tmp_path,initial_events=initial,
+            cursor_store=ActivitySSECursorStore(path,ACCOUNT),opener=opener)
+    assert not opener.requests and not path.exists()
+
+@pytest.mark.parametrize('target',('event','account'))
+def test_deepcopy_laundering_is_rejected_before_copy_io_or_storage(
+        tmp_path,target):
+    class LaunderedEvent(dict):
+        copied=False
+        def __deepcopy__(self,memo):
+            self.copied=True
+            return dict(self)
+    class LaunderedAccount:
+        copied=False
+        def __deepcopy__(self,memo):
+            self.copied=True
+            return ACCOUNT
+    path=tmp_path/'cursor.sqlite3';initial,_,raw=segments()
+    hostile=LaunderedEvent(initial[0]) if target=='event' else LaunderedAccount()
+    if target=='event':initial[0]=hostile
+    else:initial[0]['account_id']=hostile
+    opener=Opener(raw)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='INITIAL_EVENTS_INVALID'):
+        run(tmp_path,initial_events=initial,
+            cursor_store=ActivitySSECursorStore(path,ACCOUNT),opener=opener)
+    assert not hostile.copied and not opener.requests and not path.exists()
+
+
+@pytest.mark.parametrize(('field','value'), [
+    ('mode', EqualText('foreign-mode')),
+    ('status', EqualText('accepted')),
+    ('schema_scope', EqualText('all-products')),
+    ('limitations', EqualText('none')),
+    ('events_reviewed', True),
+])
+def test_initial_review_rejects_type_confused_acknowledgement_before_io(
+        tmp_path, monkeypatch, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    initial = segments()[0]
+    valid = subject.envelope.review(initial, expected_account_id=ACCOUNT)
+    monkeypatch.setattr(subject.envelope, 'review',
+        lambda *args, **kwargs: {**valid, field: value})
     opener = Opener(segments()[2])
     with pytest.raises(subject.ActivitySSECheckpointError,
             match='INITIAL_REVIEW_INVALID'):
@@ -243,11 +347,141 @@ def test_malformed_transport_result_is_fixed_and_storage_silent(
     assert not path.exists()
 
 
+@pytest.mark.parametrize(('field','value'), [
+    ('unexpected_private_extension', False),
+    ('mode', 'SUPPLIED_ALPACA_ACTIVITY_SSE_WIRE_SESSION_REVIEW'),
+    ('status', 'RECONNECT_REVIEW_REQUIRED'),
+    ('read_only', 1),
+    ('account_sha256', 'f' * 64),
+    ('sources', []),
+    ('request_target_exact', False),
+    ('all_admitted_fees_parent_linked', False),
+    ('provider_source_attested', True),
+    ('actual_provider_access', True),
+    ('actual_stream_connection', True),
+    ('automatic_retry', True),
+    ('cursor_written', True),
+    ('ledger_applied', True),
+    ('transport_policy', 'foreign-policy'),
+    ('limitations', 'weaker limitations'),
+    ('source', 'PAPER_HTTPS_READS'),
+    ('input_sha256', 'bad'),
+    ('first_event_id_sha256', 'f' * 64),
+    ('last_event_id_sha256', 'f' * 64),
+    ('since_id_sha256', 'f' * 64),
+    ('chunk_count', True),
+    ('bytes_reviewed', 0),
+    ('events_reviewed', 3),
+    ('trades_reviewed', 2),
+    ('comments_reviewed', 1),
+    ('gap_or_server_error_observed', True),
+    ('reconnect_review_required', True),
+])
+def test_transport_boundary_rejects_mutated_or_promoted_acknowledgement(
+        tmp_path, monkeypatch, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    original = subject.transport._collect_once_private
+
+    def mutated(*args, **kwargs):
+        review, replay = original(*args, **kwargs)
+        return ({**review, field: value}, replay)
+
+    monkeypatch.setattr(subject.transport, '_collect_once_private', mutated)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='TRANSPORT_RESULT_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT))
+    assert not path.exists()
+
+
+def test_transport_boundary_requires_exact_comment_and_interruption_counts(
+        tmp_path, monkeypatch):
+    path = tmp_path / 'cursor.sqlite3'
+    original = subject.transport._collect_once_private
+
+    def malformed(*args, **kwargs):
+        review, replay = original(*args, **kwargs)
+        return ({**review, 'heartbeat_comments': 1,
+            'comments_reviewed': 0}, replay)
+
+    monkeypatch.setattr(subject.transport, '_collect_once_private', malformed)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='TRANSPORT_RESULT_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT))
+    assert not path.exists()
+
+
+def test_transport_boundary_accepts_provider_mode_schema_without_attestation():
+    initial, _, raw = segments()
+    review, replay = subject.transport._collect_once_private(
+        KEY, SECRET, expected_account_id=ACCOUNT,
+        since_id=initial[-1]['event_id'], confirm_read_only_paper=True,
+        opener=Opener(raw), wall_clock=lambda: 1000,
+        elapsed_clock=lambda: 50, permission_check=lambda: True,
+        emergency_stop_check=lambda: False,
+        credential_check=lambda: True)
+    review = {**review, 'source': 'PAPER_HTTPS_READS',
+        'actual_provider_access': True, 'actual_stream_connection': True}
+    assert subject._transport_review_result(review, replay,
+        account_sha256=subject.sha(ACCOUNT),
+        persisted_event_id=initial[-1]['event_id'], injected=False) is review
+
+
+@pytest.mark.parametrize(('field','value'), [
+    ('mode', EqualText('foreign-mode')),
+    ('status', EqualText('accepted')),
+    ('account_sha256', EqualText('f' * 64)),
+    ('sources', EqualTuple(('foreign-source',))),
+    ('transport_policy', EqualText('foreign-policy')),
+    ('source', EqualText('PAPER_HTTPS_READS')),
+    ('limitations', EqualText('none')),
+])
+def test_transport_boundary_rejects_type_confused_text_and_sources(
+        tmp_path, monkeypatch, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    original = subject.transport._collect_once_private
+
+    def mutated(*args, **kwargs):
+        review, replay = original(*args, **kwargs)
+        return ({**review, field: value}, replay)
+
+    monkeypatch.setattr(subject.transport, '_collect_once_private', mutated)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='TRANSPORT_RESULT_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT))
+    assert not path.exists()
+
+
 def test_malformed_reconnect_review_is_fixed_and_never_checkpoints(
         tmp_path, monkeypatch):
     path = tmp_path / 'cursor.sqlite3'
     monkeypatch.setattr(subject.reconnect, 'review',
         lambda *args, **kwargs: {})
+    opener = Opener(segments()[2])
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='RECONNECT_REVIEW_INVALID'):
+        run(tmp_path, cursor_store=ActivitySSECursorStore(path, ACCOUNT),
+            opener=opener)
+    assert len(opener.requests) == 1 and not path.exists()
+
+
+@pytest.mark.parametrize(('field','value'), [
+    ('mode', EqualText('foreign-mode')),
+    ('status', EqualText('accepted')),
+    ('account_sha256', EqualText('f' * 64)),
+    ('reconnect_reason', EqualText('UNKNOWN')),
+    ('sources', EqualTuple(('foreign-source',))),
+    ('limitations', EqualText('none')),
+    ('initial_events_reviewed', True),
+])
+def test_reconnect_review_rejects_type_confused_acknowledgement(
+        tmp_path, monkeypatch, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    original = subject.reconnect.review
+
+    def mutated(*args, **kwargs):
+        return {**original(*args, **kwargs), field: value}
+
+    monkeypatch.setattr(subject.reconnect, 'review', mutated)
     opener = Opener(segments()[2])
     with pytest.raises(subject.ActivitySSECheckpointError,
             match='RECONNECT_REVIEW_INVALID'):
@@ -274,6 +508,80 @@ def test_malformed_checkpoint_acknowledgement_retains_exact_recovery(
     assert cold['initialized'] and cold['retained_checkpoints'] == 1
 
 
+@pytest.mark.parametrize(('field','value'), [
+    ('unexpected_private_extension', False),
+    ('mode', 'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING'),
+    ('status', 'COMMITTED'),
+    ('account_sha256', 'f' * 64),
+    ('head_sha256', 'bad'),
+    ('receipt_sha256', 'f' * 64),
+    ('cursor_sha256', 'f' * 64),
+    ('duplicate', 1),
+    ('reconnect_reservation_bound', True),
+    ('transport_input_bound', False),
+    ('complete_review_counts_bound', False),
+    ('local_cursor_checkpoint_committed', False),
+    ('process_restart_recoverable', False),
+    ('ready_for_routing', True),
+])
+def test_cursor_receipt_boundary_requires_exact_bound_acknowledgement(
+        tmp_path, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    original_checkpoint = store.checkpoint
+
+    def commit_with_mutated_acknowledgement(*args, **kwargs):
+        saved = original_checkpoint(*args, **kwargs)
+        return {**saved, field: value}
+
+    store.checkpoint = commit_with_mutated_acknowledgement
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN'):
+        run(tmp_path, cursor_store=store)
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['initialized'] and cold['retained_checkpoints'] == 1
+
+
+@pytest.mark.parametrize(('field','value'), [
+    ('unexpected_private_extension', False),
+    ('mode', 'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_CHECKPOINT'),
+    ('status', 'COMMITTED'),
+    ('account_sha256', 'f' * 64),
+    ('head_sha256', 'f' * 64),
+    ('expected_head_sha256', 'f' * 64),
+    ('checkpoint_receipt_sha256', 'f' * 64),
+    ('cursor_sha256', 'f' * 64),
+    ('transport_input_sha256', 'f' * 64),
+    ('review_input_sha256', 'f' * 64),
+    ('initial_events_reviewed', True),
+    ('replay_events_reviewed', 1),
+    ('redelivered_events_deduplicated', 2),
+    ('new_events_processed', 2),
+    ('reconnect_reservation_sha256', 'f' * 64),
+    ('reconnect_reservation_bound', True),
+    ('transport_input_bound', False),
+    ('complete_review_counts_bound', False),
+    ('read_only', False),
+    ('release_approved', True),
+])
+def test_cursor_receipt_requires_exact_cold_retained_binding(
+        tmp_path, field, value):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    original_binding = store.latest_checkpoint_binding
+
+    def mutated_binding():
+        retained = original_binding()
+        return {**retained, field: value}
+
+    store.latest_checkpoint_binding = mutated_binding
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_STORE_ACKNOWLEDGEMENT_UNCERTAIN'):
+        run(tmp_path, cursor_store=store)
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['initialized'] and cold['retained_checkpoints'] == 1
+
+
 def test_cursor_store_binding_change_during_io_never_checkpoints(tmp_path):
     path = tmp_path / 'cursor.sqlite3'
     moved = tmp_path / 'moved.sqlite3'
@@ -285,6 +593,126 @@ def test_cursor_store_binding_change_during_io_never_checkpoints(tmp_path):
         run(tmp_path, cursor_store=store, opener=opener)
     assert len(opener.requests) == 1
     assert not path.exists() and not moved.exists()
+
+
+def test_existing_cursor_file_replacement_during_io_never_checkpoints(
+        tmp_path):
+    initial, _, _ = segments()
+    retained_trade, first_raw = resumable_replay(initial[-1],
+        ('01K00000000000000000000005',
+         '01K00000000000000000000006',
+         '01K00000000000000000000007'),
+        ('55555555-5555-5555-5555-555555555555',
+         '66666666-6666-6666-6666-666666666666',
+         '77777777-7777-7777-7777-777777777777'),
+        ('dddddddd-dddd-dddd-dddd-dddddddddddd',
+         'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'), '04')
+    first, store, _ = run(tmp_path, initial_events=initial,
+        opener=Opener(first_raw))
+    path = store.path
+    initial = [*initial, retained_trade]
+    _, raw = resumable_replay(retained_trade,
+        ('01K00000000000000000000008',
+         '01K00000000000000000000009',
+         '01K0000000000000000000000A'),
+        ('88888888-8888-8888-8888-888888888888',
+         '99999999-9999-9999-9999-999999999999',
+         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+        ('ffffffff-ffff-ffff-ffff-ffffffffffff',
+         'abababab-abab-abab-abab-abababababab'), '07')
+    replacement = tmp_path / 'replacement.sqlite3'
+    before = path.stat()
+
+    def replace_with_identical_bytes():
+        replacement.write_bytes(path.read_bytes())
+        replacement.replace(path)
+
+    opener = Opener(raw, callback=replace_with_identical_bytes)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_FILE_CHANGED'):
+        run(tmp_path, cursor_store=store, initial_events=initial,
+            expected_cursor_head=first['checkpoint_head_sha256'],
+            opener=opener)
+    after = path.stat()
+    assert (before.st_dev, before.st_ino) != (after.st_dev, after.st_ino)
+    assert len(opener.requests) == 1
+    cold = ActivitySSECursorStore(path, ACCOUNT).inspect()
+    assert cold['retained_checkpoints'] == 1
+
+
+def test_cursor_directory_replacement_with_same_file_never_checkpoints(
+        tmp_path):
+    data = tmp_path / 'data'
+    data.mkdir()
+    path = data / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    initial, _, _ = segments()
+    retained_trade, first_raw = resumable_replay(initial[-1],
+        ('01K00000000000000000000005',
+         '01K00000000000000000000006',
+         '01K00000000000000000000007'),
+        ('55555555-5555-5555-5555-555555555555',
+         '66666666-6666-6666-6666-666666666666',
+         '77777777-7777-7777-7777-777777777777'),
+        ('dddddddd-dddd-dddd-dddd-dddddddddddd',
+         'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee'), '04')
+    first, _, _ = run(tmp_path, cursor_store=store,
+        initial_events=initial, opener=Opener(first_raw))
+    initial = [*initial, retained_trade]
+    _, raw = resumable_replay(retained_trade,
+        ('01K00000000000000000000008',
+         '01K00000000000000000000009',
+         '01K0000000000000000000000A'),
+        ('88888888-8888-8888-8888-888888888888',
+         '99999999-9999-9999-9999-999999999999',
+         'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+        ('ffffffff-ffff-ffff-ffff-ffffffffffff',
+         'abababab-abab-abab-abab-abababababab'), '07')
+    displaced = tmp_path / 'displaced'
+    before_file = path.stat()
+    before_directory = data.stat()
+
+    def replace_directory_but_preserve_file():
+        data.rename(displaced)
+        data.mkdir()
+        (displaced / path.name).replace(path)
+
+    opener = Opener(raw, callback=replace_directory_but_preserve_file)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_DIRECTORY_CHANGED'):
+        run(tmp_path, cursor_store=store, initial_events=initial,
+            expected_cursor_head=first['checkpoint_head_sha256'],
+            opener=opener)
+    after_file, after_directory = path.stat(), data.stat()
+    assert (before_file.st_dev, before_file.st_ino) == \
+        (after_file.st_dev, after_file.st_ino)
+    assert (before_directory.st_dev, before_directory.st_ino) != \
+        (after_directory.st_dev, after_directory.st_ino)
+    assert ActivitySSECursorStore(path, ACCOUNT).inspect()[
+        'retained_checkpoints'] == 1
+
+
+def test_fresh_cursor_path_creation_during_io_never_checkpoints(tmp_path):
+    path = tmp_path / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    opener = Opener(segments()[2], callback=lambda: path.write_bytes(b'x'))
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_FILE_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener)
+    assert len(opener.requests) == 1 and path.read_bytes() == b'x'
+
+
+def test_fresh_cursor_directory_creation_during_io_never_checkpoints(
+        tmp_path):
+    data = tmp_path / 'fresh-data'
+    path = data / 'cursor.sqlite3'
+    store = ActivitySSECursorStore(path, ACCOUNT)
+    opener = Opener(segments()[2], callback=data.mkdir)
+    with pytest.raises(subject.ActivitySSECheckpointError,
+            match='CURSOR_DIRECTORY_CHANGED'):
+        run(tmp_path, cursor_store=store, opener=opener)
+    assert len(opener.requests) == 1 and data.is_dir()
+    assert not path.exists()
 
 
 def test_failed_initial_store_review_cannot_mask_equal_path_retarget(

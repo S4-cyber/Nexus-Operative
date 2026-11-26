@@ -70,7 +70,7 @@ def test_real_cancel_transaction_failure_rolls_back_and_pauses(tmp_path,monkeypa
 
 def test_lost_cleanup_ack_keeps_actual_terminal_order_and_idempotent_retry(tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch);cancel=g.cancel
-    def lost_ack(oid):cancel(oid);raise OSError('ack lost after committed cancellation')
+    def lost_ack(oid,**kwargs):cancel(oid,**kwargs);raise OSError('ack lost after committed cancellation')
     monkeypatch.setattr(g,'cancel',lost_ack)
     assert drive_entry(r,c)['reason']=='ORDER_CLEANUP_FAILED_REVIEW_REQUIRED'
     before=g.recovery_report();order=before['orders'][0]

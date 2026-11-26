@@ -1,4 +1,29 @@
 # Nexus Operative versioning and launch gates
+## v0.340.423 explicit Trial Readiness reconciliation composition
+
+Trial Readiness can now consume one explicitly supplied, privacy-safe local
+forward-trial reconciliation bundle. The bundle shares one canonical same-root,
+distinct-path fence with retained history, durable orders, linked portfolio and
+the owner marker. Existing non-owner files are identity/fingerprint sampled
+before and after the composite review, while the owner marker stays protected by
+its retained lease. The bundle's dedicated 8 MiB limit is enforced at preflight,
+initial sampling and final verification.
+
+A bundle without retained history, or one paired with a custom order gateway
+that cannot expose its durable journal path, fails closed. Omitting the bundle
+preserves the existing unreconciled-modeled-execution blocker. An exact bundle
+can bind locally modeled BUY/SELL events, but it cannot attest source, broker,
+account, funds, market realism, sustained operation, live readiness or release
+acceptance. No Portal button, editable field, query parameter or automatic
+private-evidence discovery was added. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain intact. Seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
 ## v0.340.422 final emergency journal identity fence
 
 The standalone local-paper emergency command now performs one final read-only

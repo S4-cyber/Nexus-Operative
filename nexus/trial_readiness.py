@@ -10,6 +10,7 @@ from nexus import forward_trial_review as trial,forward_evidence,forward_event_e
 from nexus.durable_orders import DurableOrderGateway
 from nexus.execution_capacity import CONTROL_RESERVE,resumable_exit_mandate
 from nexus.forward_ownership import ForwardOwnership
+from nexus.forward_trial_reconciliation import MAX_BUNDLE_BYTES
 from nexus.paper_forward import SESSION_LIMIT
 from nexus.paper_policy import POLICY
 from nexus.sqlite_journal_guard import (capture_file_fingerprints,
@@ -29,7 +30,8 @@ class _ReadinessFiles:
     generations and also binds absence: a file that appears during review is
     a changed result, not still "no retained history".
     """
-    def __init__(self,root,paths,*,identity_only_indexes=()):
+    def __init__(self,root,paths,*,identity_only_indexes=(),
+            maximum_bytes=None,cap_codes=None):
         self.configured_root=Path(root)
         try:observed=self.configured_root.lstat()
         except FileNotFoundError:
@@ -47,9 +49,22 @@ class _ReadinessFiles:
                 self._fail('STORAGE_ROOT_CHANGED')
             self.root_observed=observed;self.root=resolved
         self.paths=tuple(Path(path) for path in paths)
+        self.maximum_bytes=(tuple(maximum_bytes) if maximum_bytes is not None
+            else (MAX_FILE_BYTES,)*len(self.paths))
+        self.cap_codes=(tuple(cap_codes) if cap_codes is not None else
+            ('DATABASE_CAP',)*len(self.paths))
+        if (len(self.maximum_bytes)!=len(self.paths) or
+                len(self.cap_codes)!=len(self.paths) or
+                any(type(limit) is not int or limit<=0
+                    for limit in self.maximum_bytes) or
+                any(type(code) is not str or not code for code in self.cap_codes)):
+            self._fail('FILE_SCOPE_INVALID')
         identity_only=frozenset(identity_only_indexes)
         self.identity_only=identity_only
-        self.present=tuple(self._present(path,identity_only=index in identity_only)
+        self.present=tuple(self._present(path,
+            maximum=self.maximum_bytes[index],
+            cap_code=self.cap_codes[index],
+            identity_only=index in identity_only)
             for index,path in enumerate(self.paths))
         # The owner marker is validated through the descriptor that holds its
         # byte-range lock.  Windows denies a second handle while that lock is
@@ -69,8 +84,11 @@ class _ReadinessFiles:
         self.fingerprinted=tuple(path for index,(path,present) in
             enumerate(zip(self.paths,self.present))
             if present and index not in identity_only)
+        self.fingerprint_limits=tuple(limit for index,(limit,present) in
+            enumerate(zip(self.maximum_bytes,self.present))
+            if present and index not in identity_only)
         self.fingerprints=(capture_file_fingerprints(self.fingerprinted,
-            (MAX_FILE_BYTES,)*len(self.fingerprinted),FILE_PREFIX)
+            self.fingerprint_limits,FILE_PREFIX)
             if self.fingerprinted else ())
 
     @staticmethod
@@ -83,7 +101,7 @@ class _ReadinessFiles:
         except OSError:_ReadinessFiles._fail('FILE_SET_UNAVAILABLE')
         _ReadinessFiles._fail('SQLITE_SIDECAR_REVIEW_REQUIRED')
 
-    def _present(self,path,*,identity_only=False):
+    def _present(self,path,*,maximum,cap_code,identity_only=False):
         self._rollback_clear(path)
         if identity_only:
             for suffix in ('-wal','-shm'):
@@ -96,10 +114,10 @@ class _ReadinessFiles:
             except OSError:self._fail('FILE_UNAVAILABLE')
             if (stat.S_ISLNK(observed.st_mode) or
                     not stat.S_ISREG(observed.st_mode) or
-                    observed.st_nlink!=1 or observed.st_size>MAX_FILE_BYTES):
+                    observed.st_nlink!=1 or observed.st_size>maximum):
                 self._fail('FILE_UNAVAILABLE')
             return True
-        return check_existing(path,MAX_FILE_BYTES,FILE_PREFIX)
+        return check_existing(path,maximum,FILE_PREFIX,cap_code=cap_code)
 
     def require_current(self):
         try:current=self.configured_root.lstat()
@@ -112,6 +130,8 @@ class _ReadinessFiles:
                     not os.path.samestat(self.root_observed,current)):
                 self._fail('STORAGE_ROOT_CHANGED')
         try:present=tuple(self._present(path,
+            maximum=self.maximum_bytes[index],
+            cap_code=self.cap_codes[index],
             identity_only=index in self.identity_only)
             for index,path in enumerate(self.paths))
         except ValueError:self._fail('FILE_SET_CHANGED')
@@ -121,7 +141,7 @@ class _ReadinessFiles:
                 require_file_identities(self.existing,self.identities,FILE_PREFIX)
                 if self.fingerprinted:
                     require_file_fingerprints(self.fingerprinted,
-                        (MAX_FILE_BYTES,)*len(self.fingerprinted),
+                        self.fingerprint_limits,
                         self.fingerprints,FILE_PREFIX)
             except ValueError:self._fail('FILE_SET_CHANGED')
 
@@ -133,9 +153,11 @@ class _ReadinessFiles:
 
 
 @contextmanager
-def _readiness_scope(root,paths,*,owner_index=None,history_index=0):
+def _readiness_scope(root,paths,*,owner_index=None,history_index=0,
+        maximum_bytes=None,cap_codes=None):
     binding=_ReadinessFiles(root,paths,
-        identity_only_indexes=(() if owner_index is None else (owner_index,)))
+        identity_only_indexes=(() if owner_index is None else (owner_index,)),
+        maximum_bytes=maximum_bytes,cap_codes=cap_codes)
     owner_present=owner_index is not None and binding.present[owner_index]
     history_present=binding.present[history_index]
     if owner_index is not None and history_present and not owner_present:
@@ -160,39 +182,70 @@ def _readiness_scope(root,paths,*,owner_index=None,history_index=0):
             binding.require_current();_ReadinessFiles._fail('OWNER_REVIEW_REQUIRED')
         raise
 
-def build(path,*,hours=72,now=None,order_gateway=None):
+def build(path,*,hours=72,now=None,order_gateway=None,
+        reconciliation_bundle=None):
     if type(hours) is not int or hours not in HOURS:raise ValueError('INVALID_TRIAL_WINDOW')
     now=time.time() if now is None else now
     if type(now) not in (int,float) or not math.isfinite(now) or not 7*86400<now<253402300799:
         raise ValueError('INVALID_TRIAL_CLOCK')
     path=Path(path);root=path.parent
+    try:canonical_root=root.resolve()
+    except (OSError,RuntimeError):
+        raise ValueError(FILE_PREFIX+'STORAGE_ROOT_MISMATCH') from None
+    bundle_path=(None if reconciliation_bundle is None else
+        Path(reconciliation_bundle))
+    if (bundle_path is not None and
+            bundle_path.parent.resolve()!=canonical_root):
+        raise ValueError(FILE_PREFIX+'STORAGE_ROOT_MISMATCH')
     order_path=root/'order_lifecycle.sqlite3'
     gateway=order_gateway or DurableOrderGateway(order_path)
     gateway_path=getattr(gateway,'_path',None)
     owner_index=None
     if callable(gateway_path):
         order_path=Path(gateway_path())
-        if order_path.parent.resolve()!=root.resolve():
+        if order_path.parent.resolve()!=canonical_root:
             raise ValueError(FILE_PREFIX+'STORAGE_ROOT_MISMATCH')
-        paths=tuple(check_path_set(
-            (path,order_path,root/'paper_portfolio.sqlite3',
-             root/'paper_forward.owner.lock'),FILE_PREFIX))
+        configured=(path,order_path,root/'paper_portfolio.sqlite3',
+            root/'paper_forward.owner.lock')
+        if bundle_path is not None:configured=(*configured,bundle_path)
+        paths=tuple(check_path_set(configured,FILE_PREFIX))
+        if any(candidate.parent!=canonical_root for candidate in paths):
+            raise ValueError(FILE_PREFIX+'STORAGE_ROOT_MISMATCH')
         # check_path_set preserves the reviewed order while resolving every
         # pathname.  Do not search that canonical tuple with the original
         # lexical owner path: Windows may normalize drive spelling, case or a
         # reparse alias during resolve(), making an equivalent path compare
-        # differently.  The fourth checked path is the owner path by
-        # construction, and binding by position keeps it inside the same
-        # four-path fence without another normalization boundary.
+        # differently.  The fourth checked path is always the owner path by
+        # construction; an optional fifth path is the reconciliation bundle.
+        # Binding by position keeps both inside the reviewed set without
+        # another normalization boundary.
         owner_index=3
         path=paths[0]
-    else:paths=(path,)
-    with _readiness_scope(root,paths,owner_index=owner_index) as owner_state:
+        if bundle_path is not None:bundle_path=paths[4]
+    elif bundle_path is None:paths=(path,)
+    else:
+        raise ValueError(FILE_PREFIX+
+            'RECONCILIATION_REQUIRES_PATH_BOUND_GATEWAY')
+    bundle_index=None
+    if bundle_path is not None:
+        bundle_index=4
+        check_existing(bundle_path,MAX_BUNDLE_BYTES,FILE_PREFIX,
+            cap_code='RECONCILIATION_BUNDLE_CAP')
+    maximum_bytes=[MAX_FILE_BYTES]*len(paths)
+    cap_codes=['DATABASE_CAP']*len(paths)
+    if bundle_index is not None:
+        maximum_bytes[bundle_index]=MAX_BUNDLE_BYTES
+        cap_codes[bundle_index]='RECONCILIATION_BUNDLE_CAP'
+    with _readiness_scope(root,paths,owner_index=owner_index,
+            maximum_bytes=maximum_bytes,cap_codes=cap_codes) as owner_state:
         end=int(now);seconds=hours*3600
         utc=lambda value:datetime.fromtimestamp(value,timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         after,until=utc(end-seconds),utc(end)
         present=trial.existing_history(path)
-        review=trial.review(path,after=after,until=until) if present else None
+        if bundle_path is not None and not present:
+            raise ValueError(FILE_PREFIX+'BUNDLE_WITHOUT_HISTORY')
+        review=(trial.review(path,after=after,until=until,
+            reconciliation_bundle=bundle_path) if present else None)
         retained=review['retained_observations'] if review else 0
         retained_events=review['retained_event_records'] if review else 0
         sessions=review['retained_sessions'] if review else 0

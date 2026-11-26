@@ -1047,6 +1047,16 @@ def test_activity_profile_requires_exact_public_schemas():
         trials._validate('activity',changed)
 
 
+def test_activity_profile_requires_fill_type_remainder_negative_fence():
+    result=trials._execute('activity')
+    trials._validate('activity',result)
+    assert result['contradictory_fill_remainder_rejected'] is True
+    changed=copy.deepcopy(result)
+    changed['contradictory_fill_remainder_rejected']=False
+    with pytest.raises(ValueError,match='ACTIVITY_PROFILE'):
+        trials._validate('activity',changed)
+
+
 def test_reconciliation_acceptance_profile_requires_exact_binding_and_no_authority():
     from nexus.paper_reconciliation_acceptance import fixture_report
     result=trials._execute('reconciliation_acceptance');trials._validate('reconciliation_acceptance',result)

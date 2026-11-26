@@ -103,6 +103,22 @@ def test_missing_retained_fill_remains_a_blocker(tmp_path):
     assert result['activity_coverage_verified'] is False
 
 
+def test_retained_partial_fill_without_remainder_remains_readable_but_blocked(
+        tmp_path):
+    rows, orders = split_fills()
+    rows[-1]['type'] = 'partial_fill'
+    store = target(tmp_path)
+    retain(store, rows, orders)
+    result = store.review()
+    assert result['normalization_evaluated']
+    assert ('FILL_TYPE_REMAINDER_DISAGREEMENT' in
+            result['review_reasons'])
+    retained = result['activity_normalization']['normalized_activities']
+    assert any(row.get('fill_type') == 'partial_fill' and
+        row.get('leaves_quantity') == '0' for row in retained)
+    assert result['broker_account_reconciled'] is False
+
+
 def test_nonterminal_latest_snapshot_requires_hold_review(tmp_path):
     store=target(tmp_path); first,_=split_batches(); retain(store,*first)
     result=store.review()

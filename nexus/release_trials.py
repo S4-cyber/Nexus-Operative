@@ -3201,7 +3201,9 @@ def _validate(profile, result):
             'over_limit_coverage_gaps':1,'retained_event_records':300,
             'events_in_window':300,'legacy_unbound_observations_in_window':0,
             'quote_outcome_disagreements_in_window':0,'event_incident_records_in_window':80,
-            'modeled_execution_events_in_window':40}
+            'modeled_execution_events_in_window':40,
+            'bundle_bound_modeled_execution_events_in_window':0,
+            'unreconciled_modeled_execution_events_in_window':40}
         coverage_counts.update(retained_exchange_admissions=200,
             exchange_admissions_in_window=200,
             exchange_admission_incidents_in_window=0)
@@ -3212,6 +3214,7 @@ def _validate(profile, result):
                 coverage['over_limit_coverage_gap_seconds']=='1300' and
             coverage['required_coverage_fraction']=='0.95' and coverage['coverage_fraction']=='0.000000' and
             coverage['event_trace_complete'] is True and
+            coverage['reconciliation_bundle_sha256'] is None and
             coverage['review_reasons']==list(COVERAGE_REVIEW_REASONS) and
             type(coverage['evidence_snapshot_sha256']) is str and
             re.fullmatch('[a-f0-9]{64}',coverage['evidence_snapshot_sha256']) is not None,

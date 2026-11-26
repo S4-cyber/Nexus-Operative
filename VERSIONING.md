@@ -1,4 +1,32 @@
 # Nexus Operative versioning and launch gates
+## v0.340.411 detached trial reconciliation bundle
+
+Retained forward-trial review can now consume one explicit canonical,
+privacy-safe reconciliation bundle. Each contributing stopped session must bind
+the complete modeled-execution-set digest, exact retained session summary,
+quote/event heads and counts, sealed event reconciliation, and two equal stable
+order-snapshot digests. The history database and bundle are sampled together
+under one bounded relationship-distinct identity/fingerprint guard.
+
+Missing, extra, duplicate, stale, forged, aliased, oversized or changing bundle
+content fails closed. Without a bundle, every modeled BUY/SELL remains an
+explicit local bundle-binding incident as before. With an exact supplied bundle,
+only the bundle-bound in-window execution count is removed; unrelated
+coverage, lifecycle, quote, admission and scheduler incidents remain.
+
+This is a rewritable supplied local receipt, not proof that an order journal is
+authentic, a signature or genuine-feed,
+broker, account, fill/fee/hold/funds, sustained-market, performance,
+profitability, cloud, native Windows/installer or release acceptance. Every
+source, broker, funding, live, cloud, money-movement and release authority flag
+remains false. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and independent emergency-stop
+access are unchanged. No control was added, so the seven beginner-friendly tabs
+and black/bright-purple bottom-right hover help are unchanged. The read-only
+roadmap estimate stays exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
 ## v0.340.410 modeled-execution reconciliation fence
 
 Retained forward-trial review now counts every in-window modeled `BUY` or

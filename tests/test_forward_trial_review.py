@@ -1,6 +1,7 @@
 """Disposable real SQLite chains; declared public labels are never attestation."""
 from contextlib import closing,contextmanager
 from decimal import localcontext
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -10,7 +11,10 @@ import sys
 
 import pytest
 from nexus import (forward_trial_review as trial, forward_evidence as evidence,
-    forward_event_evidence as events)
+    forward_event_evidence as events, forward_trial_reconciliation as reconciliation)
+from nexus.forward_reconciliation_review import (modeled_execution_set_sha256,
+    reconciliation_sha256,review_receipt)
+from nexus import forward_sessions
 from nexus.paper_policy import admit
 from nexus.paper_forward import PaperForwardRunner
 
@@ -234,6 +238,63 @@ def move_second_outcome_before_bound_quote(path):
         assert outcomes>=2
         db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
             (len(rows),previous,sid))
+
+
+def write_reconciliation_bundle(path,destination):
+    """Create a privacy-safe local fixture equivalent to a stopped review."""
+    with closing(sqlite3.connect(path)) as db:
+        sid,started,updated,state,policy_raw,counts_raw,last_raw=db.execute(
+            'SELECT id,started_at,updated_at,state,policy_json,counts_json,last_json '
+            'FROM sessions').fetchone()
+        policy,counts,last=forward_sessions.parse(started,updated,state,
+            policy_raw,counts_raw,last_raw)
+        quotes=evidence.review(db,sid);event_review=events.review(db,sid)
+    points=event_review['points'];kind_counts={}
+    for point in points:
+        kind_counts[point['kind']]=kind_counts.get(point['kind'],0)+1
+    modeled=sum(point['kind']=='OUTCOME' and
+        point['record']['decision'] in ('BUY','SELL') for point in points)
+    cut=dict(before_status='CLEAR',after_status='CLEAR',requested_before=False,
+        requested_after=False,binding_source='NONE',stable=True,
+        binding_verified=False,record_sha256=None)
+    snapshot=hashlib.sha256(b'fixture-stable-order-snapshot').hexdigest()
+    event_summary=dict(read_only=True,events=len(points),
+        head_sha256=event_review['head_sha256'],
+        lifecycle_events=kind_counts.get('LIFECYCLE',0),
+        outcome_events=kind_counts.get('OUTCOME',0),
+        scheduler_events=kind_counts.get('SCHEDULER',0),
+        quote_outcomes=len(quotes['points']),modeled_order_outcomes=modeled,
+        modeled_no_fill_outcomes=0,event_trace_complete=True,
+        quote_outcome_bijection=True,durable_order_outcomes_reconciled=True,
+        durable_fill_attempts_bound=True,
+        modeled_execution_set_sha256=modeled_execution_set_sha256(points),
+        durable_no_fill_outcomes_reconciled=True,
+        durable_no_fill_attempts_bound=True,cut_evidence_stable=True,
+        cut_binding_verified=False,independent_cut_observed=False,
+        latest_modeled_outcome_sha256='7'*64,integrity_ok=True)
+    event_summary['reconciliation_sha256']=reconciliation_sha256(
+        session=sid,state=state,quote_head_sha256=quotes['head_sha256'],
+        event_head_sha256=event_review['head_sha256'],
+        order_snapshot_sha256=snapshot,final_order_snapshot_sha256=snapshot,
+        cut_evidence=cut,reasons=[],summary=event_summary)
+    order_snapshot=dict(snapshot_sha256=snapshot,halted=False)
+    receipt=review_receipt(session=sid,started_at=started,updated_at=updated,
+        state=state,policy=policy,counts=counts,last=last,
+        quotes=dict(head_sha256=quotes['head_sha256'],
+            observations=quotes['observations']),events=event_summary,
+        initial_order_snapshot=order_snapshot,final_order_snapshot=order_snapshot,
+        cut_evidence=cut,journal_stable=True,portfolio_stable=True,
+        order_snapshot_stable=True,reasons=[])
+    report=dict(read_only=True,session=sid,stored_state=state,
+        durable_event_evidence=event_summary,review_receipt=receipt,
+        order_journal_snapshot=dict(snapshot_sha256=snapshot,halted=False,
+            journal_stable_during_review=True,
+            portfolio_stable_during_review=True,stable_during_review=True),
+        provisional_active_session=False,local_consistency_ok=True,reasons=[],
+        live_orders_enabled=False,release_approved=False)
+    exported=reconciliation.build([report])
+    destination.write_text(evidence.canonical(exported),encoding='utf-8')
+    return exported
 
 
 def test_cross_session_boundary_conflict_is_an_incident(tmp_path,monkeypatch):
@@ -625,10 +686,74 @@ def test_modeled_execution_without_durable_reconciliation_blocks_incident_free_c
     result=run(path,600)
     assert result['declared_coverage_target_met'] is True
     assert result['modeled_execution_events_in_window']==1
+    assert result['bundle_bound_modeled_execution_events_in_window']==0
+    assert result['unreconciled_modeled_execution_events_in_window']==1
     assert result['operational_incidents_present'] is True
     assert result['incident_free_coverage_target_met'] is False
-    assert 'MODELED_EXECUTION_RECONCILIATION_NOT_BOUND' in result['review_reasons']
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' in result['review_reasons']
     assert all(result[key] is False for key in trial.FLAGS)
+
+
+@pytest.mark.parametrize('decision',['BUY','SELL'])
+def test_exact_detached_bundle_binds_local_modeled_execution_without_authority(
+        tmp_path,monkeypatch,decision):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,decision)
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    result=trial.review(path,after=AFTER,until=until(600),
+        reconciliation_bundle=bundle_path)
+    assert result['modeled_execution_events_in_window']==1
+    assert result['bundle_bound_modeled_execution_events_in_window']==1
+    assert result['unreconciled_modeled_execution_events_in_window']==0
+    assert result['operational_incidents_present'] is False
+    assert result['incident_free_coverage_target_met'] is True
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' not in result['review_reasons']
+    assert len(result['reconciliation_bundle_sha256'])==64
+    assert all(result[key] is False for key in trial.FLAGS)
+
+
+@pytest.mark.parametrize('kind',['forged_receipt','missing','extra'])
+def test_supplied_incomplete_forged_or_extra_bundle_fails_closed(
+        tmp_path,monkeypatch,kind):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    exported=write_reconciliation_bundle(path,bundle_path)
+    if kind=='forged_receipt':
+        exported['sessions'][0]['review_receipt']['receipt_sha256']='0'*64
+    elif kind=='missing':exported['sessions']=[]
+    else:
+        extra=json.loads(json.dumps(exported['sessions'][0]))
+        extra['session']='0000000000000002';exported['sessions'].append(extra)
+    bundle_path.write_text(evidence.canonical(exported),encoding='utf-8')
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),
+            reconciliation_bundle=bundle_path)
+
+
+def test_bundle_path_alias_and_mutation_during_review_fail_closed(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),reconciliation_bundle=path)
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path);raw=bundle_path.read_bytes()
+    original_snapshot=trial._snapshot
+    @contextmanager
+    def mutate_after_snapshot(bound,stable_source):
+        with original_snapshot(bound,stable_source) as db:yield db
+        bundle_path.write_bytes(raw)
+    monkeypatch.setattr(trial,'_snapshot',mutate_after_snapshot)
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),
+            reconciliation_bundle=bundle_path)
 
 
 def test_hold_only_coverage_has_no_modeled_execution_reconciliation_blocker(
@@ -642,7 +767,7 @@ def test_hold_only_coverage_has_no_modeled_execution_reconciliation_blocker(
     assert result['modeled_execution_events_in_window']==0
     assert result['operational_incidents_present'] is False
     assert result['incident_free_coverage_target_met'] is True
-    assert 'MODELED_EXECUTION_RECONCILIATION_NOT_BOUND' not in result['review_reasons']
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' not in result['review_reasons']
 
 
 @pytest.mark.parametrize('decision',['BUY','SELL'])

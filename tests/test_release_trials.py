@@ -1922,15 +1922,22 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
         ('review_reasons',[]),('evidence_snapshot_sha256','0'*63),
         ('over_limit_coverage_gaps',0),('over_limit_coverage_gap_seconds','1299'),
         ('modeled_execution_events_in_window',39),
+        ('bundle_bound_modeled_execution_events_in_window',1),
+        ('unreconciled_modeled_execution_events_in_window',39),
+        ('reconciliation_bundle_sha256','0'*64),
         ('retained_exchange_admissions',0),('exchange_admissions_in_window',0),
         ('exchange_admission_incidents_in_window',999),
         ('retained_exchange_admissions',True)):
         changed=copy.deepcopy(result);changed['recovered']['coverage_review'][field]=value
         with pytest.raises(ValueError,match='FORWARD_COVERAGE_EVIDENCE'):trials._validate('forward',changed)
     changed=copy.deepcopy(result)
-    del changed['recovered']['coverage_review']['modeled_execution_events_in_window']
-    with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCHEMA'):
-        trials._validate('forward',changed)
+    for field in ('modeled_execution_events_in_window',
+            'bundle_bound_modeled_execution_events_in_window',
+            'unreconciled_modeled_execution_events_in_window',
+            'reconciliation_bundle_sha256'):
+        changed=copy.deepcopy(result);del changed['recovered']['coverage_review'][field]
+        with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCHEMA'):
+            trials._validate('forward',changed)
     for field in ('retained_exchange_admissions','exchange_admissions_in_window',
             'exchange_admission_incidents_in_window'):
         changed=copy.deepcopy(result);del changed['recovered']['coverage_review'][field]

@@ -92,8 +92,11 @@ def test_readiness_preserves_unreconciled_modeled_execution_blocker_without_orde
     report=ready.build(path,hours=1,now=START+3600)
     assert report['review']['declared_coverage_target_met'] is True
     assert report['review']['modeled_execution_events_in_window']==1
+    assert report['review']['bundle_bound_modeled_execution_events_in_window']==0
+    assert report['review']['unreconciled_modeled_execution_events_in_window']==1
+    assert report['review']['reconciliation_bundle_sha256'] is None
     assert report['review']['incident_free_coverage_target_met'] is False
-    assert 'MODELED_EXECUTION_RECONCILIATION_NOT_BOUND' in report['review'][
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' in report['review'][
         'review_reasons']
     assert report['order_capacity']['journal_present'] is False
     assert not (tmp_path/'order_lifecycle.sqlite3').exists()

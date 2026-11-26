@@ -235,6 +235,7 @@ def test_quote_fill_review_separates_injected_source(tmp_path,monkeypatch):
     assert events['quote_outcomes']==8 and events['modeled_order_outcomes']==2
     assert events['events']==10 and events['lifecycle_events']==2
     assert len(events['head_sha256'])==len(events['reconciliation_sha256'])==64
+    assert len(events['modeled_execution_set_sha256'])==64
     receipt=report['review_receipt']
     assert receipt['profile']=='nexus.forward-session-review-receipt.v1'
     assert receipt['local_consistency_ok'] and receipt['reason_count']==0

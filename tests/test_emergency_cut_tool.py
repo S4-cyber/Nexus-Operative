@@ -694,6 +694,11 @@ def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
         tmp_path,monkeypatch,outcome):
     from nexus import emergency_cut_tool
     halt_result={'halted':True};identity=object();halts=[];replays=[]
+    # Isolate malformed status handling from the platform-specific latch
+    # writer.  The real writer is covered separately; it may consult the
+    # status reader after persisting and conservatively raise on malformed
+    # data, which would make this schema-only fixture skip its final replay.
+    monkeypatch.setattr(emergency_intent,'persist',lambda *_:None)
     monkeypatch.setattr(emergency_intent,'requested',lambda *_:outcome)
     monkeypatch.setattr(DurableOrderGateway,'emergency_halt',
         lambda self:halts.append(self.path) or halt_result)

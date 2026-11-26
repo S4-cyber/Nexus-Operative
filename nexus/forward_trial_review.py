@@ -45,7 +45,8 @@ LIMITATIONS=('Private local operational evidence only. Coverage requires both a 
     'to its recorded session lifecycle; gaps over10 seconds, invalid points and session '
     'boundaries are not bridged, and over-limit uncovered gaps remain operational incidents even when aggregate coverage '
     'exceeds 95%. This rechecks supplied content, not independent feeds, clock authenticity, genuine market '
-    'data, uptime, broker execution, profitability, account reconciliation or a passed sustained trial. Labels/hashes are '
+    'data, uptime, broker execution, profitability, account reconciliation or a passed sustained trial. BUY/SELL outcomes '
+    'remain operational incidents until their modeled executions are explicitly bound to durable order/fill reconciliation. Labels/hashes are '
     'rewritable; sampled file identity/fingerprint binding and the read snapshot are not an execution lock. No provider/credential access, account mutation, automatic start or '
     'release permission.')
 PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_seconds','minimum_trial_seconds',
@@ -61,6 +62,7 @@ PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_secon
     'over_limit_coverage_gap_seconds','operational_incidents_present',
     'retained_event_records','events_in_window','legacy_unbound_observations_in_window',
     'quote_outcome_disagreements_in_window','event_incident_records_in_window',
+    'modeled_execution_events_in_window',
     'retained_exchange_admissions','exchange_admissions_in_window',
     'exchange_admission_incidents_in_window',
     'event_trace_complete','incident_free_coverage_target_met','evidence_snapshot_sha256',
@@ -251,6 +253,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             if type(payload) is not str or forward_evidence.canonical(json.loads(payload))!=payload:_fail()
         interval_candidates=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
         events_in_window=legacy_unbound=outcome_disagreements=event_incidents=0
+        modeled_execution_events=0
         admissions_in_window=admission_incidents=0;cross_session_admissions=[]
         legacy_admission_incidents=unmatched_admission_incidents=0
         event_trace_complete=True
@@ -321,6 +324,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                             events_in_window+=1
                             if event['kind']=='SCHEDULER' or record['decision'] in ('PAUSED','VETO'):
                                 event_incidents+=1
+                            if record['decision'] in ('BUY','SELL'):
+                                modeled_execution_events+=1
                         previous_event_at=event_at;previous_event_cycle=record['cycle']
                     if event_counts!=counts:session_event_complete=False
                 elif lifecycle_in_window:session_event_complete=False
@@ -331,9 +336,16 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                     if event['kind']=='OUTCOME':outcomes.setdefault(event['cycle'],[]).append(event['record'])
                 for cycle,quote_digest in quote_digests.items():
                     matched=outcomes.pop(cycle,[])
-                    if len(matched)!=1 or matched[0]['quote_evidence_sha256']!=quote_digest:
+                    quote_at=_number(quote_times[cycle])
+                    outcome_at=(_number(matched[0]['at']) if len(matched)==1
+                        else None)
+                    if (len(matched)!=1 or
+                            matched[0]['quote_evidence_sha256']!=quote_digest or
+                            outcome_at<quote_at):
                         session_event_complete=False
-                        if start<=_number(quote_times[cycle])<=end:outcome_disagreements+=1
+                        if (start<=quote_at<=end or outcome_at is not None and
+                                start<=outcome_at<=end):
+                            outcome_disagreements+=1
                 if any(outcomes.values()):
                     session_event_complete=False
                     for records in outcomes.values():
@@ -473,7 +485,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and not admission_incidents and selected>0
         rejected=selected-eligible
         trace_incomplete=not event_trace_complete or legacy_unbound or outcome_disagreements
-        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps or trace_incomplete or event_incidents or admission_incidents)
+        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps or trace_incomplete or event_incidents or admission_incidents or modeled_execution_events)
         incident_free_target=target and not incidents and event_trace_complete
         if duration<MINIMUM_SECONDS:reasons.add('REQUESTED_WINDOW_SHORTER_THAN_72_HOURS')
         if fraction<Decimal('.95'):reasons.add('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT')
@@ -488,6 +500,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         if not selected:reasons.add('NO_OBSERVATIONS_IN_WINDOW')
         if trace_incomplete:reasons.add('DURABLE_EVENT_TRACE_INCOMPLETE')
         if event_incidents:reasons.add('EVENT_INCIDENTS_RETAINED_IN_WINDOW')
+        if modeled_execution_events:
+            reasons.add('MODELED_EXECUTION_RECONCILIATION_NOT_BOUND')
         if legacy_admission_incidents:reasons.add('LEGACY_EXCHANGE_ADMISSIONS_UNBOUND')
         if unmatched_admission_incidents:reasons.add('EXCHANGE_ADMISSION_OUTCOME_MISSING')
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
@@ -513,6 +527,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             legacy_unbound_observations_in_window=legacy_unbound,
             quote_outcome_disagreements_in_window=outcome_disagreements,
             event_incident_records_in_window=event_incidents,
+            modeled_execution_events_in_window=modeled_execution_events,
             retained_exchange_admissions=admission_count,
             exchange_admissions_in_window=admissions_in_window,
             exchange_admission_incidents_in_window=admission_incidents,

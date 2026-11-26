@@ -152,6 +152,18 @@ def test_modeled_fill_outcome_requires_exact_binding_on_append():
         assert len(digest)==64
 
 
+@pytest.mark.parametrize('decision',['BUY','SELL'])
+def test_modeled_fill_outcome_requires_quote_evidence_binding(decision):
+    fill=event_record(cycle=1,decision=decision,
+        reason='MODELED_PUBLIC_QUOTE_FILL',order_id='entry',
+        liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False,
+        modeled_fill_sha256='c'*64)
+    with sqlite3.connect(':memory:') as db:
+        forward_event_evidence.schema(db)
+        with pytest.raises(ValueError,match='FORWARD_EVENT_SCHEMA'):
+            forward_event_evidence.append(db,fill)
+
+
 def test_modeled_fill_binding_is_forbidden_on_other_outcomes():
     with sqlite3.connect(':memory:') as db:
         forward_event_evidence.schema(db)

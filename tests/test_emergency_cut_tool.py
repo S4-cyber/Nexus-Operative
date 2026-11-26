@@ -692,9 +692,20 @@ def test_unexpected_intent_status_fault_never_escapes_emergency_boundary(
 @pytest.mark.parametrize('outcome',[None,1,'present',{},[]])
 def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
         tmp_path,monkeypatch,outcome):
+    from nexus import emergency_cut_tool
+    halt_result={'halted':True};identity=object();halts=[];replays=[]
     monkeypatch.setattr(emergency_intent,'requested',lambda *_:outcome)
-    from nexus.emergency_cut_tool import activate
-    report=activate(tmp_path)
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',
+        lambda self:halts.append(self.path) or halt_result)
+    monkeypatch.setattr(emergency_cut_tool,'_order_identity_bounded',
+        lambda path:identity)
+    monkeypatch.setattr(emergency_cut_tool,'_halt_replayed_bounded',
+        lambda path,result,observed:replays.append(
+            (path,result,observed)) or True)
+    report=emergency_cut_tool.activate(tmp_path)
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    assert halts==[order_path]
+    assert replays==[(order_path,halt_result,identity)]*2
     assert not report['intent_preceded_durable_halt']
     assert report['durable_order_halt_confirmed']
     assert report['halted'] is True

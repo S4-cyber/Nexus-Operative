@@ -1,4 +1,45 @@
 # Nexus Operative continuity instructions
+## v0.340.410 modeled-execution reconciliation fence
+
+Retained forward-trial review now counts every in-window modeled `BUY` or
+`SELL` outcome separately and treats it as an operational incident until that
+execution is explicitly bound to durable order/fill reconciliation. Raw
+declared-public coverage remains visible for diagnosis, but a locally coherent
+event chain and modeled-fill digest can no longer produce incident-free
+coverage by themselves. HOLD-only coverage is unchanged.
+
+The durable event schema also requires every `BUY` or `SELL` to carry its
+quote-evidence digest, so it cannot be reclassified as a lifecycle record.
+Matched outcomes timestamped before their bound quotes now make the retained
+trace incomplete. Both cases fail closed without repairing supplied history.
+
+Trial readiness carries the blocker through its read-only composite review
+without creating or repairing an order journal. The mandatory forward release
+profile requires the exact modeled-execution count, fixed blocker reason and
+unchanged false authority flags. A future positive increment must bind each
+execution under one coherent retained snapshot.
+
+Windows regression fixtures now treat a distribution-directory replacement
+that the kernel denies while reviewed leaf handles are pinned as a safe
+rejection, while successful replacements must still surface the fixed directory
+identity error. Malformed emergency-intent status tests isolate that schema
+boundary from native cold-replay availability and still require one halt attempt
+plus both independent replay confirmations. Production verification and
+emergency-stop logic are unchanged; exact-child hosted Windows evidence remains
+required.
+
+This is bounded fail-closed local evidence classification, not positive
+reconciliation, genuine-feed or sustained-market acceptance, broker/account/
+fill/fee/hold/funds acceptance, performance, profitability, deployment, native
+Windows/installer acceptance or release approval. Engagement and optional AI
+remain OFF by default; limits, account checks, reducing exits, fail-closed
+behavior and independent emergency-stop access are unchanged. No control was
+added, so the seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help are unchanged. The read-only roadmap estimate stays exact 38%
+weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
+
 ## v0.340.409 coherent distribution-directory verification
 
 Artifact-manifest verification now binds the complete reviewed set to one exact

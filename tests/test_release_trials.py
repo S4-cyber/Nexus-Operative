@@ -1921,11 +1921,16 @@ def test_forward_trial_coverage_cannot_promote_injected_evidence_to_market_accep
     for field,value in (('retained_observations',279),('after','1970-01-01T00:16:41Z'),
         ('review_reasons',[]),('evidence_snapshot_sha256','0'*63),
         ('over_limit_coverage_gaps',0),('over_limit_coverage_gap_seconds','1299'),
+        ('modeled_execution_events_in_window',39),
         ('retained_exchange_admissions',0),('exchange_admissions_in_window',0),
         ('exchange_admission_incidents_in_window',999),
         ('retained_exchange_admissions',True)):
         changed=copy.deepcopy(result);changed['recovered']['coverage_review'][field]=value
         with pytest.raises(ValueError,match='FORWARD_COVERAGE_EVIDENCE'):trials._validate('forward',changed)
+    changed=copy.deepcopy(result)
+    del changed['recovered']['coverage_review']['modeled_execution_events_in_window']
+    with pytest.raises(ValueError,match='FORWARD_COVERAGE_SCHEMA'):
+        trials._validate('forward',changed)
     for field in ('retained_exchange_admissions','exchange_admissions_in_window',
             'exchange_admission_incidents_in_window'):
         changed=copy.deepcopy(result);del changed['recovered']['coverage_review'][field]

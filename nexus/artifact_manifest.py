@@ -21,6 +21,9 @@ SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 MANIFEST_KEYS = {"schema", "version", "source_commit", "signed", "release_approved", "artifacts"}
 ENTRY_KEYS = {"name", "bytes", "sha256"}
+_WINDOWS_STAT_COMPAT = os.name == "nt"
+_WINDOWS_BIRTHTIME_REQUIRED = _WINDOWS_STAT_COMPAT and sys.version_info >= (3, 12)
+_MISSING_STAT_FIELD = object()
 
 
 class ArtifactManifestError(ValueError):
@@ -45,6 +48,32 @@ def _valid_name(name):
 def _same_file(before, after):
     fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns", "st_nlink")
     return all(getattr(before, field) == getattr(after, field) for field in fields)
+
+
+def _same_path_and_open_file(path_sample, open_sample):
+    """Compare path/fd samples without mixing Windows ctime semantics.
+
+    CPython 3.12+ exposes creation time through path-based ``stat``/``lstat``
+    ``st_ctime_ns`` while ``fstat`` may expose change time for the same NTFS
+    file.  Keep ctime for same-source stability checks, but use birth time for
+    this cross-source identity comparison when Windows supplies it.
+    """
+    fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_nlink")
+    if not all(getattr(path_sample, field) == getattr(open_sample, field)
+               for field in fields):
+        return False
+    if _WINDOWS_STAT_COMPAT:
+        path_birth = getattr(path_sample, "st_birthtime_ns", _MISSING_STAT_FIELD)
+        open_birth = getattr(open_sample, "st_birthtime_ns", _MISSING_STAT_FIELD)
+        if path_birth is _MISSING_STAT_FIELD and open_birth is _MISSING_STAT_FIELD:
+            # Before CPython 3.12 Windows did not expose birth time and path
+            # stat/fstat shared the original change-time meaning.  Preserve
+            # that strict comparison for supported older runtimes only.
+            return (not _WINDOWS_BIRTHTIME_REQUIRED
+                    and path_sample.st_ctime_ns == open_sample.st_ctime_ns)
+        return (type(path_birth) is int and type(open_birth) is int
+                and path_birth == open_birth)
+    return path_sample.st_ctime_ns == open_sample.st_ctime_ns
 
 
 def _artifact_directory(directory):
@@ -77,7 +106,8 @@ def _assert_artifact_directory(path, identity, descriptor=None):
     if (stat.S_ISLNK(current.st_mode) or not stat.S_ISDIR(current.st_mode)
             or not stat.S_ISDIR(opened.st_mode)
             or not _same_file(identity, current)
-            or not _same_file(identity, opened)):
+            or (descriptor is not None
+                and not _same_path_and_open_file(identity, opened))):
         _fail("ARTIFACT_DIRECTORY_CHANGED")
 
 
@@ -117,7 +147,7 @@ def _open_artifact_leaf(directory, name, descriptor):
         _fail("INVALID_ARTIFACT_FILE")
     if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1
             or not 1 <= opened.st_size <= MAX_ARTIFACT_BYTES
-            or not _same_file(observed, opened)):
+            or not _same_path_and_open_file(observed, opened)):
         os.close(leaf)
         _fail("INVALID_ARTIFACT_FILE")
     return leaf, opened
@@ -133,7 +163,7 @@ def _assert_artifact_leaf(directory, name, descriptor, leaf, identity):
         _fail("ARTIFACT_CHANGED_DURING_READ")
     if (not stat.S_ISREG(public.st_mode) or public.st_nlink != 1
             or not _same_file(identity, opened)
-            or not _same_file(identity, public)):
+            or not _same_path_and_open_file(public, identity)):
         _fail("ARTIFACT_CHANGED_DURING_READ")
 
 
@@ -222,7 +252,7 @@ def file_entry(path):
         _fail("ARTIFACT_CHANGED_DURING_READ")
     if (total != before.st_size or not _same_file(before, after)
             or not stat.S_ISREG(final.st_mode) or final.st_nlink != 1
-            or not _same_file(after, final)):
+            or not _same_path_and_open_file(final, after)):
         _fail("ARTIFACT_CHANGED_DURING_READ")
     return {"name": path.name, "bytes": total, "sha256": digest.hexdigest()}
 

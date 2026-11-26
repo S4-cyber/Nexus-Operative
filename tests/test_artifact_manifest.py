@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -10,6 +11,133 @@ from nexus import artifact_manifest as subject
 
 VERSION = "0.340.108"
 SOURCE = "a" * 40
+
+
+def _stat_sample(**changes):
+    fields = {
+        "st_dev": 1,
+        "st_ino": 2,
+        "st_size": 3,
+        "st_mtime_ns": 4,
+        "st_ctime_ns": 5,
+        "st_birthtime_ns": 6,
+        "st_nlink": 1,
+    }
+    fields.update(changes)
+    return SimpleNamespace(**fields)
+
+
+def test_windows_path_descriptor_ctime_mismatch_uses_birthtime(monkeypatch):
+    """CPython exposes different Windows ctime semantics for stat and fstat."""
+    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    path_sample = _stat_sample(st_ctime_ns=10)
+    descriptor_sample = _stat_sample(st_ctime_ns=11)
+
+    assert not subject._same_file(path_sample, descriptor_sample)
+    assert subject._same_path_and_open_file(path_sample, descriptor_sample)
+
+
+def test_windows_path_descriptor_missing_birthtime_falls_back_only_when_both_absent(
+        monkeypatch):
+    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    monkeypatch.setattr(subject, "_WINDOWS_BIRTHTIME_REQUIRED", False)
+    without_birth = vars(_stat_sample()).copy()
+    without_birth.pop("st_birthtime_ns")
+
+    assert subject._same_path_and_open_file(
+        SimpleNamespace(**without_birth), SimpleNamespace(**without_birth))
+    assert not subject._same_path_and_open_file(
+        SimpleNamespace(**without_birth),
+        SimpleNamespace(**dict(without_birth, st_ctime_ns=9)))
+    assert not subject._same_path_and_open_file(
+        _stat_sample(), SimpleNamespace(**without_birth))
+
+
+def test_modern_windows_path_descriptor_requires_birthtime(monkeypatch):
+    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    monkeypatch.setattr(subject, "_WINDOWS_BIRTHTIME_REQUIRED", True)
+    without_birth = vars(_stat_sample()).copy()
+    without_birth.pop("st_birthtime_ns")
+
+    assert not subject._same_path_and_open_file(
+        SimpleNamespace(**without_birth), SimpleNamespace(**without_birth))
+
+
+@pytest.mark.parametrize("invalid", (None, True, 6.0, "6"))
+def test_windows_path_descriptor_rejects_invalid_birthtime(monkeypatch, invalid):
+    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    assert not subject._same_path_and_open_file(
+        _stat_sample(), _stat_sample(st_birthtime_ns=invalid))
+
+
+@pytest.mark.parametrize("changes", (
+    {"st_dev": 9},
+    {"st_ino": 9},
+    {"st_size": 9},
+    {"st_mtime_ns": 9},
+    {"st_birthtime_ns": 9},
+    {"st_nlink": 2},
+))
+def test_windows_path_descriptor_comparison_preserves_integrity_fields(
+        monkeypatch, changes):
+    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    assert not subject._same_path_and_open_file(
+        _stat_sample(), _stat_sample(**changes))
+
+
+def test_windows_stat_fstat_ctime_mismatch_verifies_distribution(
+        tmp_path, monkeypatch):
+    artifact = tmp_path / "a.exe"
+    artifact.write_bytes(b"reviewed")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    path_type = type(tmp_path)
+    original_lstat = path_type.lstat
+    original_stat = subject.os.stat
+    original_fstat = subject.os.fstat
+    created_by_identity = {}
+
+    class WindowsStatView:
+        def __init__(self, sample, *, descriptor):
+            self._sample = sample
+            identity = sample.st_dev, sample.st_ino
+            created = getattr(sample, "st_birthtime_ns", None)
+            if type(created) is not int:
+                created = created_by_identity.setdefault(identity, sample.st_ctime_ns)
+            else:
+                created_by_identity.setdefault(identity, created)
+            self.st_birthtime_ns = created
+            self.st_ctime_ns = created + int(descriptor)
+
+        def __getattr__(self, name):
+            return getattr(self._sample, name)
+
+    def path_lstat(path):
+        return WindowsStatView(original_lstat(path), descriptor=False)
+
+    def path_stat(*args, **kwargs):
+        return WindowsStatView(original_stat(*args, **kwargs), descriptor=False)
+
+    def descriptor_stat(descriptor):
+        return WindowsStatView(original_fstat(descriptor), descriptor=True)
+
+    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    monkeypatch.setattr(path_type, "lstat", path_lstat)
+    monkeypatch.setattr(subject.os, "stat", path_stat)
+    monkeypatch.setattr(subject.os, "fstat", descriptor_stat)
+
+    assert subject.verify(document, tmp_path)["artifact_integrity_ok"]
+
+
+def test_directory_path_only_check_does_not_require_cross_source_metadata(
+        tmp_path, monkeypatch):
+    _, identity = subject._artifact_directory(tmp_path)
+
+    def unexpected_cross_source_check(*_args):
+        raise AssertionError("path-only check must not compare path and descriptor metadata")
+
+    monkeypatch.setattr(subject, "_same_path_and_open_file",
+                        unexpected_cross_source_check)
+    subject._assert_artifact_directory(tmp_path, identity)
 
 
 def test_manifest_deterministic_and_detects_changed_distribution(tmp_path):
@@ -289,6 +417,7 @@ def test_windows_style_same_size_cross_leaf_rewrite_is_rejected(
             return self._digest.hexdigest()
 
     monkeypatch.setattr(subject, "_same_file", windows_identity)
+    monkeypatch.setattr(subject, "_same_path_and_open_file", windows_identity)
     monkeypatch.setattr(subject.hashlib, "sha256", ReplacingDigest)
     with pytest.raises(subject.ArtifactManifestError,
                        match="ARTIFACT_DIGEST_DISAGREEMENT"):

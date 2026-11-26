@@ -1,4 +1,31 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.415 Windows artifact stat coherence
+
+Hosted Windows run 45807797630 exposed 92 false artifact-integrity rejections
+because CPython can report path-based `stat().st_ctime_ns` as file creation
+time while descriptor-based `fstat().st_ctime_ns` reports metadata change
+time for the same NTFS file. Distribution verification now separates
+same-source stability from path-to-handle identity. Descriptor samples still
+bind device, file index, size, modification time, change time and link count.
+Only the cross-source Windows comparison substitutes `st_birthtime_ns` for
+the incompatible ctime field, while preserving device, file index, size,
+modification time, link count, retained handles and two complete SHA-256
+passes. Synthetic regressions reject changes to every retained compatibility
+field.
+
+This is offline distribution-integrity and hosted-Windows compatibility
+hardening, not native installer/profile/ACL/power-loss acceptance, signing,
+provenance, broker/account/source acceptance, genuine-market or sustained-trial
+acceptance, performance, profitability, funding, cloud or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access are
+unchanged. No button or editable parameter was added, so the seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
 ## v0.340.414 typed paper-POST transport fence
 
 The disconnected single-attempt Alpaca paper boundary now requires an

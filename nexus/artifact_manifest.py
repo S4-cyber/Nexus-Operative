@@ -47,6 +47,136 @@ def _same_file(before, after):
     return all(getattr(before, field) == getattr(after, field) for field in fields)
 
 
+def _artifact_directory(directory):
+    """Return one canonical directory identity without following any alias."""
+    path = Path(os.path.abspath(os.fspath(directory)))
+    try:
+        current = Path(path.anchor)
+        for component in path.parts[1:]:
+            current /= component
+            observed = current.lstat()
+            if stat.S_ISLNK(observed.st_mode):
+                _fail("INVALID_ARTIFACT_DIRECTORY")
+        identity = path.lstat()
+    except ArtifactManifestError:
+        raise
+    except OSError:
+        _fail("INVALID_ARTIFACT_DIRECTORY")
+    if not stat.S_ISDIR(identity.st_mode):
+        _fail("INVALID_ARTIFACT_DIRECTORY")
+    return path, identity
+
+
+def _assert_artifact_directory(path, identity, descriptor=None):
+    """Require the public directory and optional pinned handle to stay exact."""
+    try:
+        current = path.lstat()
+        opened = os.fstat(descriptor) if descriptor is not None else identity
+    except OSError:
+        _fail("ARTIFACT_DIRECTORY_CHANGED")
+    if (stat.S_ISLNK(current.st_mode) or not stat.S_ISDIR(current.st_mode)
+            or not stat.S_ISDIR(opened.st_mode)
+            or not _same_file(identity, current)
+            or not _same_file(identity, opened)):
+        _fail("ARTIFACT_DIRECTORY_CHANGED")
+
+
+def _leaf_stat(directory, name, descriptor):
+    try:
+        if descriptor is not None:
+            return os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+        return (directory / name).lstat()
+    except (OSError, TypeError, NotImplementedError):
+        _fail("INVALID_ARTIFACT_FILE")
+
+
+def _opened_leaf_identity(descriptor):
+    return os.fstat(descriptor)
+
+
+def _open_artifact_leaf(directory, name, descriptor):
+    """Open and retain one stable leaf before any set member is hashed."""
+    path = directory / name
+    if not _valid_name(name):
+        _fail("INVALID_ARTIFACT_NAME")
+    observed = _leaf_stat(directory, name, descriptor)
+    if (stat.S_ISLNK(observed.st_mode) or not stat.S_ISREG(observed.st_mode)
+            or observed.st_nlink != 1
+            or not 1 <= observed.st_size <= MAX_ARTIFACT_BYTES):
+        _fail("INVALID_ARTIFACT_FILE")
+    flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0)
+             | getattr(os, "O_NONBLOCK", 0))
+    leaf = None
+    try:
+        leaf = (os.open(name, flags, dir_fd=descriptor) if descriptor is not None
+                else os.open(path, flags))
+        opened = _opened_leaf_identity(leaf)
+    except (OSError, TypeError, NotImplementedError):
+        if leaf is not None:
+            os.close(leaf)
+        _fail("INVALID_ARTIFACT_FILE")
+    if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1
+            or not 1 <= opened.st_size <= MAX_ARTIFACT_BYTES
+            or not _same_file(observed, opened)):
+        os.close(leaf)
+        _fail("INVALID_ARTIFACT_FILE")
+    return leaf, opened
+
+
+def _assert_artifact_leaf(directory, name, descriptor, leaf, identity):
+    try:
+        opened = os.fstat(leaf)
+        public = _leaf_stat(directory, name, descriptor)
+    except ArtifactManifestError:
+        raise
+    except OSError:
+        _fail("ARTIFACT_CHANGED_DURING_READ")
+    if (not stat.S_ISREG(public.st_mode) or public.st_nlink != 1
+            or not _same_file(identity, opened)
+            or not _same_file(identity, public)):
+        _fail("ARTIFACT_CHANGED_DURING_READ")
+
+
+def _hash_artifact_leaf(name, leaf, identity):
+    """Hash one retained handle without releasing the set-wide identity pin."""
+    digest = hashlib.sha256()
+    total = 0
+    duplicate = None
+    try:
+        duplicate = os.dup(leaf)
+        os.lseek(duplicate, 0, os.SEEK_SET)
+        try:
+            stream = os.fdopen(duplicate, "rb")
+        except Exception:
+            os.close(duplicate)
+            duplicate = None
+            raise
+        duplicate = None
+        with stream:
+            before = os.fstat(stream.fileno())
+            if not _same_file(identity, before):
+                _fail("ARTIFACT_CHANGED_DURING_READ")
+            while True:
+                block = stream.read(1024 * 1024)
+                if not block:
+                    break
+                total += len(block)
+                if total > MAX_ARTIFACT_BYTES:
+                    _fail("ARTIFACT_BYTE_CAP")
+                digest.update(block)
+            after = os.fstat(stream.fileno())
+    except ArtifactManifestError:
+        raise
+    except (OSError, TypeError, ValueError, RuntimeError):
+        _fail("ARTIFACT_CHANGED_DURING_READ")
+    finally:
+        if duplicate is not None:
+            os.close(duplicate)
+    if total != identity.st_size or not _same_file(identity, after):
+        _fail("ARTIFACT_CHANGED_DURING_READ")
+    return {"name": name, "bytes": total, "sha256": digest.hexdigest()}
+
+
 def file_entry(path):
     """Hash one stable regular single-link file through its open descriptor."""
     path = Path(path)
@@ -131,18 +261,67 @@ def verify(document, directory):
             or type(document["artifacts"]) is not list
             or not 1 <= len(document["artifacts"]) <= MAX_ARTIFACTS):
         _fail("INVALID_ARTIFACT_MANIFEST")
-    seen = set()
-    for entry in document["artifacts"]:
-        if (type(entry) is not dict or set(entry) != ENTRY_KEYS
-                or not _valid_name(entry.get("name")) or entry["name"] in seen
-                or type(entry.get("bytes")) is not int
-                or not 1 <= entry["bytes"] <= MAX_ARTIFACT_BYTES
-                or type(entry.get("sha256")) is not str
-                or SHA256.fullmatch(entry["sha256"]) is None):
-            _fail("INVALID_ARTIFACT_ENTRY")
-        seen.add(entry["name"])
-        if file_entry(Path(directory) / entry["name"]) != entry:
-            _fail("ARTIFACT_DIGEST_DISAGREEMENT")
+    directory, directory_identity = _artifact_directory(directory)
+    flags = (os.O_RDONLY | getattr(os, "O_BINARY", 0)
+             | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0))
+    descriptor = None
+    leaves = []
+    try:
+        relative_supported = (hasattr(os, "O_DIRECTORY")
+            and os.open in os.supports_dir_fd and os.stat in os.supports_dir_fd
+            and os.stat in os.supports_follow_symlinks)
+        if relative_supported:
+            try:
+                descriptor = os.open(directory, flags)
+            except OSError:
+                _fail("INVALID_ARTIFACT_DIRECTORY")
+        _assert_artifact_directory(directory, directory_identity, descriptor)
+        seen = set()
+        for entry in document["artifacts"]:
+            if (type(entry) is not dict or set(entry) != ENTRY_KEYS
+                    or not _valid_name(entry.get("name")) or entry["name"] in seen
+                    or type(entry.get("bytes")) is not int
+                    or not 1 <= entry["bytes"] <= MAX_ARTIFACT_BYTES
+                    or type(entry.get("sha256")) is not str
+                    or SHA256.fullmatch(entry["sha256"]) is None):
+                _fail("INVALID_ARTIFACT_ENTRY")
+            seen.add(entry["name"])
+        for entry in document["artifacts"]:
+            _assert_artifact_directory(directory, directory_identity, descriptor)
+            leaf, identity = _open_artifact_leaf(
+                directory, entry["name"], descriptor)
+            leaves.append((entry, leaf, identity))
+            _assert_artifact_directory(directory, directory_identity, descriptor)
+        for entry, leaf, identity in leaves:
+            _assert_artifact_leaf(
+                directory, entry["name"], descriptor, leaf, identity)
+        first_pass = {}
+        for pass_index in range(2):
+            for entry, leaf, identity in leaves:
+                _assert_artifact_directory(
+                    directory, directory_identity, descriptor)
+                _assert_artifact_leaf(
+                    directory, entry["name"], descriptor, leaf, identity)
+                actual = _hash_artifact_leaf(entry["name"], leaf, identity)
+                _assert_artifact_directory(
+                    directory, directory_identity, descriptor)
+                _assert_artifact_leaf(
+                    directory, entry["name"], descriptor, leaf, identity)
+                if actual != entry:
+                    _fail("ARTIFACT_DIGEST_DISAGREEMENT")
+                if pass_index == 0:
+                    first_pass[entry["name"]] = actual
+                elif actual != first_pass[entry["name"]]:
+                    _fail("ARTIFACT_CHANGED_DURING_READ")
+        for entry, leaf, identity in leaves:
+            _assert_artifact_leaf(
+                directory, entry["name"], descriptor, leaf, identity)
+        _assert_artifact_directory(directory, directory_identity, descriptor)
+    finally:
+        for _entry, leaf, _identity in leaves:
+            os.close(leaf)
+        if descriptor is not None:
+            os.close(descriptor)
     return {
         "artifact_integrity_ok": True,
         "signed": False,

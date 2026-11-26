@@ -9,6 +9,7 @@ import json
 import os
 import sqlite3
 import stat
+import time
 from pathlib import Path
 
 from nexus import emergency_intent
@@ -22,6 +23,7 @@ PUBLIC_KEYS = frozenset(('mode','passed','halted','emergency_cut_state',
     'data_root_path_pinned','desktop_started','network_requested',
     'credential_access_requested','broker_connected','live_orders_enabled',
     'money_movement_enabled','reset_available','automatic_restart','scope'))
+TRANSIENT_OBSERVATION_DELAYS = (0.02, 0.05)
 
 
 def _resolved_data_root(data_root):
@@ -165,10 +167,11 @@ def _order_identity(order_path):
 
 def _order_identity_bounded(order_path):
     """Acquire one baseline identity with the same strict read-only ceiling."""
-    for _attempt in range(3):
+    for attempt in range(3):
         observed,identity=_observed_order_identity(order_path)
         if observed is True:return identity
         if observed is False:return None
+        if attempt<2:time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
     return None
 
 
@@ -198,24 +201,28 @@ def _halt_replayed_bounded(order_path,result,identity):
         if before is False:return False
         if before is None:
             if attempt==2:return False
+            time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
             continue
         try:replayed=emergency_halt_replayed(order_path,result)
         except (OSError,sqlite3.OperationalError):
             after=_same_order(order_path,identity)
             if after is False:return False
             if attempt==2:return False
+            time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
             continue
         except ValueError as error:
             if error.args!=('ORDER_JOURNAL_DATABASE_BUSY',):raise
             after=_same_order(order_path,identity)
             if after is False:return False
             if attempt==2:return False
+            time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
             continue
         if not replayed:return False
         after=_same_order(order_path,identity)
         if after is False:return False
         if after is None:
             if attempt==2:return False
+            time.sleep(TRANSIENT_OBSERVATION_DELAYS[attempt])
             continue
         return True
     return False

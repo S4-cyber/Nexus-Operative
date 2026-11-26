@@ -28,6 +28,21 @@ def test_repeated_runner_drill_isolated_and_recovered(tmp_path,monkeypatch):
     assert all(s['quote_observations']==14 for s in recovered['sessions'])
     assert all(s['modeled_buy_orders']==s['modeled_sell_orders']==1 for s in recovered['sessions'])
     assert set(report['cycle_latency'])=={'p50_ms','p95_ms','p99_ms'}
+    assert set(report['scheduler_cadence'])==drill.SCHEDULER_CADENCE_PUBLIC_KEYS
+    assert report['scheduler_cadence']['passed']
+    repeated=report['repeated_interruption']
+    assert set(repeated)==drill.REPEATED_INTERRUPTION_PUBLIC_KEYS
+    assert repeated['passed'] and repeated['process_exit_codes']==[77,78]
+    assert repeated['interruptions']==2 and repeated['no_fill_attempts']==1
+    assert all(repeated[key] is True for key in (
+        'first_gap_stable','no_fill_digest_stable','fill_sequence_monotonic',
+        'position_equation_preserved','explicit_review_action',
+        'old_session_review_required','no_fill_session_review_required',
+        'quote_outcome_gaps'))
+    assert all(repeated[key] is False for key in (
+        'automatic_repair','automatic_retries','automatic_restart','forward_enabled',
+        'ownership_held','actual_provider_requests','broker_connected','live_orders_enabled',
+        'release_approved'))
 
 
 @pytest.mark.parametrize('damage',['ledger','quotes','missing'])
@@ -57,3 +72,91 @@ def test_cli_reports_injected_fixture_scope():
     assert result.returncode==0,result.stderr
     report=json.loads(result.stdout)
     assert report['mode']=='DISPOSABLE_FORWARD_RUNNER_DRILL' and report['cycles']==14
+
+
+def test_repeated_interruption_uses_one_history_and_never_resumes(tmp_path):
+    result=drill._repeated_interruption(tmp_path)
+    assert set(result)==drill.REPEATED_INTERRUPTION_PUBLIC_KEYS
+    assert result['mode']=='DISPOSABLE_REPEATED_INTERRUPTION_RECOVERY'
+    assert result['process_exit_codes']==[77,78] and result['interruptions']==2
+    assert result['first_gap_stable'] and result['no_fill_digest_stable']
+    assert result['fill_sequence_monotonic'] and result['position_equation_preserved']
+    assert result['explicit_review_action'] and result['old_session_review_required']
+    assert result['no_fill_session_review_required'] and result['quote_outcome_gaps']
+    assert not result['automatic_repair'] and not result['automatic_retries']
+    assert not result['automatic_restart'] and not result['forward_enabled']
+    assert not result['ownership_held'] and not result['actual_provider_requests']
+def test_fault_injection_is_bounded_orderless_and_fail_closed(tmp_path):
+    result=drill._faults(tmp_path)
+    assert set(result)==drill.FAULT_PUBLIC_KEYS
+    assert result['passed'] and result['orders_created']==0
+    assert result['sessions_paused']==4 and result['ownership_released']
+    assert result['actual_provider_requests'] is result['automatic_retries'] is False
+    assert set(result['process_control_cleanup'])==drill.PROCESS_CONTROL_PUBLIC_KEYS
+    for name,signal in (('keyboard_interrupt','KeyboardInterrupt'),
+            ('system_exit','SystemExit')):
+        case=result['process_control_cleanup'][name]
+        assert set(case)==drill.PROCESS_CONTROL_CASE_PUBLIC_KEYS
+        assert case['signal']==signal and case['worker_started']
+        assert case['signal_observed'] and case['worker_stopped']
+        assert case['runner_disabled'] and case['ownership_released']
+        assert case['orders_created']==0 and case['stored_state']=='RUNNING'
+        assert case['effective_state']=='STOPPED_WITHOUT_FINAL_RECORD'
+        assert case['automatic_restart'] is False
+    assert result['source_loss']['reasons']==['QUOTE_UNAVAILABLE_OR_INVALID']*3
+    assert result['stale_quote']['reasons']==['QUOTE_UNAVAILABLE_OR_INVALID']*3
+    assert result['clock_regression']['reasons']==['RUNTIME_CLOCK_DISCONTINUITY']
+    assert result['invalid_clock']['reasons']==['INVALID_RUNTIME_CLOCK']
+    for name in ('source_loss','stale_quote','clock_regression','invalid_clock'):
+        case=result[name]
+        assert case['worker_started'] and case['worker_paused_while_alive']
+        assert case['cleanup_blocked_before_process_death'] and case['process_terminated']
+        assert case['post_pause_fetches']==0 and case['automatic_restart'] is False
+        assert case['stored_state']=='PAUSED' and case['paused']
+        assert case['cold_reopen_disabled'] and case['cold_worker_alive'] is False
+        assert case['cold_fetches_before_prepare']==0 and case['cold_ownership_available']
+        assert case['ownership_released'] and case['new_session_distinct']
+        assert case['order_hash_preserved'] and case['evidence_hash_preserved']
+        assert case['failed_orders_sha256']==case['reopened_orders_sha256']
+        assert case['failed_evidence_sha256']==case['reopened_evidence_sha256']
+        assert len(case['failed_session'])==16 and len(case['failed_orders_sha256'])==64
+        assert case['healthy_decision']=='HOLD'
+        assert case['healthy_reason']=='WARMUP_REQUIRES_SIX_DISTINCT_TICKS'
+        assert case['healthy_orders_created']==0
+    for name in ('source_loss','stale_quote'):
+        case=result[name]
+        assert case['counts']=={'START':1,'VETO':2,'PAUSED':1}
+        assert case['quote_observations']==case['rejected_observations']==3
+        assert case['review_reasons']==[]
+    for name in ('clock_regression','invalid_clock'):
+        case=result[name]
+        assert case['counts']=={'START':1,'PAUSED':1}
+        assert case['quote_observations']==case['rejected_observations']==0
+        assert case['review_reasons']==['NO_RECORDED_QUOTE_EVIDENCE']
+
+
+def test_scheduler_cadence_uses_actual_worker_and_fails_closed(tmp_path):
+    result=drill._scheduler_cadence(tmp_path)
+    assert set(result)==drill.SCHEDULER_CADENCE_PUBLIC_KEYS
+    assert result['passed'] and result['interval_seconds']==5
+    assert result['nominal']['cycle_starts']==[100.0,105.0,110.0]
+    assert result['nominal']['start_intervals']==[5.0,5.0]
+    assert result['overrun']['cycle_starts']==[100.0,112.0]
+    assert result['overrun']['start_intervals']==[12.0]
+    assert result['overrun']['scheduler_reasons']==['SCHEDULER_OVERRUN']
+    assert result['overrun']['cycle_duration_seconds']==7.0
+    assert result['overrun']['overrun_seconds']==2.0
+    expected={'invalid_clock':'INVALID_SCHEDULER_CLOCK',
+        'clock_regression':'SCHEDULER_CLOCK_REGRESSION',
+        'stalled_clock':'SCHEDULER_CLOCK_STALLED'}
+    for name,reason in expected.items():
+        assert result[name]['scheduler_reasons']==[reason]
+    for name in ('nominal','overrun',*expected):
+        case=result[name]
+        assert set(case)==drill.SCHEDULER_CADENCE_CASE_PUBLIC_KEYS
+        assert case['orders_created']==0 and case['stored_state']=='PAUSED'
+        assert case['ownership_released'] and case['worker_stopped']
+        assert case['burst_catchup_allowed'] is False
+    for field in ('actual_provider_requests','automatic_retries','broker_connected',
+            'live_orders_enabled','sustained_forward_accepted','release_approved'):
+        assert result[field] is False

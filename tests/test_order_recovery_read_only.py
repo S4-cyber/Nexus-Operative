@@ -3,6 +3,7 @@ from contextlib import closing
 import os
 from pathlib import Path
 import sqlite3
+import threading
 
 from fastapi.testclient import TestClient
 import pytest
@@ -81,9 +82,48 @@ def test_write_operation_pins_dynamic_root_before_emergency_check(tmp_path,monke
         seen.append(path);monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(second));return False
     monkeypatch.setattr(emergency_intent,'requested',retarget)
     gateway.submit('one','BTC-USD','BUY',100,tier='terrestrial')
-    assert seen==[first/'order_lifecycle.sqlite3']
+    assert seen==[first/'order_lifecycle.sqlite3']*4
     assert (first/'order_lifecycle.sqlite3').exists()
     assert (first/'paper_portfolio.sqlite3').exists() and not second.exists()
+
+
+def test_write_rechecks_emergency_latch_after_sqlite_mutation_lock(tmp_path,monkeypatch):
+    gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3');samples=[]
+    def requested(path):
+        samples.append(path)
+        return len(samples)==2
+    monkeypatch.setattr(emergency_intent,'requested',requested)
+    with pytest.raises(ValueError,match='EMERGENCY_CUT_REQUESTED'):
+        gateway.submit('late','BTC-USD','BUY',100,tier='terrestrial')
+    assert samples==[gateway._path(),gateway._path()]
+    with sqlite3.connect(gateway._path()) as db:
+        assert db.execute('SELECT COUNT(*) FROM commands').fetchone()==(0,)
+
+
+def test_cut_published_during_sqlite_contention_vetoes_waiting_submit(tmp_path,monkeypatch):
+    gateway=DurableOrderGateway(tmp_path/'order_lifecycle.sqlite3')
+    gateway.initialize_account(1000)
+    sampled=threading.Event();outcome=[];original=emergency_intent.requested
+    def requested(path):
+        value=original(path)
+        if not value:sampled.set()
+        return value
+    monkeypatch.setattr(emergency_intent,'requested',requested)
+    with sqlite3.connect(gateway._path(),timeout=1) as blocker:
+        blocker.execute('BEGIN IMMEDIATE')
+        def submit():
+            try:gateway.submit('late','BTC-USD','BUY',100,tier='terrestrial')
+            except Exception as error:outcome.append(error)
+        worker=threading.Thread(target=submit);worker.start()
+        assert sampled.wait(5)
+        emergency_intent.persist(gateway._path())
+        blocker.commit()
+        worker.join(5)
+    assert not worker.is_alive() and len(outcome)==1
+    assert type(outcome[0]) is ValueError and str(outcome[0])=='EMERGENCY_CUT_REQUESTED'
+    emergency_intent.clear(gateway._path())
+    report=gateway.recovery_report()
+    assert report['commands']==1 and report['orders']==[]
 
 
 def test_write_operation_keeps_portfolio_with_opened_order_root(tmp_path,monkeypatch):
@@ -295,3 +335,55 @@ def test_unlinked_recovery_does_not_create_missing_portfolio(tmp_path,monkeypatc
     gateway.initialize_account(10000)
     portfolio=tmp_path/'paper_portfolio.sqlite3';portfolio.unlink()
     assert not gateway.recovery_report()['portfolio_reconciled'] and not portfolio.exists()
+
+
+def _hardlink(source, alias):
+    try:alias.hardlink_to(source)
+    except (OSError,NotImplementedError):pytest.skip('Hardlinks unavailable on this test volume')
+
+
+def test_hardlinked_order_history_refuses_read_without_modifying_source(tmp_path):
+    path=tmp_path/'order_lifecycle.sqlite3';gateway=DurableOrderGateway(path)
+    gateway.initialize_account(10000);alias=tmp_path/'order-alias.sqlite3';_hardlink(path,alias)
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='^ORDER_HISTORY_SINGLE_LINK_REQUIRED$'):
+        gateway.recovery_report()
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['journal_present']
+
+
+def test_order_history_hardlink_added_during_read_fails_closed(tmp_path):
+    path=tmp_path/'order_lifecycle.sqlite3';gateway=DurableOrderGateway(path)
+    gateway.initialize_account(10000);alias=tmp_path/'order-mid-read-alias.sqlite3'
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='^ORDER_HISTORY_CHANGED$'):
+        with gateway._read_connection() as db:
+            assert db is not None
+            _hardlink(path,alias)
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['journal_present']
+
+
+def test_hardlinked_linked_portfolio_refuses_recovery_without_modifying_source(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch);path=tmp_path/'paper_portfolio.sqlite3'
+    alias=tmp_path/'portfolio-alias.sqlite3';_hardlink(path,alias);before=path.read_bytes()
+    with pytest.raises(ValueError,match='^LINKED_PORTFOLIO_SINGLE_LINK_REQUIRED$'):
+        gateway.recovery_report()
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['portfolio_reconciled']
+
+
+def test_linked_portfolio_hardlink_added_during_read_fails_closed(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch);path=tmp_path/'paper_portfolio.sqlite3'
+    alias=tmp_path/'portfolio-mid-read-alias.sqlite3';before=path.read_bytes()
+    with gateway._read_connection() as db:
+        portfolio=execution_portfolio.attach_read_only(db,path)
+        _hardlink(path,alias)
+        with pytest.raises(ValueError,match='^LINKED_PORTFOLIO_CHANGED$'):
+            portfolio.require_current()
+    assert path.read_bytes()==alias.read_bytes()==before
+    alias.unlink()
+    assert gateway.recovery_report()['portfolio_reconciled']

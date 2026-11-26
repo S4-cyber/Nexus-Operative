@@ -181,6 +181,18 @@ def test_failed_refresh_never_returns_previous_stale_cache(intake,monkeypatch):
     assert public.efficiency()['transport_failures']==1 and public.efficiency()['cache_hits']==0
 
 
+@pytest.mark.parametrize('value',['1e10000','1e-10000'])
+def test_out_of_range_transport_result_never_published_or_cached(
+        intake,monkeypatch,value):
+    monkeypatch.setattr(public,'_fetch_default',
+        lambda _:payload(bid=value,ask=value))
+    with pytest.raises(ValueError,match='Public market quote unavailable or invalid'):
+        public.read_ticker('BTC-USD')
+    assert not public._cache and not public._flights
+    assert public.efficiency()['transport_successes']==0
+    assert public.efficiency()['transport_failures']==1
+
+
 def test_diagnostics_are_read_only_bounded_copies_no_source_or_storage_io(intake,tmp_path,monkeypatch):
     from nexus.app import app
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path/'absent'))

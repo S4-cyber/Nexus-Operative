@@ -29,6 +29,14 @@ class Vault:
         del self.data[(service, account)]
 
 
+class EqualText(str):
+    def __eq__(self, other):
+        return True
+
+    def __ne__(self, other):
+        return False
+
+
 @pytest.fixture
 def vault(monkeypatch):
     store = Vault()
@@ -95,6 +103,26 @@ def test_activity_sse_admission_refuses_before_vault(
     assert vault.reads == vault.writes == vault.deletes == 0
 
 
+@pytest.mark.parametrize('reason', (
+    'UNKNOWN', None, EqualText('CONNECTION_DROPPED')))
+def test_activity_sse_invalid_reason_refuses_before_callbacks_or_vault(
+        vault, reason):
+    def callback():
+        pytest.fail('admission callback invoked')
+
+    with pytest.raises(credentials.PaperVaultError,
+            match='^PAPER_VAULT_READ_RECONNECT_REASON_INVALID$'):
+        credentials.collect_activity_sse_saved(
+            expected_account_id=BROKER_ACCOUNT, initial_events=[],
+            reconnect_reason=reason, cursor_store=None,
+            expected_cursor_head='0' * 64, reconnect_budget=None,
+            expected_budget_head='0' * 64, evaluated_at=1000,
+            confirm_reconnect_attempt=True, confirm_read_only_paper=True,
+            confirm_cursor_checkpoint=True, permission_check=callback,
+            emergency_stop_check=callback)
+    assert vault.reads == vault.writes == vault.deletes == 0
+
+
 @pytest.mark.parametrize('boundary',('permission','emergency'))
 def test_activity_sse_admission_failure_is_fixed_and_private_before_vault(
         vault,boundary):
@@ -144,6 +172,14 @@ def test_bad_keys_never_touch_vault(vault, bad):
     with pytest.raises(credentials.PaperVaultError, match='FORMAT_INVALID'):
         credentials.install(KEY, bad, confirm_store=True)
     assert vault.reads == vault.writes == 0
+
+
+def test_equality_forging_key_never_touches_vault(vault):
+    class ForgedCredential(str):
+        def encode(self,*_args,**_kwargs):return b'FORGED_WIRE_VALUE'
+    with pytest.raises(credentials.PaperVaultError,match='FORMAT_INVALID'):
+        credentials.install(ForgedCredential(KEY),SECRET,confirm_store=True)
+    assert vault.reads==vault.writes==0
 
 
 def test_missing_or_invalid_record_never_inspects(vault):

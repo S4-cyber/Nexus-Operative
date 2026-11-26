@@ -179,6 +179,20 @@ def test_multiple_fill_quantities_and_prices_use_explicit_activities_not_average
     assert {e['price'] for e in result['executions'] if e['broker_order_id'] == orders[0]['broker_order_id']} == {'85', '110'}
 
 
+@pytest.mark.parametrize(('fill_type', 'leaves'), (
+    ('fill', '1'),
+    ('partial_fill', '0'),
+))
+def test_fill_completion_type_must_agree_with_remaining_quantity(
+        fill_type, leaves):
+    rows, orders = inputs()
+    rows[0].update(type=fill_type, leaves_qty=leaves)
+    result = normalize(rows, orders)
+    assert 'FILL_TYPE_REMAINDER_DISAGREEMENT' in result['review_reasons']
+    assert result['normalized_activities'][0]['fill_type'] == fill_type
+    assert result['normalized_activities'][0]['leaves_quantity'] == leaves
+
+
 @pytest.mark.parametrize('case,reason', [('missing', 'SUPPLIED_FILL_QUANTITY_DISAGREEMENT'),
     ('average', 'SUPPLIED_FILL_AVERAGE_DISAGREEMENT'), ('chain', 'CUMULATIVE_FILL_CHAIN_DISAGREEMENT'),
     ('leaves', 'REMAINING_QUANTITY_DISAGREEMENT'), ('time', 'CUMULATIVE_FILL_TIME_REGRESSION'),

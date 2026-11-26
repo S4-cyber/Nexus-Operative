@@ -182,6 +182,26 @@ def test_public_counts_are_strict_bounded_integers(evidence,value):
     _,raw=evidence;r=subject.validate(subject.loads(raw));r['retained_quotes']=value
     with pytest.raises(ValueError):subject.public_summary(r)
 
+def test_public_summary_rejects_stateful_mapping_without_private_read(evidence):
+    _,raw=evidence;review=subject.validate(subject.loads(raw))
+    class HostileReview(dict):
+        accessed=False
+        def get(self,*args,**kwargs):self.accessed=True;raise AssertionError
+        def __getitem__(self,key):self.accessed=True;raise AssertionError
+    hostile=HostileReview(review)
+    with pytest.raises(ValueError,match='PAPER_QUOTE_BUNDLE_REVIEW_REQUIRED') as failure:
+        subject.public_summary(hostile)
+    assert not hostile.accessed and 'PRIVATE_ACCOUNT_TOKEN' not in str(failure.value)
+
+@pytest.mark.parametrize('field',('mode','profile','status'))
+def test_public_summary_rejects_equality_forging_text(evidence,field):
+    class EqualText(str):
+        def __eq__(self,other):return True
+        def __ne__(self,other):return False
+    _,raw=evidence;review=subject.validate(subject.loads(raw))
+    review[field]=EqualText(review[field])
+    with pytest.raises(ValueError):subject.public_summary(review)
+
 
 @pytest.mark.parametrize('suffix',('-wal','-shm','-journal','.owner.lock'))
 def test_export_never_creates_a_source_journal_sidecar(evidence,monkeypatch,capsys,suffix):

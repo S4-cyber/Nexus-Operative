@@ -11,9 +11,11 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import stat
 import tempfile
 from uuid import UUID
 from nexus import alpaca_paper_contract as contract
+from nexus import forward_broker_intent_review
 from nexus import broker_lookup_policy as lookup
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_existing,
@@ -34,10 +36,249 @@ def _fail(code):
     raise ValueError('BROKER_JOURNAL_' + code) from None
 
 
+def _lookup_token(value):
+    if type(value) is not str or re.fullmatch(r'[0-9a-f]{64}',value) is None:
+        raise ValueError('BROKER_LOOKUP_TOKEN_INVALID')
+    return value
+
+
 def _database_busy(error):
     code = getattr(error, 'sqlite_errorcode', None)
     return (code in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED) or
         any(word in str(error).lower() for word in ('busy', 'locked')))
+
+
+def _main_fingerprint(path):
+    """Hash the exact bounded request-journal main file under write ownership."""
+    def fail():
+        _fail('CONNECTION_CONTENT_CHANGED')
+    path = Path(path)
+    try:
+        observed = path.lstat()
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or
+                observed.st_nlink != 1 or
+                not 1 <= observed.st_size <= MAX_DATABASE_BYTES):
+            fail()
+        resolved = path.resolve()
+        flags = (os.O_RDONLY | getattr(os, 'O_BINARY', 0) |
+            getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+        digest = hashlib.sha256(); remaining = MAX_DATABASE_BYTES + 1
+        with os.fdopen(os.open(resolved, flags), 'rb', buffering=0) as stream:
+            before = os.fstat(stream.fileno())
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                    not 1 <= before.st_size <= MAX_DATABASE_BYTES or
+                    (before.st_dev, before.st_ino) !=
+                        (observed.st_dev, observed.st_ino)):
+                fail()
+            while remaining:
+                block = stream.read(min(1024 * 1024, remaining))
+                if not block:
+                    break
+                digest.update(block); remaining -= len(block)
+            after = os.fstat(stream.fileno())
+        final = path.lstat()
+        def boundary(value, *, pathname=False):
+            return (value.st_dev, value.st_ino, value.st_size,
+                value.st_mtime_ns,
+                value.st_ctime_ns if os.name != 'nt' or not pathname else None,
+                value.st_nlink)
+        if (remaining == 0 or boundary(observed, pathname=True) !=
+                boundary(before, pathname=True) or
+                boundary(before) != boundary(after) or
+                boundary(after, pathname=True) !=
+                    boundary(final, pathname=True) or
+                not stat.S_ISREG(final.st_mode)):
+            fail()
+        return (str(resolved), after.st_dev, after.st_ino, after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns if os.name != 'nt' else None,
+            after.st_nlink, digest.hexdigest())
+    except ValueError:
+        raise
+    except (OSError, RuntimeError, TypeError):
+        fail()
+
+
+def _require_main_connection(db, bound_path):
+    """Require SQLite to report exactly the selected request-journal main."""
+    try:
+        rows = db.execute('PRAGMA database_list').fetchall()
+        if (len(rows) != 1 or len(rows[0]) != 3 or
+                type(rows[0][0]) is not int or rows[0][1] != 'main' or
+                type(rows[0][2]) is not str or not rows[0][2] or
+                Path(rows[0][2]).resolve() != bound_path):
+            _fail('CONNECTION_BINDING_CHANGED')
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        _fail('CONNECTION_BINDING_CHANGED')
+    except (OSError, RuntimeError, sqlite3.Error, TypeError):
+        _fail('CONNECTION_BINDING_CHANGED')
+
+
+def _require_main_connection_content(db, bound_path):
+    """Bind committed connection bytes to one stable pathname fingerprint."""
+    try:
+        serialized = db.serialize(name='main')
+        observed = _main_fingerprint(bound_path)
+        if (type(serialized) is not bytes or
+                len(serialized) != observed[3] or
+                hashlib.sha256(serialized).hexdigest() != observed[7]):
+            _fail('CONNECTION_CONTENT_CHANGED')
+        return observed
+    except ValueError:
+        raise
+    except sqlite3.OperationalError as error:
+        if _database_busy(error):
+            _fail('DATABASE_BUSY')
+        _fail('CONNECTION_CONTENT_CHANGED')
+    except (MemoryError, OSError, OverflowError, RuntimeError,
+            sqlite3.Error, TypeError):
+        _fail('CONNECTION_CONTENT_CHANGED')
+
+
+def _active_fingerprint_boundary(item, host=None):
+    host = os.name if host is None else host
+    return (item.st_dev, item.st_ino, item.st_size, item.st_mtime_ns,
+        item.st_ctime_ns if host != 'nt' else None, item.st_nlink)
+
+
+def _committed_fingerprint_boundary(fingerprint, host=None):
+    host = os.name if host is None else host
+    if type(fingerprint) is not tuple or len(fingerprint) != 8:
+        raise RuntimeError
+    path, device, inode, size, mtime, ctime, links, digest = fingerprint
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device, inode, size, mtime, links)) or
+            (type(ctime) is not int if host != 'nt' else ctime is not None) or
+            re.fullmatch(r'[0-9a-f]{64}', digest) is None):
+        raise RuntimeError
+    return (path, device, inode, size, mtime,
+        ctime if host != 'nt' else None, links, digest)
+
+
+def _captured_fingerprint_boundary(fingerprint, host=None):
+    """Normalize the generic cold-file sample to the committed schema."""
+    host = os.name if host is None else host
+    if type(fingerprint) is not tuple or len(fingerprint) != 8:
+        raise RuntimeError
+    path, device, inode, size, mtime, ctime, links, digest = fingerprint
+    if (type(path) is not str or any(type(value) is not int for value in
+            (device, inode, size, mtime, ctime, links)) or
+            re.fullmatch(r'[0-9a-f]{64}', digest) is None):
+        raise RuntimeError
+    return (path, device, inode, size, mtime,
+        ctime if host != 'nt' else None, links, digest)
+
+
+def _require_committed_fingerprint(path, fingerprint, host=None):
+    """Require no sidecars and the exact portable committed main bytes."""
+    expected = _committed_fingerprint_boundary(fingerprint, host=host)
+    observed = capture_file_fingerprints((path,), (MAX_DATABASE_BYTES,),
+        'BROKER_JOURNAL_')
+    if (len(observed) != 1 or
+            _captured_fingerprint_boundary(observed[0], host=host) != expected):
+        raise RuntimeError
+
+
+def _descriptor_file_fingerprint(descriptor, resolved):
+    """Hash bounded bytes through the exact writable committed descriptor."""
+    before = os.fstat(descriptor)
+    if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+            not 1 <= before.st_size <= MAX_DATABASE_BYTES):
+        raise RuntimeError
+    original_offset = os.lseek(descriptor, 0, os.SEEK_CUR)
+    digest = hashlib.sha256(); remaining = MAX_DATABASE_BYTES + 1
+    try:
+        os.lseek(descriptor, 0, os.SEEK_SET)
+        while remaining:
+            block = os.read(descriptor, min(1024 * 1024, remaining))
+            if not block:
+                break
+            digest.update(block); remaining -= len(block)
+    finally:
+        os.lseek(descriptor, original_offset, os.SEEK_SET)
+    after = os.fstat(descriptor)
+    if (remaining == 0 or
+            _active_fingerprint_boundary(before) !=
+                _active_fingerprint_boundary(after) or
+            before.st_ctime_ns != after.st_ctime_ns):
+        raise RuntimeError
+    return (str(resolved), after.st_dev, after.st_ino, after.st_size,
+        after.st_mtime_ns, after.st_ctime_ns if os.name != 'nt' else None,
+        after.st_nlink, digest.hexdigest())
+
+
+def _sync_parent_directory(resolved):
+    """Flush only the exact POSIX request-journal parent identity."""
+    parent = resolved.parent
+    before = parent.lstat()
+    if stat.S_ISLNK(before.st_mode) or not stat.S_ISDIR(before.st_mode):
+        raise RuntimeError
+    expected = (before.st_dev, before.st_ino)
+    flags = (os.O_RDONLY | getattr(os, 'O_DIRECTORY', 0) |
+        getattr(os, 'O_CLOEXEC', 0) | getattr(os, 'O_NOFOLLOW', 0))
+    descriptor = os.open(parent, flags)
+    try:
+        opened = os.fstat(descriptor)
+        if (not stat.S_ISDIR(opened.st_mode) or
+                (opened.st_dev, opened.st_ino) != expected):
+            raise RuntimeError
+        os.fsync(descriptor)
+        final = os.fstat(descriptor); observed = parent.lstat()
+        if (not stat.S_ISDIR(final.st_mode) or
+                (final.st_dev, final.st_ino) != expected or
+                stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISDIR(observed.st_mode) or
+                (observed.st_dev, observed.st_ino) != expected):
+            raise RuntimeError
+    finally:
+        os.close(descriptor)
+
+
+def _sync_committed_store(path, identity, fingerprint, *, new):
+    """Flush the exact request main and a newly published POSIX entry."""
+    try:
+        if (type(new) is not bool or type(identity) is not tuple or
+                len(identity) != 3 or type(identity[0]) is not str):
+            raise RuntimeError
+        path = Path(path); resolved = path.resolve()
+        expected_path, expected_device, expected_inode = identity
+        if str(resolved) != expected_path:
+            raise RuntimeError
+        expected_descriptor = _committed_fingerprint_boundary(fingerprint)
+        require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
+        _require_committed_fingerprint(path, fingerprint)
+        flags = (os.O_RDWR | getattr(os, 'O_BINARY', 0) |
+            getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+        descriptor = os.open(resolved, flags)
+        try:
+            before = os.fstat(descriptor)
+            if (not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or
+                    not 1 <= before.st_size <= MAX_DATABASE_BYTES or
+                    (before.st_dev, before.st_ino) !=
+                        (expected_device, expected_inode)):
+                raise RuntimeError
+            if (_descriptor_file_fingerprint(descriptor, resolved) !=
+                    expected_descriptor):
+                raise RuntimeError
+            os.fsync(descriptor)
+            if (_descriptor_file_fingerprint(descriptor, resolved) !=
+                    expected_descriptor):
+                raise RuntimeError
+        finally:
+            os.close(descriptor)
+        require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
+        _require_committed_fingerprint(path, fingerprint)
+        if new and os.name != 'nt':
+            _sync_parent_directory(resolved)
+            require_file_identities((path,), (identity,), 'BROKER_JOURNAL_')
+            _require_committed_fingerprint(path, fingerprint)
+    except Exception:
+        _fail('COMMIT_DURABILITY_UNCERTAIN')
 
 
 @contextmanager
@@ -70,7 +311,7 @@ def _explicit_transaction(db):
 def _plan(value):
     tracker = contract.SnapshotTracker(value)
     payload = tracker._payload
-    if not isinstance(payload['client_order_id'], str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', payload['client_order_id']):
+    if type(payload['client_order_id']) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}', payload['client_order_id']):
         raise ValueError('INVALID_BROKER_CLIENT_ID')
     quantity = contract.number(payload['qty']); price = contract.number(payload['limit_price'])
     with localcontext() as context:
@@ -81,6 +322,12 @@ def _plan(value):
     # Retain only allowlisted request fields, never extra plan metadata or keys.
     return dict(mode='DISCONNECTED_ALPACA_PAPER_PREVIEW', sendable=False,
                 payload=payload, payload_sha256=contract.sha(payload))
+
+
+def _prepared_plan(value):
+    if type(value) is dict and 'forward_intent_binding' in value:
+        return forward_broker_intent_review.normalize_plan(value)
+    return _plan(value)
 
 
 def _observation(response, payload):
@@ -95,27 +342,59 @@ class BrokerRequestJournal:
     """Append-only bounded local journal, bound to one supplied paper account."""
     def __init__(self, path, paper_account_id):
         self.path = Path(path)
+        if type(paper_account_id) is not str:raise ValueError('INVALID_PAPER_ACCOUNT_SCOPE')
         try:account = str(UUID(paper_account_id))
         except (ValueError,TypeError,AttributeError):raise ValueError('INVALID_PAPER_ACCOUNT_SCOPE')
         self.account_digest = hashlib.sha256(account.encode()).hexdigest()
+        self._connection_contexts = {}
 
     def _check_path(self):
         check_existing(self.path, MAX_DATABASE_BYTES, 'BROKER_JOURNAL_',
             cap_code='BYTE_CAP', symlink_code='SYMLINK_NOT_ALLOWED')
 
     def _connect(self, write=False):
-        self._check_path()
-        new = False
+        try:
+            bound_path = self.path.resolve()
+        except (OSError, RuntimeError, TypeError):
+            _fail('CONNECTION_BINDING_CHANGED')
+        self._check_path(); new = False; bound_identity = None
+        if self.path.exists():
+            bound_identity = capture_file_identities((self.path,),
+                'BROKER_JOURNAL_')
         if write and not self.path.exists():
             self.path.parent.mkdir(parents=True, exist_ok=True)
             try:
                 fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-                os.close(fd); new = True
+                try:
+                    opened = os.fstat(fd)
+                    bound_identity = ((str(bound_path), opened.st_dev,
+                        opened.st_ino),)
+                finally:
+                    os.close(fd)
+                new = True
             except FileExistsError:pass
             self._check_path()
-        db = sqlite3.connect(self.path.resolve().as_uri() + ('?mode=rw' if write else '?mode=ro'),
+        if bound_identity is None and self.path.exists():
+            bound_identity = capture_file_identities((self.path,),
+                'BROKER_JOURNAL_')
+        def require_bound_path():
+            try:
+                if self.path.resolve() != bound_path:
+                    _fail('CONNECTION_BINDING_CHANGED')
+                if bound_identity is not None:
+                    require_file_identities((self.path,), bound_identity,
+                        'BROKER_JOURNAL_')
+            except ValueError:
+                raise
+            except (OSError, RuntimeError, TypeError):
+                _fail('CONNECTION_BINDING_CHANGED')
+        require_bound_path()
+        db = sqlite3.connect(bound_path.as_uri() + ('?mode=rw' if write else '?mode=ro'),
             uri=True, timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            require_bound_path()
+            _require_main_connection(db, bound_path)
+            require_bound_path()
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE')
@@ -126,6 +405,9 @@ class BrokerRequestJournal:
                 if new:
                     db.execute('CREATE TABLE events (seq INTEGER PRIMARY KEY, kind TEXT NOT NULL, body TEXT NOT NULL, previous TEXT NOT NULL, digest TEXT NOT NULL)')
                     self._insert(db, 1, 'BIND', dict(schema=SCHEMA, account_sha256=self.account_digest), ZERO)
+                require_bound_path()
+                self._connection_contexts[id(db)] = (new,
+                    bound_identity[0], bound_path, require_bound_path)
             return db
         except sqlite3.OperationalError as error:
             db.close()
@@ -135,6 +417,63 @@ class BrokerRequestJournal:
         except BaseException:
             db.close()
             raise
+
+    def _connection_context(self, db):
+        """Find write context through the small test/runtime proxy surface."""
+        candidate = db; seen = set()
+        while candidate is not None and id(candidate) not in seen:
+            seen.add(id(candidate))
+            context = self._connection_contexts.get(id(candidate))
+            if context is not None:
+                return id(candidate), context
+            try:
+                candidate = getattr(candidate, 'db')
+            except (AttributeError, TypeError):
+                candidate = None
+        _fail('CONNECTION_BINDING_CHANGED')
+
+    @contextmanager
+    def _write_connection(self):
+        """Require exact committed request-journal bytes through explicit flush."""
+        db = self._connect(write=True)
+        raw_id, (new, main_identity, bound_path,
+            require_bound_path) = self._connection_context(db)
+        try:
+            yield db
+        except BaseException:
+            try:
+                db.close()
+            finally:
+                self._connection_contexts.pop(raw_id, None)
+            raise
+        else:
+            acknowledgement_error = None
+            committed_fingerprint = None
+            uncommitted = db.in_transaction
+            try:
+                require_bound_path()
+                _require_main_connection(db, bound_path)
+                if not uncommitted:
+                    committed_fingerprint = (
+                        _require_main_connection_content(db, bound_path))
+                require_bound_path()
+            except BaseException as error:
+                acknowledgement_error = error
+            try:
+                db.close()
+            except BaseException as error:
+                if acknowledgement_error is None:
+                    acknowledgement_error = error
+            finally:
+                self._connection_contexts.pop(raw_id, None)
+            if acknowledgement_error is not None:
+                raise acknowledgement_error
+            require_bound_path()
+            if committed_fingerprint is not None:
+                _sync_committed_store(bound_path, main_identity,
+                    committed_fingerprint, new=new)
+            if uncommitted:
+                _fail('UNCOMMITTED_TRANSACTION')
 
     def _insert(self, db, seq, kind, body, previous):
         encoded = contract.canonical(body)
@@ -179,7 +518,7 @@ class BrokerRequestJournal:
         if not lookup_completion and kind not in ('LOOKUP_BEGIN','LOOKUP_RESULT','LOOKUP_INTERRUPTED') and any(r['lookup']['pending'] for r in requests.values()):
             raise ValueError('BROKER_LOOKUP_PENDING_REVIEW_REQUIRED')
         if kind=='PREPARE':
-            plan=_plan(body)
+            plan=_prepared_plan(body)
             if plan!=body:raise ValueError('BROKER_JOURNAL_PAYLOAD_INVALID')
             identity=plan['payload']['client_order_id']
             if identity in requests:raise ValueError('BROKER_JOURNAL_DUPLICATE_PREPARE')
@@ -193,7 +532,7 @@ class BrokerRequestJournal:
         if kind not in ('SUBMISSION_UNCERTAIN','OBSERVE') or set(body) not in shapes:
             raise ValueError('BROKER_JOURNAL_EVENT_INVALID')
         identity=body['client_order_id']
-        if not isinstance(identity,str) or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        if type(identity) is not str or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         request=requests[identity]
         if kind=='SUBMISSION_UNCERTAIN':
             if request['uncertain']:raise ValueError('BROKER_JOURNAL_DUPLICATE_ATTEMPT')
@@ -220,7 +559,8 @@ class BrokerRequestJournal:
 
     def _apply_lookup(self, requests, broker_ids, kind, body):
         identity=body.get('client_order_id')
-        if not isinstance(identity,str) or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        if type(identity) is not str or identity not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        _lookup_token(body.get('token'))
         request=requests[identity]; state=request['lookup']; now=lookup.clock(body.get('evaluated_at'))
         if now<self._clock_floor(requests):raise ValueError('BROKER_LOOKUP_CLOCK_REGRESSION')
         if kind=='LOOKUP_INTERRUPTED':
@@ -249,7 +589,7 @@ class BrokerRequestJournal:
             raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
         if not state['pending'] or body['token']!=state['pending']:raise ValueError('BROKER_LOOKUP_PENDING_TOKEN_REQUIRED')
         outcome=body['outcome'];delay=body['retry_after_seconds']
-        if not isinstance(outcome,str) or outcome not in lookup.OUTCOMES or type(delay) is not int or not 0<=delay<=lookup.MAX_RETRY_AFTER:
+        if type(outcome) is not str or outcome not in lookup.OUTCOMES or type(delay) is not int or not 0<=delay<=lookup.MAX_RETRY_AFTER:
             raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
         if (outcome=='RATE_LIMITED' and delay<1) or (outcome!='RATE_LIMITED' and delay!=0):raise ValueError('BROKER_LOOKUP_EVENT_INVALID')
         if outcome=='FOUND':
@@ -266,7 +606,10 @@ class BrokerRequestJournal:
     def _summary(self, identity, request):
         latest=request['tracker'].status()['latest']
         state=('OBSERVED_TERMINAL_RECONCILIATION_REQUIRED' if latest['terminal'] else 'OBSERVED_NONTERMINAL_REVIEW_REQUIRED') if latest else ('SUBMISSION_UNKNOWN_LOOKUP_REQUIRED' if request['uncertain'] else 'PREPARED_UNSENT_DIAGNOSTIC')
+        binding=request['plan'].get('forward_intent_binding')
         return dict(client_order_id=identity,payload_sha256=request['plan']['payload_sha256'],
+                    forward_intent_bound=binding is not None,
+                    forward_intent_sha256=binding['intent_sha256'] if binding else None,
                     recovery_state=state,snapshot=latest,lookup_by_original_client_id_required=request['uncertain'] and not latest,
                     submission_attempt_marked=request['uncertain'],submission_admission=None if request['submission_admission'] is None else dict(request['submission_admission']),lookup=dict(attempts=request['lookup']['attempts'],attempt_limit=lookup.MAX_LOOKUPS_PER_REQUEST,pending=request['lookup']['pending'] is not None,next_allowed_at=request['lookup']['next_at'],review_blocked=request['lookup']['blocked'],interruptions=request['lookup']['interruptions'],last_outcome=request['lookup']['last_outcome']),automatic_retry=False,sendable=False,
                     broker_connected=False,ledger_applied=False,broker_account_reconciled=False)
@@ -305,7 +648,7 @@ class BrokerRequestJournal:
                return_head=False):
         if kind!='PREPARE' and not self.path.exists():
             raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 identity=body['payload']['client_order_id'] if kind=='PREPARE' else body['client_order_id']
@@ -360,6 +703,17 @@ class BrokerRequestJournal:
 
     def prepare(self, plan):return self._write('PREPARE',_plan(plan))
 
+    def prepare_forward_intent(self, candidate):
+        """Persist one counterfactual binding; it can never become sendable."""
+        if (type(candidate) is not dict or
+                candidate.get('mode')!=forward_broker_intent_review.MODE or
+                candidate.get('profile')!=forward_broker_intent_review.PROFILE or
+                candidate.get('read_only') is not True or
+                candidate.get('binding')!=candidate.get('plan',{}).get('forward_intent_binding')):
+            raise ValueError('INVALID_FORWARD_BROKER_INTENT_CANDIDATE')
+        plan=forward_broker_intent_review.normalize_plan(candidate.get('plan'))
+        return self._write('PREPARE',plan)
+
     def mark_submission_uncertain(self, client_order_id):
         self._identity(client_order_id)
         return self._write('SUBMISSION_UNCERTAIN',dict(client_order_id=client_order_id))
@@ -381,6 +735,8 @@ class BrokerRequestJournal:
         deadline=max((r['lookup']['next_at'] for r in requests.values()
             if r['lookup']['last_outcome']=='RATE_LIMITED'),default=0)
         if not request:reasons.append('REQUEST_NOT_PREPARED')
+        if request and request['plan'].get('forward_intent_binding') is not None:
+            reasons.append('COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE')
         if request and request['uncertain']:reasons.append('ORIGINAL_ID_RECOVERY_REQUIRED')
         if any(r['lookup']['blocked'] for r in requests.values()):reasons.append('ACCOUNT_REVIEW_REQUIRED')
         if any(r['lookup']['pending'] for r in requests.values()):reasons.append('LOOKUP_PENDING_REVIEW_REQUIRED')
@@ -410,6 +766,9 @@ class BrokerRequestJournal:
         if not callable(admission):raise ValueError('BROKER_SUBMISSION_ADMISSION_REQUIRED')
         for value in (expected_head,expected_payload_sha256):
             if type(value) is not str or re.fullmatch('[0-9a-f]{64}',value) is None:raise ValueError('BROKER_SUBMISSION_REFERENCE_INVALID')
+        selected=self.lookup_request(client_order_id)
+        if selected['plan'].get('forward_intent_binding') is not None:
+            raise ValueError('BROKER_SUBMISSION_COUNTERFACTUAL_FORWARD_INTENT_NOT_SENDABLE')
         result=self._write('SUBMISSION_UNCERTAIN',dict(client_order_id=client_order_id),
             expected_head=expected_head,expected_payload_sha256=expected_payload_sha256,admission=admission)
         return dict(**result,attempt_marker_commit_observed=True,transport_invoked=False,
@@ -417,7 +776,7 @@ class BrokerRequestJournal:
 
     @staticmethod
     def _identity(value):
-        if not isinstance(value,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',value):
+        if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',value):
             raise ValueError('INVALID_BROKER_CLIENT_ID')
 
     def observe(self, client_order_id, response):
@@ -503,7 +862,7 @@ class BrokerRequestJournal:
     def _lookup_write(self, identity, now, result=None, admission=None, expected_head=None):
         self._identity(identity);lookup.clock(now)
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 if expected_head is not None and previous!=expected_head:raise ValueError('BROKER_LOOKUP_HEAD_CHANGED')
@@ -539,6 +898,7 @@ class BrokerRequestJournal:
         return self._lookup_write(client_order_id,evaluated_at)
 
     def finish_lookup(self, client_order_id, token, *, evaluated_at, status_code=None, transport_error=None, retry_after=None, response=None):
+        _lookup_token(token)
         outcome=lookup.classify(status_code=status_code,transport_error=transport_error,retry_after=retry_after,evaluated_at=evaluated_at)
         return self._lookup_write(client_order_id,evaluated_at,dict(token=token,**outcome,response=response if outcome['outcome']=='FOUND' else None))
 
@@ -572,7 +932,7 @@ class BrokerRequestJournal:
             'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
         fingerprint = capture_file_fingerprints((self.path,),
             (MAX_DATABASE_BYTES,), 'BROKER_JOURNAL_LOCKED_SNAPSHOT_')
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _explicit_transaction(db):
                 def require_unchanged():
                     require_file_identities((self.path,), identity,
@@ -617,6 +977,67 @@ class BrokerRequestJournal:
                         raise
                     db.rollback()
 
+    @contextmanager
+    def locked_request_plan_snapshot(self, client_order_id, *, expected_head):
+        """Hold writer exclusion around one exact retained plan and summary.
+
+        Unlike :meth:`lookup_request`, this composition boundary keeps the
+        journal write lock for the caller's complete comparison and rechecks
+        the pathname identity plus bounded file fingerprint on every read and
+        during context exit.  It grants no submission, lookup, provider, or
+        reconciliation authority.
+        """
+        self._identity(client_order_id)
+        if (type(expected_head) is not str or
+                re.fullmatch(r'[0-9a-f]{64}', expected_head) is None):
+            raise ValueError('BROKER_JOURNAL_LOCKED_PLAN_HEAD_INVALID')
+        self._check_path()
+        if not self.path.exists():
+            raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+        identity = capture_file_identities((self.path,),
+            'BROKER_JOURNAL_LOCKED_PLAN_')
+        fingerprint = capture_file_fingerprints((self.path,),
+            (MAX_DATABASE_BYTES,), 'BROKER_JOURNAL_LOCKED_PLAN_')
+        with self._write_connection() as db:
+            with _explicit_transaction(db):
+                def require_unchanged():
+                    require_file_identities((self.path,), identity,
+                        'BROKER_JOURNAL_LOCKED_PLAN_')
+                    require_file_fingerprints((self.path,),
+                        (MAX_DATABASE_BYTES,), fingerprint,
+                        'BROKER_JOURNAL_LOCKED_PLAN_')
+                def read():
+                    require_unchanged()
+                    try:
+                        requests, _, _, head = self._load(db)
+                    except BaseException:
+                        require_unchanged()
+                        raise
+                    require_unchanged()
+                    if head != expected_head:
+                        raise ValueError(
+                            'BROKER_JOURNAL_LOCKED_PLAN_HEAD_CHANGED')
+                    request = requests.get(client_order_id)
+                    if request is None:
+                        raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
+                    return dict(account_sha256=self.account_digest,
+                        head_sha256=head,
+                        plan=json.loads(contract.canonical(request['plan'])),
+                        request=self._summary(client_order_id, request))
+                read()
+                try:
+                    yield read
+                finally:
+                    try:
+                        require_unchanged()
+                    except BaseException:
+                        try:
+                            db.rollback()
+                        except BaseException:
+                            pass
+                        raise
+                    db.rollback()
+
     def begin_lookup_checked(self, client_order_id, *, admission, expected_head=None):
         """Internal runtime hook: sample permission/time again under write admission."""
         if expected_head is not None and (type(expected_head) is not str or re.fullmatch('[0-9a-f]{64}',expected_head) is None):raise ValueError('BROKER_LOOKUP_HEAD_INVALID')
@@ -624,6 +1045,7 @@ class BrokerRequestJournal:
 
     def finish_lookup_checked(self, client_order_id, token, *, admission, status_code=None,
                               transport_error=None, retry_after=None, response=None):
+        _lookup_token(token)
         def result(now):
             outcome=lookup.classify(status_code=status_code,transport_error=transport_error,
                                     retry_after=retry_after,evaluated_at=now)
@@ -718,12 +1140,12 @@ class BrokerRequestJournal:
         self._identity(client_order_id);lookup.clock(evaluated_at)
         if confirm_interrupted is not True:raise ValueError('BROKER_LOOKUP_INTERRUPTION_CONFIRMATION_REQUIRED')
         for value in (token,expected_head):
-            if not isinstance(value,str) or not re.fullmatch(r'[0-9a-f]{64}',value):
+            if type(value) is not str or not re.fullmatch(r'[0-9a-f]{64}',value):
                 raise ValueError('INVALID_BROKER_LOOKUP_REVIEW_REFERENCE')
         if not self.path.exists():raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
         body=dict(client_order_id=client_order_id,token=token,expected_head=expected_head,
                   evaluated_at=evaluated_at,confirm_interrupted=True)
-        with closing(self._connect(write=True)) as db:
+        with self._write_connection() as db:
             with _explicit_transaction(db):
                 requests,broker_ids,count,previous=self._load(db)
                 if client_order_id not in requests:raise ValueError('BROKER_JOURNAL_REQUEST_UNKNOWN')
@@ -750,6 +1172,14 @@ class BrokerRequestJournal:
                     broker_connected=False,live_orders_enabled=False,ledger_applied=False,
                     limits=dict(requests=MAX_REQUESTS,events=MAX_EVENTS,database_bytes=MAX_DATABASE_BYTES),
                     scope='Caller-supplied paper account and order observations only. Hash-chain replay is local consistency, not broker attestation, encryption, account reconciliation or proof against tail deletion.')
+
+
+# Export immutable in-process references for composition boundaries that must
+# reject class- or module-level reader substitution.  Callers still recheck the
+# public attributes before and after use; these references grant no authority.
+_TRUSTED_MAIN_FINGERPRINT = _main_fingerprint
+_TRUSTED_LOCKED_REQUEST_PLAN_SNAPSHOT = (
+    BrokerRequestJournal.locked_request_plan_snapshot)
 
 
 def submission_admission_fixture():

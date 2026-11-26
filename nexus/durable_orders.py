@@ -12,6 +12,7 @@ import os
 import sqlite3
 import stat
 from contextlib import closing, contextmanager
+from decimal import Decimal
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
 from nexus.order_accounting import (AccountingOrderGateway, MAX_ARCHIVED_INTENTS, MAX_ARCHIVE_BATCHES,
@@ -24,7 +25,36 @@ MAX_RETAINED_COMMANDS = 100000
 MAX_PORTFOLIO_SNAPSHOT_ROWS = MAX_RETAINED_COMMANDS*4+256
 DB_BUSY_TIMEOUT_MS = 10_000
 ROTATION_MARKER = 'nexus-order-rotation.intent'
-METHODS = frozenset(('submit', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
+METHODS = frozenset(('submit', 'submit_reducing', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
+MAX_COMMAND_ARGUMENT_NODES = 1024
+MAX_COMMAND_ARGUMENT_DEPTH = 16
+
+
+def _require_exact_command_value(value, *, depth=0, budget=None):
+    """Reject polymorphic command values before storage or state access.
+
+    Durable commands must apply the same scalar literals that JSON retains for
+    cold replay.  Bounded exact built-ins prevent a caller subclass from
+    presenting one value to warm validation and serializing a different one.
+    """
+    if budget is None:budget=[MAX_COMMAND_ARGUMENT_NODES]
+    budget[0]-=1
+    if budget[0]<0 or depth>MAX_COMMAND_ARGUMENT_DEPTH:
+        raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
+    kind=type(value)
+    if value is None or kind in (bool,int,str):return
+    if kind is float:
+        if math.isfinite(value):return
+        raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
+    if kind in (tuple,list):
+        for item in value:_require_exact_command_value(item,depth=depth+1,budget=budget)
+        return
+    if kind is dict:
+        for key,item in value.items():
+            if type(key) is not str:raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
+            _require_exact_command_value(item,depth=depth+1,budget=budget)
+        return
+    raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
 
 
 def _database_busy(error):
@@ -131,20 +161,32 @@ class DurableOrderGateway:
         path=root_guard.path
         root_guard.require_current()
         self._require_rotation_clear(path)
-        if path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
-        try:observed=path.stat()
+        try:observed=path.lstat()
         except FileNotFoundError:
             yield None
             return
+        if stat.S_ISLNK(observed.st_mode):raise ValueError('ORDER_HISTORY_SYMLINK')
         if not stat.S_ISREG(observed.st_mode):raise ValueError('ORDER_HISTORY_REGULAR_FILE_REQUIRED')
+        if observed.st_nlink!=1:raise ValueError('ORDER_HISTORY_SINGLE_LINK_REQUIRED')
+        def require_current():
+            try:current=path.lstat()
+            except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+            if (stat.S_ISLNK(current.st_mode) or not stat.S_ISREG(current.st_mode) or
+                    current.st_nlink!=1 or not os.path.samestat(observed,current)):
+                raise ValueError('ORDER_HISTORY_CHANGED')
         db=None
         try:
-            db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,
+            try:resolved=path.resolve(strict=True)
+            except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+            require_current()
+            db=sqlite3.connect(resolved.as_uri()+'?mode=ro',uri=True,
                 timeout=DB_BUSY_TIMEOUT_MS/1000)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             db.execute('BEGIN')
             root_guard.require_current()
+            require_current()
             yield db
+            require_current()
             root_guard.require_current()
         except sqlite3.OperationalError as error:
             if _database_busy(error):_busy()
@@ -197,32 +239,48 @@ class DurableOrderGateway:
         if execution_clock is not None and not callable(execution_clock):raise ValueError('INVALID_EXECUTION_CLOCK')
         steps=tuple(steps)
         if not steps or len(steps)>4:raise ValueError('INVALID_ORDER_TRANSACTION_SIZE')
+        prepared=[]
+        for step in steps:
+            if (type(step) is not tuple or len(step)!=3 or type(step[0]) is not str or
+                    type(step[1]) is not tuple or type(step[2]) is not dict):
+                raise ValueError('ORDER_COMMAND_ARGUMENT_INVALID')
+            method,args,kwargs=step
+            if method not in METHODS:raise ValueError('INVALID_COMMAND')
+            budget=[MAX_COMMAND_ARGUMENT_NODES]
+            _require_exact_command_value(args,budget=budget)
+            _require_exact_command_value(kwargs,budget=budget)
+            payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
+            command=json.loads(payload)
+            prepared.append((command['method'],command['args'],command['kwargs'],payload))
         root_guard=_OrderRootIdentity(self._path(),create=True)
         path=root_guard.path
         root_guard.require_current()
-        if any(step[0] in ('submit','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps):
+        cut_guarded=any(step[0] in ('submit','submit_reducing','simulate_event','simulate_priced_fill','simulate_quote_fill') for step in steps)
+        def require_cut_clear():
+            """Revoke stale mutation authority at every transactional seam."""
+            root_guard.require_current()
             try:cut=emergency_intent.requested(path)
             except (ValueError,OSError):cut=True
             if cut:raise ValueError('EMERGENCY_CUT_REQUESTED')
             root_guard.require_current()
-        if len(steps)>1:
-            if [step[0] for step in steps]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
+        if cut_guarded:require_cut_clear()
+        if len(prepared)>1:
+            if [step[0] for step in prepared]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
                 raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')
-            if len({step[1][0] for step in steps})!=1:raise ValueError('QUOTE_ORDER_TRANSACTION_ID_MISMATCH')
-        prepared=[]
-        for method,args,kwargs in steps:
-            if method not in METHODS:raise ValueError('INVALID_COMMAND')
-            payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
-            prepared.append((method,args,kwargs,payload))
+            if len({step[1][0] for step in prepared})!=1:raise ValueError('QUOTE_ORDER_TRANSACTION_ID_MISMATCH')
         with closing(self._connect(path)) as db:
             root_guard.require_current()
             with _transaction(db):
                 portfolio=execution_portfolio.attach(db,path.parent/'paper_portfolio.sqlite3')
                 root_guard.require_current()
                 db.execute('BEGIN IMMEDIATE')
+                # Linearize ordinary mutation against the independent latch
+                # after any SQLite wait. A cut published first must win.
+                if cut_guarded:require_cut_clear()
                 gateway,count=self._restore(db)
                 results=[]
                 for method,args,kwargs,payload in prepared:
+                    if cut_guarded:require_cut_clear()
                     if method=='simulate_quote_fill' and execution_clock is not None:
                         evaluated=execution_clock()
                         try:valid=type(evaluated) in (int,float) and math.isfinite(evaluated)
@@ -231,8 +289,13 @@ class DurableOrderGateway:
                         if len(args)>8:args=(*args[:8],evaluated,*args[9:])
                         else:kwargs={**kwargs,'evaluated_at':evaluated}
                         payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
+                        command=json.loads(payload);args=command['args'];kwargs=command['kwargs']
+                        if cut_guarded:require_cut_clear()
                     result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
                     results.append(result)
+                # A cut published by or during the final mutation must still
+                # win before SQLite can commit the order and linked portfolio.
+                if cut_guarded:require_cut_clear()
                 root_guard.require_current()
         return results
 
@@ -246,9 +309,9 @@ class DurableOrderGateway:
                 execution_portfolio.compare(portfolio,gateway.account)
             if method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
                 raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
-        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items()), sorted((str(k), v) for k,v in gateway.no_fill_events.items())], sort_keys=True))
         result = getattr(gateway, method)(*args, **kwargs)
-        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items())], sort_keys=True))
+        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items()), sorted((str(k), v) for k,v in gateway.no_fill_events.items())], sort_keys=True))
         if before != after:
             if method=='link_portfolio':
                 execution_portfolio.link(portfolio,gateway.account)
@@ -259,10 +322,10 @@ class DurableOrderGateway:
                 order=gateway.intents[oid]
                 if order['side']=='BUY':
                     from nexus.tier_permissions import require_entry
-                    require_entry(order['tier'],order['notional'])
+                    require_entry(order['tier'],Decimal(order['notional']))
                 execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
             # Halt/cancel/reset must remain possible when normal intake is full.
-            if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill','bind_replacement_epoch'):
+            if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','submit_reducing','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill','bind_replacement_epoch'):
                 raise ValueError('ORDER_JOURNAL_CAP_REACHED')
             if (active_count >= MAX_COMMANDS and method!='archive_terminal') or count>=MAX_RETAINED_COMMANDS:
                 raise ValueError('ORDER_JOURNAL_CAP_REACHED')
@@ -287,6 +350,9 @@ class DurableOrderGateway:
 
     def submit(self, *args, **kwargs):
         return self._call('submit', *args, **kwargs)
+
+    def submit_reducing(self, *args, **kwargs):
+        return self._call('submit_reducing', *args, **kwargs)
 
     def simulate_event(self, *args, **kwargs):
         return self._call('simulate_event', *args, **kwargs)
@@ -379,20 +445,55 @@ class DurableOrderGateway:
             journal_sha256=journal_digest.hexdigest()
             combined=hashlib.sha256(b'nexus.order-reconciliation-snapshot.v1\n')
             combined.update(json.dumps(dict(journal_sha256=journal_sha256,
+                halted=gateway.halted,
                 portfolio_linked=gateway.portfolio_linked,
                 portfolio_sha256=portfolio_snapshot['snapshot_sha256'] if portfolio_snapshot else None),
                 sort_keys=True,separators=(',',':')).encode())
             snapshot_sha256=combined.hexdigest()
             if portfolio_snapshot is not None:portfolio.require_current()
         records={**gateway.archived_intents,**gateway.intents}
-        matched={key:dict(order=copy.deepcopy(record),quote_events=[]) for key,record in records.items() if key.startswith(prefix)}
-        for (oid,_),detail in gateway.quote_events.items():
-            if oid in matched:matched[oid]['quote_events'].append(copy.deepcopy(detail))
+        matched={key:dict(order=copy.deepcopy(record),quote_events=[],no_fill_events=[])
+                 for key,record in records.items() if key.startswith(prefix)}
+        for (oid,eid),detail in gateway.quote_events.items():
+            belongs=(detail.get('evidence_session')==session_id or
+                ('evidence_session' not in detail and oid.startswith(prefix)))
+            if not belongs:continue
+            if oid not in matched and oid in records:
+                matched[oid]=dict(order=copy.deepcopy(records[oid]),quote_events=[],no_fill_events=[])
+            if oid in matched:
+                matched[oid]['quote_events'].append(dict(
+                    event_id=eid,**copy.deepcopy(detail)))
+        for (_,_,oid,eid),detail in gateway.no_fill_events.items():
+            if detail.get('evidence_session')!=session_id:continue
+            if oid not in matched and oid in records:
+                matched[oid]=dict(order=copy.deepcopy(records[oid]),quote_events=[],no_fill_events=[])
+            if oid in matched:
+                matched[oid]['no_fill_events'].append(copy.deepcopy(detail))
+        # A durable reducing mandate may cross explicitly started sessions.
+        # Project cumulative public fields to this session's exact slices so
+        # its counters and modeled costs remain independently reviewable.
+        for item in matched.values():
+            order=item['order'];events=item['quote_events']
+            if (order.get('intent_scope')=='POSITION_REDUCING_EXIT' and events and
+                    any('evidence_session' in event for event in events)):
+                order['simulated_filled_notional']=str(sum(
+                    (Decimal(event['quantity'])*Decimal(event['price']) for event in events),Decimal(0)))
+                order['simulated_fee_total']=str(sum(
+                    (Decimal(event['fee']) for event in events),Decimal(0)))
+            events.sort(key=lambda event:(event.get('evidence_cycle',-1),
+                event.get('sequence',-1),event.get('evidence_session','')))
+            item['no_fill_events'].sort(key=lambda event:(event.get('evidence_cycle',-1),
+                event.get('sequence',-1),event.get('event_id','')))
+        selected_terms={key:copy.deepcopy(gateway.order_terms[key])
+            for key in sorted(matched) if key in gateway.order_terms}
         return dict(read_only=True,journal_present=present,commands=count,journal_sha256=journal_sha256,
+                    halted=gateway.halted,
                     portfolio_linked=gateway.portfolio_linked,
                     portfolio_rows=portfolio_snapshot['rows'] if portfolio_snapshot else 0,
                     portfolio_sha256=portfolio_snapshot['snapshot_sha256'] if portfolio_snapshot else None,
-                    snapshot_sha256=snapshot_sha256,orders=list(matched.values()),
+                    snapshot_sha256=snapshot_sha256,
+                    orders=[matched[key] for key in sorted(matched)],
+                    execution_terms=selected_terms,
                     live_orders_enabled=False,
                     note='Local replay-validated order and linked-ledger snapshot only; it grants no provider, account, funds or execution authority.')
 
@@ -407,6 +508,7 @@ class DurableOrderGateway:
                         order=copy.deepcopy(record),execution_terms=copy.deepcopy(gateway.order_terms.get(client_order_id)),
                         executions=[dict(event_id=eid,**copy.deepcopy(detail)) for (oid,eid),detail in gateway.executions.items() if oid==client_order_id],
                         quote_events=[dict(event_id=eid,**copy.deepcopy(detail)) for (oid,eid),detail in gateway.quote_events.items() if oid==client_order_id],
+                        no_fill_events=[copy.deepcopy(detail) for (_,_,oid,_),detail in gateway.no_fill_events.items() if oid==client_order_id],
                         live_orders_enabled=False)
 
     def recovery_report(self):
@@ -422,7 +524,8 @@ class DurableOrderGateway:
                     recovery_diagnostics=dict(self.restore_diagnostics),
                     retention=dict(command_history_deleted=False,checkpoint_limit=2,journal_command_limit=MAX_COMMANDS,retained_history_command_limit=MAX_RETAINED_COMMANDS),
                     capacity=capacity_report(count-gateway.archival_boundary,len(gateway.intents),gateway.halted,MAX_COMMANDS,
-                        retained_commands=count,retained_limit=MAX_RETAINED_COMMANDS),
+                        retained_commands=count,retained_limit=MAX_RETAINED_COMMANDS,
+                        exit_intent_reserve_active=gateway.portfolio_linked),
                     lineage=(copy.deepcopy(gateway.epoch_lineage) if gateway.epoch_lineage is not None else
                              dict(generation=0,epoch_sha256='0'*64,predecessor_archive_sha256=None,
                                   predecessor_epoch_sha256=None)),
@@ -437,6 +540,21 @@ class DurableOrderGateway:
                                   archive_batch_limit=MAX_ARCHIVE_BATCHES,batches=list(gateway.archive_batches.values()),
                                   command_history_deleted=False,physical_compaction=False),
                     note='Missing order history is not evidence of a flat account or absence of a separate portfolio. Reference notionals cannot establish quantities, positions or ownership. Read-only snapshots grant no execution permission.')
+
+
+def emergency_halt_replayed(path,result):
+    """Require an exact warm acknowledgement and a fresh durable replay.
+
+    The caller's gateway result is only an in-process acknowledgement.  A new
+    gateway must independently reopen the journal and reconstruct the halt
+    before any control surface may describe cleanup as confirmed.
+    """
+    if type(result) is not dict or result.get('halted') is not True:return False
+    report=DurableOrderGateway(path).recovery_report()
+    return (type(report) is dict
+        and report.get('journal_present') is True
+        and type(report.get('commands')) is int and report['commands'] >= 1
+        and report.get('halted') is True)
 
 
 gateway = DurableOrderGateway()

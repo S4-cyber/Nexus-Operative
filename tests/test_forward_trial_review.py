@@ -1,6 +1,7 @@
 """Disposable real SQLite chains; declared public labels are never attestation."""
 from contextlib import closing,contextmanager
 from decimal import localcontext
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -9,7 +10,11 @@ import subprocess
 import sys
 
 import pytest
-from nexus import forward_trial_review as trial, forward_evidence as evidence
+from nexus import (forward_trial_review as trial, forward_evidence as evidence,
+    forward_event_evidence as events, forward_trial_reconciliation as reconciliation)
+from nexus.forward_reconciliation_review import (modeled_execution_set_sha256,
+    reconciliation_sha256,review_receipt)
+from nexus import forward_sessions
 from nexus.paper_policy import admit
 from nexus.paper_forward import PaperForwardRunner
 
@@ -22,15 +27,25 @@ def until(seconds):
     return datetime.fromtimestamp(START+seconds,timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
 
-def database(tmp_path,monkeypatch,sessions):
+def database(tmp_path,monkeypatch,sessions,*,admissions=False):
     monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path));runner=PaperForwardRunner();policy=admit('btc_momentum_experiment_v1')
     with closing(runner._db()) as db,db:
         for index,(points,source,state) in enumerate(sessions):
             sid=f'{index+1:016x}';previous=evidence.GENESIS;rows=[]
-            for cycle,(offset,eligible) in enumerate(points,1):
-                payload=evidence.canonical(dict(session=sid,cycle=cycle,evaluated_at=START+offset,
-                    quote=dict(provider='coinbase_exchange_public',product='BTC-USD',bid='100',ask='100.1',last='100',received_at=START+offset,exchange_time=until(offset),read_only=True,orders_allowed=False),quote_eligible=eligible,source_mode=source,
-                    policy_sha256=policy['policy_sha256'],error_type=None))
+            if admissions:evidence.initialize_exchange_admissions(db,sid)
+            for cycle,point in enumerate(points,1):
+                offset,eligible=point[:2];error_type=point[2] if len(point)>2 else None
+                quote=dict(provider='coinbase_exchange_public',product='BTC-USD',
+                    bid='100',ask='100.1',last='100',received_at=START+offset,
+                    exchange_time=until(offset),read_only=True,orders_allowed=False)
+                marker=(evidence.append_exchange_admission(db,sid,cycle,
+                    START+offset,quote,source,policy['policy_sha256'],START+offset)
+                    if admissions else None)
+                data=dict(session=sid,cycle=cycle,evaluated_at=START+offset,
+                    quote=quote,quote_eligible=eligible,source_mode=source,
+                    policy_sha256=policy['policy_sha256'],error_type=error_type)
+                if marker is not None:data['exchange_admission_sha256']=marker
+                payload=evidence.canonical(data)
                 digest=evidence.digest(previous,payload);rows.append((sid,cycle,payload,previous,digest));previous=digest
             first=START+points[0][0] if points else START;last=START+points[-1][0] if points else START
             decision='STOP' if state=='STOPPED' else 'PAUSED' if state=='PAUSED' else 'HOLD'
@@ -38,11 +53,24 @@ def database(tmp_path,monkeypatch,sessions):
             terminal=dict(at=last,decision=decision,reason=reason,session=sid,cycle=len(rows),
                 quote_evidence_sha256=previous if rows else None,policy_id=policy['id'],
                 policy_sha256=policy['policy_sha256'],product=policy['product'],
-                simulation_only=True,clock_sample_valid=True)
+                tier='terrestrial',simulation_only=True,clock_sample_valid=True)
+            records=[dict(at=first,decision='START',reason='EXPERIMENTAL_MOMENTUM_PAPER_POLICY',
+                session=sid,cycle=0,quote_evidence_sha256=None,policy_id=policy['id'],
+                policy_sha256=policy['policy_sha256'],product=policy['product'],tier='terrestrial',
+                simulation_only=True,clock_sample_valid=True)]
+            for cycle,(_,_,_,_,quote_digest) in enumerate(rows,1):
+                records.append(dict(at=START+points[cycle-1][0],decision='HOLD',reason='TEST_OUTCOME',
+                    session=sid,cycle=cycle,quote_evidence_sha256=quote_digest,policy_id=policy['id'],
+                    policy_sha256=policy['policy_sha256'],product=policy['product'],tier='terrestrial',
+                    simulation_only=True,clock_sample_valid=True))
+            records.append(terminal)
+            counts={}
+            for record in records:counts[record['decision']]=counts.get(record['decision'],0)+1
             db.execute('INSERT INTO sessions VALUES (?,?,?,?,?,?,?)',(sid,first,last,state,evidence.canonical(policy),
-                evidence.canonical({decision:1}),evidence.canonical(terminal)))
+                evidence.canonical(counts),evidence.canonical(terminal)))
             db.executemany('INSERT INTO forward_quotes VALUES (?,?,?,?,?)',rows)
             if rows:db.execute('INSERT INTO forward_quote_heads VALUES (?,?,?)',(sid,len(rows),previous))
+            for record in records:events.append(db,record)
     return tmp_path/'paper_forward.sqlite3'
 
 
@@ -77,6 +105,407 @@ def rewrite(path, change, *, policy_change=None):
             if policy is not None:
                 last.update(policy_id=policy['id'],policy_sha256=policy['policy_sha256'],product=policy['product'])
             db.execute('UPDATE sessions SET last_json=? WHERE id=?',(evidence.canonical(last),sid))
+
+
+def reprice_sessions(path,prices):
+    with closing(sqlite3.connect(path)) as db,db:
+        for sid,price in prices.items():
+            previous=evidence.GENESIS;count=0
+            rows=db.execute('SELECT cycle,payload FROM forward_quotes WHERE session=? ORDER BY cycle',(sid,)).fetchall()
+            for cycle,raw in rows:
+                point=json.loads(raw)
+                if type(price) is tuple:
+                    bid,ask,last=price
+                else:
+                    bid=ask=last=price
+                point['quote'].update(bid=str(bid),ask=str(ask),last=str(last))
+                payload=evidence.canonical(point);digest=evidence.digest(previous,payload)
+                db.execute('UPDATE forward_quotes SET payload=?,previous=?,digest=? WHERE session=? AND cycle=?',
+                    (payload,previous,digest,sid,cycle));previous=digest;count+=1
+            db.execute('UPDATE forward_quote_heads SET observations=?,head=? WHERE session=?',(count,previous,sid))
+            last=json.loads(db.execute('SELECT last_json FROM sessions WHERE id=?',(sid,)).fetchone()[0])
+            last.update(cycle=count,quote_evidence_sha256=previous)
+            db.execute('UPDATE sessions SET last_json=? WHERE id=?',(evidence.canonical(last),sid))
+
+
+def repeat_exchange_pairs(path):
+    """Keep local samples fresh while repeating every prior exchange tick."""
+    with closing(sqlite3.connect(path)) as db,db:
+        sessions=[row[0] for row in db.execute(
+            'SELECT id FROM sessions ORDER BY id').fetchall()]
+        for sid in sessions:
+            previous=evidence.GENESIS;count=0;prior_exchange=None
+            rows=db.execute('SELECT cycle,payload FROM forward_quotes '
+                'WHERE session=? ORDER BY cycle',(sid,)).fetchall()
+            for cycle,raw in rows:
+                point=json.loads(raw)
+                current=point['quote']['exchange_time']
+                if cycle%2==0:
+                    point['quote']['exchange_time']=prior_exchange
+                else:
+                    prior_exchange=current
+                payload=evidence.canonical(point);digest=evidence.digest(
+                    previous,payload)
+                db.execute('UPDATE forward_quotes SET payload=?,previous=?,digest=? '
+                    'WHERE session=? AND cycle=?',
+                    (payload,previous,digest,sid,cycle))
+                previous=digest;count+=1
+            db.execute('UPDATE forward_quote_heads SET observations=?,head=? '
+                'WHERE session=?',(count,previous,sid))
+            last=json.loads(db.execute('SELECT last_json FROM sessions '
+                'WHERE id=?',(sid,)).fetchone()[0])
+            last.update(cycle=count,quote_evidence_sha256=previous)
+            db.execute('UPDATE sessions SET last_json=? WHERE id=?',
+                (evidence.canonical(last),sid))
+
+
+def rewrite_first_outcome_decision(path, decision, *, include_fill_digest=True,
+                                   outcome_number=1):
+    """Rewrite one local outcome coherently; this still is not reconciliation."""
+    with closing(sqlite3.connect(path)) as db,db:
+        rows=db.execute('SELECT session,sequence,payload FROM forward_events '
+            'ORDER BY session,sequence').fetchall()
+        previous={};counts={};changed=False;outcomes=0
+        for sid,sequence,raw in rows:
+            data=json.loads(raw);record=data['record']
+            if data['kind']=='OUTCOME':outcomes+=1
+            if not changed and outcomes==outcome_number:
+                record.update(decision=decision,reason='TEST_MODELED_EXECUTION',
+                    order_id='fixture-unreconciled-order',
+                    liquidity='ASSUMED_QUANTITY_NO_DEPTH',strategy_validated=False)
+                if include_fill_digest:record['modeled_fill_sha256']='a'*64
+                else:record.pop('modeled_fill_sha256',None)
+                changed=True
+            payload=events.canonical(data)
+            parent=previous.get(sid,events.GENESIS)
+            digest=events.digest(parent,payload)
+            db.execute('UPDATE forward_events SET payload=?,previous=?,digest=? '
+                'WHERE session=? AND sequence=?',
+                (payload,parent,digest,sid,sequence))
+            previous[sid]=digest
+            session_counts=counts.setdefault(sid,{})
+            session_counts[record['decision']]=session_counts.get(record['decision'],0)+1
+        assert changed
+        for sid,head in previous.items():
+            db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
+                (sum(counts[sid].values()),head,sid))
+            db.execute('UPDATE sessions SET counts_json=? WHERE id=?',
+                (evidence.canonical(counts[sid]),sid))
+
+
+def insert_unquoted_modeled_execution(path, decision):
+    """Insert a self-consistent pre-terminal chain row with no quote binding."""
+    with closing(sqlite3.connect(path)) as db,db:
+        sid=db.execute('SELECT id FROM sessions').fetchone()[0]
+        raw_rows=db.execute('SELECT payload FROM forward_events WHERE session=? '
+            'ORDER BY sequence',(sid,)).fetchall()
+        records=[json.loads(raw)['record'] for raw, in raw_rows]
+        modeled=dict(records[1],quote_evidence_sha256=None,decision=decision,
+            reason='TEST_UNQUOTED_MODELED_EXECUTION',
+            order_id='fixture-unquoted-order',liquidity='ASSUMED_QUANTITY_NO_DEPTH',
+            strategy_validated=False,modeled_fill_sha256='b'*64)
+        records.insert(2,modeled)
+        db.execute('DELETE FROM forward_events WHERE session=?',(sid,))
+        previous=events.GENESIS;counts={};ordinals={}
+        for sequence,record in enumerate(records,1):
+            cycle=record['cycle'];ordinals[cycle]=ordinals.get(cycle,0)+1
+            kind=events.classify(record)
+            payload=events.canonical(dict(kind=kind,record=record))
+            digest=events.digest(previous,payload)
+            db.execute('INSERT INTO forward_events VALUES (?,?,?,?,?,?,?,?)',
+                (sid,sequence,cycle,ordinals[cycle],kind,payload,previous,digest))
+            previous=digest
+            counts[record['decision']]=counts.get(record['decision'],0)+1
+        db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
+            (len(records),previous,sid))
+        db.execute('UPDATE sessions SET counts_json=? WHERE id=?',
+            (evidence.canonical(counts),sid))
+
+
+def insert_scheduler_modeled_execution(path, decision):
+    """Insert a valid scheduler-classified BUY/SELL beside an outcome."""
+    with closing(sqlite3.connect(path)) as db,db:
+        sid=db.execute('SELECT id FROM sessions').fetchone()[0]
+        raw_rows=db.execute('SELECT payload FROM forward_events WHERE session=? '
+            'ORDER BY sequence',(sid,)).fetchall()
+        records=[json.loads(raw)['record'] for raw, in raw_rows]
+        source=next(record for record in records
+            if record['decision'] in ('BUY','SELL'))
+        scheduler=dict(source,decision=decision,reason='SCHEDULER_TEST_RETRY',
+            order_id='fixture-scheduler-order',modeled_fill_sha256='c'*64)
+        terminal=records.pop();records.append(scheduler);records.append(terminal)
+        db.execute('DELETE FROM forward_events WHERE session=?',(sid,))
+        previous=events.GENESIS;counts={};ordinals={}
+        for sequence,record in enumerate(records,1):
+            cycle=record['cycle'];ordinals[cycle]=ordinals.get(cycle,0)+1
+            kind=events.classify(record)
+            payload=events.canonical(dict(kind=kind,record=record))
+            digest=events.digest(previous,payload)
+            db.execute('INSERT INTO forward_events VALUES (?,?,?,?,?,?,?,?)',
+                (sid,sequence,cycle,ordinals[cycle],kind,payload,previous,digest))
+            previous=digest
+            counts[record['decision']]=counts.get(record['decision'],0)+1
+        db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
+            (len(records),previous,sid))
+        db.execute('UPDATE sessions SET counts_json=? WHERE id=?',
+            (evidence.canonical(counts),sid))
+
+
+def move_second_outcome_before_bound_quote(path):
+    with closing(sqlite3.connect(path)) as db,db:
+        sid=db.execute('SELECT id FROM sessions').fetchone()[0]
+        rows=db.execute('SELECT sequence,payload FROM forward_events WHERE session=? '
+            'ORDER BY sequence',(sid,)).fetchall()
+        previous=events.GENESIS;outcomes=0
+        for sequence,raw in rows:
+            data=json.loads(raw)
+            if data['kind']=='OUTCOME':
+                outcomes+=1
+                if outcomes==2:data['record']['at']-=1
+            payload=events.canonical(data);digest=events.digest(previous,payload)
+            db.execute('UPDATE forward_events SET payload=?,previous=?,digest=? '
+                'WHERE session=? AND sequence=?',
+                (payload,previous,digest,sid,sequence))
+            previous=digest
+        assert outcomes>=2
+        db.execute('UPDATE forward_event_heads SET events=?,head=? WHERE session=?',
+            (len(rows),previous,sid))
+
+
+def write_reconciliation_bundle(path,destination):
+    """Create a privacy-safe local fixture equivalent to a stopped review."""
+    with closing(sqlite3.connect(path)) as db:
+        sid,started,updated,state,policy_raw,counts_raw,last_raw=db.execute(
+            'SELECT id,started_at,updated_at,state,policy_json,counts_json,last_json '
+            'FROM sessions').fetchone()
+        policy,counts,last=forward_sessions.parse(started,updated,state,
+            policy_raw,counts_raw,last_raw)
+        quotes=evidence.review(db,sid);event_review=events.review(db,sid)
+    points=event_review['points'];kind_counts={}
+    for point in points:
+        kind_counts[point['kind']]=kind_counts.get(point['kind'],0)+1
+    modeled=sum(point['kind']=='OUTCOME' and
+        point['record']['decision'] in ('BUY','SELL') for point in points)
+    cut=dict(before_status='CLEAR',after_status='CLEAR',requested_before=False,
+        requested_after=False,binding_source='NONE',stable=True,
+        binding_verified=False,record_sha256=None)
+    snapshot=hashlib.sha256(b'fixture-stable-order-snapshot').hexdigest()
+    event_summary=dict(read_only=True,events=len(points),
+        head_sha256=event_review['head_sha256'],
+        lifecycle_events=kind_counts.get('LIFECYCLE',0),
+        outcome_events=kind_counts.get('OUTCOME',0),
+        scheduler_events=kind_counts.get('SCHEDULER',0),
+        quote_outcomes=len(quotes['points']),modeled_order_outcomes=modeled,
+        modeled_no_fill_outcomes=0,event_trace_complete=True,
+        quote_outcome_bijection=True,durable_order_outcomes_reconciled=True,
+        durable_fill_attempts_bound=True,
+        modeled_execution_set_sha256=modeled_execution_set_sha256(points),
+        durable_no_fill_outcomes_reconciled=True,
+        durable_no_fill_attempts_bound=True,cut_evidence_stable=True,
+        cut_binding_verified=False,independent_cut_observed=False,
+        latest_modeled_outcome_sha256='7'*64,integrity_ok=True)
+    event_summary['reconciliation_sha256']=reconciliation_sha256(
+        session=sid,state=state,quote_head_sha256=quotes['head_sha256'],
+        event_head_sha256=event_review['head_sha256'],
+        order_snapshot_sha256=snapshot,final_order_snapshot_sha256=snapshot,
+        cut_evidence=cut,reasons=[],summary=event_summary)
+    order_snapshot=dict(snapshot_sha256=snapshot,halted=False)
+    receipt=review_receipt(session=sid,started_at=started,updated_at=updated,
+        state=state,policy=policy,counts=counts,last=last,
+        quotes=dict(head_sha256=quotes['head_sha256'],
+            observations=quotes['observations']),events=event_summary,
+        initial_order_snapshot=order_snapshot,final_order_snapshot=order_snapshot,
+        cut_evidence=cut,journal_stable=True,portfolio_stable=True,
+        order_snapshot_stable=True,reasons=[])
+    report=dict(read_only=True,session=sid,stored_state=state,
+        durable_event_evidence=event_summary,review_receipt=receipt,
+        order_journal_snapshot=dict(snapshot_sha256=snapshot,halted=False,
+            journal_stable_during_review=True,
+            portfolio_stable_during_review=True,stable_during_review=True),
+        provisional_active_session=False,local_consistency_ok=True,reasons=[],
+        live_orders_enabled=False,release_approved=False)
+    exported=reconciliation.build([report])
+    destination.write_text(evidence.canonical(exported),encoding='utf-8')
+    return exported
+
+
+def test_cross_session_boundary_conflict_is_an_incident(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':100,'0000000000000002':1000})
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']>0
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['uncovered_seconds']=='10'
+    assert result['operational_incidents_present'] is True
+    assert result['declared_coverage_target_met'] is False
+
+
+def test_cross_session_rejection_outside_window_breaks_coverage_without_count_leak(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':100,
+        '0000000000000002':1000,'0000000000000003':100})
+    result=trial.review(path,after=until(6),until=until(10))
+    assert result['recorded_eligibility_disagreements_in_window']==0
+    assert result['revalidated_eligible_observations_in_window']==1
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['uncovered_seconds']=='4'
+
+
+def test_equal_time_conflict_rejects_every_arbitrary_session_winner(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':100,
+        '0000000000000002':1000,'0000000000000003':100})
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==5
+    assert result['revalidated_eligible_observations_in_window']==1
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['uncovered_seconds']=='10'
+
+
+def test_rotating_sessions_cannot_reset_price_jump_guard(tmp_path,monkeypatch):
+    sessions=[];prices={}
+    for index in range(864):
+        start=index*300;points=[(offset,True) for offset in range(start,start+301,10)]
+        sessions.append((points,trial.PUBLIC,'STOPPED'))
+        prices[f'{index+1:016x}']=100 if index%2==0 else 1000
+    path=database(tmp_path,monkeypatch,sessions);reprice_sessions(path,prices)
+    result=run(path,72*3600)
+    assert result['coverage_fraction']=='0.667052'
+    assert result['uncovered_seconds']=='86300'
+    assert result['recorded_eligibility_disagreements_in_window']>0
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+
+
+def test_repeated_exchange_ticks_cannot_form_incident_free_72_hour_trial(
+        tmp_path, monkeypatch):
+    points=[(offset,True) for offset in range(0,72*3600+1,10)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
+    repeat_exchange_pairs(path)
+    result=run(path,72*3600)
+    assert result['recorded_eligibility_disagreements_in_window']==12960
+    assert result['revalidated_eligible_observations_in_window']==12961
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'RECORDED_ELIGIBILITY_FAILS_RETAINED_QUOTE_RECHECK' in result[
+        'review_reasons']
+
+
+def test_cross_session_executable_price_jump_cannot_hide_behind_last(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(0,True),(10,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(15,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':('99.9','100.1','100'),
+        '0000000000000002':('119.9','120.1','100')})
+    result=run(path,15)
+    assert result['recorded_eligibility_disagreements_in_window']==2
+    assert result['revalidated_eligible_observations_in_window']==2
+    assert result['declared_public_covered_seconds']=='10'
+    assert result['uncovered_seconds']=='5'
+    assert result['operational_incidents_present'] is True
+
+
+def test_nearby_cross_session_executable_prices_retain_coverage(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(0,True),(10,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(15,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':('99.9','100.1','100'),
+        '0000000000000002':('109.9','110.1','100')})
+    result=run(path,15)
+    assert result['recorded_eligibility_disagreements_in_window']==0
+    assert result['revalidated_eligible_observations_in_window']==4
+    assert result['declared_public_covered_seconds']=='15'
+    assert result['uncovered_seconds']=='0'
+
+
+def test_duplicate_cross_session_boundary_cannot_anchor_new_coverage(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['revalidated_eligible_observations_in_window']==3
+    assert result['declared_public_covered_seconds']=='5'
+    assert result['uncovered_seconds']=='5'
+    assert result['operational_incidents_present'] is True
+
+
+def test_rejected_cross_session_tick_cannot_be_repriced_and_reused(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(0,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,False)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['revalidated_eligible_observations_in_window']==2
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['uncovered_seconds']=='10'
+    assert result['operational_incidents_present'] is True
+
+
+def test_cross_session_exchange_regression_does_not_advance_reference(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(6,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    with closing(sqlite3.connect(path)) as db,db:
+        sid='0000000000000002';previous=evidence.GENESIS
+        rows=db.execute('SELECT cycle,payload FROM forward_quotes WHERE session=? '
+            'ORDER BY cycle',(sid,)).fetchall()
+        for cycle,raw in rows:
+            point=json.loads(raw)
+            if cycle==1:point['quote']['exchange_time']=until(4)
+            payload=evidence.canonical(point);digest=evidence.digest(previous,payload)
+            db.execute('UPDATE forward_quotes SET payload=?,previous=?,digest=? '
+                'WHERE session=? AND cycle=?',(payload,previous,digest,sid,cycle))
+            previous=digest
+        db.execute('UPDATE forward_quote_heads SET head=? WHERE session=?',
+            (previous,sid))
+        last=json.loads(db.execute('SELECT last_json FROM sessions WHERE id=?',
+            (sid,)).fetchone()[0])
+        last['quote_evidence_sha256']=previous
+        db.execute('UPDATE sessions SET last_json=? WHERE id=?',
+            (evidence.canonical(last),sid))
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['revalidated_eligible_observations_in_window']==3
+    assert result['declared_public_covered_seconds']=='5'
+    assert result['uncovered_seconds']=='5'
+
+
+def test_rotating_sessions_cannot_reuse_boundary_ticks_for_72_hour_trial(
+        tmp_path,monkeypatch):
+    sessions=[]
+    for index in range(864):
+        start=index*300
+        sessions.append(([(offset,True) for offset in
+            range(start,start+301,10)],trial.PUBLIC,'STOPPED'))
+    path=database(tmp_path,monkeypatch,sessions)
+    result=run(path,72*3600)
+    assert result['recorded_eligibility_disagreements_in_window']==863
+    assert result['coverage_fraction']=='0.966705'
+    assert result['uncovered_seconds']=='8630'
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+
+
+def test_equal_cross_session_prices_allow_equivalent_numeric_spelling_but_not_tick_reuse(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED'),
+        ([(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    reprice_sessions(path,{'0000000000000001':'100.0','0000000000000002':'100.00'})
+    result=run(path,10)
+    assert result['recorded_eligibility_disagreements_in_window']==1
+    assert result['declared_public_covered_seconds']=='5'
 
 
 @pytest.mark.parametrize('changes', [
@@ -147,24 +576,130 @@ def test_sparse_endpoints_never_turn_calendar_span_into_covered_uptime(tmp_path,
     assert path.read_bytes()==before
 
 
-def test_even_complete_declared_public_coverage_cannot_accept_market_or_broker_trial(tmp_path,monkeypatch):
+def test_complete_legacy_declared_public_coverage_cannot_pass_trial_gate(
+        tmp_path,monkeypatch):
     points=[(i,True) for i in range(0,72*3600+1,10)]
     path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')]);result=run(path,72*3600)
-    assert result['coverage_fraction']=='1.000000' and result['declared_coverage_target_met']
+    assert result['coverage_fraction']=='1.000000' and not result['declared_coverage_target_met']
     assert result['status']=='REVIEW_REQUIRED' and all(result[k] is False for k in trial.FLAGS)
     assert result['observations_in_window']==25921
-    assert result['incident_free_coverage_target_met'] is True
-    assert result['operational_incidents_present'] is False
+    assert result['exchange_admission_incidents_in_window']==25921
+    assert result['incident_free_coverage_target_met'] is False
+    assert result['operational_incidents_present'] is True
     assert result['over_limit_coverage_gaps']==0
     assert result['over_limit_coverage_gap_seconds']=='0'
+    assert result['event_trace_complete'] is False
+    assert result['legacy_unbound_observations_in_window']==0
+    assert result['quote_outcome_disagreements_in_window']==0
+    assert result['retained_event_records']==result['events_in_window']==25923
+    assert 'LEGACY_EXCHANGE_ADMISSIONS_UNBOUND' in result['review_reasons']
+
+
+def test_legacy_quote_history_is_readable_but_never_event_complete(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    with closing(sqlite3.connect(path)) as db,db:
+        db.execute('DROP TABLE forward_events');db.execute('DROP TABLE forward_event_heads')
+    before=path.read_bytes();result=run(path,10)
+    assert result['declared_public_covered_seconds']=='10'
+    assert result['event_trace_complete'] is False
+    assert result['legacy_unbound_observations_in_window']==3
+    assert result['incident_free_coverage_target_met'] is False
+    assert result['operational_incidents_present'] is True
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
+    assert path.read_bytes()==before
+
+
+def test_crash_tail_exchange_admission_is_incident_and_zero_coverage(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([],trial.PUBLIC,'RUNNING')])
+    policy=admit('btc_momentum_experiment_v1');sid='0000000000000001'
+    quote=dict(provider='coinbase_exchange_public',product='BTC-USD',
+        bid='100',ask='100.1',last='100',received_at=START,
+        exchange_time=until(0),read_only=True,orders_allowed=False)
+    with closing(sqlite3.connect(path)) as db,db:
+        evidence.initialize_exchange_admissions(db,sid)
+        evidence.append_exchange_admission(db,sid,1,START,quote,
+            trial.PUBLIC,policy['policy_sha256'],START)
+    result=run(path,60)
+    assert result['retained_exchange_admissions']==1
+    assert result['exchange_admissions_in_window']==1
+    assert result['exchange_admission_incidents_in_window']==1
+    assert result['declared_public_covered_seconds']=='0'
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'EXCHANGE_ADMISSION_OUTCOME_MISSING' in result['review_reasons']
+
+
+def test_missing_quote_outcome_is_reported_without_repair(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
+    with closing(sqlite3.connect(path)) as db,db:
+        db.execute("DELETE FROM forward_events WHERE sequence=3")
+    before=path.read_bytes();result=run(path,10)
+    assert result['event_trace_complete'] is False
+    assert result['quote_outcome_disagreements_in_window']>=1
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
+    assert path.read_bytes()==before
+
+@pytest.mark.parametrize(('source,reason'),[
+    (trial.INJECTED,'INJECTED_OBSERVATIONS_IN_WINDOW'),
+    ('UNKNOWN','UNKNOWN_SOURCE_LABELS_IN_WINDOW'),
+])
+def test_nonpublic_observation_is_classified_as_operational_incident(
+        tmp_path,monkeypatch,source,reason):
+    points=[(i,True) for i in range(0,72*3600+1,10)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED'),
+        ([(100,True)],source,'STOPPED')])
+    result=run(path,72*3600)
+    assert result['coverage_fraction']=='1.000000'
+    assert result['operational_incidents_present'] is True
+    assert result['declared_coverage_target_met'] is False
+    assert result['incident_free_coverage_target_met'] is False
+    assert reason in result['review_reasons']
+
+
+def test_empty_running_session_overlapping_window_blocks_incident_free_target(tmp_path,monkeypatch):
+    points=[(i,True) for i in range(0,72*3600+1,10)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED'),([],trial.PUBLIC,'RUNNING')])
+    result=run(path,72*3600)
+    assert result['coverage_fraction']=='1.000000'
+    assert result['sessions_in_window']==2 and result['running_sessions']==1
+    assert result['nonstopped_or_cleanup_review_sessions']==1
+    assert result['operational_incidents_present'] is True
+    assert result['declared_coverage_target_met'] is False
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS' in result['review_reasons']
+
+
+def test_running_session_started_before_window_remains_open_and_blocks_target(tmp_path,monkeypatch):
+    points=[(i,True) for i in range(0,72*3600+1,10)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED'),([],trial.PUBLIC,'RUNNING')])
+    with closing(sqlite3.connect(path)) as db,db:
+        sid='0000000000000002';at=START-20
+        last=json.loads(db.execute('SELECT last_json FROM sessions WHERE id=?',(sid,)).fetchone()[0])
+        last['at']=at
+        db.execute('UPDATE sessions SET started_at=?,updated_at=?,last_json=? WHERE id=?',
+            (at,at,evidence.canonical(last),sid))
+    result=run(path,72*3600)
+    assert result['coverage_fraction']=='1.000000'
+    assert result['sessions_in_window']==2 and result['running_sessions']==1
+    assert result['nonstopped_or_cleanup_review_sessions']==1
+    assert result['operational_incidents_present'] is True
+    assert result['declared_coverage_target_met'] is False
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'NONSTOPPED_OR_CLEANUP_REVIEW_SESSIONS' in result['review_reasons']
 
 
 def test_high_aggregate_coverage_does_not_hide_over_limit_feed_gap(tmp_path,monkeypatch):
-    points=[(i,True) for i in range(0,72*3600+1,5) if i not in (105,110)]
-    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
-    result=run(path,72*3600)
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5) if i not in (105,110)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    result=run(path,600)
     assert result['declared_coverage_target_met'] is True
-    assert result['coverage_fraction']=='0.999942'
+    assert result['exchange_admission_incidents_in_window']==0
+    assert 'LEGACY_EXCHANGE_ADMISSIONS_UNBOUND' not in result['review_reasons']
+    assert result['coverage_fraction']=='0.975000'
     assert result['over_limit_coverage_gaps']==1
     assert result['over_limit_coverage_gap_seconds']=='15'
     assert result['operational_incidents_present'] is True
@@ -172,12 +707,235 @@ def test_high_aggregate_coverage_does_not_hide_over_limit_feed_gap(tmp_path,monk
     assert 'COVERAGE_GAP_EXCEEDS_MAXIMUM' in result['review_reasons']
 
 
-def test_high_aggregate_coverage_does_not_hide_retained_rejection(tmp_path,monkeypatch):
-    points=[(i,i!=100) for i in range(0,72*3600+1,5)]
-    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
-    result=run(path,72*3600)
+@pytest.mark.parametrize('decision',['BUY','SELL'])
+def test_modeled_execution_without_durable_reconciliation_blocks_incident_free_coverage(
+        tmp_path,monkeypatch,decision):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,decision)
+    result=run(path,600)
     assert result['declared_coverage_target_met'] is True
-    assert result['coverage_fraction']=='0.999961'
+    assert result['modeled_execution_events_in_window']==1
+    assert result['bundle_bound_modeled_execution_events_in_window']==0
+    assert result['unreconciled_modeled_execution_events_in_window']==1
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' in result['review_reasons']
+    assert all(result[key] is False for key in trial.FLAGS)
+
+
+@pytest.mark.parametrize('decision',['BUY','SELL'])
+def test_exact_detached_bundle_binds_local_modeled_execution_without_authority(
+        tmp_path,monkeypatch,decision):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,decision)
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    result=trial.review(path,after=AFTER,until=until(600),
+        reconciliation_bundle=bundle_path)
+    assert result['modeled_execution_events_in_window']==1
+    assert result['bundle_bound_modeled_execution_events_in_window']==1
+    assert result['unreconciled_modeled_execution_events_in_window']==0
+    assert result['operational_incidents_present'] is False
+    assert result['incident_free_coverage_target_met'] is True
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' not in result['review_reasons']
+    assert len(result['reconciliation_bundle_sha256'])==64
+    assert all(result[key] is False for key in trial.FLAGS)
+
+
+@pytest.mark.parametrize('kind',['forged_receipt','missing','extra'])
+def test_supplied_incomplete_forged_or_extra_bundle_fails_closed(
+        tmp_path,monkeypatch,kind):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    exported=write_reconciliation_bundle(path,bundle_path)
+    if kind=='forged_receipt':
+        exported['sessions'][0]['review_receipt']['receipt_sha256']='0'*64
+    elif kind=='missing':exported['sessions']=[]
+    else:
+        extra=json.loads(json.dumps(exported['sessions'][0]))
+        extra['session']='0000000000000002';exported['sessions'].append(extra)
+    bundle_path.write_text(evidence.canonical(exported),encoding='utf-8')
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),
+            reconciliation_bundle=bundle_path)
+
+
+def test_bundle_path_alias_and_mutation_during_review_fail_closed(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),reconciliation_bundle=path)
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path);raw=bundle_path.read_bytes()
+    original_snapshot=trial._snapshot
+    @contextmanager
+    def mutate_after_snapshot(bound,stable_source):
+        with original_snapshot(bound,stable_source) as db:yield db
+        bundle_path.write_bytes(raw)
+    monkeypatch.setattr(trial,'_snapshot',mutate_after_snapshot)
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),
+            reconciliation_bundle=bundle_path)
+
+
+@pytest.mark.parametrize('modeled',[False,True])
+def test_explicit_null_reconciliation_bundle_is_never_omission(
+        tmp_path,monkeypatch,modeled):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    if modeled:rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'null-reconciliation.json';bundle_path.write_bytes(b'null')
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),
+            reconciliation_bundle=bundle_path)
+
+
+def test_reconciliation_bundle_leaf_symlink_is_rejected(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    link=tmp_path/'trial-reconciliation-link.json'
+    try:link.symlink_to(bundle_path)
+    except OSError:pytest.skip('symlink creation unavailable')
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),reconciliation_bundle=link)
+
+
+def test_parsed_bundle_bytes_must_match_initial_fingerprint(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    bundle_path=tmp_path/'trial-reconciliation.json';bundle_path.write_bytes(b'{"x":0}')
+    replacement=b'{"x":1}'
+    monkeypatch.setattr(trial,'_bundle_bytes',lambda _path:replacement)
+    monkeypatch.setattr(trial.forward_trial_reconciliation,'loads',lambda _raw:{})
+    monkeypatch.setattr(trial,'_review_bound',lambda *args,**kwargs:{'accepted':True})
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),
+            reconciliation_bundle=bundle_path)
+
+
+def test_legacy_modeled_event_without_fill_digest_stays_unbound_when_bundle_omitted(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY',include_fill_digest=False)
+    result=trial.review(path,after=AFTER,until=until(5))
+    assert result['modeled_execution_events_in_window']==1
+    assert result['bundle_bound_modeled_execution_events_in_window']==0
+    assert result['unreconciled_modeled_execution_events_in_window']==1
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' in result['review_reasons']
+    assert all(result[key] is False for key in trial.FLAGS)
+
+
+def test_supplied_bundle_cannot_clear_legacy_missing_fill_digest(tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    rewrite_first_outcome_decision(path,'BUY',include_fill_digest=False)
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=AFTER,until=until(5),
+            reconciliation_bundle=bundle_path)
+
+
+def test_supplied_bundle_checks_missing_fill_outside_contributing_window(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    rewrite_first_outcome_decision(path,'SELL',outcome_number=2)
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    rewrite_first_outcome_decision(path,'BUY',include_fill_digest=False)
+    with pytest.raises(ValueError,match=r'^FORWARD_TRIAL_REVIEW_FAILED$'):
+        trial.review(path,after=until(1),until=until(5),
+            reconciliation_bundle=bundle_path)
+
+
+def test_scheduler_buy_is_never_credited_by_outcome_execution_set(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True),(5,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    insert_scheduler_modeled_execution(path,'SELL')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    result=trial.review(path,after=AFTER,until=until(5),
+        reconciliation_bundle=bundle_path)
+    assert result['modeled_execution_events_in_window']==2
+    assert result['bundle_bound_modeled_execution_events_in_window']==1
+    assert result['unreconciled_modeled_execution_events_in_window']==1
+    assert result['event_incident_records_in_window']>=1
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' in result['review_reasons']
+    assert all(result[key] is False for key in trial.FLAGS)
+
+
+def test_hold_only_coverage_has_no_modeled_execution_reconciliation_blocker(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    result=run(path,600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['modeled_execution_events_in_window']==0
+    assert result['operational_incidents_present'] is False
+    assert result['incident_free_coverage_target_met'] is True
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' not in result['review_reasons']
+
+
+@pytest.mark.parametrize('decision',['BUY','SELL'])
+def test_unquoted_modeled_execution_cannot_bypass_reconciliation_fence(
+        tmp_path,monkeypatch,decision):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    insert_unquoted_modeled_execution(path,decision)
+    result=run(path,600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['event_trace_complete'] is False
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
+
+
+def test_outcome_before_bound_quote_is_trace_incomplete(tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    move_second_outcome_before_bound_quote(path)
+    result=run(path,600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['quote_outcome_disagreements_in_window']==1
+    assert result['event_trace_complete'] is False
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
+
+
+def test_high_aggregate_coverage_does_not_hide_retained_rejection(tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,i!=100) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    result=run(path,600)
+    assert result['declared_coverage_target_met'] is True
+    assert result['coverage_fraction']=='0.983333'
     assert result['rejected_observations_in_window']==1
     assert result['quote_error_observations']==0
     assert result['over_limit_coverage_gaps']==0
@@ -187,10 +945,12 @@ def test_high_aggregate_coverage_does_not_hide_retained_rejection(tmp_path,monke
 
 
 def test_coverage_target_does_not_hide_retained_quote_incidents(tmp_path,monkeypatch):
-    points=[(i,True) for i in range(0,72*3600+1,5)]
-    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
-    rewrite(path,lambda p:p.update(error_type='TimeoutError',quote_eligible=False))
-    result=run(path,72*3600)
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,i!=5,'TimeoutError' if i==5 else None)
+        for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    result=run(path,600)
     assert result['declared_coverage_target_met'] is True
     assert result['incident_free_coverage_target_met'] is False
     assert result['operational_incidents_present'] is True
@@ -200,12 +960,14 @@ def test_coverage_target_does_not_hide_retained_quote_incidents(tmp_path,monkeyp
 
 
 def test_coverage_target_does_not_hide_nonmanual_termination(tmp_path,monkeypatch):
-    points=[(i,True) for i in range(0,72*3600+1,5)]
-    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')])
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',600)
+    points=[(i,True) for i in range(0,601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
     with closing(sqlite3.connect(path)) as db,db:
         last=json.loads(db.execute('SELECT last_json FROM sessions').fetchone()[0])
         last['reason']='EMERGENCY_STOP';db.execute('UPDATE sessions SET last_json=?',(evidence.canonical(last),))
-    result=run(path,72*3600)
+    result=run(path,600)
     assert result['declared_coverage_target_met'] is True
     assert result['incident_free_coverage_target_met'] is False
     assert result['other_stopped_sessions']==1 and result['clean_manual_stop_sessions']==0
@@ -216,8 +978,8 @@ def test_overlap_is_unioned_once_and_session_boundaries_never_bridged(tmp_path,m
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED'),
         ([(5,True),(10,True),(15,True)],trial.PUBLIC,'STOPPED'), ([(20,True),(25,True)],trial.PUBLIC,'STOPPED')])
     result=run(path,30)
-    assert result['declared_public_covered_seconds']=='20' and result['uncovered_seconds']=='10'
-    assert result['uncovered_intervals']==2 and result['longest_uncovered_seconds']=='5'
+    assert result['declared_public_covered_seconds']=='15' and result['uncovered_seconds']=='15'
+    assert result['uncovered_intervals']==2 and result['longest_uncovered_seconds']=='10'
     assert result['over_limit_coverage_gaps']==0 and result['over_limit_coverage_gap_seconds']=='0'
 
 

@@ -23,8 +23,9 @@ from nexus.alpaca_activity_sse_transport import ActivitySSETransportError
 from nexus.alpaca_paper_contract import canonical, sha
 from nexus.sqlite_journal_guard import (
     capture_file_fingerprints, capture_file_identities, check_existing,
-    check_path_set,
-    require_file_fingerprints, require_file_identities)
+    check_path_set, committed_main_fingerprint,
+    require_file_fingerprints, require_file_identities,
+    require_main_connection, sync_committed_main)
 
 
 SCHEMA = 'nexus.private-alpaca-activity-sse-reconnect-budget.v1'
@@ -293,14 +294,21 @@ def _validated_budget_view(reconnect_budget, value, code, *,
     try:
         keys = BUDGET_VIEW_KEYS | ({'duplicate_result'}
             if result_acknowledgement else set())
-        if type(value) is not dict or set(value) != keys:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != keys):
             raise TypeError
-        if (value['mode'] !=
+        if (type(value['mode']) is not str or value['mode'] !=
                 'PRIVATE_ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET' or
+                type(value['status']) is not str or
                 value['status'] != 'REVIEW_REQUIRED' or
-                value['account_sha256'] != reconnect_budget.account_sha256 or
+                _digest(value['account_sha256'], code) !=
+                    reconnect_budget.account_sha256 or
+                type(value['max_attempts']) is not int or
                 value['max_attempts'] != MAX_ATTEMPTS or
                 type(value['backoff_seconds']) is not tuple or
+                any(type(item) is not int
+                    for item in value['backoff_seconds']) or
                 value['backoff_seconds'] != BACKOFF_SECONDS or
                 value['automatic_retry'] is not False or
                 value['automatic_sleep'] is not False or
@@ -324,7 +332,9 @@ def _validated_budget_view(reconnect_budget, value, code, *,
             if type(value[field]) is not bool:
                 raise TypeError
         for field in ('last_outcome', 'last_requested_outcome'):
-            if value[field] is not None and value[field] not in OUTCOMES:
+            if (value[field] is not None and
+                    (type(value[field]) is not str or
+                        value[field] not in OUTCOMES)):
                 raise ValueError
         for field in ('last_detail_code', 'last_requested_detail_code'):
             if value[field] is not None and type(value[field]) is not str:
@@ -336,7 +346,8 @@ def _validated_budget_view(reconnect_budget, value, code, *,
                     not 0 <= delay <= MAX_PROVIDER_RETRY_AFTER):
                 raise TypeError
         reason = value['last_reconnect_reason']
-        if reason is not None and reason not in REASONS:
+        if (reason is not None and
+                (type(reason) is not str or reason not in REASONS)):
             raise ValueError
         if (result_acknowledgement and
                 type(value['duplicate_result']) is not bool):
@@ -365,7 +376,9 @@ def _validated_checkpoint_binding(cursor_store, value, code):
     custom equality therefore cannot stand in for a replayed journal view.
     """
     try:
-        if type(value) is not dict or set(value) != CHECKPOINT_BINDING_KEYS:
+        if (type(value) is not dict or
+                any(type(key) is not str for key in value) or
+                set(value) != CHECKPOINT_BINDING_KEYS):
             raise TypeError
         _digest(value['head_sha256'])
         _digest(value['expected_head_sha256'])
@@ -393,10 +406,12 @@ def _validated_checkpoint_binding(cursor_store, value, code):
             _digest(reservation)
         elif reservation is not None:
             raise ValueError
-        if (value['mode'] !=
+        if (type(value['mode']) is not str or value['mode'] !=
                     'PRIVATE_ALPACA_ACTIVITY_SSE_CURSOR_BINDING' or
+                type(value['status']) is not str or
                 value['status'] != 'REVIEW_REQUIRED' or
-                value['account_sha256'] != cursor_store.account_sha256 or
+                _digest(value['account_sha256'], code) !=
+                    cursor_store.account_sha256 or
                 value['read_only'] is not True or
                 any(value[flag] is not False
                     for flag in CHECKPOINT_BINDING_FALSE)):
@@ -435,9 +450,15 @@ def _checkpoint_binding_for_attempt(cursor_store, result, *, token,
     authorize closing the reconnect budget.
     """
     try:
-        if (type(result) is not dict or set(result) != CHECKPOINT_ACK_KEYS or
+        if (type(result) is not dict or
+                any(type(key) is not str for key in result) or
+                set(result) != CHECKPOINT_ACK_KEYS or
                 type(expected_actual_provider_access) is not bool):
             raise TypeError
+        for field in ('mode', 'status', 'policy', 'source', 'limitations'):
+            if type(result[field]) is not str:
+                raise TypeError
+        _digest(result['account_sha256'])
         _digest(result['transport_input_sha256'])
         _digest(result['reconnect_input_sha256'])
         acknowledged_head = _digest(result['checkpoint_head_sha256'])
@@ -1004,6 +1025,10 @@ class ActivitySSEReconnectBudget:
 
     def _connect(self, write=False):
         self._check()
+        try:
+            bound_path = self.path.resolve()
+        except (OSError, RuntimeError, TypeError):
+            _fail('CONNECTION_BINDING_CHANGED')
         new = False
         if write and not self.path.exists():
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -1015,10 +1040,12 @@ class ActivitySSEReconnectBudget:
             except FileExistsError:
                 pass
             self._check()
-        db = sqlite3.connect(self.path.resolve().as_uri() +
+        db = sqlite3.connect(bound_path.as_uri() +
             ('?mode=rw' if write else '?mode=ro'), uri=True,
             timeout=DB_BUSY_TIMEOUT_MS / 1000)
         try:
+            require_main_connection(db, bound_path,
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             if write:
                 db.execute('PRAGMA journal_mode=DELETE')
@@ -1032,7 +1059,7 @@ class ActivitySSEReconnectBudget:
                         account_sha256=self.account_sha256), ZERO)
             else:
                 db.execute('BEGIN')
-            return db, new
+            return db, new, bound_path
         except sqlite3.OperationalError as error:
             db.close()
             if _database_busy(error):
@@ -1041,6 +1068,51 @@ class ActivitySSEReconnectBudget:
         except BaseException:
             db.close()
             raise
+
+    @contextmanager
+    def _write_connection(self):
+        """Acknowledge only an exact committed and explicitly flushed main."""
+        db, new, bound_path = self._connect(write=True)
+        try:
+            main_identity = capture_file_identities((bound_path,),
+                'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')[0]
+        except ValueError as error:
+            db.close()
+            raise ActivitySSEReconnectBudgetError(str(error)) from None
+        try:
+            yield db, new
+        except BaseException:
+            db.close()
+            raise
+        else:
+            acknowledgement_error = None
+            committed_fingerprint = None
+            uncommitted = db.in_transaction
+            try:
+                require_main_connection(db, bound_path,
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+                if not uncommitted:
+                    committed_fingerprint = committed_main_fingerprint(db,
+                        bound_path, MAX_DATABASE_BYTES,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
+            except BaseException as error:
+                acknowledgement_error = error
+            try:
+                db.close()
+            except BaseException as error:
+                if acknowledgement_error is None:
+                    acknowledgement_error = error
+            try:
+                if acknowledgement_error is not None:
+                    raise acknowledgement_error
+                if committed_fingerprint is not None:
+                    sync_committed_main(bound_path, main_identity,
+                        committed_fingerprint, MAX_DATABASE_BYTES,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_', new=new)
+                if uncommitted:
+                    _fail('UNCOMMITTED_TRANSACTION')
+            except ValueError as error:
+                raise ActivitySSEReconnectBudgetError(str(error)) from None
 
     @staticmethod
     def _insert(db, seq, body, previous):
@@ -1342,7 +1414,8 @@ class ActivitySSEReconnectBudget:
 
         if confirm_reconnect_attempt is not True:
             _fail('CONFIRMATION_REQUIRED')
-        if reconnect_reason not in REASONS:
+        if (type(reconnect_reason) is not str or
+                reconnect_reason not in REASONS):
             _fail('RECONNECT_REASON_INVALID')
         if not callable(emergency_stop_check):
             _fail('EMERGENCY_STOP_CHECK_INVALID')
@@ -1393,8 +1466,7 @@ class ActivitySSEReconnectBudget:
                     'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_')
             except ValueError as error:
                 raise ActivitySSEReconnectBudgetError(str(error)) from None
-            db, _ = self._connect(write=True)
-            with closing(db):
+            with self._write_connection() as (db, _):
                 with _transaction(db):
                     state = self._load(db)
                     if (state['pending_token'] is None or
@@ -1473,8 +1545,7 @@ class ActivitySSEReconnectBudget:
             expected_budget_head_sha256=expected,
             reconnect_reason=reconnect_reason,
             confirm_reconnect_attempt=True)
-        db, new = self._connect(write=True)
-        with closing(db):
+        with self._write_connection() as (db, new):
             with _transaction(db):
                 state = self._load(db)
                 comparable = ZERO if new and state['attempts'] == 0 else state['head_sha256']
@@ -1669,11 +1740,18 @@ class ActivitySSEReconnectBudget:
                 except ValueError as error:
                     raise ActivitySSEReconnectBudgetError(
                         str(error)) from None
+                try:
+                    sync_committed_main(budget_binding[0],
+                        initial_identity[0], initial_fingerprint[0],
+                        MAX_DATABASE_BYTES,
+                        'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_', new=False)
+                except ValueError as error:
+                    raise ActivitySSEReconnectBudgetError(
+                        str(error)) from None
                 require_budget_binding()
                 return result
             _fail('TOKEN_CHANGED')
-        db, _ = self._connect(write=True)
-        with closing(db):
+        with self._write_connection() as (db, _):
             with _transaction(db):
                 state = self._load(db)
                 if state['pending_token'] != token:
@@ -1950,8 +2028,7 @@ class ActivitySSEReconnectBudget:
         body = dict(kind='EMERGENCY_STOP_CLOSE', policy=POLICY,
             account_sha256=self.account_sha256, evaluated_at=now,
             confirm_emergency_stop_close=True)
-        db, _ = self._connect(write=True)
-        with closing(db):
+        with self._write_connection() as (db, _):
             with _transaction(db):
                 state = self._load(db)
                 if state['head_sha256'] != expected:
@@ -2000,6 +2077,9 @@ def collect_and_checkpoint_due(api_key, api_secret, *, expected_account_id,
         _fail('READ_AUTHORIZATION_REQUIRED')
     if confirm_cursor_checkpoint is not True:
         _fail('CHECKPOINT_AUTHORIZATION_REQUIRED')
+    if (type(reconnect_reason) is not str or
+            reconnect_reason not in REASONS):
+        _fail('RECONNECT_REASON_INVALID')
     if reconnect_budget.account_sha256 != cursor_store.account_sha256:
         _fail('ACCOUNT_DISAGREEMENT')
     if not callable(permission_check):
@@ -2791,6 +2871,7 @@ def fixture_report():
     import io
     import tempfile
     from urllib.error import HTTPError
+    from nexus import sqlite_journal_guard as durability
     from nexus.alpaca_activity_sse_cursor_store import ZERO
     from nexus.alpaca_activity_sse_review import _event
 
@@ -3120,6 +3201,23 @@ def fixture_report():
         cold_budget = ActivitySSEReconnectBudget(
             budget.path, account).inspect()
         cold_cursor = ActivitySSECursorStore(cursor.path, account).inspect()
+        class TypeConfusedText(str):
+            pass
+        type_confused_budget_code = None
+        try:
+            _validated_budget_view(budget, {**cold_budget,
+                'mode': TypeConfusedText(cold_budget['mode'])},
+                'FIXTURE_TYPE_CONFUSED_BUDGET')
+        except ActivitySSEReconnectBudgetError as error:
+            type_confused_budget_code = str(error)
+        cold_binding = cursor.latest_checkpoint_binding()
+        type_confused_binding_code = None
+        try:
+            _validated_checkpoint_binding(cursor, {**cold_binding,
+                'status': TypeConfusedText(cold_binding['status'])},
+                'FIXTURE_TYPE_CONFUSED_CHECKPOINT_BINDING')
+        except ActivitySSEReconnectBudgetError as error:
+            type_confused_binding_code = str(error)
         settled_success_cursor = ActivitySSECursorStore(
             root / 'settled-success-cursor.sqlite3', account)
         settled_success_budget = ActivitySSEReconnectBudget(
@@ -3535,6 +3633,66 @@ def fixture_report():
                 evaluated_at=8001, confirm_outcome_uncertain=True,
                 confirm_no_retry=True)
         uncertain_state = uncertain_budget.inspect()
+        durability_budget = ActivitySSEReconnectBudget(
+            root / 'durability-budget.sqlite3', account)
+        original_fsync = durability.os.fsync
+        flush_failed = False
+        def fail_exact_main(descriptor):
+            nonlocal flush_failed
+            if durability_budget.path.exists():
+                opened = os.fstat(descriptor)
+                observed = durability_budget.path.stat()
+                if ((opened.st_dev, opened.st_ino) ==
+                        (observed.st_dev, observed.st_ino)):
+                    flush_failed = True
+                    raise OSError('injected private reconnect flush failure')
+            return original_fsync(descriptor)
+        durability.os.fsync = fail_exact_main
+        durability_code = None
+        try:
+            durability_budget.begin(evaluated_at=9000,
+                expected_cursor_head=ZERO,
+                reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+                emergency_stop_check=lambda: False,
+                confirm_reconnect_attempt=True)
+        except ActivitySSEReconnectBudgetError as error:
+            durability_code = str(error)
+        finally:
+            durability.os.fsync = original_fsync
+        durability_retained = durability_budget.inspect()
+        durability_replay = durability_budget.begin(evaluated_at=9000,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
+            confirm_reconnect_attempt=True)
+        signal_budget = ActivitySSEReconnectBudget(
+            root / 'signal-budget.sqlite3', account)
+        def interrupt_exact_main(descriptor):
+            if signal_budget.path.exists():
+                opened = os.fstat(descriptor)
+                observed = signal_budget.path.stat()
+                if ((opened.st_dev, opened.st_ino) ==
+                        (observed.st_dev, observed.st_ino)):
+                    raise KeyboardInterrupt
+            return original_fsync(descriptor)
+        durability.os.fsync = interrupt_exact_main
+        signal_observed = False
+        try:
+            signal_budget.begin(evaluated_at=9100,
+                expected_cursor_head=ZERO,
+                reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+                emergency_stop_check=lambda: False,
+                confirm_reconnect_attempt=True)
+        except KeyboardInterrupt:
+            signal_observed = True
+        finally:
+            durability.os.fsync = original_fsync
+        signal_retained = signal_budget.inspect()
+        signal_replay = signal_budget.begin(evaluated_at=9100,
+            expected_cursor_head=ZERO,
+            reconnect_reason='CONNECTION_DROPPED', expected_head=ZERO,
+            emergency_stop_check=lambda: False,
+            confirm_reconnect_attempt=True)
         encoded = json.dumps(
             [result, cold_budget, settled_failure_state, recovered,
                 recovered_replay, stopped,
@@ -3566,6 +3724,22 @@ def fixture_report():
                 replayed_timeout['attempts'] == 1 and
                 replayed_timeout['last_outcome'] == 'RETRY_REQUIRED' and
                 len(first.requests) == 1,
+            reservation_commit_durability_replays_exactly=
+                flush_failed and durability_code ==
+                    'ALPACA_ACTIVITY_SSE_RECONNECT_BUDGET_'
+                    'COMMIT_DURABILITY_UNCERTAIN' and
+                durability_retained['pending_token'] ==
+                    durability_retained['head_sha256'] and
+                durability_replay['duplicate_reservation'] and
+                not durability_replay['provider_request_authorized'] and
+                durability_replay['token'] ==
+                    durability_retained['pending_token'],
+            commit_sync_preserves_process_control=signal_observed and
+                signal_retained['pending_token'] ==
+                    signal_retained['head_sha256'] and
+                signal_replay['duplicate_reservation'] and
+                not signal_replay['provider_request_authorized'] and
+                signal_replay['token'] == signal_retained['pending_token'],
             emergency_stop_blocks_before_reconnect_storage=
                 blocked_code is not None and
                 blocked_code.endswith('EMERGENCY_STOP_ACTIVE') and
@@ -3637,6 +3811,13 @@ def fixture_report():
                 cold_budget['completed'] and cold_cursor['initialized'] and
                 cold_budget['checkpoint_head_sha256'] ==
                     cold_cursor['head_sha256'],
+            type_confused_replays_rejected=
+                type_confused_budget_code is not None and
+                type_confused_budget_code.endswith(
+                    'FIXTURE_TYPE_CONFUSED_BUDGET') and
+                type_confused_binding_code is not None and
+                type_confused_binding_code.endswith(
+                    'FIXTURE_TYPE_CONFUSED_CHECKPOINT_BINDING'),
             success_exception_rechecks_settled_files=
                 settled_success_code is not None and
                 settled_success_code.endswith('FILE_SET_CHANGED') and

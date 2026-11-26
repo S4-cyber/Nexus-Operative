@@ -21,7 +21,10 @@ def cycle(g,index):
     now=1000+index*30
     for side in ('BUY','SELL'):
         oid=side+'_'+str(index)
-        g.submit(oid,'BTC-USD',side,50,tier='terrestrial')
+        if side=='SELL':
+            quantity=g.recovery_report()['execution_account']['account']['positions']['BTC-USD']['quantity']
+            g.submit_reducing(oid,'BTC-USD',50,quantity,quantity,tier='terrestrial')
+        else:g.submit(oid,'BTC-USD',side,50,tier='terrestrial')
         g.set_execution_terms(oid,now,10)
         g.simulate_quote_fill(oid,'fill',1,1,25,25.1,2,now+1,now+1)
         g.cancel(oid)
@@ -80,9 +83,11 @@ def test_failed_archive_commit_preserves_old_epoch(tmp_path,monkeypatch):
 def test_retained_history_limit_cannot_be_bypassed_by_rotation(tmp_path,monkeypatch):
     monkeypatch.setattr(durable_orders,'MAX_RETAINED_COMMANDS',1020)
     g=setup(tmp_path,monkeypatch);cycle(g,0);g.emergency_halt();g.archive_terminal('batch');g.reset()
+    retained=g.recovery_report()['commands']
     with pytest.raises(ValueError,match='CAP_REACHED'):
         # Lower total-history bound preserves its independent stop even after rotation.
-        monkeypatch.setattr(durable_orders,'MAX_RETAINED_COMMANDS',1014)
+        monkeypatch.setattr(durable_orders,'MAX_RETAINED_COMMANDS',
+            retained+durable_orders.CONTROL_RESERVE)
         g.submit('new','BTC-USD','BUY',25,tier='terrestrial')
     assert g.recovery_report()['archival']['archived_order_count']==2
 
@@ -136,6 +141,21 @@ def test_archived_order_history_read_only_api(tmp_path,monkeypatch):
     assert c.get('/api/execution/intent/missing').status_code==404
 
 
+def test_archive_binds_and_retains_terminal_no_fill_evidence(tmp_path,monkeypatch):
+    g=setup(tmp_path,monkeypatch)
+    g.submit('expired','BTC-USD','BUY',25,tier='terrestrial')
+    g.set_execution_terms('expired',1000,10)
+    result=g.simulate_quote_fill('expired','attempt',1,1,25,25.1,2,1010,1010)
+    assert result['expired'] and result['no_fill_recorded']
+    g.emergency_halt();manifest=g.archive_terminal('no_fill_batch')
+    assert manifest['order_count']==1 and len(manifest['evidence_sha256'])==64
+    cp.clear_cache();cold=DurableOrderGateway(g.path)
+    evidence=cold.order_report('expired')
+    assert evidence['archived'] and len(evidence['no_fill_events'])==1
+    assert evidence['no_fill_events'][0]['reason']=='ORDER_EXPIRED_WITHOUT_FILL'
+    assert cold.archive_terminal('no_fill_batch')['evidence_sha256']==manifest['evidence_sha256']
+
+
 def test_archive_history_edit_fails_closed(tmp_path,monkeypatch):
     g=setup(tmp_path,monkeypatch);cycle(g,0);g.emergency_halt();g.archive_terminal('batch')
     with sqlite3.connect(g.path) as db:
@@ -172,11 +192,11 @@ def test_process_death_during_archive_checkpoint_preserves_old_epoch(tmp_path,mo
     before=g.recovery_report()
     with sqlite3.connect(g.path) as db:
         db.execute('CREATE TRIGGER die BEFORE INSERT ON order_checkpoints BEGIN SELECT kill_process(); END')
-    code='''
+    code=f'''
 import os,sys
 from nexus import order_checkpoints as cp
 from nexus.durable_orders import DurableOrderGateway
-cp.INTERVAL=4
+cp.INTERVAL={before['commands']+1}
 original=DurableOrderGateway._connect
 def connect(self,path=None):
     db=original(self,path)

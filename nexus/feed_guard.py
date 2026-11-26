@@ -4,6 +4,7 @@ This compares consecutive observations from ONE provider, not independent feeds,
 and is NOT a volatility forecast or verified market-price oracle.
 """
 from decimal import Decimal, InvalidOperation
+import math
 import threading
 import time
 
@@ -19,7 +20,9 @@ class FeedGuard:
 
     @staticmethod
     def number(value):
-        if isinstance(value,bool):
+        # Retained evidence canonicalizes decimals to exact built-in text.
+        # Text subclasses remain rejected before comparison or conversion.
+        if type(value) not in (int,float,Decimal,str):
             raise ValueError("BAD_NUMERIC_QUOTE")
         try: out=Decimal(str(value))
         except (InvalidOperation,ValueError,TypeError) as exc:
@@ -31,19 +34,27 @@ class FeedGuard:
     def evaluate(self,quote,now=None):
         now=time.time() if now is None else now
         reasons=[]
-        if not isinstance(quote,dict):
+        if type(now) not in (int,float) or not math.isfinite(now):
+            return self._report(["INVALID_RUNTIME_CLOCK"],"UNKNOWN")
+        if quote is None:
             return self._report(["MISSING_QUOTE"],"UNKNOWN")
+        if type(quote) is not dict or any(type(key) is not str for key in quote):
+            return self._report(["INVALID_QUOTE_FIELDS"],"UNKNOWN")
         product=quote.get("product")
-        if product not in ("BTC-USD","ETH-USD","SOL-USD"):
+        if type(product) is not str or product not in ("BTC-USD","ETH-USD","SOL-USD"):
             reasons.append("PRODUCT_NOT_ALLOWLISTED")
-        if quote.get("provider")!="coinbase_exchange_public" or quote.get("read_only") is not True or quote.get("orders_allowed") is not False:
+        provider=quote.get("provider")
+        if (type(provider) is not str or provider!="coinbase_exchange_public" or
+                quote.get("read_only") is not True or quote.get("orders_allowed") is not False):
             reasons.append("UNVERIFIED_READ_ONLY_PROVENANCE")
         try:
             bid=self.number(quote.get("bid"))
             ask=self.number(quote.get("ask"))
             last=self.number(quote.get("last"))
-            received=float(quote["received_at"])
-            if not (received==received and -2<=now-received<=MAX_QUOTE_AGE_SECONDS):
+            received=quote["received_at"]
+            if type(received) not in (int,float) or not math.isfinite(received):
+                raise ValueError("BAD_RECEIPT_CLOCK")
+            if not -2<=now-received<=MAX_QUOTE_AGE_SECONDS:
                 reasons.append("QUOTE_TOO_OLD")
             if bid>ask:
                 reasons.append("CROSSED_MARKET")
@@ -56,16 +67,17 @@ class FeedGuard:
         with self._lock:
             previous=self._previous.get(product)
             if not reasons and previous is not None:
-                prev,last_seen=previous
+                prior,last_seen=previous
                 elapsed=now-last_seen
                 if 0<=elapsed<=MAX_GAP_SECONDS:
-                    change=abs(last-prev)/prev*100
-                    if change>MAX_JUMP_PCT:
+                    prices=(bid,ask,last)
+                    if any(abs(current-prev)/prev*100>MAX_JUMP_PCT
+                            for current,prev in zip(prices,prior)):
                         reasons.append("UNCONFIRMED_PRICE_JUMP")
                 elif elapsed<0:
                     reasons.append("CLOCK_REGRESSION")
             if not reasons:
-                self._previous[product]=(last,now)
+                self._previous[product]=((bid,ask,last),now)
         return self._report(reasons,product or "UNKNOWN")
 
     @staticmethod

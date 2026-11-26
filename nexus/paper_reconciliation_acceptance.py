@@ -7,7 +7,11 @@ credential, contacts a provider, writes evidence or grants order authority.
 import argparse
 import getpass
 import json
+import os
+import re
 import sqlite3
+import stat
+from pathlib import Path
 
 from nexus.alpaca_paper_contract import sha
 from nexus.broker_activity_store import BrokerActivityStore
@@ -35,6 +39,7 @@ FIXTURE_CHECKS = (
     'passed', 'repeat_review_matches', 'stability_guard_repeat_matches',
     'journal_file_fingerprints_rechecked',
     'journal_file_identities_rechecked', 'journal_store_bindings_rechecked',
+    'selected_journal_leaf_links_rejected',
     'semantic_reader_failures_rechecked',
     'identity_replacement_failure_rejected', 'store_retarget_rejected',
     'journals_unchanged', 'unbound_history_rejected',
@@ -96,8 +101,29 @@ def _accepted(status):
 
 
 def _journal_file_scope(pacing_path, activity_store_path, acceptance_store_path):
-    paths = check_path_set((pacing_path, activity_store_path, acceptance_store_path),
-        JOURNAL_FINGERPRINT_PREFIX)
+    selected=tuple(Path(value) for value in
+        (pacing_path,activity_store_path,acceptance_store_path))
+    observed=[]
+    for path in selected:
+        try:value=path.lstat()
+        except OSError:_fail('SELECTED_JOURNAL_UNAVAILABLE')
+        if (stat.S_ISLNK(value.st_mode) or not stat.S_ISREG(value.st_mode) or
+                value.st_nlink!=1):
+            _fail('SELECTED_JOURNAL_LEAF_INVALID')
+        observed.append(value)
+    paths = check_path_set(selected,JOURNAL_FINGERPRINT_PREFIX)
+    # check_path_set intentionally resolves relationships between the three
+    # stores.  Rebind that canonical result to the caller-selected leaves so a
+    # final-component link or pathname swap cannot silently select a different
+    # private history before the ordinary identity/fingerprint fence begins.
+    for path,resolved,before in zip(selected,paths,observed):
+        try:
+            after=path.lstat();canonical=resolved.lstat()
+        except OSError:_fail('SELECTED_JOURNAL_CHANGED')
+        if (stat.S_ISLNK(after.st_mode) or not stat.S_ISREG(after.st_mode) or
+                after.st_nlink!=1 or not os.path.samestat(before,after) or
+                not os.path.samestat(after,canonical)):
+            _fail('SELECTED_JOURNAL_CHANGED')
     limits = (PACING_DATABASE_BYTES, ACTIVITY_DATABASE_BYTES, ACCEPTANCE_DATABASE_BYTES)
     identities=capture_file_identities(paths,JOURNAL_FINGERPRINT_PREFIX)
     fingerprints=capture_file_fingerprints(paths,limits,JOURNAL_FINGERPRINT_PREFIX)
@@ -171,6 +197,9 @@ def review(*, expected_account_id, pacing_path, activity_store_path,
            acceptance_store_path, expected_activity_head,
            opening_observation, closing_observation):
     """Read-only composition of accepted collection history and balance review."""
+    if (type(expected_activity_head) is not str or
+            re.fullmatch(r'[0-9a-f]{64}',expected_activity_head) is None):
+        _fail('ACTIVITY_HEAD_REFERENCE')
     journal_paths,journal_limits,journal_identities,journal_fingerprints=_journal_file_scope(
         pacing_path, activity_store_path, acceptance_store_path)
     stable_files=_stable_reader(journal_paths,journal_limits,journal_identities,
@@ -479,6 +508,16 @@ def fixture_report():
             expected_activity_head=head, opening_observation=opening,
             closing_observation=closing)
         result = review(**paths)
+        linked_path=root/'selected-journal-link.sqlite3'
+        os.link(paths['pacing_path'],linked_path)
+        selected_journal_leaf_links_rejected=False
+        try:
+            review(**dict(paths,pacing_path=linked_path))
+        except ValueError as error:
+            selected_journal_leaf_links_rejected=(str(error)==
+                'PAPER_RECONCILIATION_ACCEPTANCE_SELECTED_JOURNAL_LEAF_INVALID')
+        finally:
+            linked_path.unlink()
         before = tuple((path.name, path.read_bytes()) for path in sorted(root.iterdir()))
         repeated = review(**paths)
         guarded_paths=dict(paths,pre_opening_observation=pre_opening,
@@ -670,12 +709,13 @@ def fixture_report():
             late_collection_fee_detected and file_fingerprints_rechecked and
             semantic_reader_failures_rechecked and file_identities_rechecked and
             store_bindings_rechecked and identity_replacement_failure_rejected and
-            store_retarget_rejected)
+            store_retarget_rejected and selected_journal_leaf_links_rejected)
         return dict(passed=passed, repeat_review_matches=result == repeated,
             stability_guard_repeat_matches=guarded == guarded_repeated,
             journal_file_fingerprints_rechecked=file_fingerprints_rechecked,
             journal_file_identities_rechecked=file_identities_rechecked,
             journal_store_bindings_rechecked=store_bindings_rechecked,
+            selected_journal_leaf_links_rejected=selected_journal_leaf_links_rejected,
             semantic_reader_failures_rechecked=semantic_reader_failures_rechecked,
             identity_replacement_failure_rejected=identity_replacement_failure_rejected,
             store_retarget_rejected=store_retarget_rejected,

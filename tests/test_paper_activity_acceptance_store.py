@@ -47,6 +47,29 @@ def test_missing_inspection_is_read_only_and_baseline_retains_legacy_uncertainty
     assert heads_only['preexisting_history_unverified']
 
 
+def test_equality_forging_heads_fail_before_storage_access(tmp_path,monkeypatch):
+    class ForgedHead(str):
+        def __eq__(self,other):return True
+        def __ne__(self,other):return False
+    missing=PaperActivityAcceptanceStore(tmp_path/'missing'/'acceptance.sqlite3',ACCOUNT)
+    with monkeypatch.context() as patch:
+        patch.setattr(missing,'_connect',lambda *args,**kwargs:(_ for _ in ()).throw(AssertionError('storage accessed')))
+        with pytest.raises(ValueError,match='HEAD_INVALID'):
+            missing.bind(pacing_head=ForgedHead('f'*64),retention_head=ZERO,
+                pacing_sessions=0,retained_batches=0)
+    assert not missing.path.parent.exists()
+
+    value=scope();store=bound(tmp_path/'existing',value);raw=store.path.read_bytes()
+    hostile=dict(value,pacing_before_head_sha256=ForgedHead(value['pacing_before_head_sha256']))
+    with monkeypatch.context() as patch:
+        patch.setattr(store,'_connect',lambda *args,**kwargs:(_ for _ in ()).throw(AssertionError('storage accessed')))
+        with pytest.raises(ValueError,match='HEAD_INVALID'):
+            store.append(hostile,admission=lambda:(
+                value['pacing_after_head_sha256'],value['retention_after_head_sha256']))
+    assert store.path.read_bytes()==raw
+    assert PaperActivityAcceptanceStore(store.path,ACCOUNT).inspect()['records']==0
+
+
 def test_record_replay_binds_both_head_transitions_and_duplicate_is_idempotent(tmp_path):
     value=scope();store=bound(tmp_path,value)
     admitted=(value['pacing_after_head_sha256'],value['retention_after_head_sha256'])

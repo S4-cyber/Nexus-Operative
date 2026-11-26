@@ -1,7 +1,7 @@
 import time
 import pytest
 from decimal import Decimal
-from nexus.paper_execution import PaperEngine
+from nexus.paper_execution import PaperEngine, quote_age_ok
 
 def now():return time.time()
 
@@ -40,10 +40,111 @@ def test_risk_cap_and_halt():
     with pytest.raises(ValueError):e._risk({"SPY":"1"})
     assert e.halted
 
+def test_cap_rejected_open_is_state_invariant():
+    e=PaperEngine(capital="10000")
+    e.open("terrestrial","SPY","UP","100","100",now(),{})
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError,match="Per-tier or aggregate risk cap exceeded"):
+        e.open("terrestrial","QQQ","UP","200","100",now(),{"SPY":"1000"})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+def test_cap_rejection_cannot_poison_peak_or_trigger_false_halt():
+    e=PaperEngine(capital="10000")
+    e.open("terrestrial","SPY","UP","100","100",now(),{})
+    with pytest.raises(ValueError,match="Per-tier or aggregate risk cap exceeded"):
+        e.open("terrestrial","QQQ","UP","200","100",now(),{"SPY":"1000"})
+    assert e.peak==Decimal("10000")
+    event=e.open("terrestrial","IWM","UP","10","100",now(),{"SPY":"100"})
+    assert event["action"]=="OPEN" and e.halted is False
+
+def test_drawdown_halt_blocks_open_but_allows_existing_position_close():
+    e=PaperEngine(capital="10000")
+    e.open("terrestrial","SPY","UP","100","100",now(),{})
+    e.cash=Decimal("9000")
+    with pytest.raises(ValueError,match="Max drawdown: engine halted"):
+        e._risk({"SPY":"1"})
+    with pytest.raises(ValueError,match="Engine halted"):
+        e.open("terrestrial","IWM","UP","10","100",now(),{"SPY":"100"})
+    event=e.close("SPY","100",now(),{})
+    assert event["action"]=="CLOSE"
+    assert "SPY" not in e.positions and e.halted is True
+    with pytest.raises(ValueError,match="Engine halted"):
+        e.open("terrestrial","IWM","UP","10","100",now(),{})
+
 def test_symbol_allowlist():
     e=PaperEngine()
     with pytest.raises(ValueError):e.open("solar","UNKNOWN","UP","1","500",now(),{})
 
+
+def test_polymorphic_open_identities_are_rejected_before_state_mutation():
+    class ForgedText(str):
+        def __new__(cls,literal,target):
+            value=super().__new__(cls,literal);value.target=target;return value
+        def __hash__(self): return hash(self.target)
+        def __eq__(self,other): return other==self.target
+
+    e=PaperEngine(capital='10000')
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError,match='Unknown tier/symbol/direction'):
+        e.open(ForgedText('FORGED-TIER','terrestrial'),
+            ForgedText('UNLISTED-ASSET','SPY'),ForgedText('FORGED-DIRECTION','UP'),
+            '100','500',now(),{})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+
+def test_polymorphic_close_symbol_cannot_select_or_remove_retained_position():
+    class ForgedSymbol(str):
+        def __hash__(self): return hash('SPY')
+        def __eq__(self,other): return other=='SPY'
+
+    e=PaperEngine(capital='10000');e.open('terrestrial','SPY','UP','100','500',now(),{})
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError,match='Position not open'):
+        e.close(ForgedSymbol('UNLISTED-ASSET'),'500',now(),{})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+
+@pytest.mark.parametrize('cost_bps',('10000','10001','1000000000000'))
+def test_execution_cost_cannot_make_modeled_fill_price_zero_or_negative(cost_bps):
+    with pytest.raises(ValueError,match='below 10000 bps'):
+        PaperEngine(cost_bps=cost_bps)
+
+
+def test_polymorphic_stale_quote_clock_cannot_create_exposure():
+    class ForgedTime(float):
+        def __rsub__(self,other):return 0
+
+    engine=PaperEngine(capital='10000')
+    before=(engine.cash,dict(engine.positions),list(engine.history),engine.peak,engine.halted)
+    with pytest.raises(ValueError,match='Quote too old'):
+        engine.open('terrestrial','SPY','UP','10','500',ForgedTime(-1e20),{})
+    assert (engine.cash,engine.positions,engine.history,engine.peak,engine.halted)==before
+    assert quote_age_ok(1000,ForgedTime(1000)) is False
+
 def test_no_automatic_live_placement():
     from nexus import paper_execution
     assert not hasattr(paper_execution.PaperEngine,"submit_live_order")
+
+@pytest.mark.parametrize('price',(Decimal('1e10000'),Decimal('1e-10000')))
+def test_extreme_open_price_is_rejected_before_state_mutation(price):
+    e=PaperEngine(capital='10000')
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError):
+        e.open('solar','SPY','UP','100',price,now(),{})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+@pytest.mark.parametrize('price',(Decimal('1e10000'),Decimal('1e-10000')))
+def test_extreme_close_price_is_rejected_before_state_mutation(price):
+    e=PaperEngine(capital='10000')
+    e.open('solar','SPY','UP','100','500',now(),{})
+    before=(e.cash,dict(e.positions),list(e.history),e.peak,e.halted)
+    with pytest.raises(ValueError):e.close('SPY',price,now(),{})
+    assert (e.cash,e.positions,e.history,e.peak,e.halted)==before
+
+@pytest.mark.parametrize(('field','value'),(
+    ('capital',Decimal('1e10000')),('capital',Decimal('1e-10000')),
+    ('fee',Decimal('1e10000')),('fee',Decimal('1e-10000')),
+    ('cost_bps',Decimal('1e10000')),('cost_bps',Decimal('1e-10000')),
+))
+def test_extreme_engine_parameters_are_rejected(field,value):
+    with pytest.raises(ValueError):PaperEngine(**{field:value})

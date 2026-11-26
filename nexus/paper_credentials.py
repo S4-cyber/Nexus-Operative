@@ -45,7 +45,7 @@ def _vault():
 
 
 def _credential(value):
-    if not isinstance(value, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
+    if type(value) is not str or not re.fullmatch(r'[A-Za-z0-9_-]{16,256}', value):
         _fail('CREDENTIAL_FORMAT_INVALID')
 
 
@@ -59,16 +59,19 @@ def _pairs(items):
 
 
 def _decode(raw):
-    if not isinstance(raw, str) or len(raw) > MAX_RECORD:
+    if type(raw) is not str or len(raw) > MAX_RECORD:
         _fail('RECORD_INVALID')
     try:
         record = json.loads(raw, object_pairs_hook=_pairs)
-        if not isinstance(record, dict) or set(record) != {'version', 'provider', 'environment', 'scope', 'revision', 'api_key', 'api_secret'}:
+        if type(record) is not dict or set(record) != {'version', 'provider', 'environment', 'scope', 'revision', 'api_key', 'api_secret'}:
             _fail('RECORD_INVALID')
-        if type(record['version']) is not int or record['version'] != 1 or record['provider'] != 'alpaca' or record['environment'] != 'paper' or record['scope'] != 'account_read':
+        if (type(record['version']) is not int or record['version'] != 1 or
+                any(type(record[key]) is not str for key in ('provider','environment','scope','revision')) or
+                record['provider'] != 'alpaca' or record['environment'] != 'paper' or
+                record['scope'] != 'account_read'):
             _fail('RECORD_INVALID')
         revision = record['revision']
-        if not isinstance(revision, str) or len(revision) != 36 or str(UUID(revision)) != revision or UUID(revision).version != 4:
+        if len(revision) != 36 or str(UUID(revision)) != revision or UUID(revision).version != 4:
             _fail('RECORD_INVALID')
         _credential(record['api_key']); _credential(record['api_secret'])
         return record
@@ -325,14 +328,17 @@ def collect_activity_sse_saved(*, expected_account_id, initial_events,
         elapsed_clock=time.monotonic, outcome_clock=time.time,
         permission_check=lambda: True, emergency_stop_check=None):
     """One explicit saved-pair Activity SSE attempt; no loop or retry."""
+    from nexus.alpaca_activity_sse_reconnect_budget import (
+        REASONS, collect_and_checkpoint_due)
     if (confirm_reconnect_attempt is not True or
             confirm_read_only_paper is not True or
             confirm_cursor_checkpoint is not True):
         _fail('READ_CONFIRMATION_REQUIRED')
+    if (type(reconnect_reason) is not str or
+            reconnect_reason not in REASONS):
+        _fail('READ_RECONNECT_REASON_INVALID')
     if not callable(permission_check) or not callable(emergency_stop_check):
         _fail('READ_REVOKED')
-    from nexus.alpaca_activity_sse_reconnect_budget import (
-        collect_and_checkpoint_due)
     try:
         permission_admitted = permission_check()
         emergency_stopped = emergency_stop_check()

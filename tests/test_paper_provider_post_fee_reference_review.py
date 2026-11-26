@@ -1,8 +1,10 @@
 """Exact provider POST reconciliation to retained fee-reference composition."""
+import copy
 import json
 import os
 import shutil
 import sqlite3
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -48,6 +50,49 @@ def test_binds_every_retained_fee_reference_without_writes(tmp_path):
 def test_independently_named_replay_matches_complete_primary_report(tmp_path):
     args = subject._fixture(tmp_path)
     assert subject.replay(**args) == subject.review(**args)
+
+
+def test_direct_reference_review_detaches_observations_before_replays(
+        tmp_path, monkeypatch):
+    args = subject._fixture(tmp_path)
+    fields = ('pre_opening_observation', 'opening_observation',
+        'closing_observation', 'post_closing_observation')
+    originals = {field: copy.deepcopy(args[field]) for field in fields}
+
+    def shifted(value):
+        inventory = value['observed_inventory']; timing = value['read_timing']
+        return subject.reconciliation.observation._fixture_observation(
+            value['account_id'], inventory['cash'], inventory['btc_total'],
+            float(Decimal(timing['started_at']) + Decimal('0.1')),
+            float(Decimal(timing['completed_at']) + Decimal('0.1')))
+
+    replacements = {field: shifted(args[field]) for field in fields}
+    original_review = subject.reconciliation.review
+    original_replay = subject.reconciliation.replay
+    seen = []
+
+    def review_then_mutate(**kwargs):
+        seen.append(tuple(kwargs[field]['manifest_sha256'] for field in fields))
+        result = original_review(**kwargs)
+        if len(seen) == 1:
+            for field in fields:
+                args[field].clear(); args[field].update(
+                    copy.deepcopy(replacements[field]))
+        return result
+
+    def replay_then_restore(**kwargs):
+        seen.append(tuple(kwargs[field]['manifest_sha256'] for field in fields))
+        result = original_replay(**kwargs)
+        for field in fields:
+            args[field].clear(); args[field].update(copy.deepcopy(originals[field]))
+        return result
+
+    monkeypatch.setattr(subject.reconciliation, 'review', review_then_mutate)
+    monkeypatch.setattr(subject.reconciliation, 'replay', replay_then_restore)
+    subject.review(**args)
+    expected = tuple(originals[field]['manifest_sha256'] for field in fields)
+    assert seen[:2] == [expected, expected]
+    assert all(args[field] == originals[field] for field in fields)
 
 
 def test_timestamped_fee_reference_at_or_after_fill_is_counted(tmp_path):

@@ -2,6 +2,7 @@
 import copy
 import io
 import json
+from decimal import Decimal
 from urllib.error import HTTPError, URLError
 from urllib.request import ProxyHandler
 
@@ -116,6 +117,16 @@ def test_credentials_invalid_before_io(bad):
     assert not opener.requests
 
 
+def test_equality_forging_credential_is_rejected_before_header_or_io():
+    class ForgedCredential(str):
+        def encode(self,*_args,**_kwargs):return b'FORGED_WIRE_VALUE'
+    opener=Opener()
+    with pytest.raises(module.PaperInspectionError,match='CREDENTIAL_FORMAT_INVALID'):
+        module.inspect_account(ForgedCredential(KEY),SECRET,
+            confirm_read_only_paper=True,opener=opener)
+    assert not opener.requests
+
+
 def test_default_opener_disables_proxies_and_installs_redirect_guard(monkeypatch):
     opener = Opener()
     handlers = []
@@ -199,6 +210,62 @@ def test_invalid_account_never_becomes_a_pass(changes):
     with pytest.raises(module.PaperInspectionError) as caught:
         inspect(Opener([raw, [], [], raw]))
     assert SECRET not in str(caught.value)
+
+
+def test_account_mapping_subclass_is_rejected_before_mapping_hooks():
+    calls=[]
+    class ForgedAccount(dict):
+        def get(self,*args,**kwargs):
+            calls.append(args);return super().get(*args,**kwargs)
+    with pytest.raises(module.PaperInspectionError,
+            match='PAPER_INSPECTION_ACCOUNT_INVALID'):
+        module._account(ForgedAccount(account()))
+    assert calls==[]
+
+
+def test_polymorphic_account_key_is_rejected_before_lookup():
+    class ForgedKey(str):pass
+    raw=account();raw[ForgedKey('cash')]=raw.pop('cash')
+    with pytest.raises(module.PaperInspectionError,
+            match='PAPER_INSPECTION_ACCOUNT_INVALID'):
+        module._account(raw)
+
+
+def test_polymorphic_account_enums_cannot_report_fields_covered():
+    class ForgedText(str):
+        def __eq__(self,_other):return True
+        def __ne__(self,_other):return False
+    raw=account();raw.update(currency=ForgedText('EUR'),
+        status=ForgedText('CLOSED'),crypto_status=ForgedText('CLOSED'))
+    with pytest.raises(module.PaperInspectionError,
+            match='PAPER_INSPECTION_ACCOUNT_INVALID'):
+        module._report(raw,[],[],copy.deepcopy(raw),ACCOUNT,
+            'SUPPLIED_UNATTESTED')
+
+
+def test_polymorphic_fund_text_cannot_inflate_cash_or_hide_pending_transfer():
+    class ForgedText(str):
+        def __new__(cls,value,wire):
+            result=super().__new__(cls,value);result.wire=wire;return result
+        def __str__(self):return self.wire
+    for field,value in (('cash',ForgedText('0','1000')),
+            ('pending_transfer_in',ForgedText('250','0'))):
+        raw=account();raw[field]=value
+        with pytest.raises(module.PaperInspectionError,
+                match='PAPER_INSPECTION_ACCOUNT_INVALID'):
+            module._report(raw,[],[],raw,ACCOUNT,
+                'SUPPLIED_UNATTESTED')
+
+
+def test_polymorphic_numeric_funds_are_rejected_before_normalization():
+    class ForgedInt(int):pass
+    class ForgedFloat(float):pass
+    class ForgedDecimal(Decimal):pass
+    for value in (ForgedInt(1000),ForgedFloat(1000),ForgedDecimal('1000')):
+        raw=account();raw['cash']=value
+        with pytest.raises(module.PaperInspectionError,
+                match='PAPER_INSPECTION_ACCOUNT_INVALID'):
+            module._account(raw)
 
 
 @pytest.mark.parametrize('changes,expected', [({'id': OTHER}, 'ACCOUNT_ID_CHANGED'),

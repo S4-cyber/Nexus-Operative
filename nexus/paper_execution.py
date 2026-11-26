@@ -7,6 +7,7 @@ exposure, NOT margin borrowing, short sale, or an executable broker order.
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 import time
+import math
 
 D=Decimal
 TIERS={"terrestrial":D("0.01"),"solar":D("0.02"),"universal":D("0.03")}
@@ -15,16 +16,21 @@ MAX_DRAWDOWN=D("0.05")
 COST_BPS=D("11")  # half-spread + modeled slippage per side
 FEE=D("0.01")
 SUPPORTED={"SPY","QQQ","IWM","BTC/USD","ETH/USD"}
+MIN_BOUNDED_VALUE=D("1e-18")
+MAX_BOUNDED_VALUE=D("1e12")
 
 def positive(n):
     try: v=D(str(n))
     except (InvalidOperation, ValueError, TypeError): raise ValueError("Invalid decimal")
-    if not v.is_finite() or v<=0: raise ValueError("Value must be finite and positive")
+    if (not v.is_finite() or
+            not MIN_BOUNDED_VALUE<=v<=MAX_BOUNDED_VALUE):
+        raise ValueError("Value must be finite, positive and bounded")
     return v
 
 def quote_age_ok(ts,now=None):
-    if isinstance(ts,bool) or not isinstance(ts,(float,int)): return False
+    if type(ts) not in (float,int) or not math.isfinite(ts) or not 0<=ts<=1e12:return False
     now=time.time() if now is None else now
+    if type(now) not in (float,int) or not math.isfinite(now) or not 0<=now<=1e12:return False
     return -1<=now-ts<=10
 
 @dataclass
@@ -43,6 +49,7 @@ class PaperEngine:
         self.cash=self.initial
         self.fee=positive(fee)
         self.cost_bps=positive(cost_bps)
+        if self.cost_bps>=D(10000):raise ValueError("Execution cost must remain below 10000 bps")
         self.positions={}
         self.history=[]
         self.halted=False
@@ -57,22 +64,27 @@ class PaperEngine:
             equity+=p.reserved + p.quantity*(px-p.reference_entry)*direction
         return equity
 
-    def _risk(self,prices):
+    def _risk(self,prices,*,commit_peak=True):
         eq=self.equity(prices)
-        self.peak=max(self.peak,eq)
-        if eq<=self.peak*(D(1)-MAX_DRAWDOWN):
+        candidate_peak=max(self.peak,eq)
+        if eq<=candidate_peak*(D(1)-MAX_DRAWDOWN):
             self.halted=True
             raise ValueError("Max drawdown: engine halted")
+        if commit_peak:self.peak=candidate_peak
         return eq
 
     def open(self,tier,symbol,direction,notional,market_price,timestamp,marks):
         if self.halted:raise ValueError("Engine halted")
+        if any(type(value) is not str for value in (tier,symbol,direction)):
+            raise ValueError("Unknown tier/symbol/direction")
         if tier not in TIERS or symbol not in SUPPORTED:raise ValueError("Unknown tier/symbol")
         if direction not in ("UP","DOWN"):raise ValueError("Unknown directional hypothesis")
         if not quote_age_ok(timestamp):raise ValueError("Quote too old")
         if symbol in self.positions:raise ValueError("Position already open")
         px=positive(market_price);amount=positive(notional)
-        eq=self._risk(marks)
+        # Rejected admission must not raise the durable risk high-water mark.
+        # A genuine drawdown still independently commits the emergency halt.
+        eq=self._risk(marks,commit_peak=False)
         exposure=sum((p.reserved for p in self.positions.values()),D(0))
         if amount>eq*TIERS[tier] or amount+exposure>eq*MAX_TOTAL_EXPOSURE:
             raise ValueError("Per-tier or aggregate risk cap exceeded")
@@ -80,6 +92,7 @@ class PaperEngine:
         # Entry worse than mid on both directions.
         adjusted=px*(D(1)+self.cost_bps/D(10000) if direction=="UP" else D(1)-self.cost_bps/D(10000))
         qty=amount/px
+        self.peak=max(self.peak,eq)
         self.cash-=amount+self.fee
         p=PaperPosition(tier,symbol,direction,qty,adjusted,amount,amount)
         self.positions[symbol]=p
@@ -89,7 +102,9 @@ class PaperEngine:
         return event
 
     def close(self,symbol,market_price,timestamp,marks):
-        if self.halted:raise ValueError("Engine halted")
+        # A latched halt blocks new exposure but must not strand an existing
+        # simulated position. Exit validation and the halt both remain active.
+        if type(symbol) is not str:raise ValueError("Position not open")
         if symbol not in self.positions:raise ValueError("Position not open")
         if not quote_age_ok(timestamp):raise ValueError("Quote too old")
         px=positive(market_price)

@@ -102,12 +102,16 @@ def test_session_write_failure_is_atomic_with_cycle_log(tmp_path,monkeypatch):
     before=r.sessions()['sessions'][0]['counts']
     history=len(r.history())
     with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        event_count=db.execute('SELECT COUNT(*) FROM forward_events').fetchone()[0]
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
         db.execute("CREATE TRIGGER fail_cycle BEFORE INSERT ON cycles BEGIN SELECT RAISE(ABORT,'failure'); END")
     c.now+=5
     assert r.single_cycle()['decision']=='PAUSED'
     assert not r.status()['enabled']
     assert r.sessions()['sessions'][0]['counts']==before
     assert len(r.history())==history
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        assert db.execute('SELECT COUNT(*) FROM forward_events').fetchone()[0]==event_count
 
 
 def test_outage_while_holding_requires_explicit_resume_then_allows_exit(tmp_path,monkeypatch):

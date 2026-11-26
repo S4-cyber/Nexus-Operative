@@ -1,10 +1,2455 @@
 # Nexus Operative versioning and launch gates
+## v0.340.412 detached reconciliation evidence boundary
+
+The development risk-tier portal controls and the complete detached trial-
+reconciliation stack now share one preserved two-parent history. Reconciliation
+publication accepts only a closed primitive schema: exact non-negative counts,
+digest fields, fill and no-fill completion flags, coherent stopped-session cut
+evidence, durable halt agreement, and a recomputed event seal must all agree.
+Correctly rehashed contradictory receipts, private nested values, stale seals,
+invalid cut projections and non-object canonical JSON fail closed.
+
+The trial reader now samples caller-selected paths before relationship
+normalization, rejects reconciliation symlink leaves, and requires the exact
+parsed bytes to match the original bounded fingerprint. Omitted bundles still
+produce a blocked diagnostic for legacy modeled events without a fill digest;
+supplying a bundle requires the contributing session's complete modeled history.
+Execution-set hashing and bundle credit use one outcome predicate, so a
+scheduler-classified BUY/SELL remains an explicit unbound incident and can
+never receive excess credit.
+
+This is stricter rewritable local evidence consistency, not proof of journal
+authenticity, broker/account/source acceptance, genuine market realism,
+sustained-trial success, performance, profitability, funding, cloud, native
+Windows/installer acceptance or release approval. All source, broker, live,
+funding, cloud, money-movement and release authority flags remain false.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access are
+unchanged. No control was added relative to development, so seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain intact.
+The read-only roadmap estimate remains exact 38% weighted (displayed about 40%,
+30–45% low-confidence), with 0/9 stages independently accepted and no release
+or trading permission.
+
+
+## v0.340.411 detached trial reconciliation bundle
+
+Retained forward-trial review can now consume one explicit canonical,
+privacy-safe reconciliation bundle. Each contributing stopped session must bind
+the complete modeled-execution-set digest, exact retained session summary,
+quote/event heads and counts, sealed event reconciliation, and two equal stable
+order-snapshot digests. The history database and bundle are sampled together
+under one bounded relationship-distinct identity/fingerprint guard.
+
+Missing, extra, duplicate, stale, forged, aliased, oversized or changing bundle
+content fails closed. Without a bundle, every modeled BUY/SELL remains an
+explicit local bundle-binding incident as before. With an exact supplied bundle,
+only the bundle-bound in-window execution count is removed; unrelated
+coverage, lifecycle, quote, admission and scheduler incidents remain.
+
+This is a rewritable supplied local receipt, not proof that an order journal is
+authentic, a signature or genuine-feed,
+broker, account, fill/fee/hold/funds, sustained-market, performance,
+profitability, cloud, native Windows/installer or release acceptance. Every
+source, broker, funding, live, cloud, money-movement and release authority flag
+remains false. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and independent emergency-stop
+access are unchanged. No control was added, so the seven beginner-friendly tabs
+and black/bright-purple bottom-right hover help are unchanged. The read-only
+roadmap estimate stays exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+## v0.340.410 modeled-execution reconciliation fence
+
+Retained forward-trial review now counts every in-window modeled `BUY` or
+`SELL` outcome separately and treats it as an operational incident until that
+execution is explicitly bound to durable order/fill reconciliation. Raw
+declared-public coverage remains visible for diagnosis, but a locally coherent
+event chain and modeled-fill digest can no longer produce incident-free
+coverage by themselves. HOLD-only coverage is unchanged.
+
+The durable event schema also requires every `BUY` or `SELL` to carry its
+quote-evidence digest, so it cannot be reclassified as a lifecycle record.
+Matched outcomes timestamped before their bound quotes now make the retained
+trace incomplete. Both cases fail closed without repairing supplied history.
+
+Trial readiness carries the blocker through its read-only composite review
+without creating or repairing an order journal. The mandatory forward release
+profile requires the exact modeled-execution count, fixed blocker reason and
+unchanged false authority flags. A future positive increment must bind each
+execution under one coherent retained snapshot.
+
+Windows regression fixtures now treat a distribution-directory replacement
+that the kernel denies while reviewed leaf handles are pinned as a safe
+rejection, while successful replacements must still surface the fixed directory
+identity error. Malformed emergency-intent status tests isolate that schema
+boundary from native cold-replay availability and still require one halt attempt
+plus both independent replay confirmations. Production verification and
+emergency-stop logic are unchanged; exact-child hosted Windows evidence remains
+required.
+
+This is bounded fail-closed local evidence classification, not positive
+reconciliation, genuine-feed or sustained-market acceptance, broker/account/
+fill/fee/hold/funds acceptance, performance, profitability, deployment, native
+Windows/installer acceptance or release approval. Engagement and optional AI
+remain OFF by default; limits, account checks, reducing exits, fail-closed
+behavior and independent emergency-stop access are unchanged. No control was
+added, so the seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help are unchanged. The read-only roadmap estimate stays exact 38%
+weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
+
+## v0.340.409 coherent distribution-directory verification
+
+Artifact-manifest verification now binds the complete reviewed set to one exact
+non-aliased distribution directory and retains every artifact handle before
+hashing. POSIX leaves open relative to one no-follow directory descriptor; all
+platforms recheck public and retained identities and require two complete digest
+passes to agree. Directory swaps, parent/directory aliases and cross-leaf
+same-size content changes fail instead of combining separate generations.
+
+Both exact PR #130 Windows regression shards still observed intermittent
+malformed-intent cleanup confirmation failures. The strict three-attempt
+read-only replay now pauses for fixed 20 ms and 50 ms intervals only between
+transient unavailable observations. A definitive mismatch, negative replay or
+third unavailable sample still fails immediately, and the durable halt mutation
+is never retried. Exact-child hosted Windows verification remains required.
+
+This is bounded offline artifact-integrity hardening, not artifact signing or
+provenance, hosted or native Windows/installer acceptance, broker-paper or
+sustained-market acceptance, performance, profitability, deployment or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and independent emergency-stop
+access are unchanged. No control was added, so the seven beginner-friendly tabs
+and black/bright-purple bottom-right hover help are unchanged. The read-only
+roadmap estimate stays exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
+## v0.340.408 bounded Windows journal observation
+
+The standalone emergency stop now distinguishes a temporarily unavailable
+Windows journal-identity observation from a definitive alias, structural
+failure or inode replacement. Only the unavailable observation consumes the
+existing three-attempt read-only replay budget; a mismatch, an unhalted durable
+replay or the third unavailable sample still returns UNCONFIRMED immediately.
+The durable halt mutation remains single-shot, reset remains separate and the
+independent latch remains asserted.
+
+This closes the exact failure observed in both Windows regression shards of
+parent PR #128 without weakening pathname replacement fencing. It is bounded
+local emergency-stop hardening, not native Windows/installer acceptance,
+broker/account/funds acceptance, sustained-market evidence, performance,
+profitability, cloud deployment or release approval. Hosted success must be
+observed on the exact child commit before this fix is considered CI-verified.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits and fail-closed behavior remain unchanged. No button or editable
+parameter was added; seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate stays
+38% weighted (displayed about 40%, 30–45% low-confidence range), with 0/9
+stages independently accepted and no release or trading permission.
+
+
+## v0.340.407 retained fill remainder agreement
+
+Retained provider activity now requires each fill completion type to agree with
+its reported remaining quantity before the supplied history can support local
+request/activity agreement. A terminal `fill` with a positive remainder, or a
+`partial_fill` with zero remainder, remains readable for investigation but
+carries an explicit reconciliation disagreement through durable activity and
+the higher request/activity composition. Existing cumulative-chain,
+request-term, exact-head, fee, journal/file and emergency-stop checks remain
+unchanged.
+
+This is bounded local evidence-consistency hardening, not provider identity,
+broker/account/fill/fee/hold/funds, genuine-feed or sustained-trial, native
+Windows/installer, cloud, performance, profitability, hosted-CI or release
+acceptance. Every live, funding, spend and release authority flag remains
+false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.406 retained request-term agreement
+
+Every retained activity snapshot matched to an observed original paper request
+must now carry canonical requested quantity and limit price terms that equal the
+request journal payload. A correct newest snapshot can no longer hide an earlier
+conflicting quantity or limit. Legacy snapshots without either term remain
+replay-readable but cannot establish exact local agreement; the direct review
+policy is now v2. Latest status/fill selection, exact-head checks, journal/file
+rechecks and every explicit fill/limit check remain unchanged.
+
+Each emergency halt confirmation phase now tolerates at most three read-only
+cold-replay observations when Windows or SQLite reports a transient I/O fault. The exact
+regular single-link journal identity is checked before and after every attempt;
+identity drift, a definitive negative or the third transient fault remains
+immediately unconfirmed. The halt command is still issued once and no reset,
+second mutation or running authority was added.
+
+This is bounded local reconciliation hardening, not broker/account/funds,
+genuine-feed or sustained-trial, native Windows/installer, cloud, performance,
+profitability, hosted-CI or release acceptance. Every live, funding, spend and
+release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.405 post-latch durable halt replay
+
+The standalone local-paper emergency cut now reopens and replays the exact
+order journal a second time after reasserting its final independent intent
+latch. A sanctioned explicit reset can reuse the same SQLite inode after the
+first cold replay; that window now leaves the latch asserted but reports
+`UNCONFIRMED` with durable cleanup unconfirmed instead of reusing stale halt
+evidence. The unchanged halted path still requires both cold replays.
+Both replays must remain bound to the same regular single-link journal object;
+a final latch persistence/observation fault cannot promote the first replay.
+
+This remains sampled local filesystem evidence, not an atomic cross-process
+lease. A later explicit reset is still possible, and the command gained no
+reset, retry, provider request, broker connection or second halt mutation.
+Broker/account/funds, genuine-feed and sustained-trial, native Windows/
+installer, cloud, performance, profitability, hosted-CI and release acceptance
+remain open. Every live, funding, spend and release authority flag remains
+false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.404 bounded Windows process evidence
+
+The Windows installer smoke no longer performs an unbounded wait for redirected
+stdout/stderr after the root process exits. Both drain tasks share one fixed
+10-second grace; failure records a failed phase, closes owned readers and
+prevents installer-result evidence from being written. Evidence reports the
+maximum 300-second root-process wait and 10-second output-drain budgets as
+separate fields rather than presenting either as a whole-phase wall clock.
+
+The evidence schema now states only that redirected-output drainage is bounded
+and explicitly records process-tree containment as unverified. Atomic
+launch-into-job containment, descendant cleanup and native Windows acceptance
+remain open; an immediate post-start assignment race is not presented as
+containment.
+
+This is bounded Windows harness and evidence-integrity hardening, not broker/
+account/funds acceptance, genuine-feed or sustained-market-trial acceptance,
+native Windows/installer acceptance, performance, profitability, hosted CI
+success or release approval. Every broker, funding, live, cloud, spend and
+release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.403 release report parent binding
+
+Saved release-trial reports now reject parent-directory aliases, capture the
+exact canonical parent and report identities, and refuse acknowledgement when
+either public path changes across the bounded publication samples. On POSIX the report is created relative to the
+verified parent descriptor, then the file and new directory entry are synced
+before final identity rechecks. Windows retains exclusive creation, file sync
+and repeated sampled identity checks; native reparse-point, ACL, directory-
+publication and power-loss acceptance remain open.
+
+This is bounded offline report-integrity hardening, not broker/account/funds
+acceptance, genuine-feed or sustained-market-trial acceptance, native Windows/
+installer acceptance, performance, profitability, hosted CI success or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.402 financial evidence boundaries
+
+Disconnected broker balance review now rejects polymorphic collection, record,
+account and key evidence before byte budgeting or detachment, so caller hooks
+cannot influence supplied financial reconciliation. Saved release-trial reports
+now use exclusive restrictive no-follow creation, refuse existing files and
+symbolic links, and flush and sync completed bytes before success.
+
+These are bounded offline fail-closed and report-integrity checks, not broker/
+account/funds acceptance, genuine-feed or sustained-market-trial acceptance,
+native Windows/installer/power-loss acceptance, performance, profitability,
+hosted CI success or release approval. Every broker, funding, live, cloud,
+spend and release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.401 offline safety implementation bindings
+
+Persisted counterfactual broker-intent reconciliation now binds the exact
+emergency-latch reader implementation. Every existing latch sample rejects a
+changed public slot before a substitute can execute, including substitution
+after the first durable order replay. The independent stop writer remains
+unlocked and request/order journals remain unchanged on rejection.
+
+Disconnected fee projection and fee-reserved cash-path review now accept only
+exact built-in containers, scope strings and supported numeric scalars before
+normalization. Mapping, row, string and numeric subclasses cannot invoke hooks
+to inflate opening funds, hide fees or forge a passing supplied-history audit.
+
+These are bounded offline fail-closed checks, not broker/account/funds
+acceptance, genuine-feed or sustained-market-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.400 safety and release-evidence bindings
+
+Persisted reconciliation now rechecks the independent emergency-cut latch
+after the final request-source verification. Account inspection rejects
+polymorphic mapping, key, enum and numeric evidence before normalization. The
+mandatory forward release profile binds the exact 200 retained admissions, 200
+in-window admissions and zero admission incidents, and Windows evidence
+generation/review now pass an explicit package-derived expected version.
+
+These are bounded local fail-closed and evidence-integrity checks, not
+broker/account/funds acceptance, genuine-feed or sustained-market-trial
+acceptance, native Windows/installer/power-loss acceptance, performance,
+profitability or release approval. Every broker, funding, live, cloud, spend
+and release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.398 legacy admission trial gate
+
+Sustained forward-trial review now treats every retained in-window quote from
+a legacy session without a durable pre-evaluation exchange-admission chain as
+an explicit operational incident. Readable legacy coverage remains diagnostic,
+but it can no longer satisfy declared or incident-free 72-hour coverage, and
+the review reports `LEGACY_EXCHANGE_ADMISSIONS_UNBOUND` rather than silently
+accepting the missing chain.
+
+Existing quote, event, admission, cross-session, policy and lifecycle checks
+remain in force. This is bounded local evidence validation, not broker/account/
+funds acceptance, genuine-feed or sustained-market-trial acceptance, native
+Windows/installer/power-loss acceptance, performance, profitability or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.397 post-guard order replay
+
+Persisted counterfactual broker-intent reconciliation now performs a third
+fresh semantic order replay only after the request guard has fully exited.
+That replay closes the guard-connection finalization window, then rechecks the
+exact order and linked-portfolio identities, bounded sidecar-free
+fingerprints, independent emergency-cut latch and request source.
+
+A durable halt or order-file mutation committed during guard finalization, or
+a request-file change during the unlocked post-guard replay, fails closed.
+The order journal remains unlocked throughout, so the independent emergency
+stop is never delayed by reconciliation. Existing exact implementation,
+policy, account-scope and reviewed-snapshot bindings remain in force.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.396 emergency-latch and implementation binding
+
+Persisted counterfactual broker-intent reconciliation now fails closed while
+the independent emergency-cut latch is present, including the crash-safe
+interval before its SQLite halt commits. The latch is sampled before, inside
+and after the exact request guard without locking or delaying the stop writer.
+A cut requested during reconciliation is rejected while the request journal
+remains unchanged and the order journal may still be non-halted.
+
+The composition also binds the exact production durable-order replay,
+request-plan guard and request-file fingerprint implementations. Class-level
+substitution is rejected before a matching fake reader executes, and each
+implementation is rechecked through the final guarded replay. Existing
+physical identities, bounded fingerprints and semantic replay checks remain.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.395 bounded order file-set reconciliation
+
+Persisted counterfactual broker-intent reconciliation now binds bounded,
+sidecar-free fingerprints for both the exact order journal and its linked
+portfolio before the first semantic replay. Physical identity, size, stable
+metadata and bytes are rechecked after each successful replay and across the
+guarded request comparison. A same-inode metadata or byte change now fails
+closed even if the replayed order snapshot would otherwise remain equal.
+
+The production gateway policy and physical identities remain pinned. The order
+journal remains unlocked, so the independent emergency halt can still commit;
+a halt during the guarded request comparison is rejected by the second
+semantic replay before a fingerprint result can mask its changed durable
+state. Direct regressions cover both the order and linked-portfolio files.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.394 request-journal and gateway-policy binding
+
+Persisted counterfactual broker-intent reconciliation now binds one exact
+request-journal implementation, account scope, canonical single-link file and
+bounded byte fingerprint before the first durable order replay. The built-in
+guard is invoked class-qualified and the binding is rechecked before, inside
+and after its final guarded replay. A matching snapshot returned by an ad-hoc
+object or a byte-identical request pathname substitution fails closed.
+
+The durable order gateway must also retain its production policy: checkpoint
+validation enabled, rotation recovery disabled and no per-instance method
+substitution. A recovery-only gateway cannot reconcile through an interrupted
+rotation marker, and a policy change after the first replay is rejected. The
+order journal remains unlocked, preserving independent emergency-halt access.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.393 physical order-source binding
+
+Persisted counterfactual broker-intent reconciliation now requires one exact
+durable order gateway and pins one canonical single-link order journal plus
+the linked portfolio identity across both replay windows. A matching snapshot
+returned by an ad-hoc object or a byte-identical journal pathname substitution
+fails closed instead of being accepted as durable provenance.
+
+The durable class replay implementation is invoked directly and every physical
+identity is rechecked before and after both replays. No order lock spans the
+request-journal comparison, so the independent emergency halt remains writable
+and the existing semantic replay still rejects its changed durable state.
+Direct regressions cover both fake-gateway and byte-identical path-substitution
+attacks.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.392 detached forward-review input
+
+Persisted counterfactual broker-intent reconciliation now validates and
+detaches the complete caller-owned stopped review before any durable journal
+access. Both replay-validated order snapshots and the exact-head request-plan
+comparison consume that one immutable plain-data copy. Concurrent mutation of
+the caller's nested review cannot splice different review states into one
+reconciliation result.
+
+A direct regression changes the original receipt and stopped state after the
+first order replay and proves that the result remains exactly bound to the
+initial detached input. Request-head locking through the final order replay,
+the final request reread and unlocked independent emergency-halt access remain
+intact. The request plan stays permanently unsendable and no credential,
+provider, network, account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+## v0.340.391 request-guarded final order replay
+
+Persisted counterfactual broker-intent reconciliation now retains the exact
+request-journal write guard through the final durable order replay and a final
+request snapshot reread. A request path identity, bounded fingerprint or exact
+head change during that replay fails closed before reconciliation can return.
+The order journal remains unlocked throughout, so the independent emergency
+halt can still commit and the final replay rejects its changed state.
+
+A direct regression changes the guarded request-file fingerprint during the
+second order replay and proves the late change is rejected. Existing
+halt-during-request reconciliation still completes independently. The request
+plan remains permanently unsendable and no credential, provider, network,
+account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+## v0.340.390 post-review order-journal reconciliation
+
+Persisted counterfactual broker-intent reconciliation now brackets its exact
+request-head check with two fresh replay-validated session-order snapshots.
+Both must match the reviewed non-halted order snapshot. A later emergency
+halt, journal replacement, mutation or replay fault therefore invalidates the
+retained review instead of accepting stale local provenance.
+
+The order journal is not locked across request reconciliation. A direct
+regression performs a real durable emergency halt while the independent
+request-journal guard is active; the halt completes and the second order replay
+rejects the stale review. The request journal remains unchanged. The
+counterfactual plan stays permanently unsendable and no credential, provider,
+network, account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer/power-loss acceptance, performance, profitability or
+release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
+## v0.340.389 cold-replayed emergency-halt verification
+
+The standalone installed emergency cut and API emergency lane now treat the
+gateway return only as a warm acknowledgement. Before either surface reports
+durable cleanup as confirmed, a fresh gateway independently reopens and
+replays the exact order journal and requires retained history, at least one
+command and halted state. An exact-looking acknowledgement without a commit,
+an unreadable journal or a valid unhalted replacement remains UNCONFIRMED.
+
+Failure never removes the independent stop: the intent latch is reasserted,
+the paper runner is stopped, engagement remains blocked and cleanup may be
+explicitly retried. Direct regressions cover both a forged exact warm return
+with no journal mutation and replacement of a genuinely halted journal before
+the cold proof.
+
+This is bounded local emergency-control and reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer/power-loss acceptance, performance, profitability or
+release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits and fail-closed behavior remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.388 durable pre-evaluation exchange admission
+
+Every structurally valid, fresh and advancing paper-forward tick now enters a
+dedicated append-only exchange-admission chain before price/spread evaluation.
+The marker is committed and explicitly flushed through the existing durable
+SQLite boundary, binding the exact session, cycle, evaluation and exchange
+times, sanitized quote digest, source label and admitted policy. A real child
+process exits inside feed evaluation after that commit; cold restart recovers
+the marker and rejects altered prices at the same exchange timestamp without
+creating a modeled order.
+
+New sessions receive an atomic zero-count admission head with START, which
+keeps pre-feature sessions explicitly readable as legacy history. Eligible and
+price-vetoed new-format quote rows require the exact marker digest; duplicate,
+regressed, malformed and stale rows receive none. An unmatched terminal marker
+is retained as process-death evidence: it advances the restart floor, grants no
+price baseline or trial coverage and makes session/trial review require human
+attention. Marker storage is independently bounded, reported and preflighted
+without deletion or pruning; admission heads/counts participate in the stable
+trial snapshot.
+
+This is bounded local durability and reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency stop
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+## v0.340.387 atomic simulated-entry audit and CI evidence budget
+
+Direct simulated BUY admission now obtains SQLite writer reservation before its
+integrity governor reads the ledger. The audit, exposure and cash checks, and
+new-exposure mutation execute in that same transaction, closing a cross-process
+gap where a chain mutation could land after a passing audit. Standalone
+integrity reviews hold one explicit read snapshot. Reducing SELL exits
+intentionally remain available when integrity is impaired.
+
+The exact-head Windows saved-evidence job now has a finite 45-minute outer
+budget. Exact v0.340.386 CI exhausted the former 15-minute budget while bounded
+release profiles were still running; each profile retains its own fail-closed
+child limit and fresh exact-source CI remains mandatory.
+
+This is bounded offline risk, accounting and CI-orchestration evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native installer acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.386 rejected-tick exchange-marker continuity
+
+Every structurally valid fresh paper-forward tick now consumes the monotonic
+exchange marker before price/spread review. A price-vetoed observation cannot
+be replayed later under the same exchange timestamp with different values.
+Rejected prices never seed the single-source price guard; eligible quotes keep
+the independent executable-price baseline. Cold restart reconstructs those two
+baselines separately from every retained quote chain before START.
+
+Retained trial review carries locally rejected fresh ticks through the global
+cross-session exchange floor without granting them price-reference or coverage
+authority. A later eligible observation that repeats or regresses behind that
+floor is an incident and loses both adjacent coverage intervals. Rapid session
+rotation cannot launder a vetoed timestamp into incident-free trial coverage.
+
+This is bounded local supplied-history and trial-accounting evidence, not
+genuine-feed/source attestation, sustained-trial acceptance,
+broker/account/funds acceptance, native durability, performance, profitability
+or release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
+**Current development build: 0.340.401 (pre-release).**
+
+## v0.340.385 durable cross-session exchange continuity
+
+Paper-forward preparation now replays every retained per-session quote chain,
+recovers the highest accepted exchange timestamp and seeds the single-source
+price guard from that exact retained observation before START. A cold restart
+cannot reset the runtime freshness marker or immediately discard the last
+executable-price baseline. Malformed or inconsistent eligible history fails
+closed before account initialization or session creation.
+
+Retained forward-trial review separately requires exchange time to advance
+across session boundaries. Repeated and regressed points are operational
+incidents, cannot become price references, and remove both adjacent candidate
+coverage intervals. A 72-hour trial assembled from rapidly rotated sessions
+cannot reuse boundary ticks to manufacture incident-free coverage.
+
+This is bounded local supplied-history and trial-accounting evidence, not
+genuine-feed/source attestation, sustained-trial acceptance,
+broker/account/funds acceptance, native durability, performance, profitability
+or release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
+## v0.340.384 atomic admission and evidence snapshots
+
+Simulated tier-entry admission now reads its durable permission switch and the
+budget/allocation inputs that define its cap from one authoritative SQLite
+snapshot. A durable disable can no longer be spliced between a stale enabled
+read and a later cap read. Fresh-install bootstrap remains Terrestrial-only;
+saved OFF choices and settings-review failures remain fail closed.
+
+Direct post-reconciliation and fee-reference compositions validate and detach
+all four supplied account observations before any component review or replay,
+preventing caller mutation from selecting transient manifests. Paper-forward
+runtime and retained trial review now require strictly advancing exchange
+timestamps. A duplicate tick is retained as an ineligible incident, does not
+advance the feed baseline and cannot create sustained-trial coverage.
+
+This is bounded offline/local integrity evidence, not genuine-feed/source
+attestation, sustained-trial acceptance, broker/account/funds acceptance,
+native durability, performance, profitability or release approval. Engagement
+and optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.383 cut, executable-price and observation fences
+
+Feed admission and retained cross-session trial review now apply the bounded
+price-jump heuristic to bid, ask and last. A stable last trade can no longer
+conceal a large shift in the bid/ask prices used by strategy decisions and
+modeled fills. Rejected cross-session observations still cannot establish a
+later reference or coverage interval.
+
+Every cut-guarded durable order transaction now samples the independent
+emergency latch once more after its final apply and before SQLite commit. A cut
+published during the final mutation rolls back the complete order-journal and
+linked-portfolio transaction. Retained known-fee reserve composition also
+validates and detaches all four supplied account observations before component
+review or arithmetic, preventing caller mutation from mixing manifests.
+
+This is bounded offline/local integrity evidence, not genuine-feed/source
+attestation, sustained-trial acceptance, broker/account/funds acceptance,
+native durability, performance, profitability or release approval. Engagement
+and optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The roadmap
+stays 38% weighted (about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.382 symmetric cross-session trial conflicts
+
+Equal-time cross-session quote disagreements now fail closed without an
+arbitrary session winner. When supplied public observations for the same
+product and timestamp disagree on bid, ask or last price meaning, retained
+forward-trial review rejects every conflicting observation. A rejected point
+cannot become the chronological reference for a later cross-session jump
+check, and neither adjacent candidate interval can contribute coverage.
+
+Requested-window disagreement and revalidated-observation counts remain
+scoped even when neighboring retained context is needed to invalidate an
+interval. Focused regression evidence covers all-conflict rejection, stable
+outside-window count scoping and 72-hour rapid session rotation.
+
+This is bounded read-only local operational-evidence correctness, not
+genuine-feed/source attestation, sustained-trial acceptance, market realism,
+broker/account acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+roadmap stays 38% weighted (about 40%, 30–45% low-confidence range), with 0/9
+independently accepted stages and no release permission, trading permission or
+launch date.
+
+## v0.340.381 cross-session trial coverage correction
+
+Retained forward-trial review now keeps candidate coverage intervals bound to
+both exact session/cycle endpoints until the chronological cross-session
+consistency pass completes. An observation disqualified by an equal-time
+cross-session conflict or rapid cross-session price jump removes both adjacent
+intervals before union and coverage calculation. Rapidly rotating sessions can
+no longer reset price-jump state while retaining nominal 100% coverage.
+
+The consistency pass receives retained public context immediately outside the
+requested window so a conflicting boundary point cannot establish in-window
+coverage. Disagreement and revalidated-observation counts remain scoped to the
+requested window; retained context is not reported as an in-window incident.
+
+This is bounded read-only local operational-evidence correctness, not
+genuine-feed/source attestation, sustained-trial acceptance, market realism,
+broker/account acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+roadmap stays 38% weighted (about 40%, 30–45% low-confidence range), with 0/9
+independently accepted stages and no release permission, trading permission or
+launch date.
+
+## v0.340.380 POST/GET/SSE uncertainty matrix
+
+The mandatory reconciliation profile now carries one strict compact matrix
+across the existing disposable paper POST, provider GET and Activity SSE
+treatments. Exact component schemas jointly require single-attempt POST safety
+windows, retained unknown outcomes and terminal original-ID recovery; GET
+authentication denial and lost recovery acknowledgement; and SSE bounded
+backoff, independent emergency-stop revocation, cursor races, lost
+acknowledgements and byte-stable cold replay.
+
+Missing cells, schema extensions, polymorphic values and promoted authority
+fail closed. The matrix returns no private component evidence and performs no
+provider, credential, retained-storage, routing or financial operation. Every
+provider, broker, funds, live and release authority remains false.
+
+This is bounded injected local coverage, not provider identity, actual
+broker-paper/account acceptance, genuine stream or market delivery,
+broker-wide pacing, native durability, sustained-trial evidence, performance,
+profitability or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain unchanged. No button or editable parameter
+was added; seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The roadmap stays 38% weighted (about 40%,
+30–45% low-confidence range), with 0/9 independently accepted stages and no
+release permission, trading permission or launch date.
+
+## v0.340.379 exact-head forward-intent reconciliation
+
+One read-only same-host composition now reconciles the retained counterfactual
+broker plan back to a fresh stopped forward review. It holds request-journal
+writer exclusion while replaying the complete plan and prepared-unsent summary,
+independently revalidates the sealed forward receipt, event reconciliation,
+order snapshots and complete modeled-fill source, then rechecks the exact
+pathname identity and bounded file bytes before releasing the guard.
+
+Stale request heads, changed forward evidence and legacy unbound previews fail
+closed without mutating the journal or invoking credentials, clocks, callbacks,
+provider IO or routing. The mandatory disposable forward profile proves cold
+equality, repeated byte-stable replay and all three denial cases. The modeled
+fill already changed the synthetic ledger, so the plan remains permanently
+unsendable and cannot be applied again.
+
+This is bounded local provenance continuity, not source attestation, actual
+broker-paper/account/funds acceptance, genuine-market or sustained-trial
+evidence, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain unchanged. No button or editable parameter
+was added; seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The roadmap stays 38% weighted (about 40%, 30–45%
+low-confidence range), with 0/9 independently accepted stages and no release
+permission, trading permission or launch date.
+
+## v0.340.378 unsendable forward-to-broker intent binding
+
+A stopped, locally consistent paper-forward review now exposes one deterministic
+modeled-outcome source bound to the exact quote, session, cycle, local order,
+event, fill economics, event-chain head and sealed reconciliation receipt. A
+pure credential- and network-silent builder independently revalidates that
+source and binds it to one disconnected Alpaca paper preview without rounding.
+
+The request journal durably retains the compact binding, cold-replays it
+unchanged, labels legacy previews unbound and blocks submission review, checked
+attempt marking and the single-attempt transport boundary before credentials,
+clocks, permissions, the emergency stop, an opener, account reads or any
+attempt callback. The modeled fill has already changed the synthetic ledger,
+so the bound preview is counterfactual and permanently unsendable; it is never
+wired to strategy execution.
+
+This is bounded offline provenance and fail-closed integration evidence, not
+source attestation, actual broker-paper/account/funds acceptance, genuine-market
+or sustained-trial evidence, native Windows acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Engagement and
+optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45% low-confidence
+range), with 0/9 stages independently accepted and no release permission,
+trading permission or launch date.
+
+## v0.340.377 same-history repeated-interruption recovery
+
+This pre-1.0 increment adds a mandatory two-crash treatment on one disposable
+linked ledger. It proves a durable modeled-fill/forward-outcome gap remains
+stable after explicit review and a later reducing-exit no-fill/forward-VETO gap;
+both sessions stay review-required, accounting stays monotonic and exact, and
+the cold runner stays disabled and unowned without automatic repair, retry or
+restart. It changes no broker route, account authority, permission default,
+risk limit or user-editable parameter. All real-money, funding, live, cloud and
+release authorities remain false.
+
+Version 0.340.377 is implementation evidence only. It does not imply physical
+power-loss durability, actual broker-paper acceptance, sustained-market realism,
+native Windows installer acceptance, profitability, owner approval or readiness
+for 1.0. The roadmap baseline remains exact weighted implementation 38%,
+displayed about 40%, with a 30–45% low-confidence range and 0/9 independently
+accepted stages.
+
+## v0.340.376 modeled-fill binding, cut fence and strict public JSON audit
+
+This pre-1.0 increment completes full-detail cross-journal binding for modeled
+paper fills, closes emergency-cut races after runtime-clock sampling and between
+atomic quote-order steps, and makes public-repository JSON classification reject
+duplicate, non-finite and malformed JSON-shaped evidence. It changes no broker
+route, account authority, permission default, risk limit or user-editable
+parameter. All real-money, funding, live, cloud and release authorities remain
+false.
+
+Version 0.340.376 is implementation evidence only. It does not imply actual
+broker-paper acceptance, sustained-market realism, native Windows installer
+acceptance, profitability, owner approval or readiness for 1.0. The roadmap
+baseline remains exact weighted implementation 38%, displayed about 40%, with a
+30–45% low-confidence range and 0/9 independently accepted stages.
+
+## v0.340.373 cut-aware sealed forward review
+
+Every complete per-session reconciliation now produces a privacy-safe receipt
+binding the session summary, quote and durable-event heads, event
+reconciliation, both replay-validated order/portfolio snapshots, halt state,
+fixed reason set and independently sampled emergency-cut state. A generic
+durable halt is no longer described as an independent cut. Signal-only cuts,
+malformed or changing latches, and order-snapshot changes fail closed with
+fixed public reasons. Clean forward and recovery release fixtures consume the
+exact receipt and stability fields.
+
+This is bounded offline reconciliation hardening, not provider/source
+attestation, broker-paper or account acceptance, genuine-market or sustained
+trial evidence, native Windows/installer acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Broker transport,
+engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed entry, reducing exits and the independent emergency stop remain
+intact. No button or editable parameter was added. The existing Quote / Fill
+Evidence hover help explains the sealed review and retains seven
+beginner-friendly tabs plus black/bright-purple bottom-right hover help.
+
+The read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.372 exact per-session reconciliation envelope
+
+Per-session evidence review now consumes the retained quote chain and the
+durable lifecycle/outcome chain in the same forward-database snapshot, then
+binds them to two replay-validated order-journal and linked-portfolio snapshots.
+Every retained quote must have exactly one digest-matching outcome. Every
+modeled BUY or SELL outcome must match one durable fill by exact session, cycle,
+side and order ID. START, final tail, counters, event time/cycle order and the
+stable halt state are also required. A composite reconciliation digest exposes
+the local generation without publishing quotes, account contents or private
+paths.
+
+A process death after a quote commit but before its outcome is readable but
+incomplete. An independent cut that leaves a RUNNING session is authoritative
+and review-required; it is never rewritten into optional forward evidence.
+Unknown decisions, malformed order identifiers and fill outcomes missing the
+fixed modeled-liquidity and false strategy-authority fields fail closed. Pinned
+prior-version eventless recovery remains readable, but cannot claim the new
+trace. Current forward and recovery release fixtures require exact event heads
+and quote/outcome/order reconciliation.
+
+This is bounded offline local reconciliation, not provider/source attestation,
+broker-paper or account reconciliation, genuine-market or sustained-operation
+evidence, native Windows/installer acceptance, funding/live/cloud readiness,
+performance, profitability or release approval. Broker transport remains OFF
+and unrouted. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed entry, reducing exits and the independent emergency stop
+remain intact. No button or editable parameter was added. The existing Quote /
+Fill Evidence control has updated beginner help and retains the seven tabs plus
+black/bright-purple bottom-right hover help.
+
+The read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.371 durable forward-event trace
+
+Local paper sessions now retain a separately capped, never-pruned hash chain for
+lifecycle, primary outcome and scheduler events. The 1,000-row cycle table
+remains only a short Portal diagnostic. Retained review requires the event
+chain, session counters and final state to agree and requires exactly one
+quote-digest-bound primary outcome per quote. Legacy and mixed histories stay
+readable but cannot claim a complete or incident-free trace. Capacity admission
+preserves room for the next outcome, a possible scheduler overrun and a
+fail-closed terminal record; Trial Readiness reports a conservative event-row
+forecast without reserving storage.
+
+This is bounded offline evidence-durability and sustained-trial integrity work,
+not source attestation, broker-paper acceptance, genuine-market realism, a
+completed sustained trial, Windows/installer acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Broker transport,
+engagement and optional AI remain OFF by default. No button or editable
+parameter changed; the existing Trial Readiness control explains the new
+read-only fields, while seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain intact. The read-only roadmap estimate is
+unchanged: exact weighted implementation 38% (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.370 truthful resumable-slice expiry
+
+Exact-TTL expiry of a residual local-paper reducing slice is now an explicit
+no-fill veto rather than a modeled SELL. The full-position mandate, position,
+fill sequence and quote events remain unchanged until a later cycle establishes
+newer terms and a fresh quote. Cold replay preserves the pending mandate, while
+the independent emergency halt remains terminal and outside the worker.
+
+This version remains below 1.0 and grants no broker-paper, genuine-market,
+liquidity, sustained-operation, Windows, funding/live/cloud, performance,
+profitability or release acceptance. Owner approval remains required after all
+independent gates. Broker transport stays OFF and unrouted. No UI control or
+editable parameter was introduced; engagement and optional AI stay OFF by
+default, and limits, account checks, reducing exits, independent emergency stop,
+seven tabs and black/bright-purple bottom-right help remain intact.
+Implementation remains 38% weighted (about 40%, 30–45% uncertainty, low
+confidence), with 0/9 stages independently accepted and no release permission,
+trading permission or launch date.
+
+## v0.340.369 resumable bounded reducing-exit mandate
+
+The protected local-paper exit intent now remains an immutable, internal-only
+full-position mandate across multiple fresh-quote slices and explicit runner
+sessions. Every slice keeps the existing $200 notional ceiling, uses a new
+monotonic fill sequence, binds its exact forward session and cycle, and rechecks
+that the current holding equals the original expected position minus durable
+cumulative fills. A price move can therefore no longer consume the one protected
+ID while leaving a reconciled residual holding with no path to finish flat.
+
+Cold restart discovers exactly one structurally valid pending mandate and reuses
+its original ID; ambiguous, malformed, wrong-product, over-reducing, stale
+position and oversized-slice states fail closed. Start preflight, per-cycle
+admission and trial-readiness capacity distinguish a resumable mandate from a
+new intent slot without enlarging the lifetime ID or command limits. Session
+review projects only the slices bound to that exact session while the durable
+order retains cumulative quantity, modeled notional, fees and full replay
+history. The independent emergency halt remains outside the worker and
+terminally cancels a pending mandate; it never performs liquidation.
+
+This is bounded offline exit/reconciliation hardening, not actual broker-paper,
+genuine-market or liquidity evidence, a liquidation guarantee, Windows or
+installer acceptance, funding/live/cloud readiness, performance, profitability
+or release approval. Broker transport remains OFF and unrouted; engagement and
+optional AI remain OFF by default. No button or editable parameter changed, so
+the seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate is unchanged: exact weighted
+implementation 38% (displayed about 40%, 30–45% low-confidence range), with 0/9
+stages independently accepted and no release permission, trading permission or
+launch date.
+
+## v0.340.368 durable position-reducing exit intent reserve
+
+Linked local-paper accounts now protect exactly one slot inside the existing
+fixed durable intent-ID limit from ordinary intake. The public simulation route,
+ordinary BUY/SELL requests and unrelated internal callers cannot consume that
+slot. Only the paper-forward runner's internal replayable reducing command may
+use it, after binding the exact held product, requested reduction quantity and
+expected current position in the durable command and intent digest. Fill
+application rechecks that no other quantity change occurred and never permits a
+cumulative reduction above the retained bound. Flat, unlinked, wrong-product,
+oversized, stale-position, halted and independent emergency-cut paths remain
+fail-closed. The total ID limit is unchanged.
+
+Capacity reports, start preflight and sustained-trial readiness now distinguish
+total physical IDs, ordinary-intake headroom and protected reducing-exit
+headroom. A new unlinked account must prove two total IDs before linking; a
+linked flat account must prove one ordinary plus one exit slot; a retained
+position may continue exit monitoring when ordinary intake is exhausted.
+Cold replay preserves the reducing classification and exact duplicate/conflict
+semantics. Logical archival, command reserves, account/position checks and
+emergency-stop independence are unchanged.
+
+This is bounded local exit-capacity hardening, not actual broker-paper,
+sustained genuine-market, native Windows/installer, funding/live/cloud,
+performance, profitability or release acceptance. Broker transport remains OFF
+and unrouted; all engagement and optional AI permissions remain OFF by default.
+No UI control or editable parameter changed, so the seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.367 truthful external-boundary inventory and selected-journal identity
+
+Reconciliation acceptance now requires every caller-selected pacing, activity
+and acceptance journal leaf to be a regular single-link file. It then rebinds
+the canonical path-set result to the exact selected identity before semantic
+reads, refusing symbolic links, hard links and observed leaf replacement.
+
+The read-only admission inventory now distinguishes application routes from
+credentialed outbound transports. It binds the dormant Alpaca paper-order and
+optional AI advisory POST boundaries to exact fixed targets, OFF defaults,
+explicit confirmation and false authority. The broker transport remains
+unrouted; reporting its existence grants no account, funding, routing, live,
+cloud, spend or release permission.
+
+Focused validation passed 22 authority/live-loopback tests, 70 reconciliation
+acceptance tests and 14 version/roadmap/Windows-workflow tests, with the existing
+Starlette/httpx warning. All sixteen bounded offline profiles passed; saved
+evidence matches 425 source files /
+`2544a293c229fa166a091df264933caba334a27dc33789a3e9d2e8a8db467d4d`
+and report SHA-256 is
+`70e59830d40ff1072b40439f9e1ae0dc2f970edda8d47a7e2c288f7b7d54923c`.
+The complete deterministic regression passed both required shards: 3,367 and
+3,346 tests, each with one expected platform skip and the existing warning.
+Compilation and all fourteen Portal/controller Node checks passed. The
+165-member v0.340.367 wheel reports the synchronized version and has SHA-256
+`b1b4b2989f0aae49eea7d64efb316aa8fd04ae59074ed6e3fe50a690978ebded`.
+The trusted current-candidate artifact audit checked 1,112 paths/blobs and the
+exact-parent history audit checked 1,230 commits / 11,211 blobs with a 21-object
+candidate delta; both had zero findings. The introduced-line high-confidence
+credential scan found zero
+matches. Local Gitleaks is unavailable, so its pinned exact-head hosted job and
+the remaining hosted CI gates are mandatory and are not claimed as complete.
+
+This version remains below 1.0 and grants no broker-paper, genuine-market,
+Windows, funding/live/cloud, performance, profitability or release acceptance.
+Owner approval remains required after all independent gates. No UI control or
+editable parameter was introduced; OFF defaults, limits, account checks,
+reducing exits, independent emergency stop, seven tabs and black/bright-purple
+bottom-right help remain intact. Implementation remains 38% weighted (about
+40%, 30–45% uncertainty, low confidence), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
+## v0.340.366 fixed forward cadence and trusted delta activation
+
+The paper-forward worker now schedules cycle starts against fixed independent
+monotonic deadlines instead of adding each cycle's duration to the configured
+interval. A bounded overrun is retained durably and the next deadline starts
+from completion, so the worker never emits a catch-up burst. Invalid,
+regressing, stalled, or failed scheduler boundaries pause before any further
+fetch, retain a sanitized fixed reason, release the local owner lease, and keep
+process-control signals visible. The mandatory forward profile now runs nominal,
+overrun, invalid-clock, regressed-clock, and stalled-clock treatments through
+the actual worker and strictly consumes their closed evidence schema. Every
+provider, automatic-retry, sustained-market, broker, live, and release authority
+field remains false.
+
+Pull-request repository security now passes the immutable exact base and head
+commits into the trusted base policy. Complete reachable history remains
+mandatory; the new per-object and newly reachable object/byte ceilings are
+therefore active rather than merely installed. Push and manual runs bind the
+exact source to itself for a zero delta while still scanning complete fetched
+history.
+
+The complete deterministic regression passed both required shards: 3,350 and
+3,335 tests, with one platform skip per shard and the existing Starlette/httpx
+warning. The synchronized release/evidence mutation scope passed 307 tests.
+All sixteen bounded offline
+profiles passed; saved evidence matched 425 source files /
+`6edbe713cb0f0c5e257b244a101d3dbbd7197326edfbbaa320eec42fcdb6f16e`
+and report SHA-256 is
+`645efed507125eefc6626ca3f781b45409c419733c25dd1e8a86dfebb8a2fb8e`.
+Compilation and all twenty CI-inventory Node checks passed. The 165-member
+v0.340.366 wheel has SHA-256
+`e5c72fdb51984279ec929b7b406a21a0dec4baf434e9c5b5fedecc6347cf046f`.
+The exact v0.340.365 parent passed both hosted pull-request workflows:
+public-security run `44600143092` and research run `44600143293`.
+
+This is bounded offline and publication-gate hardening, not actual broker-paper,
+sustained genuine-market, native Windows/installer, funding/live/cloud,
+performance, profitability, or release acceptance. Fresh exact-head hosted
+checks remain required for v0.340.366. No control or editable parameter changed;
+engagement and optional AI remain OFF by default, and limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven
+beginner-friendly tabs, and black/bright-purple bottom-right hover help remain
+intact. The roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission, or launch date.
+
+## v0.340.365 trusted public-history policy bootstrap
+
+The successor public-repository audit continues to inspect every reachable
+object and retains existing path, content, JSON and entry-mode rules. It uses a
+finite four-GiB aggregate ceiling, sixteen-MiB per-object ceiling and optional
+exact-base candidate limits of sixty-four MiB / 4,096 newly reachable objects.
+Exact commit form, availability and ancestry are mandatory when delta review is
+enabled. The focused policy/workflow and synchronized release scope passed 113
+tests with one existing warning. Final full regression passed 6,673 tests with
+two platform skips and one existing warning in 1,254.91 seconds. All sixteen
+offline profiles and saved-evidence verification passed against 424 source
+files / `1530f942ef3c883f037297b24307871902f3992898211ae2824df9e0276dee56`;
+report SHA-256 is
+`f8327746b405c5fa551ad22443d0531cbc6de7adad64945b4c5c9eac65234f8c`.
+
+This is the first half of a two-stage trust change: the current PR must pass the
+base's old trusted policy with the compatible invocation; the next stacked PR
+activates the new exact-base CLI flags and must prove the successor policy in
+hosted security CI. This remains below 1.0 and grants no broker-paper,
+genuine-market, Windows, funding/live/cloud, performance, profitability or
+release acceptance. Owner approval remains required after all independent
+gates. Engagement and optional AI stay OFF by default; no UI control or
+editable parameter was introduced. Implementation remains 38% weighted (about
+40%, 30-45% uncertainty, low confidence), with 0/9 stages independently
+accepted.
+
+
+## v0.340.364 installer semantic-result distribution binding
+
+The installer smoke result now carries the exact pre-release version, source
+commit, installer digest and phase-session identity alongside eleven required
+semantic assertions, bounded-process evidence and false authority. Its strict
+reviewer rejects duplicate keys, linked or changed files, malformed and
+bool-as-int values, stale phase/source/session/digest metadata, promoted
+authority and output overwrite. The normalized review is manifest-bound,
+distribution-bound, uploaded with the distribution and independently consumed
+by the ordinary-user reviewer. The final strict trust-chain and documentation
+scope passed 151 tests with one existing warning. Final full regression passed
+6,665 tests with two platform skips and one existing warning in 1,297.22
+seconds. All sixteen offline profiles and saved-evidence verification passed
+against 424 source files /
+`9b44d33910b1b73a8c3ff82228426fb576bc048b1656116f6f49313e9714b1d9`;
+report SHA-256 is
+`68dd9d7fd255638ecf7daa05359a6c0487eefde500b36aa877e049a32eeee003`.
+
+This remains below 1.0 and does not grant native Windows, clean-machine,
+ordinary-profile, power-loss, broker-paper, genuine-market, funding/live/cloud,
+performance, profitability or release acceptance. Owner approval remains
+required after all independent gates. Engagement and optional AI stay OFF by
+default; no UI control or editable parameter was introduced. Implementation
+remains 38% weighted (about 40%, 30-45% uncertainty, low confidence), with 0/9
+stages independently accepted.
+
+
+## v0.340.363 fail-closed worker cleanup and complete mutation inventory
+
+Paper-forward shutdown now has an explicit quiescence boundary. The actual
+worker always disables and releases ownership on process-control exit without
+swallowing `KeyboardInterrupt` or `SystemExit`. Terminal diagnostic process
+control also releases ownership. A live worker that exceeds the bounded stop
+join raises `PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT`, retains its lease and
+leaves the session reviewable instead of recording a false `STOP`. The
+application shutdown fence propagates that failure after attempting all
+remaining cleanup.
+
+The admission-authority inventory now requires exact equality between the 52
+runtime mutating method/path bindings and a closed reviewed declaration. It
+rejects additions, removals, duplicates, malformed entries and unknown or
+misspelled classes/capabilities. Funding transfer, broker order and cloud
+control presence are derived from those exact declarations. The loopback HTTP
+release evidence consumes the full schema, route classifications and false
+authority flags.
+
+The synchronized safety/release scope passed 237 tests with one existing
+warning. Final full regression passed 6,607 tests with two platform skips and
+one existing warning in 1,392.61 seconds. All sixteen offline profiles and saved-evidence verification passed
+against source SHA-256
+`bba41df47f726619698eae064f2008283ef7f10f2c757d3ba33d975a354b407e`
+and report SHA-256
+`b8a0d7e1fe06f3e76f3dc5b9a0b42001c388c94b36f52a67273c2328e204699f`.
+Final exact-source regression, package/audit checks and hosted CI are still
+required.
+
+This is local injected and source-declared evidence only. It is not physical
+power-loss proof, native Windows ordinary-user acceptance, provider identity,
+broker/account acceptance, sustained genuine-market evidence,
+funding/live/cloud readiness, performance, profitability or release approval.
+No control or editable parameter changed. Seven tabs, black/bright-purple
+bottom-right hover help, OFF defaults, bounded risk, account checks,
+fail-closed exits and the independent emergency cut remain unchanged. Rough
+implementation stays about 40% (weighted 38%; 30-45%, low confidence), with
+0/9 stages accepted.
+
+
+## v0.340.362 actual-worker fault and cold-reopen evidence
+
+**Current development build: 0.340.362 (pre-release).** The disposable forward
+fault matrix now runs all four treatments through the actual worker, retains a
+durable pause before ordinary cleanup, observes no post-pause fetch, terminates
+the child, and cold-reopens the same stores without automatic worker, fetch,
+restart or session reuse. Explicit recovery acquires process-released ownership
+in a distinct orderless warmup session while preserving the failed session's
+scoped evidence hash.
+
+The direct scope passed 16 tests, the synchronized release/version/roadmap/
+Windows-workflow scope passed 201, and final full regression passed 6,589 tests
+with two platform skips and one existing warning in 1,324.49 seconds. All
+sixteen bounded profiles passed and saved evidence matched 422 source files /
+`287f83d505cf6d30b80b2b23ef89839b910c5c2c6c263a6a62d0d08c93630123`;
+report SHA-256 is
+`f042483593e9deeb426b11c9ad4cdc16cae7ef449b0be0120b6772423b2d2c60`.
+The 165-member v0.340.362 wheel has SHA-256
+`62a80adb6446c21c44dfa82b7cd9333a183f1ae02cb57a827d8b25c6a1d7d3dd`.
+
+This remains below 1.0 and grants no native power-loss, actual provider,
+broker-paper, genuine-market, funding/live/cloud, performance, profitability or
+release acceptance. Owner approval remains required after all independent
+gates. Engagement and optional AI stay OFF by default; no new UI control or
+editable parameter was introduced. Implementation remains 38% weighted (about
+40%, 30-45% uncertainty, low confidence), with 0/9 stages independently
+accepted.
+
+## v0.340.361 final asset and benchmark-clock resampling
+
+**Current development build: 0.340.361 (pre-release).** The disconnected
+single-attempt paper boundary now requires a matching final BTC/USD eligibility
+and increment snapshot after both durable reservations. Any disagreement or
+ineligible final sample consumes the request as `NOT_SENT` before POST. The
+synthetic decision benchmark now fails closed on invalid, regressing or frozen
+clock windows and retains an exact sample-count/positive-duration attestation.
+
+Final full regression passed 6,589 tests with two platform skips and one
+existing warning in 1,289.25 seconds. All sixteen bounded profiles passed and
+saved evidence matched 422 source files /
+`b0e2ac66b40610a6faf0c2dcda7208ab12bfb58529520346ff31ce68aaed7684`;
+report SHA-256 is
+`716c6fc1400c3701a4960a7bbfeaac1304c8bb8dc746c968524302bf61ded1b5`.
+The 165-member v0.340.361 wheel has SHA-256
+`00bf540ddaf20708635e0999b881addfa71a0c301e0fb8387ee562b282020042`.
+
+This remains below 1.0 and grants no actual broker-paper, source, account,
+quota, spendable-funds, genuine-market, funding/live/cloud, performance,
+profitability or release acceptance. Owner approval remains required after all
+independent gates. Engagement and optional AI stay OFF by default; no new UI
+control or editable parameter was introduced. Implementation remains 38%
+weighted (about 40%, 30-45% uncertainty, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.360 forward fault-injection release evidence
+
+**Current development build: 0.340.360 (pre-release).** The disposable forward
+release profile now binds exact missing-source, stale-quote, regressed-clock and
+invalid-clock treatments through the real local runner. Each treatment must
+pause, release ownership and create zero orders; the saved validator requires
+fixed cycle/fetch/reason counts and false automatic-retry/provider/broker/live/
+release authority. Feed admission now refuses polymorphic mappings and invalid
+runtime clocks before baseline mutation, and the bounded decision lane
+distinguishes clock regression from expiry.
+
+Final full regression passed 6,575 tests with two platform skips and one
+existing warning in 1,192.23 seconds. All sixteen offline profiles passed and
+saved evidence matched 422 source files /
+`9902d75dfb2d2530a74ac5b7a3b87a58e778a0caf76b97508bf8dd33ae729bdd`;
+report SHA-256 is
+`e676ac147ef38fdd009799f2ede9701f5580e4124796da213282dee79ac1182e`.
+The 165-member v0.340.360 wheel reports v0.340.360 and has SHA-256
+`ef33d2f275eae145dd37441d05ef7bf04646f54ac796c317da378825ffbb8e53`.
+
+This remains below 1.0 and grants no genuine-feed, provider, clock-hardware,
+network-recovery, sustained-market, broker-paper, funding/live/cloud,
+performance, profitability or release acceptance. Owner approval remains
+required after all independent gates. Runtime engagement and optional AI stay
+OFF by default; no new UI control or editable parameter was introduced.
+
+## v0.340.359 burst measurement-window attestation
+
+**Current development build: 0.340.359 (pre-release).** Bounded durable burst
+percentiles now include an exact process-local measurement-window attestation.
+Monotonic clock-sample count, elapsed duration, queue/durable/end-to-end sample
+counts and dequeued/completed/expired/flushed outcomes must reconcile with the
+public burst report, with emergency halt inside the window. A clock regression
+fails closed instead of becoming expiry. Exact release validation rejects
+schema/count drift, non-finite duration and any market/broker latency or
+throughput claim.
+
+The complete capacity/release/version scope passed 173 tests, the Windows/
+installer/browser-workflow/evidence/API scope passed 105, and final full
+regression passed 6,562 tests with two platform skips and one existing warning
+in 1,172.06 seconds. All sixteen bounded profiles passed with 422-file source
+fingerprint
+`a3cc4168a9b6ab8fe68a839e35dd89c5ef796f62c28ad41f7a8aa5ac24f62cc6`
+and report SHA-256
+`fbd4f1248e1eb5551abbe5010c2c06c5f2c66b50c93b69faefcd58ed22771bc8`.
+The two 30-offer treatments each admitted/completed eight, rejected 22
+overflow offers, retained 67 commands and attested 18 monotonic samples. Their
+215.231 ms and 117.165 ms local windows are synthetic machine-specific
+observations, not performance, market moves or broker latency. The 165-member
+wheel reports v0.340.359 and has SHA-256
+`faffb355f965363bcfe1cb5f2d0f9b08fd800ff0f6a061e6953a14fcf74af66b`.
+
+Predecessor PR #75 passed all exact-source hosted jobs. Fresh hosted execution
+is required for this increment. It does not establish sustained/native Windows
+pressure, broker-paper acceptance, genuine-feed realism, funding/live/cloud
+readiness, performance, profitability or release approval. No UI control or
+editable parameter changed. Engagement and optional AI remain OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven tabs and black/bright-purple bottom-right hover help
+remain intact. Rough implementation remains about 40%, exact weighted index
+38% (30-45%, low confidence), with 0/9 stages accepted; trading, funding and
+release permissions remain false and no launch date is established.
+
+## v0.340.358 burst capacity-bound evidence
+
+**Current development build: 0.340.358 (pre-release).** Bounded durable burst
+evidence now carries an exact replayed capacity snapshot. Active/retained
+commands, retained intent IDs, ordinary/total headroom and the fixed
+1,001-command halt/cancel/expiry reserve must agree. The release profile rejects
+altered schemas or bounds, while the capacity calculator rejects noncanonical
+and impossible inputs before reporting headroom.
+
+The direct scope passed 171 tests and the synchronized release/Windows-workflow
+scope passed 265, each with two existing warnings. All sixteen
+bounded offline profiles passed with 422-file source fingerprint
+`4cf158f042083d5bf7e23e3dd04c2c8013cb5011706d71b367d1a04f0b71860e`
+and report SHA-256
+`84709503954872c8ba921ce4361652267370415c8501869e34885fb1002e5fb5`.
+Both bounded treatments retained 67 commands and 16 IDs while reporting the
+full 1,001-command control reserve. These are local synthetic measurements,
+not broker or market latency. The 165-member wheel reports v0.340.358 and has
+SHA-256
+`4ab5836cd02f351d4fea7349d5dad723e23a5a6ded453c8ebbe479381c2f6f68`.
+
+Full regression exposed and repaired one draft validation error: a deliberately
+lower retained-history cap is independent from the active-epoch cap and must
+remain reviewable while new intake stays blocked. Final full regression passed
+6,561 tests with two platform skips and two existing warnings in 1,014.57
+seconds.
+
+Predecessor PR #74 passed all exact-source hosted jobs; fresh hosted execution
+is required for this increment. It does not establish sustained/native Windows
+pressure, broker-paper acceptance, genuine-feed realism, funding/live/cloud
+readiness, performance, profitability or release approval. No UI control or
+editable parameter changed. Engagement and optional AI remain OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven tabs and black/bright-purple bottom-right hover help
+remain intact. Implementation remains weighted 38% (30-45%, low confidence),
+with 0/9 stages accepted; trading, funding and release permissions remain false
+and no launch date is established.
+
+## v0.340.357 admission-authority inventory
+
+**Current development build: 0.340.357 (pre-release).** A read-only endpoint
+binds twelve source-declared admission authorities to the exact application
+routes and fails closed on route drift. Every entry declares its safe default,
+gates, automatic start/resume posture and reducing-exit posture. Broker
+connection, live orders, money movement, spendable funds, release approval and
+learned-policy promotion remain false, and the inventory performs no
+credential, provider, storage or broker I/O.
+
+The direct scope passed 186 tests. The synchronized release/Windows-workflow
+scope passed 234 tests, the ordered CI inventory passed 20 Node tests, and
+compilation, deterministic roadmap equality and diff checks passed. All
+sixteen bounded offline profiles passed
+with 422-file source fingerprint
+`bdc202053733c64b8136bdd857e9b622751386845ed4344c06f197bc8c272f75`
+and report SHA-256
+`fc120a97664eb289540b8cc7a21466289d9ba884703cc33fa5dd0250845e7b86`.
+The 165-member wheel reports v0.340.357 and has SHA-256
+`d73708c520cef3acc26f61a721bcdf4bdd715acc12fb61724daba03be96dcb9c`.
+Full regression exposed and repaired an emergency-cut classification race:
+after a SQLite-blocked fill rolled back and cancelled, the completed cut now
+returns its authoritative veto directly instead of attempting an optional
+forward diagnostic after ownership closes. The race passed five exact
+repetitions and 73 related tests with one platform skip; final full regression
+passed 6,553 tests with two platform skips and two existing warnings in 984.79
+seconds.
+This is M3.1 authority-review hardening, not complete runtime-authority proof,
+native Windows installer acceptance, actual broker acceptance, genuine-feed
+trial realism, funding/live/cloud readiness, performance, profitability or
+release approval. No UI control or editable parameter changed. Engagement and
+optional AI remain OFF by default; limits, account checks, fail-closed entries,
+reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation
+remains weighted 38% (30-45%, low confidence), with 0/9 stages independently
+accepted; trading, funding and release permissions remain false and no launch
+date is established. Fresh exact-source hosted CI is required.
+
+## v0.340.356 deterministic vault-test isolation
+
+**Current development build: 0.340.356 (pre-release).** Credential-vault tests
+now clear the process-local passive observation before and after every case.
+This prevents a deliberate saved-key rotation fixture from leaking
+`OBSERVED_PRESENT` into a later zero-setup onboarding test under deterministic
+sharding. The exact hosted selection and order is reproducible locally.
+Production vault/status behavior is unchanged: passive status never opens the
+OS vault, environment credentials require explicit opt-in, and no provider
+request occurs from onboarding.
+
+This is M1/M9 test-isolation and release-pipeline hardening, not native Windows
+installer acceptance, actual broker acceptance, genuine-feed sustained-trial
+realism, funding/live/cloud readiness, performance, profitability or release
+approval. No UI control or editable parameter changed. Engagement remains OFF
+by default; limits, account checks, fail-closed entries, risk-reducing exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Implementation remains weighted 38%
+(30-45%, low confidence), with 0/9 stages independently accepted; trading,
+funding and release permissions remain false and no launch date is established.
+Fresh exact-head execution of every hosted release job is required.
+
+## v0.340.355 portable artifact race classification
+
+**Prior development build: 0.340.355 (pre-release).** Artifact manifest
+creation now tracks whether its open descriptor has passed regular-file,
+single-link, bounded-size and pathname-identity validation. Any later read,
+final-descriptor or close error reports `ARTIFACT_CHANGED_DURING_READ`; open and
+pre-validation failures continue to report `INVALID_ARTIFACT_FILE`. Both fail
+closed. This makes the integrity classification portable when Windows denies a
+simulated replacement of an open file while retaining the earlier invalid-file
+contract for untrusted initial input.
+
+This is M1/M9 distribution-integrity hardening, not native Windows installer
+acceptance, actual broker acceptance, genuine-feed sustained-trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, risk-reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation remains weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted; trading, funding and
+release permissions remain false and no launch date is established. Fresh
+exact-head execution of both hosted regression shards and every remaining
+release job is required for this source.
+
+## v0.340.354 deterministic Windows regression sharding
+
+**Prior development build: 0.340.354 (pre-release).** The complete Windows
+pull-request regression now collects the full pytest suite in each of two jobs
+and deterministically assigns every exact node ID to one execution shard.
+Malformed, partial or empty shard arguments fail closed. Exact-head and ordered
+step-inventory reviewers require both named shard jobs, so a missing, cancelled,
+skipped or failed shard cannot satisfy the complete-regression gate. The split
+reduces per-job timeout exposure without reducing collected test membership or
+immutable checkout binding.
+
+This is M9 release-pipeline hardening, not native Windows application
+acceptance, actual broker acceptance, genuine-feed sustained-trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, risk-reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation remains weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted; trading, funding and
+release permissions remain false and no launch date is established. Fresh
+exact-head execution of both shards and the remaining hosted workflows is
+required for this source.
+
+## v0.340.353 Activity SSE cursor-directory continuity boundary
+
+**Prior development build: 0.340.353 (pre-release).** The explicit
+broker-paper Activity SSE checkpoint freezes the exact non-symlink cursor
+parent-directory identity, or proves the parent remains absent, across the sole
+provider read and each following semantic boundary through retained
+acknowledgement. Replacing an existing directory, or creating a previously
+absent parent during provider I/O, cannot inherit checkpoint authority even
+when the cursor file itself is preserved. This complements the independent
+main-file identity/byte binding and the store's descriptor-bound commit,
+acknowledgement, recovery and ownership checks. Saved reconciliation evidence
+requires the fresh-parent rejection.
+
+This is injected local M8 reconciliation hardening, not provider source or
+delivery attestation, broker-paper acceptance, genuine-feed sustained-trial
+realism, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter changed.
+Engagement remains OFF by default; limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation
+remains weighted 38% (30-45%, low confidence), with 0/9 stages independently
+accepted; trading, funding and release permissions remain false and no launch
+date is established. Exact local release evidence and fresh hosted workflows
+are required for this source.
+
+## v0.340.352 Activity SSE cursor-file continuity boundary
+
+**Prior development build: 0.340.352 (pre-release).** The explicit broker-paper
+Activity SSE checkpoint freezes an existing bounded single-link cursor main
+file's identity and bytes, or proves a fresh path remains absent, across the
+sole provider read and every following semantic boundary before checkpoint
+handoff. A byte-identical pathname replacement cannot preserve cursor authority
+merely because its logical head and contents match. The store's separate
+descriptor-bound commit, acknowledgement and recovery checks remain intact.
+
+This is injected local M8 reconciliation hardening, not provider source or
+delivery attestation, broker-paper acceptance, genuine-feed sustained-trial
+realism, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter changed.
+Engagement remains OFF by default; limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation
+remains weighted 38% (30-45%, low confidence), with 0/9 stages independently
+accepted; trading, funding and release permissions remain false and no launch
+date is established. Exact local release evidence and fresh hosted workflows
+are required for this source.
+
+## v0.340.351 exact authority, journal and cross-session boundaries
+
+**Prior development build: 0.340.351 (pre-release).** Saved paid-provider
+requests lease the exact selected Windows-vault credential through transport;
+disconnect or rotation cannot return while the prior credential remains in
+use. Execution-quality review freezes and fingerprints all four private
+journals around every semantic reader. Sustained-trial review rejects
+cross-session equal-time conflicts and 15-percent jumps within 90 seconds,
+preventing rapid session rotation from resetting the retained heuristic.
+Artifact manifests recheck the public path after descriptor hashing, Windows
+phase/binding JSON rejects hardlinks, and simulated-intent notionals reject
+coercive Boolean/string inputs before mutation.
+
+This is local injected M1/M3/M4/M7/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation remains weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted; trading, funding and
+release permissions remain false and no launch date is established. Exact
+local release evidence and fresh hosted workflows are required for this source.
+
+## v0.340.350 reducing-exit, credential-source and final-upload boundaries
+
+**Prior development build: 0.340.350 (pre-release).** A latched emergency cut
+continues to veto new entries while leaving only a quote-validated atomic close
+of an existing local-paper long available. Paid-provider requests select one
+authorized credential once and cannot fall back to an unopted environment key.
+Exact reconciliation preserves selected journal leaves for no-follow identity
+checks; injected and unknown retained observations are incidents; public audits
+parse bounded BOM-prefixed JSON; and the Windows lane re-verifies inner and
+outer manifests immediately before upload.
+
+This is local injected M3/M4/M7/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation remains weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted; trading, funding and
+release permissions remain false and no launch date is established. Exact
+local release evidence and fresh hosted workflows are required for this source.
+
+## v0.340.349 cut-ordering, consent, open-session and release-tree boundaries
+
+**Prior development build: 0.340.349 (pre-release).** Emergency admission was
+rechecked after the durable-order write lock; optional paid-provider consent is
+bounded, duplicate-free and exact before authorization; RUNNING trial sessions
+remain unresolved across later review windows; source evidence and public Git
+audits reject non-regular entries; and the Windows upload lane admits only its
+single reviewed versioned installer.
+
+The exact candidate passed 6,486 tests with 2 platform skips and two dependency
+warnings in 882.03 seconds. The synchronized affected/release scope passed 519
+tests with one platform skip and the same warnings. All sixteen bounded offline profiles passed. Saved
+evidence matched 418 source files /
+`81b0467e97718e5750e45b8777e93b2d17ba0c264d8d67d01cc0d6289e662be5`;
+report SHA-256 is
+`b7d040715e55ef4c00343e4757923edf0b6f7ec21cf7da7c4c5e0cc9adede1b8`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The synchronized 164-member
+wheel reports 0.340.349 and has SHA-256
+`41cdb14963030baebc6f4fc0c4b341cf4944fac1754cd3bf51938e9eb8c24adf`.
+The staged candidate audit found no artifact findings in 1,087 paths/blobs and
+the full fetched reachable-history audit found none in 1,108 paths, 10,913
+blobs and 1,216 commits. The introduced high-confidence credential scan found
+zero signatures. Local Gitleaks is unavailable and the hosted pinned scan
+remains required.
+
+PR #65 exact head `d9dd5ebe3bcbc1d89ebdacc07b96f1b8486d26bd` is
+fully green for hosted security/Gitleaks, saved evidence, browser/help and
+complete regression. Fresh exact-head workflows remain mandatory for this
+candidate, and the push/manual native Windows installer lane is undispatched.
+
+This is local injected M3/M4/M7/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation remains weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted; trading/funding/release permissions remain false and no
+launch date is established.
+
+## v0.340.348 canonical durability, trial-session and installer-file boundaries
+
+**Current development build: 0.340.348 (pre-release).** Durable commands admit
+only bounded exact JSON values before storage and apply their canonical retained
+representation. Exact numeric quote/settings boundaries precede mutation,
+overlapping empty non-clean trial sessions remain visible, funding preview is
+strictly non-authoritative, broker UUIDs cannot be polymorphic, and Windows
+installer review rejects hardlinked or identity-swapped files.
+
+The exact candidate passed 6,477 tests with 2 platform skips and two dependency
+warnings in 900.31 seconds. The affected scope passed 438 tests and the
+release/evidence scope passed 188. All sixteen offline profiles passed. Saved
+evidence matched 418 source files /
+`9eef981d241ab714ed030e376d1598dd7b717ec0d5a4c7f810e5da6c6e1cdcec`;
+report SHA-256 is
+`ecfb6f9252b09dc7964f1b4d45c65bdb4633a5b91a5c7ad36c3499e05fe9817d`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The synchronized 164-member
+wheel reports 0.340.348 and has SHA-256
+`d3dd99119755a3ad2baa098e992207280378bae1347ccfba0403948e8b9abb9b`.
+
+PR #64 exact parent `332a73f2174210201333a711ad3021b825398d0e`
+has green security/Gitleaks, saved-evidence and browser/help jobs; complete
+regression remains active and unclaimed. PR #63's regression was cancelled and
+is not a pass. Fresh exact-head workflows remain mandatory for this candidate,
+and the push/manual native Windows installer lane is undispatched.
+
+This is local injected M1/M3/M4/M5/M7/M8/M9 hardening, not actual broker
+acceptance, genuine-feed sustained-trial realism, native Windows owner
+acceptance, funding/live/cloud readiness, performance, profitability or release
+approval. No UI control or editable parameter changed. Engagement remains OFF
+by default; limits, account checks, fail-closed exits, independent emergency
+stop, seven beginner tabs and black/bright-purple bottom-right hover help remain
+intact. Implementation remains weighted 38% (30-45%, low confidence), with 0/9
+stages independently accepted; trading/funding/release permissions remain false
+and no launch date is established.
+
+## v0.340.347 recovery-identity, bounded-fill and evidence-authority boundaries
+
+**Current development build: 0.340.347 (pre-release).** Broker lookup identity,
+timing and outcome scalars are exact-type at write and replay boundaries. Paper
+identity keys are immutable built-in strings and modeled execution costs cannot
+produce zero or negative fills. Vault configuration requires exact equal
+readback, release fingerprints cover MJS/YAML authority inputs, and Windows
+review binds the executing reviewer bytes to the shipped manifest.
+
+The exact candidate passed 6,462 tests with 2 platform skips and two dependency
+warnings in 906.36 seconds. All sixteen bounded offline profiles passed. Saved
+evidence matched 417 source files /
+`882e98887107d969b4d47069ad99da72036150edc2c3065b5424560449deeccc`;
+report SHA-256 is
+`512065ba010f5acb7ad4b76d604251c00c4cbc1d5d77bddba40d136ef2bb25e4`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The synchronized 164-member
+wheel reports 0.340.347 and has SHA-256
+`a36de79f7dff7174cea2301e3c56f1a9173e81094b0aca52d1a584d980d19085`.
+Public artifact and introduced-line high-confidence credential scans found no
+findings. Local Gitleaks is unavailable, so hosted checksum-pinned Gitleaks is
+still required.
+
+PR #62 is fully green at exact head
+`ace4fc00138ad7703f62e0a4d1823d5f58a9fd81`. PR #63 exact head
+`d7f706c81686d224ddfb587b8e46721db30bc4f8` has green hosted
+security/Gitleaks, saved evidence and browser/help; complete regression remains
+active and unclaimed. Fresh exact-head workflows remain mandatory for this
+candidate, and the push/manual native Windows installer lane is undispatched.
+
+This is local injected M1/M3/M5/M7/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation remains weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted; trading/funding/release permissions remain false and no
+launch date is established.
+
+## v0.340.346 reset-audit, broker-wire and owner-envelope boundaries
+
+**Current development build: 0.340.346 (pre-release).** A reset is not
+acknowledged unless its final audit commits; audit failure restores the process
+cut and both durable halt barriers. Broker identity/link fields and paper
+credentials require exact built-in text before persistence, reconciliation,
+network or vault access. Windows owner-profile acceptance now verifies the
+outer distribution envelope over the exact raw inner evidence files.
+
+The exact candidate passed 6,447 tests with 2 platform skips and two dependency
+warnings in 963.43 seconds; focused validation passed 442. All sixteen bounded
+offline profiles passed. Saved evidence matched 415 source files /
+`cc3d0a8ebe8307adc24929f29aae89e30a801842be01d58542b82d40950dd8fc`;
+report SHA-256 is
+`cf8724a518862bc6fd43343e1e1beb6c98fd354f0256e0daa6c5ca6b31af381e`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The synchronized 164-member
+wheel reports 0.340.346 and has SHA-256
+`311669f30cccad709b9fd7b2bbdd61a446cdc32b3de190a0a66af30430d37db6`.
+
+PR #62 exact parent `ace4fc00138ad7703f62e0a4d1823d5f58a9fd81` has passed
+hosted security/Gitleaks, saved evidence and browser/help; its complete
+regression remains active and unclaimed. Fresh exact-head workflows remain
+mandatory for this candidate. The push/manual native Windows installer lane is
+undispatched.
+
+This is local injected M1/M3/M4/M9 hardening, not actual broker acceptance,
+genuine-feed sustained-trial realism, native Windows owner acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation remains weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted; trading/funding/release permissions remain false and no
+launch date is established.
+
+## v0.340.345 request-identity, balance-head and distribution-envelope boundaries
+
+**Current development build: 0.340.345 (pre-release).** Durable broker request
+identities and retained gross-balance history heads require exact built-in
+strings before storage selection or mutation. Windows distribution publication
+adds a verified outer checksum envelope binding the inner payload manifest and
+distribution review.
+
+The exact candidate passed 6,434 tests with 2 platform skips and two dependency
+warnings in 978.24 seconds. Focused validation passed 97 tests and the
+synchronized affected/version/roadmap scope passed 108. All 16 bounded offline
+profiles passed and saved evidence verified against 415 source files /
+`a6656009ef278df090a83adacfc2ba5a773fd06b143095c60263b46a9ca55b64`.
+The report SHA-256 is
+`f465312b190931267bc7618351fda3ded4f42796fe5c749b928a3cce6670f660`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax and fourteen controller smokes passed. The
+164-member wheel SHA-256 is
+`a4c8fa30a3e3041d0c3f9dff3ef4a9d9886c70f5e06324abf5df32d16c9f381e`.
+
+This candidate requires fresh exact-head hosted checks. Native Windows
+installer and ordinary-user acceptance remain separate undispatched gates.
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.344 interruption-token and Windows distribution boundaries
+
+**Current development build: 0.340.344 (pre-release).** Broker lookup and paper
+read interruption tokens, expected heads and retained activity heads require
+exact built-in lowercase 64-hex strings before storage access. The Windows
+workflow exposes executables only through one manifest-bound distribution
+artifact containing both the standalone executable and installer.
+
+The exact candidate passed 6,431 tests with 2 platform skips and two dependency
+warnings in 964.66 seconds. Focused validation passed 162 tests and the
+synchronized affected/version/roadmap scope passed 173. All 16 bounded offline
+profiles passed and saved evidence verified against 415 source files /
+`3ee944a6f5a706d3fd549886fc4414fd7a8cbdf081d8b11df70fa2f73d02a893`.
+The report SHA-256 is
+`15fbefb00c8d1dbf8aa6143e404f2bc85c9cc973a516929fbfcba8e97947c0b4`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax and fourteen controller smokes passed. The
+164-member wheel SHA-256 is
+`9bbd3b5e389e7e80dacc066c374d05140fd1fb978f951ce6f62403f2c8cdf193`.
+
+This candidate requires fresh exact-head hosted checks. Native Windows
+installer and ordinary-user acceptance remain separate undispatched gates.
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.343 halt-exit, reconciliation-head and Windows artifact boundaries
+
+**Current development build: 0.340.343 (pre-release).** Drawdown halt blocks new
+exposure while preserving validated simulated exits. Reconciliation activity
+heads require exact built-in lowercase 64-hex text before journal reads. The
+Windows workflow retains no executable-only artifact before the final
+manifest-bound distribution gate.
+
+The exact candidate passed 6,426 tests with 2 platform skips and two dependency
+warnings in 956.97 seconds. Focused validation passed 124 tests, the broader
+broker-paper/retained-activity/Windows/release scope passed 2,712 and the
+synchronized affected/version scope passed 167. All 16 bounded offline profiles
+passed and saved evidence verified against 415 source files /
+`69b85da7dfb85cc36e942c05f53a575d3df1f0f333339e2266fb81554fe6bd84`.
+The report SHA-256 is
+`56d0f1abeb904b7509cb5a7281ea964928e37ebd6d06dbbb23287863f39bbecc`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`c20a3fd5701147141eb6590c939ed25920a03a33ce3b97f9822d381bbbae9a70`.
+The staged-tree artifact and introduced-line high-confidence credential scans
+found zero findings. Local Gitleaks was unavailable, so fresh hosted
+checksum-pinned Gitleaks remains required.
+
+PR #59 parent security/Gitleaks passed for exact commit
+`8e139208776674bf77ea32607049fa4a767ab8f4`; its complete research-safety
+regression remains running and is not promoted to success. This candidate
+requires fresh exact-head hosted checks. Native Windows installer and
+ordinary-user acceptance remain separate undispatched gates.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.342 rejected-risk, browser-attribution and private-report boundaries
+
+**Current development build: 0.340.342 (pre-release).** Rejected PaperEngine
+opens no longer commit a candidate risk peak. Retained browser/help acceptance
+is bound to an explicit exact source commit. Raw broker submission review JSON
+is classified as private by the reachable-history audit even after renaming.
+
+The exact candidate passed 6,423 tests with 2 platform skips and two dependency
+warnings in 917.12 seconds. Focused validation passed 106 tests, the broader
+downstream journal/acceptance/release scope passed 157 and the synchronized
+affected/version scope passed 149. All 16 bounded offline profiles passed and
+saved evidence verified against 415 source files /
+`0012dfa1e356dbf4b9d295bd02ab7f4a7521621bb315ac60455319d9be087d46`.
+The report SHA-256 is
+`f3cf7c041d35d18293dd5536733e18bd29de3507bba722a9ddf0d6917e80b12a`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`328470e259f5a6cbe80eaa5d0c65a6455f7e12b864bdf6afd9adf4f3b072c1ef`.
+The staged-tree artifact and introduced-line high-confidence credential scans
+found zero findings. Local Gitleaks was unavailable, so fresh hosted
+checksum-pinned Gitleaks remains required.
+
+PR #58 parent security/Gitleaks passed for exact commit
+`d32b36fca76d4909ef287c05ac2dae978b52b74f`; its complete research-safety
+regression remains running and is not promoted to success. This candidate
+requires fresh exact-head hosted checks. Native Windows installer and
+ordinary-user acceptance remain separate undispatched gates.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.341 direct-input mutation and disclosure boundaries
+
+**Current development build: 0.340.341 (pre-release).** Direct PaperEngine
+values now fail outside a finite `1e-18` through `1e12` envelope before state
+mutation. Public product paths, quote-bundle public summaries and Activity SSE
+checkpoint event copying now require exact built-in envelopes before transport,
+public output or caller-controlled copy hooks.
+
+The exact candidate passed 6,418 tests with 2 platform skips and two dependency
+warnings in 894.98 seconds. All 16 bounded offline profiles passed and saved
+evidence verified against 415 source files /
+`2fe37b377a2cc36a11dbdd8374254137a92fd1616254fe807d56c0050a94553d`.
+The report SHA-256 is
+`78273c0d5e6c5d558581aac9cef29c92a68d4f27da475051504065ff289876d7`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`ed83f6ff980bb40f25c07e01b4b9c93745fa8920620fdd550508e43b5e091160`.
+The final staged-tree artifact audit covered 1,078 paths with zero findings;
+the 4,386-line introduced high-confidence credential scan also found none.
+Local Gitleaks was unavailable, so fresh hosted checksum-pinned Gitleaks
+remains required.
+
+PR #57 parent security/Gitleaks, browser-help and saved-evidence jobs passed for
+exact commit `99bde3cb39f02f04facaa0ae88942bd76dc3b5f0`; its complete
+Windows regression remains running and is not promoted to success. This
+candidate requires fresh exact-head hosted checks. Native Windows installer and
+ordinary-user acceptance remain separate undispatched gates.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.340 provider-envelope snapshot and price bounds
+
+**Current development build: 0.340.340 (pre-release).** Public ticker and
+paper-forward prices now fail closed outside the inclusive finite `1e-18`
+through `1e12` envelope before float publication, caching, retained evidence or
+modeled execution. Supplied Activity SSE review now preflights the exact account
+and normalizes one detached exact-built-in snapshot; polymorphic or changing
+inputs cannot pass one validation view and supply a different normalization
+view.
+
+The exact candidate passed 6,398 tests with 2 platform skips and two dependency
+warnings in 922.38 seconds. All 16 bounded offline profiles passed and saved
+evidence verified against 415 source files /
+`df56c9a9f6b2861abe0f07c72d4256b4adeca7989541e40576a347d2ec5debc3`.
+The report SHA-256 is
+`4ef56553c26d6f40f15fe665ef79b4edbc3afe015ad81a766285df9b2531ae6d`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`a2a45176980e22ecf068c7175eb7f6f26f7a2312ba6c2d3af01d67da1c5faba8`.
+The final public-artifact audit covered 1,077 paths / 109,144,946 bytes with
+zero findings; the 4,414-line introduced high-confidence credential scan also
+found none. Local Gitleaks was unavailable, so fresh hosted checksum-pinned
+Gitleaks remains required.
+
+PR #56 parent security/Gitleaks, browser-help and saved-evidence jobs passed for
+exact commit `41eba7a3607ca52798d3ae00b8e448af195ff1a7`; its complete
+Windows regression remains running and is not promoted to success. This
+candidate requires fresh exact-head hosted checks. Native Windows installer and
+ordinary-user acceptance remain separate undispatched gates.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30-45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.339 paper protocol exact-type admission
+
+**Current development build: 0.340.339 (pre-release).** Simulated-order
+protocol fields, paper-forward quote inputs and supplied Activity SSE reconnect
+cursors now reject non-built-in types before comparison, durable mutation,
+modeled execution or transcript normalization. Invalid quote evidence retains
+only a fixed marker; no attacker-provided raw mapping is persisted.
+
+The exact candidate passed 6,376 tests with 2 platform skips and two dependency
+warnings in 899.83 seconds. All 16 bounded offline profiles passed and saved
+evidence verified against 415 source files /
+`f70fa96bd59c6d73f0f500a64980407ed308eab73401a8565ca3ee95f1207aad`.
+The report SHA-256 is
+`963ee52295d76a0d2f8446399d37f21069e9b34be3773ad206a7911f7f6b3f25`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`ba7b97b31007c623299f1f9f5c906d7d4bfb80a0e72b72a71e4c51ad05d6c58c`.
+The staged-tree artifact audit covered 1,076 paths / 108,940,770 bytes with
+zero findings; the 4,517-line introduced high-confidence credential scan also
+found none. Hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #55 parent security/Gitleaks, browser-help and saved-evidence jobs passed for
+exact commit `cdbdaa432d2596f2ab8a369a49dec7934462063f`; its complete
+Windows regression remains running and is not promoted to success. This
+candidate requires fresh exact-head hosted checks. Native Windows installer and
+ordinary-user acceptance remain separate undispatched gates.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30–45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.338 tier-entry admission boundary
+
+**Current development build: 0.340.338 (pre-release).** Tier-entry permission
+now rejects every non-built-in tier and every Boolean, stringified, non-finite,
+zero or negative notional before reading settings or permission state. Accepted
+notionals are exact built-in integers, floats or Decimals and must be finite and
+strictly positive. Durable and forward callers pass their already validated
+values as Decimal.
+
+The exact candidate passed 6,349 tests with 2 platform skips and two dependency
+warnings in 915.45 seconds. Direct tier/forward/durable/preflight/portfolio
+validation passed 96 and the synchronized release/version/roadmap scope passed
+107. All 16 bounded offline profiles passed and saved evidence verified against
+415 source files /
+`2a25dcc8d1ad3114ba1ac5066752f15625a760fa0a64a48c97597f66c0c01452`.
+The report SHA-256 is
+`8dfe22369592a0bd4161856a011336ff781569eec4d9767e224095fae1751d1f`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`883ec0d843c4755be42e8f0d6cd64340e7fe997fddc22c7698e3a7f1c7e1eb09`.
+The final 1,075-path / 108,733,285-byte staged-tree artifact audit and
+4,289-line introduced credential scan found zero findings. Fresh hosted
+exact-head security/Gitleaks, browser,
+evidence and regression gates remain required.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30–45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.337 public account-evidence summary type boundary
+
+**Current development build: 0.340.337 (pre-release).** The public
+account-evidence summary now rejects non-built-in result keys, mode, policy,
+status and gross-currency keys before equality checks or public copying. Hostile
+string subclasses can no longer forge equality and pass private policy/status
+text through the allowlisted output.
+
+The exact candidate passed 6,339 tests with 2 platform skips and two dependency
+warnings in 926.21 seconds. Direct privacy/reconciliation validation passed 409
+and the synchronized component/version/roadmap scope passed 420. All 16 bounded
+offline profiles passed and saved evidence verified against 415 source files /
+`5a2b2dc716ebea4bd23ba130a53560acc36dbeaf82a0ab73c16633c41696dcf3`.
+The report SHA-256 is
+`2102999857c8c1fcdbd1cc5ad22708fab405dc44116c47874b67722bde1b0bad`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax and fourteen controller smokes passed. The
+164-member wheel SHA-256 is
+`f7aa5a0185b7478160dce69790a22cd36c6d2a265825f3c0174bb6e4e5c3caad`.
+The final 1,074-path / 108,535,028-byte staged-tree public-artifact audit and
+4,286-added-line high-confidence credential scan found zero findings. Fresh
+hosted exact-head security/Gitleaks, browser, evidence and regression gates
+remain required.
+
+This increment accepts no broker, sustained-market, native Windows,
+funding/live/cloud or release gate. No Portal control changed. OFF defaults,
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right help are unchanged. Weighted
+implementation remains 38% (30–45%, low confidence), 0/9 stages independently
+accepted, with release and trading permission false and no launch date.
+
+## v0.340.336 Activity SSE reconnect-reason preflight
+
+**Current development build: 0.340.336 (pre-release).** Activity SSE reconnect
+coordination now rejects every reason except an exact built-in allowlisted value
+before callbacks, journal or vault access, durable reservation and network IO.
+Unknown/null reasons and hostile string subclasses therefore cannot consume the
+single bounded provider request or create durable cursor/retry state.
+
+The exact dependency-complete candidate passed 6,334 tests with 2 platform
+skips and two dependency warnings in 931.22 seconds; focused reconnect,
+credential and acceptance validation passed 905 and the synchronized final
+scope passed 914. All 16 bounded offline profiles passed and saved evidence
+verified against 415 source files /
+`4c5e9ffd1746b7a5711eb55edf95a1db1424ce5961d0256af1328acb0cb4bbdf`.
+The report SHA-256 is
+`e005e3ef4f7474af8722d99f4fb78153fd9b0351083b213ca453100b09b0e8ca`;
+all broker, market-realism, native-Windows, live, money-movement and release
+authority flags remain false. Compilation, dependency checks, deterministic
+roadmap generation, Portal syntax, fourteen controller smokes and the 19-case
+CI inventory passed. The 164-member wheel SHA-256 is
+`c1bdaf9876a6076c83111f3885cd3e91ec6c848c4a95347739e7ce8ea045ec31`.
+The 1,073-path / 108,337,061-byte public-artifact audit found zero findings;
+fresh hosted exact-head security/Gitleaks and regression lanes remain required.
+
+This increment does not accept provider identity, broker paper, sustained
+genuine-feed trials, native Windows, funding/live/cloud or release gates. No
+Portal control changed. OFF defaults, limits, account checks, fail-closed exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right help are unchanged. Weighted implementation remains 38%
+(30–45%, low confidence), 0/9 stages independently accepted, with release and
+trading permission false and no launch date.
+
+## v0.340.335 bounded paper risk-screen input and JSON boundary
+
+**Current development build: 0.340.335 (pre-release).** The public paper risk
+screen now admits only an exact built-in request schema with built-in string
+keys, exact Boolean/tier types, exact built-in numeric values and finite
+field-specific magnitude limits. Numeric strings, custom conversion/equality
+objects, Boolean quantities, mapping subclasses, missing or extra fields,
+non-finite values and excessive exponents reject deterministically. Public cost
+output is finite or null, preventing unbounded evidence from creating an
+infinite candidate result or a JSON serialization failure.
+
+Focused direct and loopback API validation passed 20 tests and the synchronized
+release/API scope passed 200, both with two dependency deprecation warnings.
+The complete exact candidate passed 6,319 tests with 2 platform skips and the
+same warnings in 852.42 seconds. All sixteen bounded profiles passed and saved
+evidence verified against 415 exact source files /
+`0389c0bfbddc00aad1f2530e86fdce85d0a73e57b8c0e0f8a80c49ff9af05178`;
+report SHA-256 is
+`9ec3d28e10751c8e6b7a074000b936846b5fc302331e5a48655c15dcb85d5dd3`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+syntax, all fourteen Node controllers and the 19-case CI inventory passed. The
+164-member wheel SHA-256 is
+`688bfb00b3e4ff96ad138d97abd73aa81cc63abbc1526c32d006a00cf2c7d522`.
+The current-tree public-artifact audit and 4,443-added-line high-confidence
+credential scan found zero findings. Local Gitleaks is unavailable. Fresh
+exact-head hosted pinned Gitleaks/security, browser, evidence, regression and
+native Windows installer execution remain mandatory.
+
+This is local M3 bounded-risk evidence, not market-data authentication,
+profitability, broker-paper acceptance, genuine-feed sustained trial realism,
+native Windows acceptance, funding/live/cloud readiness or release approval.
+No UI control changed. Engagement remains OFF by default; limits, account
+checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30–45%, low confidence), 0/9 stages independently
+accepted, with release/trading permission false and no launch date.
+
+## v0.340.334 Activity SSE checkpoint acknowledgement type binding
+
+**Current development build: 0.340.334 (pre-release).** The one-attempt Activity SSE
+checkpoint now validates exact built-in envelope, transport and reconnect-review
+acknowledgement schemas before network admission or cursor mutation. Hostile equality
+subclasses, Boolean-as-count values, missing fields and authority promotion fail closed.
+This advances the offline M8.2 uncertainty matrix but does not accept M8.2 or any release
+stage; actual provider/account/source evidence remains external and private.
+
+Focused checkpoint validation passed 124 tests and the broader Activity SSE surface passed
+1,024 tests, both with two dependency deprecation warnings. Final release profiles,
+saved-evidence verification, complete regression, package checks, secret scans and hosted
+exact-head gates remain mandatory before promotion.
+
+All sixteen bounded offline profiles subsequently passed and the saved report independently
+verified against 415 exact source files / `41151b2c064fba6842f953ac09ed2739214d2fa713789af548c7c67d6815801b`;
+`validation/release_trials_0_340_334.json` SHA-256 is
+`f0d6b6c306bec4250600de41a3a5add1dd53a6c3d9c0baf5251139541a838e04`.
+Every authority flag remained false. These hashes prove current-source/report consistency
+only, not execution authenticity or any external acceptance.
+
+The final exact candidate passed 6,310 tests with 2 platform skips and two dependency
+warnings in 849.21 seconds. Compilation, dependency integrity, deterministic roadmap
+equality, Portal syntax, all fourteen Node controllers and the 19-case ordered CI inventory
+suite passed. The 164-member wheel SHA-256 is
+`9840cf0e461da554af42cc80a93ce61b75262097c26e68e053fed4a61bd209ff`.
+The 1,070-path public-artifact audit and changed-line high-confidence scan found zero
+findings; hosted checksum-pinned Gitleaks and native Windows/installer execution remain
+required.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits,
+account checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help are unchanged. Weighted implementation remains
+38% (30–45%, low confidence), with 0/9 independently accepted stages; release approval,
+trading permission and launch date remain separate and false/unset.
+
+## v0.340.333 evidence-first milestone execution map
+
+The read-only roadmap now exposes nine M1-M9 engineering milestones as 45 explicit evidence-required tasks plus a prioritized per-cycle batch queue. Each task records its coarse engineering effort band, offline-versus-external/native mode and required proof. Development cycles must recover current heads and CI, select the largest coherent non-overlapping batch, continue independent offline work when an external gate is blocked and use expected-head leases for publication. Every task remains `REVIEW_REQUIRED`; this planning structure adds no runtime scheduler, write endpoint, broker/account authority, order permission, funding, live trading, cloud deployment or release approval.
+
+**Current development build: 0.340.333 (pre-release).** The roadmap change keeps the version unchanged because it adds read-only planning scope rather than a new runtime authority or accepted release stage.
+
+The prior v0.340.333 saved report became stale when the roadmap Python source changed. All sixteen bounded offline profiles were therefore regenerated from the final 415-file source fingerprint `3ab0de1b76fd1d42424ead89add1da8214cb66ebc0d825acbeb0219ad6687c3a` and independently revalidated; `validation/release_trials_0_340_333.json` SHA-256 is `26854a80f9b690cfe98142d735f7d00cf6aecfb234c98915af343df182e26114`. Every authority flag remains false. These hashes prove only current-source/report consistency, not execution authenticity, broker-paper acceptance, genuine-feed realism, native Windows/installer acceptance, cloud readiness or profitability.
+
+Final local validation passed 6,291 tests with 2 platform skips and two dependency deprecation warnings in 857.32 seconds. The milestone/roadmap/evidence/release-trial concentration passed 186 tests, and the direct milestone/roadmap contract passed 15. Compilation, dependency integrity, deterministic roadmap equality, all fourteen Node controller smokes, the sixteen-case ordered CI-step verifier, Portal JavaScript syntax, diff checks and the 1,070-path public-artifact audit passed. A checksum-pinned Gitleaks v8.24.3 working-tree scan and changed-line high-confidence scan found zero findings. The 164-member wheel reports v0.340.333 and has SHA-256 `1580c1fecdb717ce73f54da498043a13fd781585e60aa4372c5a3d216414f358`.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. Rough implementation remains weighted 38% (30-45%, low confidence), with 0/9 stages independently accepted. Release approval and trading permission remain false; no launch date is established. Historical and synthetic results are not future profit predictions.
+
+## v0.340.333 Activity SSE reconnect replay type binding
+
+Complete Activity SSE reconnect-budget views, retained cursor-checkpoint bindings and checkpoint-return acknowledgements now require exact built-in key and field types before equality, membership or arithmetic may influence a state transition. Custom-equality text, string/integer subclasses, type-confused backoff tuples, mapping extensions and authority promotion return fixed uncertainty diagnostics while preserving conservative durable state for explicit review. The mandatory bounded fixture proves type-confused budget and checkpoint replays are rejected without another provider request or retry. This is local injected composition evidence, not provider/source attestation, stream entitlement or delivery coverage, authorized-account acceptance, fee/hold/funds reconciliation or broker acceptance.
+
+**Current development build: 0.340.333 (pre-release).**
+
+Exact local validation passed 6,285 tests with 2 platform skips and one existing Starlette/httpx warning in 848.00 seconds. The Activity SSE and installed-tool integration surface passed 1,047 tests and the complete release-trial module passed 139 with the same warning. All sixteen bounded offline profiles passed and saved-evidence verification matched 413 exact source files / `91144b9aeecd385df0676d997b5c486de4adbeddc8735cca992ed95ec4e805b6`; `validation/release_trials_0_340_333.json` SHA-256 is `6473c7b635d4dae4e65980ccc16f424bd9b0e70e586cd15a7437f567a95edb1f`. The 163-member wheel reports v0.340.333 and has SHA-256 `b5cceb4e00ee9542b31173919c3a4906ec63403a35738a7b3403ac004f4be923`.
+
+PR #45 exact parent `726f1a7b33d502c954ce3b067ae0ab92ea2c9008` passed hosted public security/Gitleaks, real-browser help and saved offline release evidence. Its complete regression remained in progress with no failed step at this checkpoint. Parent results do not validate this increment; fresh exact-source hosted security, browser, saved evidence and complete regression remain required. The push/manual native Windows installer workflow has not run for this source.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. The read-only roadmap estimate remains weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; this is separate from release approval, trading permission and any launch-date prediction. Historical and synthetic results are not future profit predictions.
+
+## v0.340.332 Activity SSE cursor acknowledgement binding
+
+The explicit Activity SSE reconnect checkpoint now treats the complete cursor-store return as untrusted after the durable commit. Before reporting success it requires the exact receipt schema, modes, account/cursor digests, boolean types, reconnect/transport/count bindings and every denied authority. It then independently cold-replays the retained checkpoint and matches its exact head, prior head, receipt, cursor, transport input, reconnect review, count totals and optional reservation. Extended, malformed, type-confused, authority-promoting or retained-state-disagreeing acknowledgements return one fixed diagnostic while preserving the conservative committed checkpoint for review. Legacy transport-unbound rows remain rejected at this coordinator boundary and by downstream recovery. This is local injected durability/composition evidence, not provider/source attestation, stream entitlement or delivery coverage, authorized-account acceptance, fee/hold/funds reconciliation or broker acceptance.
+
+**Current development build: 0.340.332 (pre-release).**
+
+Exact local validation passed 6,270 tests with 2 platform skips and one existing Starlette/httpx warning in 842.27 seconds. The Activity SSE and installed-tool integration surface passed 1,006 tests, the checkpoint/release-trial focus passed 244 and the final release/package/reconnect concentration passed 716 with the same warning. All sixteen bounded offline profiles passed and saved-evidence verification matched 413 exact source files / `abf5482ed8e25378823bf1bb506eb3a005da2689a6b2ff270151d431bee6ed90`; `validation/release_trials_0_340_332.json` SHA-256 is `f273898114e4abbec4b77d69d0f61884e031fdbc65c0052d5aea92004b60f0a9`. The 163-member wheel reports v0.340.332 and has SHA-256 `ea23735ac9b75c143ffcb4ca21b03a3c4c856709998f06bcf0306ea46f2fa46f`.
+
+PR #44 exact parent `28e731dbe7726ad19989bdf37334010c9c4cc097` passed hosted public security/Gitleaks, real-browser help and saved offline release evidence. Its complete Windows regression remained in progress with no failed step at this checkpoint. Parent results do not validate this increment; fresh exact-source hosted security, browser, saved evidence and complete regression remain required. The push/manual native Windows installer workflow has not run for this source.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. The read-only roadmap estimate remains weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; this is separate from release approval, trading permission and any launch-date prediction. Historical and synthetic results are not future profit predictions.
+
+## v0.340.331 Activity SSE transport-boundary coherence
+
+The explicit Activity SSE reconnect checkpoint now validates the complete private transport acknowledgement before any cursor mutation. Exact schema, mode, policy, limitations, source mode, account/cursor digests, byte/chunk/event bounds, trade/fee arithmetic, comment/interruption coherence, injected-versus-provider access shape and every denied authority are mandatory. Unexpected extensions, weakened limitations, inconsistent counts/digests or promoted source/routing/funds/live/release claims return one fixed diagnostic and leave a fresh cursor store absent. The bounded release fixture exercises this denial. This is an internal composition boundary with injected evidence, not provider/source attestation, stream entitlement or complete delivery, authorized-account acceptance, fee/hold/funds reconciliation or broker acceptance.
+
+**Current development build: 0.340.331 (pre-release).**
+
+Exact local validation passed 6,236 tests with 2 platform skips and one existing Starlette/httpx warning in 845.96 seconds; the Activity SSE checkpoint/reconnect concentration passed 448 with the same warning. All sixteen bounded offline profiles passed and saved-evidence verification matched 413 exact source files / `0d7dfbfda9432d1c33590d540ba8ae31a235432f68db17fc0e92aa29d1148a86`; `validation/release_trials_0_340_331.json` SHA-256 is `bf36a26d236e247ca9a35c7049774b2a24ce2dcd95270d70ef13183732601e45`. Compilation, dependency integrity, deterministic roadmap regeneration, all fourteen Node controller smokes and diff whitespace checks passed. The 163-member wheel reports v0.340.331 and has SHA-256 `d0d0f5fd3c1d6c46ea41fbfaf5820c953285ad68792512f131b11cbd34600b4a`.
+
+PR #43 exact parent `4a2a55c83ef2122159bf22dbd3dbb52daacc78e2` passed hosted public security/Gitleaks, real-browser help and saved offline release evidence. Its complete Windows regression remained in progress with no failed step at this checkpoint. Parent results do not validate this increment; fresh exact-source hosted security, browser, saved evidence and complete regression remain required. The push/manual native Windows installer workflow has not run for this source.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. The read-only roadmap estimate remains weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; this is separate from release approval, trading permission and any launch-date prediction. Historical and synthetic results are not future profit predictions.
+
+## v0.340.330 immutable pull-request head CI evidence
+
+Every pull-request release job now explicitly checks out the immutable pull-request head and compares the resulting repository HEAD with the expected source commit before it can compile, audit or test. The public security workflow keeps the trusted policy checkout isolated at the base commit while scanning the exact proposed head. The offline CI inventory reviewer now requires an exact bounded schema, workflow path and event, checked-out source SHA, unique positive run/job identifiers, run-attempt binding and the exact required job set from one stable regular single-link file. A separately triggered native Windows dispatch may report a different event head only when its checked-out SHA is the requested source. Saved release source fingerprints now include the offline operations reviewers. These controls prove source and inventory consistency only; they do not attest GitHub metadata, hosted job-step integrity, installer bytes, native Windows behavior or independent acceptance.
+
+**Current development build: 0.340.330 (pre-release).**
+
+Local validation passed 6,206 tests with 2 platform skips and one existing Starlette/httpx warning; the synchronized CI-evidence/workflow/release/version/roadmap concentration passed 280 with the same warning. All sixteen bounded offline profiles and saved-evidence verification matched 413 exact source files / `e994164f9e73fa01e6dd9ffc4d63947ed6f0efdad010de220852db1943723855`; `validation/release_trials_0_340_330.json` SHA-256 is `512df314ff68ebfee49e0a0dbd795ac1c6a48090b19086c50e2b4438697be881`. Compilation, dependency integrity, deterministic roadmap regeneration, all fourteen Node controller smokes, PORTAL JavaScript syntax and diff whitespace checks passed. The 1,062-path / 107,423,865-byte staged public-artifact audit found zero findings, and the 4,569-added-line high-confidence credential-pattern scan found zero findings; fresh hosted pinned Gitleaks remains mandatory. The 163-member wheel reports v0.340.330 and has SHA-256 `81d909e50272bba13b0cd60c4b8382c1d2882b039e117668261d304ecde92589`.
+
+PR #42 exact parent `04778a3ca845728e91303c5895965a63f1ebbfaa` passed hosted public security/Gitleaks, real-browser help and saved offline release-evidence. Its complete hosted Windows regression remained in progress at this checkpoint. Parent results do not validate this increment, and the push/manual native Windows installer workflow has not run for this source. Fresh exact-source hosted security, browser, regression/evidence and native installer/distribution acceptance remain required.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. The read-only roadmap estimate remains weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; this is separate from release approval, trading permission and any launch-date prediction. Historical and synthetic results are not future profit predictions.
+
+## v0.340.329 forward evidence explicit commit flush
+
+Every acknowledged forward-session transition and retained quote observation now crosses an explicit post-commit durability boundary. The writer freezes one non-symlink data root, rejects symlinked, hardlinked, oversized and WAL-layout evidence stores, requires the exact SQLite main connection and committed bytes to match one bounded regular single-link file, hashes the exact writable descriptor before and after `fsync`, and rechecks identity, metadata, bytes and path. A newly published POSIX main entry additionally fsyncs its exact validated parent directory; Windows retains the portable exact main-file flush because Python exposes no portable directory-fsync API. Flush failure, parent-descriptor substitution or process-control interruption occurs after the SQLite commit but before acknowledgement, stops the runner, releases local ownership and leaves the retained session visible as interrupted/review-required. Mandatory forward-profile evidence injects durability uncertainty and `KeyboardInterrupt` and keeps provider, broker, live, sustained-forward and release authority false. This is local injected evidence and explicit flush observation, not physical-power-loss proof, full ancestor/ACL isolation, native Windows acceptance, genuine public-feed duration or source attestation, strategy realism, broker reconciliation, funding, live trading or release approval.
+
+**Current development build: 0.340.329 (pre-release).**
+
+Local validation passed 6,192 tests with 2 platform skips and one existing Starlette/httpx warning. The synchronized forward/release-evidence/version/roadmap/Windows-workflow concentration passed 498 tests with the same warning. All sixteen bounded offline profiles and saved-evidence verification matched 411 exact source files / `3d493943c89fef0ed0072135cee5865642051759d5b6196d9486972343b5eacd`; `validation/release_trials_0_340_329.json` SHA-256 is `3a0cd6078dfb9559612447b4bbab3c0d7fe2241631074f24e8f47628a0c62071`. Compilation, dependency integrity, deterministic roadmap regeneration, all fourteen Node controller smokes, PORTAL JavaScript syntax and diff whitespace checks passed. The 1,056-path / 106,997,234-byte current public-artifact audit found zero findings, and the high-confidence credential-pattern scan found zero findings; fresh hosted pinned Gitleaks remains mandatory. The 163-member wheel reports v0.340.329 and has SHA-256 `a5b47bfcaa6904c98fc66033c8a4d9f7958360b4305486be80dd070b2f91f04b`.
+
+PR #41 exact parent `6d0ac218ebe4f342a21cb786ef8ddc2afa908f37` passed hosted public security/Gitleaks, real-browser help and saved offline release-evidence. Its complete hosted regression job was still in progress at this checkpoint. Those parent results do not validate this increment, and native installer/distribution acceptance remains separate and unclaimed. Fresh exact-source hosted security, browser, Windows regression/evidence and installer/distribution gates are required for v0.340.329.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. The read-only roadmap estimate remains weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; this is separate from release approval, trading permission and any launch-date prediction. Historical and synthetic results are not future profit predictions.
+
+## v0.340.328 request-bound paper quote explicit commit flush
+
+Every acknowledged retained request-bound paper quote now crosses an explicit post-commit durability boundary. New records and exact duplicate replays bind committed SQLite connection bytes to one stable bounded main-file fingerprint, reopen only that exact regular single-link main file, hash its writable descriptor before and after `fsync`, and recheck identity, metadata, bytes and path. A newly published main entry additionally fsyncs its exact validated parent directory on POSIX; Windows retains the portable exact main-file flush because Python exposes no portable directory-fsync API. Flush failure, parent-descriptor substitution or process-control interruption retains one committed quote receipt for explicit exact duplicate replay without another provider request. Mandatory quote-retention evidence injects durability uncertainty and `KeyboardInterrupt`, then proves retained exact recovery with every authority flag false. This is local explicit flush observation for supplied and unattested quote evidence, not physical-power-loss proof, native Windows acceptance, provider source/delivery attestation, genuine-feed duration or coverage, strategy realism, broker reconciliation, funding, live trading or release approval.
+
+**Current development build: 0.340.328 (pre-release).**
+
+Local validation passed 6,185 tests with 2 platform skips and one existing Starlette/httpx warning. The synchronized quote-retention/release-evidence/trials/version/roadmap concentration passed 363 tests with the same warning. All sixteen bounded offline profiles and saved-evidence verification matched 410 exact source files / `9a61e3068fc770c6705f80c7494197b9cdfdd1ea2fd1933a8cfe6f059348a7b2`; `validation/release_trials_0_340_328.json` SHA-256 is `94ad1b009edc7a1f5585bb1651ddbe1c98788c1510a6d548255a093f0a779950`. Compilation, dependency integrity, deterministic roadmap regeneration, all fourteen Node controller smokes, PORTAL JavaScript syntax and diff whitespace checks passed. The 1,054-path / 106,791,452-byte current public-artifact audit found zero findings, and the high-confidence credential-pattern scan found zero findings; fresh hosted pinned Gitleaks remains mandatory. The 163-member wheel reports v0.340.328 and has SHA-256 `dd557a484f0742f2cfa164df5412fa50b79b3c0c8ed31cd583d5dd2646c80db3`.
+
+PR #40 exact parent `d81ac915967f6be06d558175c2b9948d4ad167fa` passed hosted public security/Gitleaks, real-browser help and saved offline release-evidence jobs. Its complete hosted regression was still in progress at this checkpoint. Those parent results do not validate this increment, and native installer/distribution acceptance remains separate and unclaimed. Fresh exact-source hosted security, browser, Windows regression/evidence and installer/distribution gates are required for v0.340.328.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. The read-only roadmap estimate remains weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; this is separate from release approval, trading permission and any launch-date prediction. Historical and synthetic results are not future profit predictions.
+
+## v0.340.327 Activity SSE checkpoint and reconnect explicit commit flush
+
+Every acknowledged Activity SSE cursor checkpoint, reconnect reservation and reconnect result now crosses an explicit post-commit durability boundary. Each writer binds the committed SQLite connection bytes to one stable bounded main-file fingerprint, reopens only that exact regular single-link main file, hashes its writable descriptor before and after `fsync`, and rechecks identity, metadata, bytes and path. A newly published main entry additionally fsyncs its exact validated parent directory on POSIX; Windows retains the portable exact main-file flush because Python exposes no portable directory-fsync API. Flush failure, parent-descriptor substitution or process-control interruption retains the committed checkpoint or reconnect attempt for explicit exact duplicate replay. Reservation uncertainty cannot authorize another provider request, and result uncertainty cannot reclaim capacity or grant automatic retry, routing, funds, live trading or release authority. Mandatory cursor and reconnect evidence injects durability uncertainty and `KeyboardInterrupt`, then proves exact no-network replay. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, Activity SSE entitlement/source/delivery or replay coverage, broker-wide coordination, fee reconciliation, funding, live trading or release approval.
+
+**Current development build: 0.340.327 (pre-release).**
+
+Local validation passed 6,180 tests with 2 platform skips and one existing Starlette/httpx warning. The release-evidence/trials/version/roadmap concentration passed 182 tests with the same warning. All sixteen bounded offline profiles and saved-evidence verification matched 409 exact source files / `e40bfe1621adc0291fdc700e83483fba01dd2f25d7957ad032094c2ece1465da`; `validation/release_trials_0_340_327.json` SHA-256 is `a662e0f6c544f2bda6b63287624a66eaf1ae59574f225454d90ae71533706191`. Compilation, dependency integrity, deterministic roadmap regeneration, all fourteen Node controller smokes, PORTAL JavaScript syntax and diff whitespace checks passed. The 1,052-path current public-artifact audit found zero findings, and the introduced high-confidence credential-pattern scan found zero findings; fresh hosted pinned Gitleaks remains mandatory. The 163-member wheel reports v0.340.327 and has SHA-256 `8ed25a80760d4b3a529c5dccafbf32d7d4a8faf57c70fd9b97eb6da7dbbcc1a1`.
+
+PR #39 exact parent `07141b52a73b7527c8e9b588bbc21f00ae003511` passed hosted public security/Gitleaks, real-browser help and saved offline release-evidence jobs. Its complete hosted regression was still in progress at this checkpoint. Those parent results do not validate this increment, and native installer/distribution acceptance remains separate and unclaimed. Fresh exact-source hosted security, browser, Windows regression/evidence and installer/distribution gates are required for v0.340.327.
+
+No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. The read-only roadmap estimate remains weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; this is separate from release approval, trading permission and any launch-date prediction. Historical and synthetic results are not future profit predictions.
+
+## v0.340.326 retained paper-activity explicit commit flush
+
+Every acknowledged retained paper-activity receipt now crosses an explicit post-commit durability boundary. New batches and exact duplicate replays bind committed SQLite connection bytes to a stable bounded pathname fingerprint, reopen only the exact captured regular single-link main file, hash that writable descriptor before and after `fsync`, and recheck the exact identity, metadata, bytes and path. A newly published main entry additionally fsyncs its validated parent directory on POSIX; Windows retains the portable exact main-file flush because Python exposes no portable directory-fsync API. Flush failure, wrong-directory substitution, descriptor-byte mutation and process-control interruption retain the committed batch for explicit duplicate replay, keep automatic continuation false and fail closed. Mandatory activity-acceptance evidence injects both durability uncertainty and `KeyboardInterrupt`, then proves retained exact replay without a second batch. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, source or activity coverage attestation, fee reconciliation, broker-wide coordination, routing, funding, live trading or release approval.
+
+**Current development build: 0.340.326 (pre-release).**
+
+Local validation passed 6,173 tests with 2 platform skips and one existing Starlette/httpx warning; the reconciliation/evidence/version/packaging/Windows-workflow concentration passed 798 with the same warning. All sixteen bounded offline profiles and saved-evidence verification matched 408 exact source files / `6475643cb8a7813c5b9a605568e98736cc405a6269ac9d2949a4dae1699ce2ef`; `validation/release_trials_0_340_326.json` SHA-256 is `effaab917a904f90e1a42ed3f561a1e8ab7b5dcba824541ce515c4ac5a2361df`. Compilation, dependency integrity, deterministic roadmap regeneration, all fourteen Node controller smokes, PORTAL JavaScript syntax and diff whitespace checks passed. The 1,050-path current public-artifact audit found zero findings, and the introduced high-confidence credential-pattern scan found zero findings; fresh hosted pinned Gitleaks remains mandatory. The 163-member wheel reports v0.340.326 and has SHA-256 `f2e0789843c5871311dc8f34195ddb1590ba7aba3bf1d7fda25c1cbf4399c144`.
+
+PR #38 exact parent `ee71d1d5f140031ed282cf8467f5296e8819e113` passed hosted public security/Gitleaks run 43688522450 and the complete browser, saved-evidence and Windows regression run 43688522464. That parent result does not validate this increment, and native installer/distribution acceptance remains separate and unclaimed. Fresh exact-source hosted security, browser, Windows regression/evidence and installer/distribution gates are required for v0.340.326. No Portal control or editable parameter changed. Engagement remains OFF by default; limits, account checks, fail-closed exits, emergency-stop independence, seven beginner tabs and black/bright-purple bottom-right hover help are unchanged. The read-only roadmap estimate remains weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; this is separate from release approval, trading permission and any launch-date prediction. Historical and synthetic results are not future profit predictions.
+
+## v0.340.325 broker request journal explicit commit flush
+
+Every acknowledged broker request/recovery write now crosses an explicit post-commit durability boundary. PREPARE, submission markers, observations, lookup begin/results and reviewed interruption records prove the committed SQLite connection bytes against a stable bounded pathname fingerprint, reopen only the exact captured regular single-link main file, hash that writable descriptor before and after `fsync`, and recheck the exact path and bytes. A newly created entry also fsyncs its validated parent directory on POSIX; Windows retains the portable main-file flush because Python exposes no portable directory-fsync API. Flush failure, wrong-directory substitution and descriptor-byte mutation fail closed after commit. Retained request or pending-lookup uncertainty remains reviewable and keeps retry, submission, routing and all trading/release authority false. Exact PR #37 Windows regression exposed that the committed fingerprint omitted pathname ctime while the generic cold-file verifier retained it. Pacing and request journals now use a dedicated sidecar-aware comparison that normalizes only Windows pathname ctime while requiring exact identity, size, mtime, links and bytes. The mandatory bounded provider-budget evidence profile covers that native schema contract and this request journal. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
+
+Exact PR #38 amended-head Windows evidence passed the corrected committed-fingerprint boundary, then failed with the fixed privacy-safe code `RELEASE_TRIAL_RECONCILIATION_ACCEPTANCE_CHILD_TIMEOUT` after that fixture exceeded the generic 240-second child ceiling. The reconciliation fixture remains unchanged; only that profile on native Windows now receives a finite 600-second ceiling, while every other profile stays at 240 seconds. This preserves bounded execution and failure sanitization and requires a fresh exact-source hosted run; it is not native Windows acceptance or a relaxation of any evidence check.
+
+**Current development build: 0.340.325 (pre-release).**
+
+The pre-timeout-correction amended Linux source passed 6,162 tests with 2 skipped and one existing dependency warning. The broker/reconciliation durability slice passed 666 tests with one existing dependency warning, and the Windows-schema/request/pacing/release-trial amendment scope passed 152 tests with one existing dependency warning. The current timeout/evidence/version/roadmap/Windows-workflow/package slice passed 253 tests with one existing dependency warning. All 14 browser-controller smoke scripts passed, PORTAL JavaScript parsed successfully, dependency integrity reported no broken requirements and deterministic roadmap regeneration matched the committed document. Sixteen bounded release profiles and saved evidence verify against 407 source files / `15a42e88e3135feaca45e47d779b0c08e5301822ec7c0836d2f2cd4482c634b6`; evidence SHA256 is `2df4e05daf8392621e02a80d14d1cde4288e074515f16b6ffc2c0b56e98250ee`. The 163-member wheel reports v0.340.325 and has SHA256 `591f11912837ee9056ac54a274e01fcf388ecf7f6f2a11f4fa8b59bc29488714`. Hosted security/Gitleaks and browser help passed on PR #38 exact head `623ba3038f407b5072e16b5c930e529435e0949f`; its Windows evidence reached reconciliation acceptance before timing out, while the complete regression remained active at the correction checkpoint. Fresh exact-source hosted security, Windows evidence, complete regression, browser and installer gates remain mandatory after this amendment. Implementation remains a rough weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted; release approval and trading permission remain false. Historical and synthetic results are not future profit predictions.
+
+## v0.340.324 account-read pacing explicit commit flush
+
+Every committed shared account-read pacing write now crosses the same explicit acknowledgement boundary as the provider budgets. The writer proves its SQLite connection bytes against a stable bounded pathname fingerprint, reopens only the exact captured regular single-link main file, hashes that writable descriptor before and after `fsync`, and rechecks the exact path and bytes. A newly created entry also fsyncs its validated parent directory on POSIX; Windows retains the portable main-file flush because Python exposes no portable directory-fsync API. Flush failure, wrong-directory substitution and descriptor-byte mutation fail closed after commit, retain the pending reservation and keep request-capacity reuse and all trading/release authority false. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
+
+**Previous development build: 0.340.324 (pre-release).**
+
+## v0.340.323 provider budget explicit commit flush
+
+Provider POST and GET budget acknowledgements now reopen only the captured regular single-link SQLite main file, hash that exact writable descriptor before and after explicit `fsync`, and recheck the bounded pathname fingerprint after connection close. A newly created entry also fsyncs its exact validated parent directory on POSIX; Windows retains the portable main-file flush because Python exposes no portable directory-fsync API. Flush failure, parent-descriptor substitution and descriptor-byte mutation fail closed after commit, retain the pending reservation and keep automatic retry, capacity reuse and all trading/release authority false. This is local explicit flush observation, not physical-power-loss proof, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
+
+**Previous development build: 0.340.323 (pre-release).**
+
+## v0.340.322 provider budget content acknowledgement binding
+
+Committed provider POST and GET budget writes now require the writable SQLite connection's serialized main bytes to equal two stable bounded sidecar-free pathname fingerprints before acknowledgement, and the same fingerprint must remain after connection close. Uncommitted returns are rejected before serialization. Injected connection-content mismatch and post-close metadata drift retain the committed pending reservation and keep automatic retry, capacity reuse and all trading/release authority false. This is local bounded content continuity, not explicit fsync durability, physical-power-loss proof, atomic directory exclusion, native Windows acceptance, provider/account/source acceptance, routing permission or release acceptance.
+
+PR #34's complete Windows regression finished with 6,073 passes and one deterministic portable-separator assertion failure. The provider-result fixture now emits its already-contained relative manifest paths with POSIX separators on every host; fresh exact-source Windows execution remains mandatory.
+
+Every legacy account-read pacing write now acquires the existing cross-platform one-byte owner lease before opening SQLite, while typed broker reads retain that lease across provider I/O. Content attestation runs only after the writer owns `BEGIN IMMEDIATE`. A 100-iteration two-process regression produced exactly one admission per head and only fixed fail-closed contender errors. This is cooperating local-process exclusion, not a distributed or provider-wide budget.
+
+**Previous development build: 0.340.322 (pre-release).**
+
+## v0.340.321 provider transaction acknowledgement binding
+
+Provider POST and GET write contexts now retain the captured SQLite main-file identity through transaction finalization, exact-main pre-close validation and a post-close pathname sample. Existing and new stores reject uncommitted returns; during-transaction replacement or an injected post-commit identity fault fails closed without deleting the replacement or making the pending reservation retryable. Windows release trials now retain only reviewed fixed paper-tool failure codes, and the disposable provider-result fixture derives relative manifest paths against the caller's lexical root or that exact root's resolved spelling so long and 8.3 temporary paths cannot disagree or escape their scope. This is sampled local acknowledgement integrity and privacy-safe evidence correction, not atomic directory exclusion, native durability, provider-wide coordination, account/source acceptance, routing permission or release acceptance.
+
+**Previous development build: 0.340.321 (pre-release).**
+
+## v0.340.320 provider-GET store binding and first-write recovery
+
+The shared local provider-GET budget now freezes its selected parent, binds its exact path/provider scope/digest through ownership and requires the captured regular single-link main-file identity plus exact SQLite main pathname throughout setup. An aborted first transaction removes only its exact captured empty sidecar-free file. Mutable aliases, replacement, foreign connections, provider-scope mutation and object retargeting fail closed without redirecting a write, deleting a decoy or poisoning an exact retry. This is local path/store integrity and retry hygiene, not a provider request, broker-wide pacing, account/source acceptance, routing permission, native durability or release acceptance.
+
+**Previous development build: 0.340.320 (pre-release).**
+
+## v0.340.319 provider-POST store binding and Windows emergency child lease
+
+The local provider-POST pacing journal now freezes its selected parent, binds the exact path, provider scope and digest through ownership, and requires the captured regular single-link main-file identity plus exact SQLite main pathname throughout setup and rollback cleanup. A mutable parent alias, inode replacement, foreign connection or retargeted store object cannot redirect a write or make cleanup follow the replacement path. Retargeting rolls back and fails closed. Windows run 43634033695 showed that the existing directory handle did not block parent rename, so the emergency latch now holds a validated fixed regular single-link child handle without delete sharing for the full lease and rejects directory, reparse or hardlinked guards. A fresh hosted Windows pass remains required. This is local path/store and emergency-lease integrity, not broker-wide pacing, account acceptance, routing permission, native durability or release acceptance.
+
+**Previous development build: 0.340.319 (pre-release).**
+
+## v0.340.318 provider-POST first-write recovery
+
+The local provider-POST pacing journal now removes only its exact captured empty regular single-link main file after a failed first setup or transaction, and only when no SQLite sidecar exists. Replacement, bytes, links, sidecars or cleanup uncertainty remain retained and blocked. This is local fail-closed retry hygiene, not automatic provider retry, broker-wide pacing, account acceptance, routing permission, native durability or release acceptance.
+
+**Previous development build: 0.340.318 (pre-release).**
+
+## v0.340.317 exact Windows emergency-parent lease
+
+The native emergency-latch lease now opens the exact public Windows parent path with `OPEN_REPARSE_POINT` instead of following a pre-resolved path, and validates the resulting handle as a directory without reparse attributes before any latch entry access. A late junction or symlink replacement therefore fails closed rather than leasing its redirected target. The Windows regression contract also now recognizes ordinary access denial when the still-open latch file itself blocks a parent rename; that is conservative prevention, not evidence that the sampled-identity fence failed. PR #28's Windows regression failure remains recorded and is not dismissed as flaky. POSIX directory descriptors and fsync remain unchanged. This is not administrator/ACL isolation, distributed coordination or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+**Previous development build: 0.340.317 (pre-release).**
+
+## v0.340.316 native Windows emergency-latch directory lease
+
+Emergency-latch persist and clear now hold a native Windows backup-semantics handle on the resolved parent directory without delete/rename sharing throughout entry access and final identity acknowledgement. A cooperating process cannot retarget the latch pathname by renaming that directory until the lease closes; handle acquisition, identity drift and close uncertainty fail closed. POSIX directory descriptors and fsync remain mandatory and unchanged. A native Windows regression requires rename denial while leased and successful rename after close. This is not administrator/ACL isolation, distributed coordination or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.315 Windows emergency-latch parent binding
+
+Emergency-latch persist and clear operations now sample one resolved parent-directory identity before entry access and require that same public parent before acknowledging completion. This check remains mandatory when Windows cannot provide the POSIX directory descriptor/fsync boundary. Even an already-absent clear must recheck the parent before returning, preventing a retargeted path from being mistaken for a successful reset while the original latch survives elsewhere. Parent drift raises fixed fail-closed storage uncertainty; the application retains its process-local cut and independently attempts the durable SQLite halt. POSIX descriptor ownership and directory fsync remain unchanged. This is sampled local path integrity, not an atomic Windows directory lease, ACL/administrator protection or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.314 immutable Windows review dispatch
+
+The owner-dispatched Windows release lane can now validate an immutable stacked review commit before promotion. An optional source must be one exact lowercase 40-character SHA, must equal the checkout and must descend from the freshly fetched `development/windows-portal-foundation` head before any repository code executes. With no commit supplied, the checkout must equal that refreshed development head. Push-triggered exact-SHA binding, the finite 150-minute job budget, separate 20-minute distribution-evidence bound and every regression, EXE, installer, recovery, distribution-binding and upload gate remain mandatory. This enables a future exact-source run; it is not Windows or release acceptance by itself. Runtime behavior, OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.313 bounded Windows distribution tail
+
+Exact development Windows run 43595758062 passed the complete regression, Portal syntax, standalone private-tool checks, EXE startup, installer build, install/reinstall, pinned prior-version recovery, data-preserving uninstall and installer phase review before the old 120-minute outer deadline cancelled the release-trial/manifest tail. The source-bound lane now keeps every existing gate with a finite 150-minute outer budget and a separate 20-minute distribution-evidence bound. The cancelled run is not Windows or release acceptance; fresh exact-source execution must complete the manifest, distribution binding and uploads. Runtime behavior, OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.312 emergency canonical tail sample
+
+Every standalone emergency-stop data-root or absent-root ancestor identity sample now finishes with one more exact canonical-path resolution after its trailing `lstat`. A parent directory renamed and replaced by a symlink back to the same inode after the earlier resolution can no longer authorize root creation or the first latch write before the next root guard detects the alias. Two deterministic regressions cover absent-root creation and existing-root storage. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL/administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.311 canonical emergency-root path sampling
+
+The standalone emergency stop now requires every sampled data-root or absent-root ancestor path to resolve to its exact canonical pathname before and after identity inspection. Renaming an intermediate parent and replacing it with a symlink back to the same directory inode can no longer preserve a stale pinned-path claim, create a previously absent root through that alias or reach SQLite after the first intent latch. Three deterministic regressions cover those seams. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL/administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.310 absent emergency-root creation lease
+
+The standalone emergency stop now leases the nearest existing resolved ancestor when its selected data root does not yet exist, rechecks that ancestor around parent-hierarchy creation and pins the immediate parent across exclusive root creation. An observed ancestor replacement during priority or directory creation, or movement of the just-created root, stops before latch or SQLite access with a fixed fail-closed diagnostic. Three regressions exercise those seams. Existing-root identity sampling, canonical latch validation, independent durable halt and final-latch attempts, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.309 emergency data-root sample bracketing
+
+The standalone emergency stop now rechecks the exact data-root identity immediately after its pre-halt canonical-latch sample, after durable SQLite cancellation and after its final canonical-latch sample. Moving the same latch inode into a replacement root during either sample cannot preserve a stale VERIFIED claim, and a pre-halt root replacement cannot cause the replacement SQLite path to be opened. Two regressions cover both race seams while preserving an independently completed halt on the retired root. Existing conservative cut presence, canonical fixed-record validation, final latch reassertion, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.308 verified emergency-latch record
+
+The standalone emergency stop now distinguishes conservative cut presence from verified durable-latch evidence. Any latch entry still blocks paper intake and does not suppress the independent durable-halt attempt, but VERIFIED requires the exact fixed record in a regular single-link file that survives stable no-follow identity, content and metadata checks before durable handoff and final reporting. Symlink, hardlink, directory, malformed and in-place-mutated entries remain fail-closed cut requests but cannot manufacture verified ordering or final-presence claims. Six regression cases cover those entry types and mutation while preserving the durable halt. Existing priority-fault containment, data-root identity, final latch reassertion, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.307 read-only recovery hardlink fence
+
+Read-only order-history and linked-portfolio recovery now rejects multiple hardlinks before SQLite opens or attaches the selected file. The same selected leaf identity and single-link count are rechecked after opening and after each bounded review, so an alias added during recovery or reconciliation fails closed. Four regressions cover initial and mid-read hardlinks, byte preservation and successful recovery after alias removal. Existing parent-root identity, symlink, regular-file, read-only SQLite, journal-mode, snapshot and authority-denial checks remain mandatory. This is sampled local filesystem hardening, not an atomic continuous monitor, administrator boundary, physical-power-loss proof or provider acceptance. No UI controls changed: seven beginner tabs, black/bright-purple bottom-right hover help, OFF engagement defaults, bounded risk, account checks and independent emergency stop remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
 
 ## v0.340.306 provider selected-leaf path validation
 
 The provider POST activity, fee-reference and known-fee reserve read-only reviews now freeze each selected parent directory without resolving away the final filename. Existing no-follow identity and bounded fingerprint checks can reject direct leaf symlinks, hardlinks and mid-review symlink substitutions. Twenty-seven parametrized regression cases exercise those boundaries and assert private journal preservation. This is sampled local path hardening, not an atomic multi-file snapshot or administrator boundary. No UI controls changed: seven beginner tabs, black/bright-purple bottom-right hover help, OFF engagement defaults, bounded risk, account checks and independent emergency stop remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source release evidence, security, full Windows regression, browser and installer checks are required before promotion; no result is claimed in advance.
-
-**Current development build: 0.340.306 (pre-release).**
 
 ## v0.340.305 private observation parent-path binding
 

@@ -17,6 +17,17 @@ CHECKS=('account_response_normalization_checked','activity_response_normalizatio
         'emergency_stop_independent','emergency_stop_storage_contention',
         'emergency_stop_cpu_pressure','emergency_stop_data_root_pinned',
         'order_offload_checked','default_data_not_created')
+FAILURE_CODES=frozenset('PACKAGED_PAPER_TOOLS_'+code for code in {
+    'ACCOUNT_RESPONSE_REVIEW','ACTIVITY_RESPONSE_REVIEW','EXACT_RESPONSE_BUNDLE',
+    'PROVIDER_RESULTS','PROVIDER_HISTORY','PROVIDER_BUDGET_RECOVERY',
+    'ACCOUNT_PACING_RECOVERY','COMMAND','CATALOG','OBSERVATION_CRYPTO',
+    'MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY',
+    'MISSING_ACTIVITY_SSE','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW',
+    'QUALITY_REVIEW','PRIVATE_FILES_CHANGED','ORDER_OFFLOAD','INVALID_COMMAND',
+    'EMERGENCY_STOP','EMERGENCY_STOP_CONTENTION','EMERGENCY_STOP_CPU_PRESSURE',
+    'DEFAULT_DATA_CREATED','OUTPUT_CAP','EMERGENCY_STOP_READ_ONLY_PLATFORM',
+    'EMERGENCY_STOP_READ_ONLY_STORAGE','CHILD_FAILED','CHILD_JSON',
+    'CHILD_TIMEOUT','EXECUTABLE_REQUIRED'})
 
 
 def _require(condition,code):
@@ -532,11 +543,8 @@ def main():
         report=run([str(args.executable.resolve())]);encoded=json.dumps(report,sort_keys=True,indent=2)+'\n'
         if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(encoded,encoding='utf-8')
     except (Exception,KeyboardInterrupt) as error:
-        allowed={'ACCOUNT_RESPONSE_REVIEW','ACTIVITY_RESPONSE_REVIEW','EXACT_RESPONSE_BUNDLE','PROVIDER_RESULTS','PROVIDER_HISTORY','PROVIDER_BUDGET_RECOVERY','ACCOUNT_PACING_RECOVERY','COMMAND','CATALOG','OBSERVATION_CRYPTO','MISSING_ACCOUNT_PROBE','MISSING_RECOVERY','MISSING_ACTIVITY','MISSING_ACTIVITY_SSE','ACCOUNT_REVIEW','PUBLIC_ACCOUNT_REVIEW','QUALITY_REVIEW',
-            'PRIVATE_FILES_CHANGED','ORDER_OFFLOAD','INVALID_COMMAND','EMERGENCY_STOP','EMERGENCY_STOP_CONTENTION','EMERGENCY_STOP_CPU_PRESSURE','DEFAULT_DATA_CREATED','OUTPUT_CAP',
-            'EMERGENCY_STOP_READ_ONLY_PLATFORM','EMERGENCY_STOP_READ_ONLY_STORAGE',
-            'CHILD_FAILED','CHILD_JSON','CHILD_TIMEOUT','EXECUTABLE_REQUIRED'}
-        code=str(error) if type(error) is ValueError and str(error) in {'PACKAGED_PAPER_TOOLS_'+k for k in allowed} else 'PACKAGED_PAPER_TOOLS_INTERNAL_ERROR'
+        code=(str(error) if type(error) is ValueError and
+            str(error) in FAILURE_CODES else 'PACKAGED_PAPER_TOOLS_INTERNAL_ERROR')
         if args.output:
             try:
                 args.output.parent.mkdir(parents=True,exist_ok=True)

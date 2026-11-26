@@ -3,7 +3,7 @@ import argparse
 import hashlib
 import importlib.metadata
 import json
-import os
+import re
 import time
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -11,12 +11,13 @@ from urllib.parse import urlsplit
 ROOT=Path(__file__).resolve().parents[1]
 ORIGIN='http://nexus-ui.invalid'
 ORDER='pf_0123456789abcdef_7_BUY'
+SOURCE_COMMIT=re.compile(r'[0-9a-f]{40}')
 
 
 def fixtures(path,pending=True,missing_history=False):
     if path=='/api/paper/forward/trial-readiness?hours=72':
         from nexus.forward_trial_review import FLAGS
-        return dict(mode='READ_ONLY_PAPER_TRIAL_READINESS',read_only=True,hours=72,status='NO_RETAINED_HISTORY',history_present=False,review=None,after='2026-01-01T00:00:00Z',until='2026-01-04T00:00:00Z',quote_capacity=dict(retained=0,limit=100000,remaining=100000,estimated_additional_observations=51841,room_for_additional_requested_window=True),session_capacity=dict(retained=0,limit=1000,remaining=1000,additional_sessions_required=1,room_for_additional_session=True),order_capacity=dict(journal_present=False,retained_position=False,ordinary_commands_remaining=8999,intents_remaining=1000,total_commands_remaining=10000,control_commands_reserved=1001,required_control_command_reserve=1001,emergency_control_reserve_clear=True,commands_per_cycle_upper_bound=12,intents_per_cycle_upper_bound=2,estimated_cycle_observations=51841,estimated_upper_bound_commands=622092,estimated_upper_bound_intents=103682,next_cycle_reserve_clear=True,room_for_conservative_requested_window=False),local_owner_quiescence=dict(checked=True,state='OWNER_PATH_ABSENCE_BOUND',retained_history_requires_owner_lock=True,active_owner_detected=False,cross_host_or_distributed_owner_checked=False,owner_file_created=False),**{flag:False for flag in FLAGS})
+        return dict(mode='READ_ONLY_PAPER_TRIAL_READINESS',read_only=True,hours=72,status='NO_RETAINED_HISTORY',history_present=False,review=None,after='2026-01-01T00:00:00Z',until='2026-01-04T00:00:00Z',quote_capacity=dict(retained=0,limit=100000,remaining=100000,estimated_additional_observations=51841,room_for_additional_requested_window=True),event_capacity=dict(retained=0,limit=203000,remaining=203000,estimated_additional_events=103685,room_for_additional_requested_window=True),session_capacity=dict(retained=0,limit=1000,remaining=1000,additional_sessions_required=1,room_for_additional_session=True),order_capacity=dict(journal_present=False,retained_position=False,ordinary_commands_remaining=8999,intents_remaining=1000,total_commands_remaining=10000,control_commands_reserved=1001,required_control_command_reserve=1001,emergency_control_reserve_clear=True,commands_per_cycle_upper_bound=12,intents_per_cycle_upper_bound=2,estimated_cycle_observations=51841,estimated_upper_bound_commands=622092,estimated_upper_bound_intents=103682,next_cycle_reserve_clear=True,room_for_conservative_requested_window=False),local_owner_quiescence=dict(checked=True,state='OWNER_PATH_ABSENCE_BOUND',retained_history_requires_owner_lock=True,active_owner_detected=False,cross_host_or_distributed_owner_checked=False,owner_file_created=False),**{flag:False for flag in FLAGS})
     if path=='/api/research/found-markets':return dict(mode='BOUNDED_FOUND_MARKETS_RESEARCH',read_only=True,money_movement_enabled=False,paper_orders_enabled=False,live_orders_enabled=False,policy_changed=False,profitability_validated=False,selected=[],enabled=False,phase='STOPPED',fresh_summaries=0,catalog_candidates=0,requests_attempted=0,reason=None)
     if path=='/api/onboarding/tasks':return dict(checked_at=1000,summary='Automatic local observations; no execution permission.',items=[
         dict(necessity='BASELINE',id='engine',title='Use built-in research and AI',group='Start here',status='COMPLETE',checked=True,detail='Built-in numerical learning is included; no provider account is required.',tab='ai',target='counciltest'),
@@ -115,8 +116,15 @@ def validate_geometry(data):
         raise ValueError('HELP_BROWSER_TEXT_CLIPPED')
 
 
-def run(output,channel=None,executable_path=None):
+def require_source_commit(value):
+    if type(value) is not str or SOURCE_COMMIT.fullmatch(value) is None:
+        raise ValueError('BROWSER_SOURCE_COMMIT_INVALID')
+    return value
+
+
+def run(output,channel=None,executable_path=None,source_commit=None):
     from playwright.sync_api import sync_playwright,expect
+    source_commit=require_source_commit(source_commit)
     if channel and executable_path:raise ValueError('BROWSER_SELECTION_CONFLICT')
     output=Path(output);output.mkdir(parents=True,exist_ok=True)
     html=(ROOT/'dashboard/portal_preview.html').read_text(encoding='utf-8')
@@ -413,7 +421,7 @@ def run(output,channel=None,executable_path=None):
         finally:browser.close()
     report=dict(mode='INTERCEPTED_FIXTURE_BROWSER_ACCEPTANCE',passed=True,viewports=reports,
                 playwright_version=importlib.metadata.version('playwright'),
-                html_sha256=hashlib.sha256(html.encode()).hexdigest(),source_commit=os.environ.get('GITHUB_SHA'),
+                html_sha256=hashlib.sha256(html.encode()).hexdigest(),source_commit=source_commit,
                 broker_connected=False,live_orders_enabled=False,
                 limitations='Headless browser and intercepted fixtures only; no real-feed session, native desktop window, clean-machine profile or release approval.')
     (output/'browser-report.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
@@ -424,7 +432,8 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--channel',help='Optional installed Chromium channel, for example msedge')
     parser.add_argument('--executable-path',type=Path,help='Optional explicit local Chromium executable; mutually exclusive with --channel')
-    args=parser.parse_args();print(json.dumps(run(args.output,args.channel,args.executable_path),indent=2))
+    parser.add_argument('--source-commit',required=True,help='Exact lowercase 40-hex commit tested by this acceptance run')
+    args=parser.parse_args();print(json.dumps(run(args.output,args.channel,args.executable_path,args.source_commit),indent=2))
 
 
 if __name__=='__main__':main()

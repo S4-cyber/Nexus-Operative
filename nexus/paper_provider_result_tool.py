@@ -136,9 +136,20 @@ def _fixture(root):
     from nexus.alpaca_paper_contract import canonical
     budget,gates,bindings=review_module._fixture(root)
     path=root/'input.json'
-    value=dict(profile=PROFILE,provider_budget=str(budget.path.relative_to(root)),
+    # Some guards intentionally freeze their parent through resolve(), while
+    # others retain the selected lexical spelling.  Windows can present the
+    # disposable root through an 8.3 alias and resolve it to the long spelling.
+    # Accept either spelling of this caller-owned root, but still serialize
+    # only a relative name and reject anything outside both scopes.
+    roots=(root,root.resolve())
+    def relative(path):
+        for base in roots:
+            try:return path.relative_to(base)
+            except ValueError:continue
+        _fail()
+    value=dict(profile=PROFILE,provider_budget=relative(budget.path).as_posix(),
         expected_provider_head=budget.inspect()['head_sha256'],accounts=[dict(account_id=gate.account,
-            pacing=str(gate.path.relative_to(root)),expected_head=gate.inspect()['head_sha256'],
+            pacing=relative(gate.path).as_posix(),expected_head=gate.inspect()['head_sha256'],
             bindings=bindings[gate.account_digest]) for gate in gates])
     path.write_text(canonical(value),encoding='utf-8')
     return path

@@ -20,6 +20,11 @@ KEY='fixture_key_only_123'
 SECRET='fixture_secret_only_123'
 
 
+class EqualText(str):
+    def __eq__(self, other):return True
+    def __ne__(self, other):return False
+
+
 class Vault:
     def __init__(self):self.raw=None
     def set_password(self,service,account,raw):self.raw=raw
@@ -1954,6 +1959,25 @@ def test_attempt_keeps_rejecting_private_input_leaf_symlink(
     assert not opener.requests
     assert not (private/'cursor.sqlite3').exists()
     assert not (private/'budget.sqlite3').exists()
+
+
+@pytest.mark.parametrize('reason',(
+    'UNKNOWN',None,EqualText('CONNECTION_DROPPED')))
+def test_attempt_invalid_reason_fails_before_vault_network_or_write(
+        tmp_path,monkeypatch,reason):
+    options,raw=paths(tmp_path);opener=Opener(raw)
+    options['reconnect_reason']=reason
+    monkeypatch.setattr(paper_credentials,'_vault',
+        lambda:pytest.fail('vault accessed'))
+    with pytest.raises(ValueError,
+            match='^PAPER_ACTIVITY_SSE_ACCEPTANCE_PROBE_FAILED$'):
+        subject.attempt(**options,confirm_reconnect_attempt=True,
+            confirm_read_only_paper=True,confirm_cursor_checkpoint=True,
+            opener=opener,wall_clock=lambda:1000,
+            elapsed_clock=lambda:50,outcome_clock=lambda:1000)
+    assert not opener.requests
+    assert not options['cursor_path'].exists()
+    assert not options['budget_path'].exists()
 
 
 @pytest.mark.parametrize('observed',(None,True,'1000',float('nan'),

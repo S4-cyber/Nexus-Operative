@@ -35,7 +35,8 @@ def test_exchange_age_rechecked_after_state_replay(tmp_path,monkeypatch,side,lag
         assert result['reason']=='STALE_OR_FUTURE_EXCHANGE_QUOTE_AT_FILL'
         assert not r._prices
         pending=[o for o in report['orders'] if o['side']==side][-1]
-        assert pending['status']=='SIMULATED_CANCELLED' and pending['simulated_filled_notional']=='0'
+        expected_status='SIMULATED_ACK_ONLY' if side=='SELL' else 'SIMULATED_CANCELLED'
+        assert pending['status']==expected_status and pending['simulated_filled_notional']=='0'
     assert bool(report['execution_account']['account']['positions'])==((side=='BUY')==allowed)
     assert report['portfolio_reconciled']
     r.stop()

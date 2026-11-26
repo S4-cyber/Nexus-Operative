@@ -35,7 +35,7 @@ def _fail(code):
 
 
 def _cursor(value, code):
-    if not isinstance(value, str) or ULID.fullmatch(value) is None:
+    if type(value) is not str or ULID.fullmatch(value) is None:
         _fail(code)
     return value
 
@@ -51,7 +51,8 @@ def review(initial_events, replay_events, *, expected_account_id,
     since_id = _cursor(reconnect_since_id, 'SINCE_ID_INVALID')
     if persisted != since_id:
         _fail('SINCE_ID_CURSOR_DISAGREEMENT')
-    if reconnect_reason not in REASONS:
+    if (type(reconnect_reason) is not str or
+            reconnect_reason not in REASONS):
         _fail('RECONNECT_REASON_INVALID')
     initial_account, initial = _normalize(initial_events,
         expected_account_id=expected_account_id)

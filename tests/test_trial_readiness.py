@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from nexus import trial_readiness as ready
 from nexus import forward_trial_review as trial
-from test_forward_trial_review import database,START
+from test_forward_trial_review import database,rewrite_first_outcome_decision,START
 
 
 def snapshot(path,owner=None):
@@ -33,6 +33,7 @@ def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path)
     report=ready.build(path,now=START+72*3600)
     assert report['status']=='NO_RETAINED_HISTORY' and report['review'] is None and not path.parent.exists()
     cap=report['quote_capacity'];assert cap['estimated_additional_observations']==51841 and cap['room_for_additional_requested_window']
+    event_cap=report['event_capacity'];assert event_cap['estimated_additional_events']==103685 and event_cap['room_for_additional_requested_window']
     sessions=report['session_capacity'];assert sessions['retained']==0 and sessions['remaining']==sessions['limit'] and sessions['room_for_additional_session']
     orders=report['order_capacity']
     assert not orders['journal_present'] and orders['next_cycle_reserve_clear']
@@ -45,7 +46,9 @@ def test_absent_history_forecasts_quote_room_without_creating_anything(tmp_path)
     assert owner['checked'] and owner['state']=='OWNER_PATH_ABSENCE_BOUND'
     assert owner['retained_history_requires_owner_lock'] and not owner['owner_file_created']
     assert all(report[k] is False for k in trial.FLAGS)
-    assert not ready.build(path,hours=168,now=START+168*3600)['quote_capacity']['room_for_additional_requested_window']
+    week=ready.build(path,hours=168,now=START+168*3600)
+    assert not week['quote_capacity']['room_for_additional_requested_window']
+    assert not week['event_capacity']['room_for_additional_requested_window']
 
 
 def test_owner_absence_binding_survives_windows_style_path_normalization(tmp_path,monkeypatch):
@@ -74,6 +77,30 @@ def test_retained_injected_history_remains_review_and_file_bytes_unchanged(tmp_p
     assert snapshot(tmp_path)==before
     assert report['local_owner_quiescence']['state']=='LOCAL_OWNER_LEASE_HELD_DURING_REVIEW'
     assert all(report[k] is False and report['review'][k] is False for k in trial.FLAGS)
+
+
+def test_readiness_preserves_unreconciled_modeled_execution_blocker_without_order_journal(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',3600)
+    points=[(i,True) for i in range(0,3601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release()
+    before=snapshot(tmp_path)
+    report=ready.build(path,hours=1,now=START+3600)
+    assert report['review']['declared_coverage_target_met'] is True
+    assert report['review']['modeled_execution_events_in_window']==1
+    assert report['review']['bundle_bound_modeled_execution_events_in_window']==0
+    assert report['review']['unreconciled_modeled_execution_events_in_window']==1
+    assert report['review']['reconciliation_bundle_sha256'] is None
+    assert report['review']['incident_free_coverage_target_met'] is False
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' in report['review'][
+        'review_reasons']
+    assert report['order_capacity']['journal_present'] is False
+    assert not (tmp_path/'order_lifecycle.sqlite3').exists()
+    assert snapshot(tmp_path)==before
 
 
 def test_retained_review_never_reopens_owner_marker_through_generic_guard(tmp_path,monkeypatch):
@@ -151,6 +178,9 @@ def test_order_capacity_snapshot_is_read_only_and_uses_retained_position_reserve
     class Gateway:
         def recovery_report(self):
             return dict(journal_present=True,capacity=dict(ordinary_commands_remaining=20,intents_remaining=4,
+                intent_count=96,intent_limit=100,ordinary_intent_limit=99,
+                ordinary_intents_remaining=3,exit_intent_reserve_active=True,
+                exit_intents_remaining=1,
                 total_commands_remaining=1021,control_commands_reserved=1001,
                 lifecycle_intake_allowed=True),execution_account=dict(account=dict(positions={'BTC-USD':'fixture'})))
     report=ready.build(tmp_path/'unused'/'paper_forward.sqlite3',hours=1,now=START+3600,order_gateway=Gateway())
@@ -164,7 +194,10 @@ def test_depleted_control_reserve_blocks_trial_capacity_without_io(tmp_path):
     class Gateway:
         def recovery_report(self):
             return dict(journal_present=True,capacity=dict(ordinary_commands_remaining=0,
-                intents_remaining=4,total_commands_remaining=1000,control_commands_reserved=1000,
+                intents_remaining=4,ordinary_intents_remaining=4,
+                intent_count=96,intent_limit=100,ordinary_intent_limit=100,
+                exit_intent_reserve_active=False,exit_intents_remaining=0,
+                total_commands_remaining=1000,control_commands_reserved=1000,
                 lifecycle_intake_allowed=True),execution_account=dict(account=None))
     report=ready.build(tmp_path/'unused'/'paper_forward.sqlite3',hours=1,
         now=START+3600,order_gateway=Gateway())
@@ -203,7 +236,10 @@ def test_late_forward_history_appearance_invalidates_absent_review(tmp_path):
         def recovery_report(self):
             path.write_bytes(b'LATE_RETAINED_HISTORY')
             return dict(journal_present=False,capacity=dict(ordinary_commands_remaining=20,
-                intents_remaining=4,total_commands_remaining=1021,control_commands_reserved=1001,
+                intents_remaining=4,ordinary_intents_remaining=4,
+                intent_count=96,intent_limit=100,ordinary_intent_limit=100,
+                exit_intent_reserve_active=False,exit_intents_remaining=0,
+                total_commands_remaining=1021,control_commands_reserved=1001,
                 lifecycle_intake_allowed=True),
                 execution_account=dict(account=None))
     with pytest.raises(ValueError,match='^TRIAL_READINESS_FILE_SET_CHANGED$'):
@@ -250,7 +286,10 @@ def test_late_storage_root_replacement_invalidates_composite_result(tmp_path):
         def recovery_report(self):
             retired=tmp_path/'retired';root.rename(retired);root.mkdir()
             return dict(journal_present=False,capacity=dict(ordinary_commands_remaining=20,
-                intents_remaining=4,total_commands_remaining=1021,control_commands_reserved=1001,
+                intents_remaining=4,ordinary_intents_remaining=4,
+                intent_count=96,intent_limit=100,ordinary_intent_limit=100,
+                exit_intent_reserve_active=False,exit_intents_remaining=0,
+                total_commands_remaining=1021,control_commands_reserved=1001,
                 lifecycle_intake_allowed=True),
                 execution_account=dict(account=None))
     with pytest.raises(ValueError,match='^TRIAL_READINESS_STORAGE_ROOT_CHANGED$'):

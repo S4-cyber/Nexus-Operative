@@ -202,6 +202,16 @@ def test_open_client_id_cannot_rebind_another_broker_identity():
     with pytest.raises(ValueError,match='CLIENT_ID_CONFLICT'): run(value)
 
 
+def test_equality_forging_open_client_id_is_rejected_without_input_mutation():
+    class ForgedId(str):
+        def __hash__(self):return hash('open_fixture')
+        def __eq__(self,other):return other=='open_fixture'
+    value=active_order(client_order_id=ForgedId('literal_other'))
+    original=copy.deepcopy(value)
+    with pytest.raises(ValueError,match='CLIENT_ID'):review._open_order(value)
+    assert value==original
+
+
 @pytest.mark.parametrize('group',['orders','executions','fees','positions','open_orders'])
 def test_explicit_foreign_account_on_any_row_is_rejected(group):
     value=nonflat();value[group][0]['account_id']=OTHER
@@ -281,3 +291,51 @@ def test_non_usd_account_cash_cannot_enter_usd_reconciliation():
     assert not result['balance_projection_evaluated'] and result['linked_history_review'] is None
     assert result['observed_inventory']['reported_cash'] is result['observed_inventory']['reported_non_marginable_buying_power'] is None
     assert not result['spendable_funds_verified']
+
+
+@pytest.mark.parametrize('target,code',[
+    ('collection','INPUT_SHAPE'),('row','ROW_SHAPE'),
+    ('account','ACCOUNT_SHAPE'),('key','ROW_KEY'),('account_key','ACCOUNT_KEY')])
+def test_polymorphic_financial_evidence_is_rejected_before_hooks(target,code):
+    calls=[]
+    class Rows(list):
+        def __iter__(self):
+            calls.append('rows_iter');return super().__iter__()
+    class Record(dict):
+        def items(self):
+            calls.append('record_items');return super().items()
+    class Account(dict):
+        def items(self):
+            calls.append('account_items');return super().items()
+    class Key(str):
+        def __hash__(self):
+            calls.append('key_hash');return super().__hash__()
+        def __eq__(self,other):
+            calls.append('key_eq');return super().__eq__(other)
+    value=data()
+    if target=='collection':value['orders']=Rows(value['orders'])
+    if target=='row':value['orders'][0]=Record(value['orders'][0])
+    if target=='account':value['account_before']=Account(value['account_before'])
+    if target=='key':
+        first=value['orders'][0];field=first.pop('status');first[Key('status')]=field
+        calls.clear()
+    if target=='account_key':
+        account=value['account_before'];field=account.pop('status');account[Key('status')]=field
+        calls.clear()
+    with pytest.raises(ValueError,match='BROKER_BALANCE_REVIEW_'+code):run(value)
+    assert calls==[]
+
+
+def test_caller_mutation_after_detachment_cannot_change_budgeted_evidence(monkeypatch):
+    value=data();expected=run(copy.deepcopy(value));calls=[];original_budget=review._budget
+    class Record(dict):
+        def items(self):
+            calls.append('record_items');return super().items()
+    armed=[True]
+    def mutate_source(rows):
+        if armed[0]:
+            armed[0]=False;value['orders'][0]=Record(value['orders'][0])
+        return original_budget(rows)
+    monkeypatch.setattr(review,'_budget',mutate_source)
+    assert run(value)==expected
+    assert calls==[]

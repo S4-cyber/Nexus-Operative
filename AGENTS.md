@@ -1,4 +1,2512 @@
 # Nexus Operative continuity instructions
+## v0.340.412 detached reconciliation evidence boundary
+
+The development risk-tier portal controls and the complete detached trial-
+reconciliation stack now share one preserved two-parent history. Reconciliation
+publication accepts only a closed primitive schema: exact non-negative counts,
+digest fields, fill and no-fill completion flags, coherent stopped-session cut
+evidence, durable halt agreement, and a recomputed event seal must all agree.
+Correctly rehashed contradictory receipts, private nested values, stale seals,
+invalid cut projections and non-object canonical JSON fail closed.
+
+The trial reader now samples caller-selected paths before relationship
+normalization, rejects reconciliation symlink leaves, and requires the exact
+parsed bytes to match the original bounded fingerprint. Omitted bundles still
+produce a blocked diagnostic for legacy modeled events without a fill digest;
+supplying a bundle requires the contributing session's complete modeled history.
+Execution-set hashing and bundle credit use one outcome predicate, so a
+scheduler-classified BUY/SELL remains an explicit unbound incident and can
+never receive excess credit.
+
+This is stricter rewritable local evidence consistency, not proof of journal
+authenticity, broker/account/source acceptance, genuine market realism,
+sustained-trial success, performance, profitability, funding, cloud, native
+Windows/installer acceptance or release approval. All source, broker, live,
+funding, cloud, money-movement and release authority flags remain false.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access are
+unchanged. No control was added relative to development, so seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain intact.
+The read-only roadmap estimate remains exact 38% weighted (displayed about 40%,
+30–45% low-confidence), with 0/9 stages independently accepted and no release
+or trading permission.
+
+
+## v0.340.411 detached trial reconciliation bundle
+
+Retained forward-trial review can now consume one explicit canonical,
+privacy-safe reconciliation bundle. Each contributing stopped session must bind
+the complete modeled-execution-set digest, exact retained session summary,
+quote/event heads and counts, sealed event reconciliation, and two equal stable
+order-snapshot digests. The history database and bundle are sampled together
+under one bounded relationship-distinct identity/fingerprint guard.
+
+Missing, extra, duplicate, stale, forged, aliased, oversized or changing bundle
+content fails closed. Without a bundle, every modeled BUY/SELL remains an
+explicit local bundle-binding incident as before. With an exact supplied bundle,
+only the bundle-bound in-window execution count is removed; unrelated
+coverage, lifecycle, quote, admission and scheduler incidents remain.
+
+This is a rewritable supplied local receipt, not proof that an order journal is
+authentic, a signature or genuine-feed,
+broker, account, fill/fee/hold/funds, sustained-market, performance,
+profitability, cloud, native Windows/installer or release acceptance. Every
+source, broker, funding, live, cloud, money-movement and release authority flag
+remains false. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and independent emergency-stop
+access are unchanged. No control was added, so the seven beginner-friendly tabs
+and black/bright-purple bottom-right hover help are unchanged. The read-only
+roadmap estimate stays exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+## v0.340.410 modeled-execution reconciliation fence
+
+Retained forward-trial review now counts every in-window modeled `BUY` or
+`SELL` outcome separately and treats it as an operational incident until that
+execution is explicitly bound to durable order/fill reconciliation. Raw
+declared-public coverage remains visible for diagnosis, but a locally coherent
+event chain and modeled-fill digest can no longer produce incident-free
+coverage by themselves. HOLD-only coverage is unchanged.
+
+The durable event schema also requires every `BUY` or `SELL` to carry its
+quote-evidence digest, so it cannot be reclassified as a lifecycle record.
+Matched outcomes timestamped before their bound quotes now make the retained
+trace incomplete. Both cases fail closed without repairing supplied history.
+
+Trial readiness carries the blocker through its read-only composite review
+without creating or repairing an order journal. The mandatory forward release
+profile requires the exact modeled-execution count, fixed blocker reason and
+unchanged false authority flags. A future positive increment must bind each
+execution under one coherent retained snapshot.
+
+Windows regression fixtures now treat a distribution-directory replacement
+that the kernel denies while reviewed leaf handles are pinned as a safe
+rejection, while successful replacements must still surface the fixed directory
+identity error. Malformed emergency-intent status tests isolate that schema
+boundary from native cold-replay availability and still require one halt attempt
+plus both independent replay confirmations. Production verification and
+emergency-stop logic are unchanged; exact-child hosted Windows evidence remains
+required.
+
+This is bounded fail-closed local evidence classification, not positive
+reconciliation, genuine-feed or sustained-market acceptance, broker/account/
+fill/fee/hold/funds acceptance, performance, profitability, deployment, native
+Windows/installer acceptance or release approval. Engagement and optional AI
+remain OFF by default; limits, account checks, reducing exits, fail-closed
+behavior and independent emergency-stop access are unchanged. No control was
+added, so the seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help are unchanged. The read-only roadmap estimate stays exact 38%
+weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
+
+## v0.340.409 coherent distribution-directory verification
+
+Artifact-manifest verification now binds the complete reviewed set to one exact
+non-aliased distribution directory and retains every artifact handle before
+hashing. POSIX leaves open relative to one no-follow directory descriptor; all
+platforms recheck public and retained identities and require two complete digest
+passes to agree. Directory swaps, parent/directory aliases and cross-leaf
+same-size content changes fail instead of combining separate generations.
+
+Both exact PR #130 Windows regression shards still observed intermittent
+malformed-intent cleanup confirmation failures. The strict three-attempt
+read-only replay now pauses for fixed 20 ms and 50 ms intervals only between
+transient unavailable observations. A definitive mismatch, negative replay or
+third unavailable sample still fails immediately, and the durable halt mutation
+is never retried. Exact-child hosted Windows verification remains required.
+
+This is bounded offline artifact-integrity hardening, not artifact signing or
+provenance, hosted or native Windows/installer acceptance, broker-paper or
+sustained-market acceptance, performance, profitability, deployment or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and independent emergency-stop
+access are unchanged. No control was added, so the seven beginner-friendly tabs
+and black/bright-purple bottom-right hover help are unchanged. The read-only
+roadmap estimate stays exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
+## v0.340.408 bounded Windows journal observation
+
+The standalone emergency stop now distinguishes a temporarily unavailable
+Windows journal-identity observation from a definitive alias, structural
+failure or inode replacement. Only the unavailable observation consumes the
+existing three-attempt read-only replay budget; a mismatch, an unhalted durable
+replay or the third unavailable sample still returns UNCONFIRMED immediately.
+The durable halt mutation remains single-shot, reset remains separate and the
+independent latch remains asserted.
+
+This closes the exact failure observed in both Windows regression shards of
+parent PR #128 without weakening pathname replacement fencing. It is bounded
+local emergency-stop hardening, not native Windows/installer acceptance,
+broker/account/funds acceptance, sustained-market evidence, performance,
+profitability, cloud deployment or release approval. Hosted success must be
+observed on the exact child commit before this fix is considered CI-verified.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits and fail-closed behavior remain unchanged. No button or editable
+parameter was added; seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate stays
+38% weighted (displayed about 40%, 30–45% low-confidence range), with 0/9
+stages independently accepted and no release or trading permission.
+
+
+## v0.340.407 retained fill remainder agreement
+
+Retained provider activity now requires each fill completion type to agree with
+its reported remaining quantity before the supplied history can support local
+request/activity agreement. A terminal `fill` with a positive remainder, or a
+`partial_fill` with zero remainder, remains readable for investigation but
+carries an explicit reconciliation disagreement through durable activity and
+the higher request/activity composition. Existing cumulative-chain,
+request-term, exact-head, fee, journal/file and emergency-stop checks remain
+unchanged.
+
+This is bounded local evidence-consistency hardening, not provider identity,
+broker/account/fill/fee/hold/funds, genuine-feed or sustained-trial, native
+Windows/installer, cloud, performance, profitability, hosted-CI or release
+acceptance. Every live, funding, spend and release authority flag remains
+false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.406 retained request-term agreement
+
+Every retained activity snapshot matched to an observed original paper request
+must now carry canonical requested quantity and limit price terms that equal the
+request journal payload. A correct newest snapshot can no longer hide an earlier
+conflicting quantity or limit. Legacy snapshots without either term remain
+replay-readable but cannot establish exact local agreement; the direct review
+policy is now v2. Latest status/fill selection, exact-head checks, journal/file
+rechecks and every explicit fill/limit check remain unchanged.
+
+Each emergency halt confirmation phase now tolerates at most three read-only
+cold-replay observations when Windows or SQLite reports a transient I/O fault. The exact
+regular single-link journal identity is checked before and after every attempt;
+identity drift, a definitive negative or the third transient fault remains
+immediately unconfirmed. The halt command is still issued once and no reset,
+second mutation or running authority was added.
+
+This is bounded local reconciliation hardening, not broker/account/funds,
+genuine-feed or sustained-trial, native Windows/installer, cloud, performance,
+profitability, hosted-CI or release acceptance. Every live, funding, spend and
+release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.405 post-latch durable halt replay
+
+The standalone local-paper emergency cut now reopens and replays the exact
+order journal a second time after reasserting its final independent intent
+latch. A sanctioned explicit reset can reuse the same SQLite inode after the
+first cold replay; that window now leaves the latch asserted but reports
+`UNCONFIRMED` with durable cleanup unconfirmed instead of reusing stale halt
+evidence. The unchanged halted path still requires both cold replays.
+Both replays must remain bound to the same regular single-link journal object;
+a final latch persistence/observation fault cannot promote the first replay.
+
+This remains sampled local filesystem evidence, not an atomic cross-process
+lease. A later explicit reset is still possible, and the command gained no
+reset, retry, provider request, broker connection or second halt mutation.
+Broker/account/funds, genuine-feed and sustained-trial, native Windows/
+installer, cloud, performance, profitability, hosted-CI and release acceptance
+remain open. Every live, funding, spend and release authority flag remains
+false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.404 bounded Windows process evidence
+
+The Windows installer smoke no longer performs an unbounded wait for redirected
+stdout/stderr after the root process exits. Both drain tasks share one fixed
+10-second grace; failure records a failed phase, closes owned readers and
+prevents installer-result evidence from being written. Evidence reports the
+maximum 300-second root-process wait and 10-second output-drain budgets as
+separate fields rather than presenting either as a whole-phase wall clock.
+
+The evidence schema now states only that redirected-output drainage is bounded
+and explicitly records process-tree containment as unverified. Atomic
+launch-into-job containment, descendant cleanup and native Windows acceptance
+remain open; an immediate post-start assignment race is not presented as
+containment.
+
+This is bounded Windows harness and evidence-integrity hardening, not broker/
+account/funds acceptance, genuine-feed or sustained-market-trial acceptance,
+native Windows/installer acceptance, performance, profitability, hosted CI
+success or release approval. Every broker, funding, live, cloud, spend and
+release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.403 release report parent binding
+
+Saved release-trial reports now reject parent-directory aliases, capture the
+exact canonical parent and report identities, and refuse acknowledgement when
+either public path changes across the bounded publication samples. On POSIX the report is created relative to the
+verified parent descriptor, then the file and new directory entry are synced
+before final identity rechecks. Windows retains exclusive creation, file sync
+and repeated sampled identity checks; native reparse-point, ACL, directory-
+publication and power-loss acceptance remain open.
+
+This is bounded offline report-integrity hardening, not broker/account/funds
+acceptance, genuine-feed or sustained-market-trial acceptance, native Windows/
+installer acceptance, performance, profitability, hosted CI success or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.402 financial evidence boundaries
+
+Disconnected broker balance review now rejects polymorphic collection, record,
+account and key evidence before byte budgeting or detachment, so caller hooks
+cannot influence supplied financial reconciliation. Saved release-trial reports
+now use exclusive restrictive no-follow creation, refuse existing files and
+symbolic links, and flush and sync completed bytes before success.
+
+These are bounded offline fail-closed and report-integrity checks, not broker/
+account/funds acceptance, genuine-feed or sustained-market-trial acceptance,
+native Windows/installer/power-loss acceptance, performance, profitability,
+hosted CI success or release approval. Every broker, funding, live, cloud,
+spend and release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven beginner-
+friendly tabs and black/bright-purple bottom-right hover help remain unchanged.
+The read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.401 offline safety implementation bindings
+
+Persisted counterfactual broker-intent reconciliation now binds the exact
+emergency-latch reader implementation. Every existing latch sample rejects a
+changed public slot before a substitute can execute, including substitution
+after the first durable order replay. The independent stop writer remains
+unlocked and request/order journals remain unchanged on rejection.
+
+Disconnected fee projection and fee-reserved cash-path review now accept only
+exact built-in containers, scope strings and supported numeric scalars before
+normalization. Mapping, row, string and numeric subclasses cannot invoke hooks
+to inflate opening funds, hide fees or forge a passing supplied-history audit.
+
+These are bounded offline fail-closed checks, not broker/account/funds
+acceptance, genuine-feed or sustained-market-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.400 safety and release-evidence bindings
+
+Persisted reconciliation now rechecks the independent emergency-cut latch
+after the final request-source verification. Account inspection rejects
+polymorphic mapping, key, enum and numeric evidence before normalization. The
+mandatory forward release profile binds the exact 200 retained admissions, 200
+in-window admissions and zero admission incidents, and Windows evidence
+generation/review now pass an explicit package-derived expected version.
+
+These are bounded local fail-closed and evidence-integrity checks, not
+broker/account/funds acceptance, genuine-feed or sustained-market-trial
+acceptance, native Windows/installer/power-loss acceptance, performance,
+profitability or release approval. Every broker, funding, live, cloud, spend
+and release authority flag remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.398 legacy admission trial gate
+
+Sustained forward-trial review now treats every retained in-window quote from
+a legacy session without a durable pre-evaluation exchange-admission chain as
+an explicit operational incident. Readable legacy coverage remains diagnostic,
+but it can no longer satisfy declared or incident-free 72-hour coverage, and
+the review reports `LEGACY_EXCHANGE_ADMISSIONS_UNBOUND` rather than silently
+accepting the missing chain.
+
+Existing quote, event, admission, cross-session, policy and lifecycle checks
+remain in force. This is bounded local evidence validation, not broker/account/
+funds acceptance, genuine-feed or sustained-market-trial acceptance, native
+Windows/installer/power-loss acceptance, performance, profitability or release
+approval. Every broker, funding, live, cloud, spend and release authority flag
+remains false.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.397 post-guard order replay
+
+Persisted counterfactual broker-intent reconciliation now performs a third
+fresh semantic order replay only after the request guard has fully exited.
+That replay closes the guard-connection finalization window, then rechecks the
+exact order and linked-portfolio identities, bounded sidecar-free
+fingerprints, independent emergency-cut latch and request source.
+
+A durable halt or order-file mutation committed during guard finalization, or
+a request-file change during the unlocked post-guard replay, fails closed.
+The order journal remains unlocked throughout, so the independent emergency
+stop is never delayed by reconciliation. Existing exact implementation,
+policy, account-scope and reviewed-snapshot bindings remain in force.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.396 emergency-latch and implementation binding
+
+Persisted counterfactual broker-intent reconciliation now fails closed while
+the independent emergency-cut latch is present, including the crash-safe
+interval before its SQLite halt commits. The latch is sampled before, inside
+and after the exact request guard without locking or delaying the stop writer.
+A cut requested during reconciliation is rejected while the request journal
+remains unchanged and the order journal may still be non-halted.
+
+The composition also binds the exact production durable-order replay,
+request-plan guard and request-file fingerprint implementations. Class-level
+substitution is rejected before a matching fake reader executes, and each
+implementation is rechecked through the final guarded replay. Existing
+physical identities, bounded fingerprints and semantic replay checks remain.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.395 bounded order file-set reconciliation
+
+Persisted counterfactual broker-intent reconciliation now binds bounded,
+sidecar-free fingerprints for both the exact order journal and its linked
+portfolio before the first semantic replay. Physical identity, size, stable
+metadata and bytes are rechecked after each successful replay and across the
+guarded request comparison. A same-inode metadata or byte change now fails
+closed even if the replayed order snapshot would otherwise remain equal.
+
+The production gateway policy and physical identities remain pinned. The order
+journal remains unlocked, so the independent emergency halt can still commit;
+a halt during the guarded request comparison is rejected by the second
+semantic replay before a fingerprint result can mask its changed durable
+state. Direct regressions cover both the order and linked-portfolio files.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.394 request-journal and gateway-policy binding
+
+Persisted counterfactual broker-intent reconciliation now binds one exact
+request-journal implementation, account scope, canonical single-link file and
+bounded byte fingerprint before the first durable order replay. The built-in
+guard is invoked class-qualified and the binding is rechecked before, inside
+and after its final guarded replay. A matching snapshot returned by an ad-hoc
+object or a byte-identical request pathname substitution fails closed.
+
+The durable order gateway must also retain its production policy: checkpoint
+validation enabled, rotation recovery disabled and no per-instance method
+substitution. A recovery-only gateway cannot reconcile through an interrupted
+rotation marker, and a policy change after the first replay is rejected. The
+order journal remains unlocked, preserving independent emergency-halt access.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.393 physical order-source binding
+
+Persisted counterfactual broker-intent reconciliation now requires one exact
+durable order gateway and pins one canonical single-link order journal plus
+the linked portfolio identity across both replay windows. A matching snapshot
+returned by an ad-hoc object or a byte-identical journal pathname substitution
+fails closed instead of being accepted as durable provenance.
+
+The durable class replay implementation is invoked directly and every physical
+identity is rechecked before and after both replays. No order lock spans the
+request-journal comparison, so the independent emergency halt remains writable
+and the existing semantic replay still rejects its changed durable state.
+Direct regressions cover both fake-gateway and byte-identical path-substitution
+attacks.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+
+## v0.340.392 detached forward-review input
+
+Persisted counterfactual broker-intent reconciliation now validates and
+detaches the complete caller-owned stopped review before any durable journal
+access. Both replay-validated order snapshots and the exact-head request-plan
+comparison consume that one immutable plain-data copy. Concurrent mutation of
+the caller's nested review cannot splice different review states into one
+reconciliation result.
+
+A direct regression changes the original receipt and stopped state after the
+first order replay and proves that the result remains exactly bound to the
+initial detached input. Request-head locking through the final order replay,
+the final request reread and unlocked independent emergency-halt access remain
+intact. The request plan stays permanently unsendable and no credential,
+provider, network, account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+## v0.340.391 request-guarded final order replay
+
+Persisted counterfactual broker-intent reconciliation now retains the exact
+request-journal write guard through the final durable order replay and a final
+request snapshot reread. A request path identity, bounded fingerprint or exact
+head change during that replay fails closed before reconciliation can return.
+The order journal remains unlocked throughout, so the independent emergency
+halt can still commit and the final replay rejects its changed state.
+
+A direct regression changes the guarded request-file fingerprint during the
+second order replay and proves the late change is rejected. Existing
+halt-during-request reconciliation still completes independently. The request
+plan remains permanently unsendable and no credential, provider, network,
+account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not broker/account/
+funds acceptance, genuine-feed or sustained-trial acceptance, native Windows/
+installer/power-loss acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency
+stop remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+## v0.340.390 post-review order-journal reconciliation
+
+Persisted counterfactual broker-intent reconciliation now brackets its exact
+request-head check with two fresh replay-validated session-order snapshots.
+Both must match the reviewed non-halted order snapshot. A later emergency
+halt, journal replacement, mutation or replay fault therefore invalidates the
+retained review instead of accepting stale local provenance.
+
+The order journal is not locked across request reconciliation. A direct
+regression performs a real durable emergency halt while the independent
+request-journal guard is active; the halt completes and the second order replay
+rejects the stale review. The request journal remains unchanged. The
+counterfactual plan stays permanently unsendable and no credential, provider,
+network, account, funds, routing or ledger authority is introduced.
+
+This is bounded sequential local reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer/power-loss acceptance, performance, profitability or
+release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
+## v0.340.389 cold-replayed emergency-halt verification
+
+The standalone installed emergency cut and API emergency lane now treat the
+gateway return only as a warm acknowledgement. Before either surface reports
+durable cleanup as confirmed, a fresh gateway independently reopens and
+replays the exact order journal and requires retained history, at least one
+command and halted state. An exact-looking acknowledgement without a commit,
+an unreadable journal or a valid unhalted replacement remains UNCONFIRMED.
+
+Failure never removes the independent stop: the intent latch is reasserted,
+the paper runner is stopped, engagement remains blocked and cleanup may be
+explicitly retried. Direct regressions cover both a forged exact warm return
+with no journal mutation and replacement of a genuinely halted journal before
+the cold proof.
+
+This is bounded local emergency-control and reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer/power-loss acceptance, performance, profitability or
+release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits and fail-closed behavior remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.388 durable pre-evaluation exchange admission
+
+Every structurally valid, fresh and advancing paper-forward tick now enters a
+dedicated append-only exchange-admission chain before price/spread evaluation.
+The marker is committed and explicitly flushed through the existing durable
+SQLite boundary, binding the exact session, cycle, evaluation and exchange
+times, sanitized quote digest, source label and admitted policy. A real child
+process exits inside feed evaluation after that commit; cold restart recovers
+the marker and rejects altered prices at the same exchange timestamp without
+creating a modeled order.
+
+New sessions receive an atomic zero-count admission head with START, which
+keeps pre-feature sessions explicitly readable as legacy history. Eligible and
+price-vetoed new-format quote rows require the exact marker digest; duplicate,
+regressed, malformed and stale rows receive none. An unmatched terminal marker
+is retained as process-death evidence: it advances the restart floor, grants no
+price baseline or trial coverage and makes session/trial review require human
+attention. Marker storage is independently bounded, reported and preflighted
+without deletion or pruning; admission heads/counts participate in the stable
+trial snapshot.
+
+This is bounded local durability and reconciliation evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native Windows/installer acceptance, performance, profitability or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior and the independent emergency stop
+remain unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+## v0.340.387 atomic simulated-entry audit and CI evidence budget
+
+Direct simulated BUY admission now obtains SQLite writer reservation before its
+integrity governor reads the ledger. The audit, exposure and cash checks, and
+new-exposure mutation execute in that same transaction, closing a cross-process
+gap where a chain mutation could land after a passing audit. Standalone
+integrity reviews hold one explicit read snapshot. Reducing SELL exits
+intentionally remain available when integrity is impaired.
+
+The exact-head Windows saved-evidence job now has a finite 45-minute outer
+budget. Exact v0.340.386 CI exhausted the former 15-minute budget while bounded
+release profiles were still running; each profile retains its own fail-closed
+child limit and fresh exact-source CI remains mandatory.
+
+This is bounded offline risk, accounting and CI-orchestration evidence, not
+broker/account/funds acceptance, genuine-feed or sustained-trial acceptance,
+native installer acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.386 rejected-tick exchange-marker continuity
+
+Every structurally valid fresh paper-forward tick now consumes the monotonic
+exchange marker before price/spread review. A price-vetoed observation cannot
+be replayed later under the same exchange timestamp with different values.
+Rejected prices never seed the single-source price guard; eligible quotes keep
+the independent executable-price baseline. Cold restart reconstructs those two
+baselines separately from every retained quote chain before START.
+
+Retained trial review carries locally rejected fresh ticks through the global
+cross-session exchange floor without granting them price-reference or coverage
+authority. A later eligible observation that repeats or regresses behind that
+floor is an incident and loses both adjacent coverage intervals. Rapid session
+rotation cannot launder a vetoed timestamp into incident-free trial coverage.
+
+This is bounded local supplied-history and trial-accounting evidence, not
+genuine-feed/source attestation, sustained-trial acceptance,
+broker/account/funds acceptance, native durability, performance, profitability
+or release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
+## v0.340.385 durable cross-session exchange continuity
+
+Paper-forward preparation now replays every retained per-session quote chain,
+recovers the highest accepted exchange timestamp and seeds the single-source
+price guard from that exact retained observation before START. A cold restart
+cannot reset the runtime freshness marker or immediately discard the last
+executable-price baseline. Malformed or inconsistent eligible history fails
+closed before account initialization or session creation.
+
+Retained forward-trial review separately requires exchange time to advance
+across session boundaries. Repeated and regressed points are operational
+incidents, cannot become price references, and remove both adjacent candidate
+coverage intervals. A 72-hour trial assembled from rapidly rotated sessions
+cannot reuse boundary ticks to manufacture incident-free coverage.
+
+This is bounded local supplied-history and trial-accounting evidence, not
+genuine-feed/source attestation, sustained-trial acceptance,
+broker/account/funds acceptance, native durability, performance, profitability
+or release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior and the independent
+emergency stop remain unchanged. No button or editable parameter was added;
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate stays 38% weighted (displayed
+about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission or launch date.
+
+## v0.340.384 atomic admission and evidence snapshots
+
+Simulated tier-entry admission now reads its durable permission switch and the
+budget/allocation inputs that define its cap from one authoritative SQLite
+snapshot. A durable disable can no longer be spliced between a stale enabled
+read and a later cap read. Fresh-install bootstrap remains Terrestrial-only;
+saved OFF choices and settings-review failures remain fail closed.
+
+Direct post-reconciliation and fee-reference compositions validate and detach
+all four supplied account observations before any component review or replay,
+preventing caller mutation from selecting transient manifests. Paper-forward
+runtime and retained trial review now require strictly advancing exchange
+timestamps. A duplicate tick is retained as an ineligible incident, does not
+advance the feed baseline and cannot create sustained-trial coverage.
+
+This is bounded offline/local integrity evidence, not genuine-feed/source
+attestation, sustained-trial acceptance, broker/account/funds acceptance,
+native durability, performance, profitability or release approval. Engagement
+and optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.383 cut, executable-price and observation fences
+
+Feed admission and retained cross-session trial review now apply the bounded
+price-jump heuristic to bid, ask and last. A stable last trade can no longer
+conceal a large shift in the bid/ask prices used by strategy decisions and
+modeled fills. Rejected cross-session observations still cannot establish a
+later reference or coverage interval.
+
+Every cut-guarded durable order transaction now samples the independent
+emergency latch once more after its final apply and before SQLite commit. A cut
+published during the final mutation rolls back the complete order-journal and
+linked-portfolio transaction. Retained known-fee reserve composition also
+validates and detaches all four supplied account observations before component
+review or arithmetic, preventing caller mutation from mixing manifests.
+
+This is bounded offline/local integrity evidence, not genuine-feed/source
+attestation, sustained-trial acceptance, broker/account/funds acceptance,
+native durability, performance, profitability or release approval. Engagement
+and optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.382 symmetric cross-session trial conflicts
+
+Equal-time cross-session quote disagreements now fail closed without an
+arbitrary session winner. When supplied public observations for the same
+product and timestamp disagree on bid, ask or last price meaning, retained
+forward-trial review rejects every conflicting observation. A rejected point
+cannot become the chronological reference for a later cross-session jump
+check, and neither adjacent candidate interval can contribute coverage.
+
+Requested-window disagreement and revalidated-observation counts remain
+scoped even when neighboring retained context is needed to invalidate an
+interval. Focused regression evidence covers all-conflict rejection, stable
+outside-window count scoping and 72-hour rapid session rotation.
+
+This is bounded read-only local operational-evidence correctness, not
+genuine-feed/source attestation, sustained-trial acceptance, market realism,
+broker/account acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.381 cross-session trial coverage correction
+
+Retained forward-trial review now keeps candidate coverage intervals bound to
+both exact session/cycle endpoints until the chronological cross-session
+consistency pass completes. An observation disqualified by an equal-time
+cross-session conflict or rapid cross-session price jump removes both adjacent
+intervals before union and coverage calculation. Rapidly rotating sessions can
+no longer reset price-jump state while retaining nominal 100% coverage.
+
+The consistency pass receives retained public context immediately outside the
+requested window so a conflicting boundary point cannot establish in-window
+coverage. Disagreement and revalidated-observation counts remain scoped to the
+requested window; retained context is not reported as an in-window incident.
+
+This is bounded read-only local operational-evidence correctness, not
+genuine-feed/source attestation, sustained-trial acceptance, market realism,
+broker/account acceptance, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+roadmap stays 38% weighted (about 40%, 30–45% low-confidence range), with 0/9
+independently accepted stages and no release permission, trading permission or
+launch date.
+
+## v0.340.380 POST/GET/SSE uncertainty matrix
+
+The mandatory reconciliation profile now carries one strict compact matrix
+across the existing disposable paper POST, provider GET and Activity SSE
+treatments. Exact component schemas jointly require single-attempt POST safety
+windows, retained unknown outcomes and terminal original-ID recovery; GET
+authentication denial and lost recovery acknowledgement; and SSE bounded
+backoff, independent emergency-stop revocation, cursor races, lost
+acknowledgements and byte-stable cold replay.
+
+Missing cells, schema extensions, polymorphic values and promoted authority
+fail closed. The matrix returns no private component evidence and performs no
+provider, credential, retained-storage, routing or financial operation. Every
+provider, broker, funds, live and release authority remains false.
+
+This is bounded injected local coverage, not provider identity, actual
+broker-paper/account acceptance, genuine stream or market delivery,
+broker-wide pacing, native durability, sustained-trial evidence, performance,
+profitability or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain unchanged. No button or editable parameter
+was added; seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The roadmap stays 38% weighted (about 40%,
+30–45% low-confidence range), with 0/9 independently accepted stages and no
+release permission, trading permission or launch date.
+
+## v0.340.379 exact-head forward-intent reconciliation
+
+One read-only same-host composition now reconciles the retained counterfactual
+broker plan back to a fresh stopped forward review. It holds request-journal
+writer exclusion while replaying the complete plan and prepared-unsent summary,
+independently revalidates the sealed forward receipt, event reconciliation,
+order snapshots and complete modeled-fill source, then rechecks the exact
+pathname identity and bounded file bytes before releasing the guard.
+
+Stale request heads, changed forward evidence and legacy unbound previews fail
+closed without mutating the journal or invoking credentials, clocks, callbacks,
+provider IO or routing. The mandatory disposable forward profile proves cold
+equality, repeated byte-stable replay and all three denial cases. The modeled
+fill already changed the synthetic ledger, so the plan remains permanently
+unsendable and cannot be applied again.
+
+This is bounded local provenance continuity, not source attestation, actual
+broker-paper/account/funds acceptance, genuine-market or sustained-trial
+evidence, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain unchanged. No button or editable parameter
+was added; seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The roadmap stays 38% weighted (about 40%, 30–45%
+low-confidence range), with 0/9 independently accepted stages and no release
+permission, trading permission or launch date.
+
+## v0.340.378 unsendable forward-to-broker intent binding
+
+A stopped, locally consistent paper-forward review now exposes one deterministic
+modeled-outcome source bound to the exact quote, session, cycle, local order,
+event, fill economics, event-chain head and sealed reconciliation receipt. A
+pure credential- and network-silent builder independently revalidates that
+source and binds it to one disconnected Alpaca paper preview without rounding.
+
+The request journal durably retains the compact binding, cold-replays it
+unchanged, labels legacy previews unbound and blocks submission review, checked
+attempt marking and the single-attempt transport boundary before credentials,
+clocks, permissions, the emergency stop, an opener, account reads or any
+attempt callback. The modeled fill has already changed the synthetic ledger,
+so the bound preview is counterfactual and permanently unsendable; it is never
+wired to strategy execution.
+
+This is bounded offline provenance and fail-closed integration evidence, not
+source attestation, actual broker-paper/account/funds acceptance, genuine-market
+or sustained-trial evidence, native Windows acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Engagement and
+optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior and the independent emergency stop remain unchanged. No
+button or editable parameter was added; seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate stays 38% weighted (displayed about 40%, 30–45% low-confidence
+range), with 0/9 stages independently accepted and no release permission,
+trading permission or launch date.
+
+## v0.340.377 same-history repeated-interruption recovery
+
+The mandatory disposable forward profile now uses one linked ledger across two
+ordered abrupt child terminations. The first occurs after a durable modeled BUY
+fill and before its forward outcome. A cold reviewer must observe the retained
+gap and explicitly cancel the outstanding order. The second occurs after a
+reducing-exit no-fill attempt and before its forward VETO. Final cold replay
+requires the first gap to remain stable, both sessions to remain review-required,
+the no-fill digest to replay identically, fill sequences to remain monotonic,
+and remaining position plus cumulative reduction to equal the original mandate.
+The forward runner must remain disabled and unowned with no automatic repair,
+retry or restart.
+
+This is bounded offline process-death, recovery and reconciliation evidence,
+not operating-system power-loss proof, broker-paper/account acceptance,
+genuine-market or sustained-trial evidence, native Windows/installer acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+unchanged. No button or editable parameter was added; seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate stays 38% weighted (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+## v0.340.376 modeled-fill binding, cut fence and strict public JSON audit
+
+Every new successful paper-forward BUY/SELL outcome now carries a canonical
+digest of the complete durable modeled fill: order, side, event, sequence,
+quantity, price, fee, all quote/cost assumptions, session, cycle and quote
+digest. Reconciliation independently recomputes the durable digest. Legacy
+unbound outcomes remain readable but cannot pass current local acceptance, and
+a process death after the fill commit still remains review-required without
+automatic repair.
+
+The independent emergency cut is resampled after an execution-clock callback
+and before every step of an atomic quote-order transaction. A cut published at
+either seam revokes stale mutation authority and rolls back the full local
+transaction; halt, cancel, expiry, reset and archival controls remain available.
+The trusted public-repository audit now rejects duplicate JSON keys, non-finite
+constants and malformed JSON-shaped blobs with content-free findings, so
+ambiguous last-key-wins parsing cannot hide a private operational report.
+
+This is bounded offline evidence, emergency-stop and public-artifact hardening,
+not broker-paper or account acceptance, genuine-market or sustained-trial
+evidence, native Windows/installer acceptance, funding/live/cloud readiness,
+performance, profitability or release approval. Engagement and optional AI
+remain OFF by default; limits, account checks, reducing exits and fail-closed
+behavior are unchanged. No button or editable parameter was added; seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate stays 38% weighted (displayed about
+40%, 30–45% low-confidence range), with 0/9 stages independently accepted and
+no release permission, trading permission or launch date.
+
+## v0.340.373 cut-aware sealed forward review
+
+Every complete per-session reconciliation now produces a privacy-safe receipt
+binding the session summary, quote and durable-event heads, event
+reconciliation, both replay-validated order/portfolio snapshots, halt state,
+fixed reason set and independently sampled emergency-cut state. A generic
+durable halt is no longer described as an independent cut. Signal-only cuts,
+malformed or changing latches, and order-snapshot changes fail closed with
+fixed public reasons. Clean forward and recovery release fixtures consume the
+exact receipt and stability fields.
+
+This is bounded offline reconciliation hardening, not provider/source
+attestation, broker-paper or account acceptance, genuine-market or sustained
+trial evidence, native Windows/installer acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Broker transport,
+engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed entry, reducing exits and the independent emergency stop remain
+intact. No button or editable parameter was added. The existing Quote / Fill
+Evidence hover help explains the sealed review and retains seven
+beginner-friendly tabs plus black/bright-purple bottom-right hover help.
+
+The read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.372 exact per-session reconciliation envelope
+
+Per-session evidence review now consumes the retained quote chain and the
+durable lifecycle/outcome chain in the same forward-database snapshot, then
+binds them to two replay-validated order-journal and linked-portfolio snapshots.
+Every retained quote must have exactly one digest-matching outcome. Every
+modeled BUY or SELL outcome must match one durable fill by exact session, cycle,
+side and order ID. START, final tail, counters, event time/cycle order and the
+stable halt state are also required. A composite reconciliation digest exposes
+the local generation without publishing quotes, account contents or private
+paths.
+
+A process death after a quote commit but before its outcome is readable but
+incomplete. An independent cut that leaves a RUNNING session is authoritative
+and review-required; it is never rewritten into optional forward evidence.
+Unknown decisions, malformed order identifiers and fill outcomes missing the
+fixed modeled-liquidity and false strategy-authority fields fail closed. Pinned
+prior-version eventless recovery remains readable, but cannot claim the new
+trace. Current forward and recovery release fixtures require exact event heads
+and quote/outcome/order reconciliation.
+
+This is bounded offline local reconciliation, not provider/source attestation,
+broker-paper or account reconciliation, genuine-market or sustained-operation
+evidence, native Windows/installer acceptance, funding/live/cloud readiness,
+performance, profitability or release approval. Broker transport remains OFF
+and unrouted. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed entry, reducing exits and the independent emergency stop
+remain intact. No button or editable parameter was added. The existing Quote /
+Fill Evidence control has updated beginner help and retains the seven tabs plus
+black/bright-purple bottom-right hover help.
+
+The read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.371 durable forward-event trace
+
+Local paper sessions now retain a separately capped, never-pruned hash chain for
+lifecycle, primary outcome and scheduler events. The 1,000-row cycle table
+remains only a short Portal diagnostic. Retained review requires the event
+chain, session counters and final state to agree and requires exactly one
+quote-digest-bound primary outcome per quote. Legacy and mixed histories stay
+readable but cannot claim a complete or incident-free trace. Capacity admission
+preserves room for the next outcome, a possible scheduler overrun and a
+fail-closed terminal record; Trial Readiness reports a conservative event-row
+forecast without reserving storage.
+
+This is bounded offline evidence-durability and sustained-trial integrity work,
+not source attestation, broker-paper acceptance, genuine-market realism, a
+completed sustained trial, Windows/installer acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. Broker transport,
+engagement and optional AI remain OFF by default. No button or editable
+parameter changed; the existing Trial Readiness control explains the new
+read-only fields, while seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain intact. The read-only roadmap estimate is
+unchanged: exact weighted implementation 38% (displayed about 40%, 30–45%
+low-confidence range), with 0/9 stages independently accepted and no release
+permission, trading permission or launch date.
+
+
+## v0.340.370 truthful resumable-slice expiry
+
+Exact-TTL expiry of a residual local-paper reducing slice is now classified as
+an explicit no-fill boundary. The immutable full-position mandate, current
+position, fill sequence and retained quote events remain unchanged, while the
+paper-forward runner durably records `VETO / ORDER_EXPIRED_WITHOUT_FILL`
+instead of falsely reporting a modeled SELL. A later cycle must establish newer
+execution terms and consume a fresh quote before the same bounded mandate can
+continue. Cold replay preserves the pending mandate; the independent emergency
+halt remains terminal and outside the worker.
+
+This is bounded offline exit/reconciliation correctness, not broker-paper,
+genuine-market, liquidity or sustained-operation evidence, Windows or installer
+acceptance, funding/live/cloud readiness, performance, profitability or release
+approval. Broker transport remains OFF and unrouted; engagement and optional AI
+remain OFF by default. No button or editable parameter changed, so the seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The read-only roadmap estimate remains exact weighted implementation
+38% (displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.369 resumable bounded reducing-exit mandate
+
+The protected local-paper exit intent now remains an immutable, internal-only
+full-position mandate across multiple fresh-quote slices and explicit runner
+sessions. Every slice keeps the existing $200 notional ceiling, uses a new
+monotonic fill sequence, binds its exact forward session and cycle, and rechecks
+that the current holding equals the original expected position minus durable
+cumulative fills. A price move can therefore no longer consume the one protected
+ID while leaving a reconciled residual holding with no path to finish flat.
+
+Cold restart discovers exactly one structurally valid pending mandate and reuses
+its original ID; ambiguous, malformed, wrong-product, over-reducing, stale
+position and oversized-slice states fail closed. Start preflight, per-cycle
+admission and trial-readiness capacity distinguish a resumable mandate from a
+new intent slot without enlarging the lifetime ID or command limits. Session
+review projects only the slices bound to that exact session while the durable
+order retains cumulative quantity, modeled notional, fees and full replay
+history. The independent emergency halt remains outside the worker and
+terminally cancels a pending mandate; it never performs liquidation.
+
+This is bounded offline exit/reconciliation hardening, not actual broker-paper,
+genuine-market or liquidity evidence, a liquidation guarantee, Windows or
+installer acceptance, funding/live/cloud readiness, performance, profitability
+or release approval. Broker transport remains OFF and unrouted; engagement and
+optional AI remain OFF by default. No button or editable parameter changed, so
+the seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The read-only roadmap estimate is unchanged: exact weighted
+implementation 38% (displayed about 40%, 30–45% low-confidence range), with 0/9
+stages independently accepted and no release permission, trading permission or
+launch date.
+
+## v0.340.368 durable position-reducing exit intent reserve
+
+Linked local-paper accounts now protect exactly one slot inside the existing
+fixed durable intent-ID limit from ordinary intake. The public simulation route,
+ordinary BUY/SELL requests and unrelated internal callers cannot consume that
+slot. Only the paper-forward runner's internal replayable reducing command may
+use it, after binding the exact held product, requested reduction quantity and
+expected current position in the durable command and intent digest. Fill
+application rechecks that no other quantity change occurred and never permits a
+cumulative reduction above the retained bound. Flat, unlinked, wrong-product,
+oversized, stale-position, halted and independent emergency-cut paths remain
+fail-closed. The total ID limit is unchanged.
+
+Capacity reports, start preflight and sustained-trial readiness now distinguish
+total physical IDs, ordinary-intake headroom and protected reducing-exit
+headroom. A new unlinked account must prove two total IDs before linking; a
+linked flat account must prove one ordinary plus one exit slot; a retained
+position may continue exit monitoring when ordinary intake is exhausted.
+Cold replay preserves the reducing classification and exact duplicate/conflict
+semantics. Logical archival, command reserves, account/position checks and
+emergency-stop independence are unchanged.
+
+This is bounded local exit-capacity hardening, not actual broker-paper,
+sustained genuine-market, native Windows/installer, funding/live/cloud,
+performance, profitability or release acceptance. Broker transport remains OFF
+and unrouted; all engagement and optional AI permissions remain OFF by default.
+No UI control or editable parameter changed, so the seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.367 truthful external-boundary inventory and selected-journal identity
+
+Reconciliation acceptance now rejects symbolic or multiply linked caller-selected
+pacing, activity and acceptance journal leaves before semantic reads. After the
+ordinary canonical path-set preflight, it rebinds every result to the exact
+selected leaf identity and rejects an observed replacement. This prevents a
+linked final path from silently selecting and certifying a different retained
+private history.
+
+The read-only admission-authority inventory now separates application route
+exposure from credentialed external transport existence. It binds the dormant
+single-attempt Alpaca paper-order transport and the optional AI advisory
+transport to their exact fixed POST targets, explicit confirmation, OFF state,
+and false authority. The broker transport remains unrouted from the application;
+its existence is not configuration, provider/account acceptance, funding,
+routing or permission.
+
+Focused validation passed 22 authority/live-loopback tests, 70 reconciliation
+acceptance tests and 14 version/roadmap/Windows-workflow tests, with the existing
+Starlette/httpx warning. All sixteen bounded offline profiles passed; saved
+evidence matches 425 source files /
+`2544a293c229fa166a091df264933caba334a27dc33789a3e9d2e8a8db467d4d`
+and report SHA-256 is
+`70e59830d40ff1072b40439f9e1ae0dc2f970edda8d47a7e2c288f7b7d54923c`.
+The complete deterministic regression passed both required shards: 3,367 and
+3,346 tests, with one expected platform skip per shard and the existing warning.
+Compilation and all fourteen Portal/controller Node checks passed. The
+165-member v0.340.367 wheel reports the synchronized version and has SHA-256
+`b1b4b2989f0aae49eea7d64efb316aa8fd04ae59074ed6e3fe50a690978ebded`.
+The trusted current-candidate artifact audit checked 1,112 paths/blobs and the
+exact-parent history audit checked 1,230 commits / 11,211 blobs with a 21-object
+candidate delta; both had zero findings. The introduced-line high-confidence
+credential scan found zero
+matches. Local Gitleaks is unavailable, so the pinned fresh exact-head hosted
+secret scan remains authoritative; no uncompleted check is claimed as passed.
+
+This is bounded offline evidence-integrity hardening, not actual broker-paper,
+sustained genuine-market, native Windows/installer, funding/live/cloud,
+performance, profitability or release acceptance. No control or editable
+parameter changed. Engagement and optional AI remain OFF by default; limits,
+account checks, fail-closed entries, reducing exits, independent emergency stop,
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain intact. The roadmap estimate is unchanged: exact weighted implementation
+38% (displayed about 40%, 30–45% low-confidence range), with 0/9 stages
+independently accepted and no release permission, trading permission or launch
+date.
+
+## v0.340.366 fixed forward cadence and trusted delta activation
+
+The paper-forward worker now schedules cycle starts against fixed independent
+monotonic deadlines instead of adding each cycle's duration to the configured
+interval. A bounded overrun is retained durably and the next deadline starts
+from completion, so the worker never emits a catch-up burst. Invalid,
+regressing, stalled, or failed scheduler boundaries pause before any further
+fetch, retain a sanitized fixed reason, release the local owner lease, and keep
+process-control signals visible. The mandatory forward profile now runs nominal,
+overrun, invalid-clock, regressed-clock, and stalled-clock treatments through
+the actual worker and strictly consumes their closed evidence schema. Every
+provider, automatic-retry, sustained-market, broker, live, and release authority
+field remains false.
+
+Pull-request repository security now passes the immutable exact base and head
+commits into the trusted base policy. Complete reachable history remains
+mandatory; the new per-object and newly reachable object/byte ceilings are
+therefore active rather than merely installed. Push and manual runs bind the
+exact source to itself for a zero delta while still scanning complete fetched
+history.
+
+The complete deterministic regression passed both required shards: 3,350 and
+3,335 tests, with one platform skip per shard and the existing Starlette/httpx
+warning. The synchronized release/evidence mutation scope passed 307 tests.
+All sixteen bounded offline
+profiles passed; saved evidence matched 425 source files /
+`6edbe713cb0f0c5e257b244a101d3dbbd7197326edfbbaa320eec42fcdb6f16e`
+and report SHA-256 is
+`645efed507125eefc6626ca3f781b45409c419733c25dd1e8a86dfebb8a2fb8e`.
+Compilation and all twenty CI-inventory Node checks passed. The 165-member
+v0.340.366 wheel has SHA-256
+`e5c72fdb51984279ec929b7b406a21a0dec4baf434e9c5b5fedecc6347cf046f`.
+The exact v0.340.365 parent passed both hosted pull-request workflows:
+public-security run `44600143092` and research run `44600143293`.
+
+This is bounded offline and publication-gate hardening, not actual broker-paper,
+sustained genuine-market, native Windows/installer, funding/live/cloud,
+performance, profitability, or release acceptance. Fresh exact-head hosted
+checks remain required for v0.340.366. No control or editable parameter changed;
+engagement and optional AI remain OFF by default, and limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven
+beginner-friendly tabs, and black/bright-purple bottom-right hover help remain
+intact. The roadmap estimate is unchanged: exact weighted implementation 38%
+(displayed about 40%, 30–45% low-confidence range), with 0/9 stages independently
+accepted and no release permission, trading permission, or launch date.
+
+## v0.340.365 trusted public-history policy bootstrap
+
+The repository publication gate now has a reviewed successor policy before the
+old finite reachable-history ceiling is exhausted. Complete reachable history
+is still scanned. The successor retains the 100,000-object ceiling, raises the
+aggregate uncompressed ceiling to a finite four GiB, rejects any single Git
+object above sixteen MiB, and can bind an exact trusted base/candidate pair to
+at most 4,096 newly reachable objects and sixty-four MiB. Exact lowercase
+commit identities, full history, commit availability and base ancestry all
+fail closed with fixed allowlisted reason codes. Disposable Git histories cover
+aggregate, single-object, delta-byte, delta-object, malformed, missing and
+unrelated-commit treatments while proving complete clean-history inspection.
+
+This is an intentional two-stage trust rollout. Pull-request security executes
+policy from the exact base, so this bootstrap keeps the old compatible workflow
+invocation and must itself pass the old trusted 1.5-GiB policy. The next stacked
+increment must activate `--baseline-commit` and `--candidate-commit`; its run is
+the first proof using this newly trusted policy. The focused policy/workflow
+and synchronized release scope passed 113 tests with one existing dependency
+warning. Final full regression passed 6,673 tests with two platform skips and
+one existing warning in 1,254.91 seconds. All sixteen bounded offline profiles
+passed; saved evidence matched 424 source files /
+`1530f942ef3c883f037297b24307871902f3992898211ae2824df9e0276dee56`
+and report SHA-256 is
+`f8327746b405c5fa551ad22443d0531cbc6de7adad64945b4c5c9eac65234f8c`.
+
+This is publication-gate hardening, not broker-paper, sustained-market,
+Windows, funding/live/cloud, performance, profitability or release acceptance.
+No control or editable parameter changed. Engagement and optional AI remain OFF
+by default; limits, account checks, fail-closed entries, reducing exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Rough implementation remains about 40%,
+exact weighted index 38% (30-45%, low confidence), with 0/9 stages independently
+accepted.
+
+
+## v0.340.364 installer semantic-result distribution binding
+
+The Windows installer smoke result is now a first-class, fail-closed member of
+the distribution trust chain. Its raw record binds the exact development
+version, source commit, installer SHA-256 and phase-session identifier to eleven
+semantic install/reinstall/recovery/preservation assertions, bounded external
+processes, and explicit false native, broker, live, money-movement and release
+authority. It is published through a unique temporary file and no-overwrite
+move, then a strict reviewer rejects duplicate keys, links, malformed types,
+stale source/session/digest metadata, substituted phase evidence, promoted
+authority or pre-existing output.
+
+The normalized result review is included in the inner artifact manifest,
+consumed by the distribution binding, carried in the distribution upload and
+independently revalidated by the ordinary-user owner-profile reviewer. The
+outer envelope continues to bind the inner manifest and distribution review,
+so semantic-result substitution breaks the shipped chain without introducing
+a hash cycle. The final strict installer/result/manifest/owner and documentation
+scope passed 151 tests with one existing dependency warning. Final full
+regression passed 6,665 tests with two platform skips and one existing warning
+in 1,297.22 seconds. All sixteen bounded offline profiles passed; saved
+evidence matched 424 source files /
+`9b44d33910b1b73a8c3ff82228426fb576bc048b1656116f6f49313e9714b1d9`
+and report SHA-256 is
+`68dd9d7fd255638ecf7daa05359a6c0487eefde500b36aa877e049a32eeee003`.
+
+This is source and local-workflow verification, not an executed native Windows
+installer, clean-machine, native-window, ordinary-profile, power-loss, actual
+broker or genuine-feed acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No control or editable parameter changed.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help remain intact. Rough
+implementation remains about 40%, exact weighted index 38% (30-45%, low
+confidence), with 0/9 stages independently accepted.
+
+
+## v0.340.363 fail-closed worker cleanup and complete mutation inventory
+
+The paper-forward worker now disables itself and releases its cross-process
+owner lease in a `finally` boundary even when `KeyboardInterrupt` or
+`SystemExit` terminates the real worker thread. Those process-control signals
+remain observable through the ordinary thread exception boundary. Terminal
+stop diagnostics also release ownership in `finally`; an actual worker that
+remains alive past the bounded join now raises fixed
+`PAPER_FORWARD_STOP_QUIESCENCE_TIMEOUT`, retains ownership, and cannot record a
+false durable `STOP`. Application cleanup still runs its remaining fences but
+cannot acknowledge that unresolved shutdown as successful.
+
+The read-only admission-authority report now binds all 52 mutating API
+method/path pairs to closed, exact authority-class and capability vocabularies.
+Unexpected or missing mutation routes, duplicate declarations, malformed
+values, and misspelled or unknown classes/capabilities fail closed. Bank
+transfer, broker order, and cloud-control presence are derived from the reviewed
+classifications rather than hard-coded absence claims. The real loopback HTTP
+release profile consumes the exact inventory and retains every external
+authority flag as false.
+
+The synchronized forward/authority/release/version scope passed 237 tests with
+one existing dependency warning. Final full regression passed 6,607 tests with
+two platform skips and one existing warning in 1,392.61 seconds. All sixteen bounded offline profiles passed;
+saved evidence matched 422 source files /
+`bba41df47f726619698eae064f2008283ef7f10f2c757d3ba33d975a354b407e`
+and report SHA-256 is
+`b8a0d7e1fe06f3e76f3dc5b9a0b42001c388c94b36f52a67273c2328e204699f`.
+Fresh final exact-source regression, packaging, audit and hosted CI remain
+mandatory before promotion.
+
+This is injected local worker/source-declaration evidence, not native power-loss
+or ordinary-profile acceptance, actual provider or broker-paper acceptance,
+genuine-feed trial realism, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter was
+added. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed entries, reducing exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Rough implementation remains about 40%, exact weighted index 38% (30-45%, low
+confidence), with 0/9 stages independently accepted.
+
+
+## v0.340.362 actual-worker fault and cold-reopen evidence
+
+The mandatory forward fault profile now drives missing-source, stale-quote,
+regressed-clock and invalid-clock treatments through `start()` and the actual
+paper-forward worker loop. Each treatment durably reaches `PAUSED` with exact
+cycle, fetch, reason, counter and rejected-observation evidence while the worker
+and process ownership remain active. The disposable fixture observes zero
+post-pause fetches, then terminates the child before ordinary ownership cleanup.
+A cold runner remains disabled, starts no worker, performs no fetch and proves
+process-death lock release only when an explicit new healthy session acquires
+ownership. That session is distinct, produces one orderless warmup `HOLD`, and
+leaves the failed session's scoped evidence hash unchanged. Clock faults remain
+fetch-free and retain the exact `NO_RECORDED_QUOTE_EVIDENCE` review blocker.
+
+The direct worker/process-crash scope passed 16 tests and the synchronized
+forward/release/version/roadmap/Windows-workflow scope passed 201 tests, each
+with one existing dependency warning. Final full regression passed 6,589 tests
+with two platform skips and one existing warning in 1,324.49 seconds. All
+sixteen bounded offline profiles passed; saved evidence matched 422 source
+files / `287f83d505cf6d30b80b2b23ef89839b910c5c2c6c263a6a62d0d08c93630123`
+and report SHA-256 is
+`f042483593e9deeb426b11c9ad4cdc16cae7ef449b0be0120b6772423b2d2c60`.
+The 165-member v0.340.362 wheel reports the synchronized version and has
+SHA-256
+`62a80adb6446c21c44dfa82b7cd9333a183f1ae02cb57a827d8b25c6a1d7d3dd`.
+
+This is accelerated injected local worker/process-death evidence, not native
+power-loss behavior, actual provider or broker-paper acceptance, genuine-feed
+trial realism, funding/live/cloud readiness, performance, profitability or
+release approval. No UI control or editable parameter was added. Engagement
+and optional AI remain OFF by default; limits, account checks, fail-closed
+entries, reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Rough implementation
+remains about 40%, exact weighted index 38% (30-45%, low confidence), with 0/9
+stages independently accepted. Fresh exact-source hosted CI remains mandatory.
+
+## v0.340.361 post-reservation asset and benchmark-clock fences
+
+The disconnected Alpaca paper single-attempt boundary now performs a ninth
+bounded request after both durable reservations and immediately before its sole
+possible POST. The final BTC/USD status, tradability, fractionability, minimum
+size, quantity increment and price increment must equal the admitted preflight
+snapshot. Changed, malformed or ineligible terms consume the durable marker as
+`NOT_SENT`, retain original-client-ID review, perform zero POSTs and cannot
+re-arm. The mandatory pacing fixture and saved-evidence validator require both
+the successful resample and a changed-contract pre-POST denial.
+
+The local synthetic decision benchmark now samples only exact finite built-in
+numbers, requires every sample to be nondecreasing and the complete measurement
+window to advance, and retains its exact `3 * events + 2` sample count. Invalid,
+regressing, frozen or throwing clocks fail with fixed diagnostics instead of
+being clamped into zero latency, an invented high rate or target success.
+
+The affected broker/decision/release scope passed 237 tests before the final
+duration-precision amendment, the final decision-clock scope passed 26 tests,
+and exact-source full regression passed 6,589 tests with two platform skips and
+one existing warning in 1,289.25 seconds. All sixteen bounded offline profiles
+passed; saved evidence matched 422 source files /
+`b0e2ac66b40610a6faf0c2dcda7208ab12bfb58529520346ff31ce68aaed7684`
+and report SHA-256 is
+`716c6fc1400c3701a4960a7bbfeaac1304c8bb8dc746c968524302bf61ded1b5`.
+The 165-member v0.340.361 wheel reports the synchronized version and has
+SHA-256
+`00bf540ddaf20708635e0999b881addfa71a0c301e0fb8387ee562b282020042`.
+
+This is injected offline fail-closed evidence, not an atomic provider snapshot,
+actual broker-paper/account/quota acceptance, spendable-funds verification,
+genuine-feed trial realism, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter was
+added. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed entries, reducing exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Rough implementation remains about 40%, exact weighted index 38% (30-45%, low
+confidence), with 0/9 stages independently accepted. Fresh exact-source hosted
+CI remains mandatory.
+
+## v0.340.360 forward fault-injection release evidence
+
+The mandatory disposable forward release profile now drives four isolated
+M3.3 fault treatments through the actual paper-forward runner. Missing source
+and stale quote treatments each perform exactly three explicit cycles and
+three injected fetches before a durable pause. Regressed and invalid runtime
+clock treatments each pause in one cycle before any fetch. All four sessions
+release ownership and create zero orders; the exact fixed reasons, cycle/fetch
+counts and false automatic-retry/provider/broker/live/release authority are
+consumed by the saved-evidence validator.
+
+Standalone feed admission now rejects polymorphic mappings, equality-forging
+keys/scalars and invalid runtime clocks before mutating its comparison
+baseline, while preserving exact built-in canonical numeric text used by
+retained evidence. The bounded research decision lane reports a clock
+regression separately from ordinary queue expiry and retains a distinct
+counter. No control or editable parameter was added.
+
+The affected forward/feed/release/review surface passed 112 tests and the
+synchronized forward/release/version/roadmap/Windows-workflow scope passed 559
+tests, each with one existing dependency warning. Final full regression passed
+6,575 tests with two platform skips and one existing warning in 1,192.23
+seconds. All sixteen bounded offline profiles passed; saved evidence matched
+422 source files /
+`9902d75dfb2d2530a74ac5b7a3b87a58e778a0caf76b97508bf8dd33ae729bdd`
+and report SHA-256 is
+`e676ac147ef38fdd009799f2ede9701f5580e4124796da213282dee79ac1182e`.
+The 165-member v0.340.360 wheel reports the synchronized version and has
+SHA-256
+`ef33d2f275eae145dd37441d05ef7bf04646f54ac796c317da378825ffbb8e53`.
+
+This is injected local fail-closed evidence, not actual provider availability,
+clock-hardware or network-recovery evidence, sustained genuine-feed realism,
+broker-paper acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, fail-closed entries, reducing exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Rough implementation remains about 40%,
+with an exact weighted index of 38% (30-45%, low confidence), and 0/9 stages
+independently accepted. Fresh exact-source hosted CI remains mandatory.
+
+## v0.340.359 burst measurement-window attestation
+
+Bounded linked-ledger burst percentiles now carry an exact process-local
+measurement-window attestation. The report binds monotonic clock-sample count,
+elapsed window, queue-wait/durable/end-to-end sample counts and the complete
+dequeued/completed/expired/flushed outcome partition to the public burst
+counts. The final emergency halt occurs before the window closes. Any clock
+regression now fails closed as `BURST_CLOCK_REGRESSION` instead of being
+misclassified as queue expiry. The release profile consumes the exact schema
+and rejects altered sample arithmetic, outcome counts, non-finite duration or
+market/broker latency and throughput authority.
+
+The complete affected capacity/release/version scope passed 173 tests; the
+synchronized Windows/installer/browser-workflow/evidence/API scope passed 105
+tests. Final full regression passed 6,562 tests with two platform skips and one
+existing dependency warning in 1,172.06 seconds. All sixteen bounded offline
+profiles passed; saved evidence matched 422 source files /
+`a3cc4168a9b6ab8fe68a839e35dd89c5ef796f62c28ad41f7a8aa5ac24f62cc6`
+and report SHA-256 is
+`fbd4f1248e1eb5551abbe5010c2c06c5f2c66b50c93b69faefcd58ed22771bc8`.
+Both 30-offer treatments admitted and completed eight bounded items, rejected
+22 overflow offers, retained 67 commands, and attested 18 monotonic samples
+with the emergency halt inside the window. The ordinary and atomic windows
+were 215.231 ms and 117.165 ms on this temporary runner; these are
+machine-specific synthetic observations, not performance, throughput, market
+moves or broker latency. The 165-member v0.340.359 wheel reports the
+synchronized version and has SHA-256
+`faffb355f965363bcfe1cb5f2d0f9b08fd800ff0f6a061e6953a14fcf74af66b`.
+
+Exact-source predecessor PR #75 passed public security/Gitleaks, saved
+evidence, real-browser help acceptance and both complete Windows regression
+shards. Fresh exact-source hosted execution remains mandatory for this
+increment. This is M3.2/M5.1 offline timing-evidence hardening, not sustained
+pressure, native Windows power-loss/profile acceptance, broker-paper
+acceptance, genuine-feed trial realism, funding/live/cloud readiness,
+performance, profitability or release approval. No control or editable
+parameter was added. Engagement and optional AI remain OFF by default; limits,
+account checks, fail-closed entries, reducing exits, independent emergency
+stop, seven beginner tabs and black/bright-purple bottom-right hover help
+remain intact. Rough implementation remains about 40%, with an exact weighted
+index of 38% (30-45%, low confidence), and 0/9 stages independently accepted.
+
+## v0.340.358 burst capacity-bound evidence
+
+The bounded linked-ledger burst treatments now retain and validate their exact
+post-run durable-capacity snapshot. Active and retained command counts, retained
+intent IDs, ordinary and total headroom equations and the fixed 1,001-command
+halt/cancel/expiry reserve must agree with the replayed journal. The release
+profile consumes an exact capacity schema and rejects changed reserve or bound
+evidence. Capacity diagnostics now fail closed on booleans, negative values,
+impossible command/intent counts and inconsistent retained-history bounds.
+
+The direct capacity/burst/benchmark/archival/release-validator scope passed 171
+tests, and the synchronized release/version/roadmap/Windows-workflow scope
+passed 265 tests, each with two existing dependency warnings. All sixteen bounded offline profiles
+passed; saved evidence matched 422 source files /
+`4cf158f042083d5bf7e23e3dd04c2c8013cb5011706d71b367d1a04f0b71860e`
+and report SHA-256 is
+`84709503954872c8ba921ce4361652267370415c8501869e34885fb1002e5fb5`.
+Both 30-offer treatments admitted eight bounded items, rejected 22 overflow
+offers, retained 67 durable commands and 16 intent IDs after the stop, and
+reported the full 1,001-command control reserve. These are temporary local
+synthetic measurements, not sustained pressure, broker or market latency.
+The 165-member v0.340.358 wheel reports the synchronized version and has
+SHA-256
+`4ab5836cd02f351d4fea7349d5dad723e23a5a6ded453c8ebbe479381c2f6f68`.
+
+The first full regression correctly exposed that the retained-history cap is
+independent of the active-epoch cap. Capacity input validation now permits that
+more restrictive retained bound while still rejecting counts outside either
+limit; the direct archival regression is retained. Final full regression passed
+6,561 tests with two platform skips and two existing warnings in 1,014.57
+seconds.
+
+Exact-source predecessor PR #74 passed public security/Gitleaks, saved evidence,
+browser/help acceptance and both complete Windows regression shards. Fresh
+exact-source hosted execution remains mandatory for this increment. This is
+M3.2/M5.1 offline evidence hardening, not sustained or native Windows pressure
+acceptance, broker-paper acceptance, genuine-feed trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No button or editable parameter was added. Engagement and optional AI remain
+OFF by default; limits, account checks, fail-closed entries, reducing exits,
+independent emergency stop, seven beginner tabs and black/bright-purple
+bottom-right hover help remain intact. Weighted implementation remains 38%
+(30-45%, low confidence), with 0/9 stages independently accepted.
+
+## v0.340.357 admission-authority inventory
+
+The read-only `GET /api/authority/inventory` endpoint now binds twelve
+source-declared admission authorities to the exact FastAPI route table. Each
+entry exposes its safe default, required gates, automatic-start/resume posture,
+reducing-exit posture and external-authority flags. A missing declared route
+fails closed. Inventory reads perform no credential, provider, storage or
+broker I/O. Broker connection, live orders, money movement, spendable funds,
+release approval and learned-policy promotion remain false everywhere.
+
+The direct authority/tier/forward/funding/emergency/order/broker-read/advisory
+scope passed 186 tests. The synchronized authority/release-evidence/trials/
+version/roadmap/Windows-workflow scope passed 234 tests, and the ordered CI
+inventory passed 20 Node tests; two existing dependency deprecation warnings
+remain. Compilation, deterministic roadmap equality and diff checks passed.
+All sixteen bounded offline profiles passed; saved
+evidence matched 422 source files /
+`bdc202053733c64b8136bdd857e9b622751386845ed4344c06f197bc8c272f75`
+and report SHA-256 is
+`fc120a97664eb289540b8cc7a21466289d9ba884703cc33fa5dd0250845e7b86`.
+The profile output explicitly keeps broker, live-order, money-movement,
+Windows, sustained-forward and release acceptance false.
+The 165-member v0.340.357 wheel reports the synchronized version and has
+SHA-256
+`d73708c520cef3acc26f61a721bcdf4bdd715acc12fb61724daba03be96dcb9c`.
+
+Full regression exposed one safe but ambiguous emergency-cut race: a fill
+blocked behind a real SQLite writer rolled back and cancelled after the cut,
+but an optional post-cut forward diagnostic raced closed ownership and
+reported a generic storage failure. The fill boundary now returns the
+authoritative `EMERGENCY_CUT_REQUESTED` veto directly after the independent
+cut owns durable halt/cancel audit. The exact race passed five repetitions and
+73 related tests with one platform skip; the final full suite passed 6,553
+tests with two platform skips and two existing warnings in 984.79 seconds.
+
+This is M3.1 reviewability hardening, not proof of complete runtime-authority
+coverage, broker-paper acceptance, genuine-feed sustained-trial realism,
+native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No button or editable parameter was added.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed entries, reducing exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Weighted implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Fresh exact-source hosted CI remains mandatory.
+
+## v0.340.356 deterministic vault-test isolation
+
+The second deterministic Windows regression shard exposed a process-state
+leak between otherwise independent tests. A credential-rotation test
+intentionally ended with the process-local optional-AI vault hint at
+`OBSERVED_PRESENT`; the later zero-setup onboarding test then inherited that
+hint and appeared configured despite both environment switches being absent.
+Every credential-vault test now begins and ends with the passive observation
+unset. The exact hosted selection/order is covered directly. Production status,
+vault mutation, credential selection and request behavior are unchanged.
+
+The exact shard-order reproduction passed 5 selected tests with 9 deselected;
+the direct vault/onboarding/provider/startup/sharding scope passed 48 tests and
+the synchronized release/version/roadmap scope passed 59. The combined
+vault/onboarding/artifact/release-evidence/trials/Windows-workflow scope passed
+284 tests, and the ordered CI inventory passed 20 Node tests; two existing
+dependency deprecation warnings remain. All sixteen bounded profiles passed.
+Saved-evidence verification matched 420 source files /
+`3f5972a50a2d6f175d4c2c1e28ee31ef304e639fd2f2a0debc8fdb52f6fadca4`;
+report SHA-256 is
+`13e7c0b845716a0b3a76dd1bc819a5a7b2335969b32e1a2ffa34e4aa61a3641f`.
+Compilation, deterministic roadmap equality and diff checks passed. The
+164-member v0.340.356 wheel reports the synchronized version and has SHA-256
+`e5c34568f55be7af60eb37aa4b3bc9e6e28bf04319793062b8509c13cde46c91`.
+The staged 1,096-path public-artifact audit found zero findings. Local Gitleaks
+and native Windows/Inno Setup remain unavailable, so fresh exact-source hosted
+security and Windows execution remain mandatory.
+
+This is M1/M9 test-isolation and release-pipeline hardening, not native Windows
+installer acceptance, broker-paper acceptance, genuine-feed sustained-trial
+realism, funding/live/cloud readiness, performance, profitability or release
+approval. No UI control or editable parameter changed. Engagement remains OFF
+by default; environment AI still requires explicit opt-in, onboarding performs
+no vault/provider I/O, and limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Fresh exact-source hosted execution of both regression
+shards and all other required jobs remains mandatory; native Windows installer
+acceptance remains separate.
+
+## v0.340.355 portable artifact race classification
+
+Windows hosted regression exposed that a simulated artifact-path replacement
+can raise a sharing violation while the already validated descriptor is being
+rechecked. Artifact manifest creation now distinguishes lifecycle phases:
+opening and initial descriptor validation still report
+`INVALID_ARTIFACT_FILE`, while descriptor read, final descriptor inspection or
+close failures after validation report `ARTIFACT_CHANGED_DURING_READ`. Both
+paths deny manifest creation; the latter accurately preserves the integrity
+boundary instead of treating a post-validation race as an initial input error.
+
+The direct artifact/sharding scope passed 51 tests. The synchronized
+artifact/release-evidence/trials/version/roadmap/Windows-workflow scope passed
+253 tests, and the ordered CI inventory passed 20 Node tests; two existing
+dependency deprecation warnings remain. All sixteen bounded profiles passed.
+Saved-evidence verification matched 420 source files /
+`041fee5f23737c2921465bfa4159d4657bc256cbca17dc27f864527cbc25fe92`;
+report SHA-256 is
+`4fb4efbeeaf856d2b5718f5fb541a86a02c57d385db076ac37999d8652e20739`.
+Compilation, deterministic roadmap equality and diff checks passed. The
+164-member v0.340.355 wheel reports the synchronized version and has SHA-256
+`62a9a57bf3920a626113d6f0e5c27e4ac79f904d55dbc5b99b7289272ff28cd2`.
+The staged 1,095-path public-artifact audit found zero findings. Local Gitleaks
+and native Windows/Inno Setup remain unavailable, so fresh exact-source hosted
+security and Windows execution remain mandatory.
+
+This is M1/M9 distribution-integrity hardening, not native Windows installer
+acceptance, broker-paper acceptance, genuine-feed sustained-trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, risk-reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Weighted implementation remains 38% (30-45%, low
+confidence), with 0/9 stages independently accepted. Fresh exact-source hosted
+execution of both regression shards and every other required job remains
+mandatory; the native Windows installer lane remains separately undispatched.
+
+## v0.340.354 deterministic Windows regression sharding
+
+The complete Windows pull-request regression now collects the full pytest suite
+in each of two jobs and deterministically assigns every exact node ID to one
+execution shard. Malformed, partial or empty shard arguments fail closed. The
+exact-head and ordered-step inventory reviewers require both named shard jobs,
+so a missing, cancelled, skipped or failed shard cannot be mistaken for a
+complete regression. This reduces the per-job timeout exposure observed in the
+prior monolithic lane without dropping test membership or checkout binding.
+
+This is M9 release-pipeline hardening, not native Windows application
+acceptance, broker-paper acceptance, genuine-feed sustained-trial realism,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, risk-reducing exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Weighted implementation remains 38% (30-45%, low
+confidence), with 0/9 stages independently accepted. Fresh exact-source hosted
+execution must prove both shards and all other release jobs; the native Windows
+installer lane remains separately undispatched.
+
+## v0.340.353 Activity SSE cursor-directory continuity boundary
+
+The explicit Activity SSE checkpoint coordinator now freezes the exact
+non-symlink cursor parent-directory identity, or proves the parent remains
+absent, before the sole provider read. It rechecks that physical scope after
+admission, transport, private event freezing, reconnect review and retained
+acknowledgement. Replacing an existing directory, or creating a previously
+absent parent during provider I/O, cannot inherit checkpoint authority even
+when the cursor file itself is preserved. This complements the independent
+cursor-file identity/byte binding and the cursor store's descriptor-bound
+commit, lost-ack recovery and ownership checks. Saved reconciliation evidence
+requires the fresh-parent rejection.
+
+This is injected local M8 reconciliation hardening, not provider source or
+delivery attestation, broker-paper acceptance, genuine-feed sustained-trial
+realism, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter changed.
+Engagement remains OFF by default; limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Fresh exact-source evidence and hosted CI are mandatory;
+the native Windows lane remains separately undispatched.
+
+## v0.340.352 Activity SSE cursor-file continuity boundary
+
+The explicit Activity SSE checkpoint coordinator now freezes an existing
+bounded single-link cursor database identity and bytes, or proves a fresh path
+remains absent, before the sole provider read. It rechecks that physical scope
+after admission, transport, private event freezing and reconnect review and at
+the final pre-checkpoint handoff. A byte-identical pathname replacement can no
+longer inherit the retained logical head and advance a different journal. The
+cursor store's descriptor-bound commit, lost-ack recovery and cold binding
+checks remain separate and unchanged.
+
+This is injected local M8 reconciliation hardening, not provider source or
+delivery attestation, broker-paper acceptance, genuine-feed sustained-trial
+realism, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control or editable parameter changed.
+Engagement remains OFF by default; limits, account checks, fail-closed entries,
+risk-reducing exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Weighted
+implementation remains 38% (30-45%, low confidence), with 0/9 stages
+independently accepted. Fresh exact-source evidence and hosted CI are mandatory;
+the native Windows lane remains separately undispatched.
+
+## v0.340.351 exact authority, journal and cross-session boundaries
+
+Saved paid-provider requests now hold the vault mutation lock through the
+bounded transport call, so disconnect or rotation cannot return while an old
+saved secret remains in use. Execution-quality review freezes all four selected
+journal paths and rechecks bounded identities and bytes after every semantic
+reader, including failures. Sustained-trial review performs a chronological
+cross-session public-quote consistency pass so session rotation cannot reset
+the 15-percent/90-second jump heuristic. Artifact creation rechecks the public
+pathname after descriptor hashing, Windows phase/binding JSON rejects
+hardlinks, and simulated-intent notionals reject Boolean/string coercion before
+route mutation.
+
+This is local injected boundary hardening, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, reducing exits, the independent
+emergency cut, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. The weighted implementation estimate remains 38% (30-45%,
+low confidence), with 0/9 stages independently accepted. Fresh exact-source
+local evidence and hosted CI are mandatory; the native Windows lane remains
+separately undispatched.
+
+## v0.340.350 reducing-exit, credential-source and final-upload boundaries
+
+Emergency cuts continue to block every new paper entry, but the local portfolio
+route no longer strands an existing long: the sell-only exit still validates a
+fresh public quote and performs one atomic reducing ledger mutation while cut
+or halt state is latched. Optional paid research resolves one credential once;
+an environment key is never selected unless its explicit opt-in is ON. Exact
+post-reconciliation review resolves journal parents without dereferencing the
+caller-selected leaf, preserving no-follow identity checks across the three
+ancillary stores. Retained injected and unknown observations now count as
+operational incidents. The public-history audit parses every bounded blob as a
+possible JSON document, including BOM-prefixed private reports. The Windows
+release lane re-verifies both the inner artifact manifest and outer envelope
+after the exact installer-set check and immediately before the sole
+executable-bearing upload.
+
+This is local injected boundary hardening, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed entries, reducing exits, the independent
+emergency cut, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. The weighted implementation estimate remains 38% (30-45%,
+low confidence), with 0/9 stages independently accepted. Fresh exact-source
+local evidence and hosted CI are mandatory before this increment is described
+as verified; the native Windows lane remains separately undispatched.
+
+## v0.340.349 cut-ordering, consent, open-session and release-tree boundaries
+
+Guarded durable order mutations now re-sample the independent emergency latch
+after acquiring the SQLite write lock, so a cut published during contention
+vetoes the waiting submit or fill. Optional paid-provider preview consent is a
+bounded, duplicate-free exact JSON object checked after the local-origin gate
+and before provider authorization. A retained RUNNING trial remains an open
+incident even when its last update predates the review window. Release source
+fingerprints reject symlinks, non-regular files, identity swaps and paths
+outside the reviewed root; the public artifact audit rejects non-regular Git
+entries in the current tree and reachable history. The Windows distribution
+lane requires exactly one installer match with the reviewed versioned name
+immediately before its sole executable-bearing upload.
+
+The exact candidate passed 6,486 tests with 2 platform skips and two dependency
+warnings in 882.03 seconds. The synchronized affected/release scope passed 519
+tests with one platform skip and the same warnings. All sixteen bounded profiles passed. Saved-evidence
+verification matched 418 source files /
+`81b0467e97718e5750e45b8777e93b2d17ba0c264d8d67d01cc0d6289e662be5`;
+report SHA-256 is
+`b7d040715e55ef4c00343e4757923edf0b6f7ec21cf7da7c4c5e0cc9adede1b8`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.349 wheel
+reports the synchronized version and has SHA-256
+`41cdb14963030baebc6f4fc0c4b341cf4944fac1754cd3bf51938e9eb8c24adf`.
+The staged candidate audit found no artifact findings across 1,087 paths/blobs;
+the reachable-history audit found none across 1,108 paths, 10,913 blobs,
+1,216 commits and 1,414,832,379 bytes. The introduced high-confidence
+credential scan found zero signatures. Local Gitleaks remains unavailable, so
+the checksum-pinned hosted scan is mandatory.
+
+PR #65 exact head `d9dd5ebe3bcbc1d89ebdacc07b96f1b8486d26bd`
+has green hosted security/Gitleaks, saved-evidence, browser/help and complete
+regression jobs. Fresh exact-head hosted gates are mandatory for this
+candidate. The push/manual native Windows installer lane remains undispatched.
+
+This is injected local M3/M4/M7/M9 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.348 canonical durability, trial-session and installer-file boundaries
+
+Durable order commands now reject polymorphic values before storage creation
+and apply the same canonical JSON values retained for cold replay. Quote clocks
+and persistent paper settings require finite exact built-in numerics before
+exposure or mutation. Sustained-trial review counts every overlapping session
+lifecycle, including empty running or cleanup sessions. Funding preview rejects
+coercion, fractional cents and extra fields and explicitly grants no bank,
+transfer, funding, money-movement or live-order authority. Broker UUID inputs
+require exact strings before journal creation. Windows installer phase and
+distribution review require a stable regular single-link file and bind its
+pre-open identity to the opened descriptor, rejecting hardlinked aliases.
+
+The exact candidate passed 6,477 tests with 2 platform skips and two dependency
+warnings in 900.31 seconds. The combined affected scope passed 438 tests and
+the release/roadmap/evidence scope passed 188, both with the same warnings. All
+sixteen bounded profiles passed. Saved-evidence verification matched 418 source
+files / `9eef981d241ab714ed030e376d1598dd7b717ec0d5a4c7f810e5da6c6e1cdcec`;
+report SHA-256 is
+`ecfb6f9252b09dc7964f1b4d45c65bdb4633a5b91a5c7ad36c3499e05fe9817d`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.348 wheel
+reports the synchronized version and has SHA-256
+`d3dd99119755a3ad2baa098e992207280378bae1347ccfba0403948e8b9abb9b`.
+
+PR #64 exact parent `332a73f2174210201333a711ad3021b825398d0e`
+has green hosted security/Gitleaks, saved evidence and browser/help jobs; its
+complete regression remains active and unclaimed. PR #63's equivalent
+regression was cancelled and is not a pass. Fresh exact-head hosted gates are
+mandatory for this candidate. The push/manual native Windows lane remains
+undispatched.
+
+This is injected local M1/M3/M4/M5/M7/M8/M9 boundary evidence, not
+broker-paper acceptance, genuine-feed sustained-trial realism, native Windows
+acceptance, funding/live/cloud readiness, performance, profitability or
+release approval. No UI control or editable parameter changed. Engagement
+remains OFF by default; limits, account checks, fail-closed exits, independent
+emergency stop, seven beginner tabs and black/bright-purple bottom-right hover
+help remain intact. Implementation stays weighted 38% (30-45%, low
+confidence), with 0/9 stages independently accepted.
+
+## v0.340.347 recovery-identity, bounded-fill and evidence-authority boundaries
+
+Broker lookup clocks, completion tokens and transport outcomes now require
+exact built-in scalar types before mutation and during recovery, preventing a
+warm write from becoming unreplayable after restart. Paper execution rejects
+polymorphic tier, symbol and direction identities and caps each modeled
+execution cost below 10,000 bps, preserving positive fills and reliable exits.
+Optional AI credential saves require exact input and exact equal vault readback
+before configuration is reported, including after an earlier confirmed save.
+Release fingerprints now cover executable `ops/*.mjs` inventory and valid YAML
+workflow files. Windows ordinary-user review independently hashes the actually
+executing reviewer and requires it to equal the manifest-bound shipped tool.
+
+The exact candidate passed 6,462 tests with 2 platform skips and two dependency
+warnings in 906.36 seconds. All sixteen bounded profiles passed. Saved-evidence
+verification matched 417 source files /
+`882e98887107d969b4d47069ad99da72036150edc2c3065b5424560449deeccc`;
+report SHA-256 is
+`512065ba010f5acb7ad4b76d604251c00c4cbc1d5d77bddba40d136ef2bb25e4`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.347 wheel
+reports the synchronized version and has SHA-256
+`a36de79f7dff7174cea2301e3c56f1a9173e81094b0aca52d1a584d980d19085`.
+The public artifact audit found no findings in 1,083 reachable files and the
+introduced-line high-confidence credential scan found zero findings. Local
+Gitleaks remains unavailable, so the checksum-pinned hosted scan is mandatory.
+
+PR #62 exact head `ace4fc00138ad7703f62e0a4d1823d5f58a9fd81` passed
+hosted security/Gitleaks, saved evidence, browser/help and complete regression.
+PR #63 exact head `d7f706c81686d224ddfb587b8e46721db30bc4f8`
+has passed hosted security/Gitleaks, saved evidence and browser/help; its
+complete regression remains active and unclaimed. Fresh exact-head hosted gates
+remain mandatory for this candidate. The push/manual native Windows lane
+remains undispatched.
+
+This is injected local M1/M3/M5/M7/M9 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.346 reset-audit, broker-wire and owner-envelope boundaries
+
+A halt reset whose final audit write fails now immediately re-latches the
+process cut and attempts to restore both durable stop barriers before returning
+a fixed 503, so a failed reset cannot leave execution ambiguously unhalted.
+Broker plans, observations, projections and open-order links require exact
+built-in text before journal mutation or reconciliation. Paper reader,
+submission and saved-vault credentials require exact built-in strings before
+header construction, network, vault or journal access. Windows ordinary-user
+review now verifies the outer distribution envelope against the exact raw inner
+manifest and binding-review bytes before claiming exact distribution binding.
+
+The exact candidate passed 6,447 tests with 2 platform skips and two dependency
+warnings in 963.43 seconds. Focused validation passed 442 tests. All sixteen
+bounded profiles passed. Saved-evidence verification matched 415 source files /
+`cc3d0a8ebe8307adc24929f29aae89e30a801842be01d58542b82d40950dd8fc`;
+report SHA-256 is
+`cf8724a518862bc6fd43343e1e1beb6c98fd354f0256e0daa6c5ca6b31af381e`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.346 wheel
+SHA-256 is
+`311669f30cccad709b9fd7b2bbdd61a446cdc32b3de190a0a66af30430d37db6`.
+
+PR #62 exact parent `ace4fc00138ad7703f62e0a4d1823d5f58a9fd81` has passed
+hosted security/Gitleaks, saved evidence and browser/help; its complete
+regression remains active and unclaimed. Fresh exact-head hosted gates remain
+mandatory for this candidate, and the push/manual native Windows lane remains
+undispatched.
+
+This is injected local M1/M3/M4/M9 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.345 request-identity, balance-head and distribution-envelope boundaries
+
+Broker request client IDs now require exact built-in strings both at public
+admission and replay application, preventing equality-forging subclasses from
+selecting another retained request, persisting a different literal identity and
+making cold replay fail. Retained gross-balance review rejects non-exact history
+heads before any retained read. Windows packaging creates and verifies an outer
+distribution envelope over exactly the inner payload manifest and distribution
+binding review, so post-review substitution invalidates the shipped envelope
+without a circular digest.
+
+The exact candidate passed 6,434 tests with 2 platform skips and two dependency
+warnings in 978.24 seconds. Focused validation passed 97 tests and the
+synchronized affected/version/roadmap scope passed 108. All sixteen bounded
+profiles passed. Saved-evidence verification matched 415 source files /
+`a6656009ef278df090a83adacfc2ba5a773fd06b143095c60263b46a9ca55b64`;
+report SHA-256 is
+`f465312b190931267bc7618351fda3ded4f42796fe5c749b928a3cce6670f660`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.345 wheel
+SHA-256 is
+`a4c8fa30a3e3041d0c3f9dff3ef4a9d9886c70f5e06324abf5df32d16c9f381e`.
+
+PR #61 exact parent `41e1d78e0102f475a0294dca2242d70651af40ce`
+has passed hosted security/Gitleaks, saved evidence and browser/help; its
+complete regression remains active and unclaimed. Fresh exact-head hosted gates
+remain mandatory for this candidate, and the push/manual native Windows lane
+remains undispatched.
+
+This is injected local M1/M4/M8/M9 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.344 interruption-token and Windows distribution boundaries
+
+Broker lookup interruption tokens and expected heads, paper-read pacing tokens,
+and retained paper-activity heads now require exact built-in lowercase 64-hex
+strings before storage access. Equality-forging string subclasses therefore
+cannot commit forged interruption state, bypass stale-head fences, create a
+retained store, or make a valid journal unreplayable. The Windows release
+workflow no longer publishes a second installer-only artifact: its single
+executable-bearing upload contains both executables together with the checksum
+manifest and distribution-binding review.
+
+The exact candidate passed 6,431 tests with 2 platform skips and two dependency
+warnings in 964.66 seconds. Focused validation passed 162 tests and the
+synchronized affected/version/roadmap scope passed 173. All sixteen bounded
+profiles passed. Saved-evidence verification matched 415 source files /
+`3ee944a6f5a706d3fd549886fc4414fd7a8cbdf081d8b11df70fa2f73d02a893`;
+report SHA-256 is
+`15fbefb00c8d1dbf8aa6143e404f2bc85c9cc973a516929fbfcba8e97947c0b4`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.344 wheel
+SHA-256 is
+`9bbd3b5e389e7e80dacc066c374d05140fd1fb978f951ce6f62403f2c8cdf193`.
+
+Fresh exact-head hosted security, saved-evidence, browser/help and complete
+regression gates remain mandatory after publication. The push/manual native
+Windows installer lane remains undispatched. This is injected local
+M3/M8/M9 boundary evidence, not broker-paper acceptance, genuine-feed
+sustained-trial realism, native Windows acceptance, funding/live/cloud
+readiness, performance, profitability or release approval. No UI control or
+editable parameter changed. Engagement remains OFF by default; limits, account
+checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation stays
+weighted 38% (30-45%, low confidence), with 0/9 stages independently accepted.
+
+## v0.340.343 halt-exit, reconciliation-head and Windows artifact boundaries
+
+Three compatible M1/M3/M4/M8/M9 seams now fail closed. A genuine drawdown halt
+continues to reject every new PaperEngine open, but a validated close can reduce
+existing simulated exposure while the halt remains latched. Observation-pair
+and accepted-history reconciliation require exact built-in lowercase 64-hex
+activity heads before retained journal reads, preventing equality-forging
+subclasses from bypassing stale-head fences. The Windows release workflow no
+longer uploads a standalone executable before installer, release-evidence,
+manifest and distribution-binding checks; the final manifest-bound distribution
+is the only retained executable artifact.
+
+The exact candidate passed 6,426 tests with 2 platform skips and two dependency
+warnings in 956.97 seconds. Focused validation passed 124 tests, the broader
+broker-paper/retained-activity/Windows/release scope passed 2,712, and the
+synchronized affected/version scope passed 167. All sixteen bounded profiles
+passed. Saved-evidence verification matched 415 source files /
+`69b85da7dfb85cc36e942c05f53a575d3df1f0f333339e2266fb81554fe6bd84`;
+report SHA-256 is
+`56d0f1abeb904b7509cb5a7281ea964928e37ebd6d06dbbb23287863f39bbecc`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.343 wheel SHA-256 is
+`c20a3fd5701147141eb6590c939ed25920a03a33ce3b97f9822d381bbbae9a70`.
+The final staged-tree audit and introduced-line credential scan found no
+private artifact or high-confidence credential. Local Gitleaks was unavailable,
+so fresh hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #59 exact parent `8e139208776674bf77ea32607049fa4a767ab8f4`
+has passed hosted public security/Gitleaks. Its complete research-safety
+regression remains running and is not claimed as passed. Fresh exact-head hosted
+gates remain mandatory after publication. The push/manual native Windows lane
+remains undispatched.
+
+This is injected local boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.342 rejected-risk, browser-attribution and private-report boundaries
+
+Three independent M3/M8/M9 release seams now fail closed. PaperEngine computes
+a candidate equity high-water mark without committing it until exposure and
+cash admission succeed, so a rejected open cannot poison later drawdown checks;
+a genuine drawdown still commits the independent emergency halt. Browser/help
+acceptance requires an explicit exact lowercase 40-hex source commit and the
+Windows pull-request job supplies the same head expression used for checkout.
+The public full-history audit rejects raw `READ_ONLY_BROKER_SUBMISSION_REVIEW`
+reports even when renamed, without echoing private client order IDs.
+
+The exact candidate passed 6,423 tests with 2 platform skips and two dependency
+warnings in 917.12 seconds. Focused validation passed 106 tests, the broader
+downstream journal/acceptance/release scope passed 157, and the synchronized
+affected/version scope passed 149. All sixteen bounded profiles passed.
+Saved-evidence verification matched 415 source files /
+`0012dfa1e356dbf4b9d295bd02ab7f4a7521621bb315ac60455319d9be087d46`;
+report SHA-256 is
+`f3cf7c041d35d18293dd5536733e18bd29de3507bba722a9ddf0d6917e80b12a`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.342 wheel SHA-256 is
+`328470e259f5a6cbe80eaa5d0c65a6455f7e12b864bdf6afd9adf4f3b072c1ef`.
+The final staged-tree audit and introduced-line credential scan found no
+private artifact or high-confidence credential. Local Gitleaks was unavailable,
+so fresh hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #58 exact parent `d32b36fca76d4909ef287c05ac2dae978b52b74f`
+has passed hosted public security/Gitleaks. Its complete research-safety
+regression remains running and is not claimed as passed. Fresh exact-head hosted
+security/Gitleaks, browser/help, saved-evidence and complete Windows regression
+remain mandatory after publication; the push/manual Windows
+EXE/installer/distribution workflow remains undispatched.
+
+This is injected local boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.341 direct-input mutation and disclosure boundaries
+
+Four compatible M3/M4/M7/M8 seams now fail closed before simulated account
+mutation, public URL construction, public diagnostic copying or Activity SSE
+checkpoint copying. PaperEngine capital, fee, cost, notional, market and mark
+values share a finite `1e-18` through `1e12` envelope; rejected extreme opens
+and closes leave cash, positions, history, peak and halt state unchanged. Public
+ticker products require exact built-in allowlisted text before cache, flight,
+transport or URL construction. Public quote-bundle summaries require one exact
+built-in review mapping/schema and capture exact text/count values once.
+Activity SSE checkpoint events pass exact envelope validation into a detached
+snapshot before any caller-controlled `__deepcopy__` protocol.
+
+The exact candidate passed 6,418 tests with 2 platform skips and two dependency
+warnings in 894.98 seconds. Focused validation passed 243 tests, the broader
+downstream API/trial/reconciliation scope passed 783, and the synchronized
+affected/version scope passed 254. All sixteen bounded profiles passed.
+Saved-evidence verification matched 415 source files /
+`2fe37b377a2cc36a11dbdd8374254137a92fd1616254fe807d56c0050a94553d`;
+report SHA-256 is
+`78273c0d5e6c5d558581aac9cef29c92a68d4f27da475051504065ff289876d7`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.341 wheel SHA-256 is
+`ed83f6ff980bb40f25c07e01b4b9c93745fa8920620fdd550508e43b5e091160`.
+The final staged-tree artifact audit covered 1,078 paths with zero findings;
+the 4,386-line introduced high-confidence credential scan also found none.
+Local Gitleaks was unavailable, so fresh hosted checksum-pinned Gitleaks
+remains mandatory before promotion.
+
+PR #57 exact parent `99bde3cb39f02f04facaa0ae88942bd76dc3b5f0`
+has passed hosted public security/Gitleaks, browser-help and saved-evidence
+jobs. Its complete Windows regression remains running and is not claimed as
+passed. Fresh exact-head hosted jobs remain mandatory for this increment; the
+push/manual Windows EXE/installer/distribution workflow remains undispatched.
+
+This is injected local boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.340 provider-envelope snapshot and price bounds
+
+Public ticker parsing and paper-forward quote admission now share a finite
+inclusive `1e-18` through `1e12` price envelope before float publication,
+cache sharing, retained evidence or modeled entry arithmetic. Extreme finite
+provider values therefore fail closed instead of underflowing, overflowing or
+reaching order arithmetic. Supplied Activity SSE link review now preflights the
+exact account before event access and accepts only exact built-in containers,
+keys and scalar fields into one detached validated snapshot. Polymorphic or
+changing inputs cannot present different budget and normalization views, and
+the installed checkpoint rejects them before provider I/O or cursor storage.
+
+The exact candidate passed 6,398 tests with 2 platform skips and two dependency
+warnings in 922.38 seconds. The formerly stale-evidence failure scope passed
+400 tests after fresh evidence generation. All sixteen bounded profiles passed;
+saved-evidence verification matched 415 source files /
+`df56c9a9f6b2861abe0f07c72d4256b4adeca7989541e40576a347d2ec5debc3`,
+with report SHA-256
+`4ef56553c26d6f40f15fe665ef79b4edbc3afe015ad81a766285df9b2531ae6d`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.340 wheel SHA-256 is
+`a2a45176980e22ecf068c7175eb7f6f26f7a2312ba6c2d3af01d67da1c5faba8`.
+The final public-artifact audit covered 1,077 paths / 109,144,946 bytes with
+zero findings; the 4,414-line introduced high-confidence credential scan also
+found none. Local Gitleaks was unavailable, so fresh hosted checksum-pinned
+Gitleaks remains mandatory.
+
+PR #56 exact parent `41eba7a3607ca52798d3ae00b8e448af195ff1a7`
+has passed hosted public security/Gitleaks, browser-help and saved-evidence
+jobs. Its complete Windows regression is still running and is not claimed as
+passed. Fresh exact-head hosted jobs remain mandatory for this increment; the
+push/manual Windows EXE/installer/distribution workflow remains undispatched.
+
+This is injected local M7/M8 boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30-45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.339 paper protocol exact-type admission
+
+Three compatible paper-path admission seams now fail closed before comparison,
+normalization, durable mutation or modeled execution. Simulated order IDs,
+products, sides, providers, tiers, event IDs and event kinds require exact
+built-in strings. Paper-forward input requires an exact built-in mapping with
+exact provenance and permission fields plus finite positive built-in prices and
+a bounded built-in receipt time. Activity SSE persisted/since cursors require
+exact built-in strings before transcript review. Equality-forging strings,
+coercible numeric strings, Boolean numeric values, non-finite values, mapping
+subclasses and non-built-in keys are rejected; invalid quote evidence retains
+only the fixed invalid marker. A huge integer receipt time also fails closed
+without overflowing its finite-value check.
+
+The exact candidate passed 6,376 tests with 2 platform skips and two dependency
+warnings in 899.83 seconds. All sixteen bounded profiles passed. Saved-evidence
+verification matched 415 source files /
+`f70fa96bd59c6d73f0f500a64980407ed308eab73401a8565ca3ee95f1207aad`;
+report SHA-256 is
+`963ee52295d76a0d2f8446399d37f21069e9b34be3773ad206a7911f7f6b3f25`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.339 wheel SHA-256 is
+`ba7b97b31007c623299f1f9f5c906d7d4bfb80a0e72b72a71e4c51ad05d6c58c`.
+The staged-tree artifact audit covered 1,076 paths / 108,940,770 bytes with
+zero findings; the 4,517-line introduced high-confidence credential scan also
+found none. Hosted checksum-pinned Gitleaks remains mandatory.
+
+PR #55 exact parent `cdbdaa432d2596f2ab8a369a49dec7934462063f`
+has passed hosted public security/Gitleaks, browser-help and saved-evidence
+jobs. Its complete Windows regression remains in progress and is not claimed
+as passed. Fresh exact-head hosted jobs remain mandatory for this increment;
+the push/manual Windows EXE/installer/distribution workflow remains
+undispatched.
+
+This is injected local M4/M7/M8 boundary evidence, not broker-paper
+acceptance, genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control or editable parameter changed. Engagement remains OFF by default;
+limits, account checks, fail-closed exits, independent emergency stop, seven
+beginner tabs and black/bright-purple bottom-right hover help remain intact.
+Implementation stays weighted 38% (30–45%, low confidence), with 0/9 stages
+independently accepted.
+
+## v0.340.338 tier-entry admission boundary
+
+Simulated tier-entry permission now requires one exact built-in tier plus a
+finite, strictly positive exact built-in integer, float or Decimal notional
+before any settings or permission-state read. Boolean, stringified, non-finite,
+zero, negative and equality-forging inputs fail with fixed diagnostics and
+create no settings state. Durable-order and paper-forward callers convert their
+already validated stored values to Decimal before admission. The direct
+tier/forward/durable/preflight/portfolio scope passed 96 tests and the
+synchronized release/version/roadmap scope passed 107, both with two dependency
+warnings. The exact candidate passed 6,349 tests with 2 platform skips and the
+same warnings in 915.45 seconds.
+
+All sixteen bounded profiles passed. Saved-evidence verification matched 415
+source files / `2a25dcc8d1ad3114ba1ac5066752f15625a760fa0a64a48c97597f66c0c01452`;
+report SHA-256 is
+`8dfe22369592a0bd4161856a011336ff781569eec4d9767e224095fae1751d1f`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case CI inventory passed. The
+164-member v0.340.338 wheel SHA-256 is
+`883ec0d843c4755be42e8f0d6cd64340e7fe997fddc22c7698e3a7f1c7e1eb09`.
+The final 1,075-path / 108,733,285-byte staged-tree public-artifact audit and
+4,289-line introduced high-confidence credential scan found zero findings.
+Fresh exact-head hosted
+security/Gitleaks, browser, saved-evidence and full Windows regression remain
+mandatory after publication.
+
+This is injected local M3 risk-boundary evidence, not broker-paper acceptance,
+genuine-feed sustained-trial realism, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed. Engagement remains OFF by default; limits, account
+checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation stays
+weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted.
+
+## v0.340.337 public account-evidence summary type boundary
+
+The allowlisted public account-evidence summary now requires exact built-in
+top-level keys, mode, policy and status text plus exact built-in gross-currency
+keys before comparison, decimal conversion or public copying. Equality-forging
+string subclasses and custom keys fail with the fixed public-summary diagnostic,
+so attacker-controlled private policy/status text cannot cross the privacy
+boundary. Direct account-evidence and downstream provider-reconciliation
+validation passed 409 tests; the synchronized component/version/roadmap scope
+passed 420, both with two dependency warnings. The exact candidate passed 6,339
+tests with 2 platform skips and the same warnings in 926.21 seconds.
+
+All sixteen bounded profiles passed. Saved-evidence verification matched 415
+source files / `5a2b2dc716ebea4bd23ba130a53560acc36dbeaf82a0ab73c16633c41696dcf3`;
+report SHA-256 is
+`2102999857c8c1fcdbd1cc5ad22708fab405dc44116c47874b67722bde1b0bad`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax
+and all fourteen Node controller smokes passed. The 164-member v0.340.337 wheel
+SHA-256 is
+`f7aa5a0185b7478160dce69790a22cd36c6d2a265825f3c0174bb6e4e5c3caad`.
+The final 1,074-path / 108,535,028-byte staged-tree public-artifact audit and
+4,286-added-line high-confidence credential scan found zero findings. Fresh
+exact-head hosted security/Gitleaks, browser, evidence and Windows regression
+remain mandatory after publication.
+
+This is injected local M4 data-minimization hardening, not authentication of
+private evidence, broker-paper acceptance, genuine-feed sustained-trial
+evidence, native Windows acceptance, funding/live/cloud readiness, performance,
+profitability or release approval. No UI control changed. Engagement remains OFF
+by default; limits, account checks, fail-closed exits, independent emergency
+stop, seven beginner tabs and black/bright-purple bottom-right hover help remain
+intact. Implementation stays weighted 38% (30–45%, low confidence), with 0/9
+stages independently accepted.
+
+## v0.340.336 Activity SSE reconnect-reason preflight
+
+The installed Activity SSE path now requires one exact built-in allowlisted
+reconnect reason before any caller callback, journal inspection or creation,
+credential-vault access, durable retry reservation or provider GET. Unknown,
+null and equality-forging string-subclass values fail closed without consuming
+the one bounded request or creating cursor/budget state. Focused reconnect,
+credential and acceptance validation passed 905 tests; the synchronized final
+scope passed 914, both with two dependency warnings. The dependency-complete
+exact candidate passed 6,334 tests with 2 platform skips and the same warnings
+in 931.22 seconds.
+
+All sixteen bounded offline profiles passed. Saved-evidence verification
+matched 415 source files /
+`4c5e9ffd1746b7a5711eb55edf95a1db1424ce5961d0256af1328acb0cb4bbdf`;
+report SHA-256 is
+`e005e3ef4f7474af8722d99f4fb78153fd9b0351083b213ca453100b09b0e8ca`.
+Compilation, dependency integrity, deterministic roadmap output, Portal syntax,
+all fourteen Node controller smokes and the 19-case ordered CI inventory passed.
+The 164-member v0.340.336 wheel SHA-256 is
+`c1bdaf9876a6076c83111f3885cd3e91ec6c848c4a95347739e7ce8ea045ec31`.
+The 1,073-path / 108,337,061-byte current-tree public-artifact audit found zero
+findings; the introduced-line credential scan and fresh exact-head hosted
+security/Gitleaks remain mandatory for this commit.
+
+This is injected local M8.2 uncertainty-boundary evidence, not provider identity,
+stream entitlement or delivery completeness, broker-paper acceptance,
+genuine-feed sustained-trial evidence, native Windows acceptance,
+funding/live/cloud readiness, performance, profitability or release approval.
+No UI control changed. Engagement remains OFF by default; limits, account
+checks, fail-closed exits, independent emergency stop, seven beginner tabs and
+black/bright-purple bottom-right hover help remain intact. Implementation stays
+weighted 38% (30–45%, low confidence), with 0/9 stages independently accepted.
+
+## v0.340.335 bounded paper risk-screen input and JSON boundary
+
+The public paper risk screen now requires one exact built-in request schema,
+built-in string keys, exact Boolean claims, exact tier text, exact built-in
+numeric values and finite field-specific magnitude bounds. Numeric strings,
+custom conversion/equality objects, Boolean quantities, mapping subclasses,
+missing or extra fields, non-finite values and excessive exponents fail closed.
+The public cost is finite or null, so hostile evidence can no longer produce a
+paper candidate with infinity or crash JSON serialization. Direct and loopback
+API boundary validation passed 20 tests and the synchronized release/API scope
+passed 200, both with two dependency deprecation warnings. The complete exact
+candidate passed 6,319 tests with 2 platform skips and the same warnings in
+852.42 seconds.
+
+All sixteen bounded profiles passed and saved-evidence verification matched 415
+source files / `0389c0bfbddc00aad1f2530e86fdce85d0a73e57b8c0e0f8a80c49ff9af05178`;
+report SHA-256 is
+`9ec3d28e10751c8e6b7a074000b936846b5fc302331e5a48655c15dcb85d5dd3`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+syntax, all fourteen Node controllers and the 19-case ordered CI inventory
+passed. The 164-member v0.340.335 wheel SHA-256 is
+`688bfb00b3e4ff96ad138d97abd73aa81cc63abbc1526c32d006a00cf2c7d522`.
+The current-tree public-artifact audit and 4,443-added-line high-confidence
+credential scan found zero findings. Local Gitleaks is unavailable; exact-head
+hosted pinned Gitleaks and the remaining CI/native gates remain mandatory.
+
+This is local M3 bounded-risk hardening, not market-data authentication,
+profitability evidence, broker-paper acceptance, genuine-feed sustained trial
+acceptance, native Windows acceptance, funding/live/cloud readiness or release
+approval. Engagement stays OFF by default; limits, account checks, fail-closed
+exits and emergency-stop independence are unchanged. No UI control changed:
+seven beginner tabs and black/bright-purple bottom-right hover help remain
+intact. Implementation remains weighted 38% (30–45%, low confidence) and 0/9
+stages independently accepted.
+
+## v0.340.334 Activity SSE checkpoint acknowledgement type binding
+
+The explicit one-attempt Activity SSE checkpoint now treats its internal envelope,
+transport and reconnect-review returns as untrusted acknowledgements. Exact built-in
+schemas, text and sequence types, Boolean states, bounded integer counts and count/digest
+relationships are required before any provider read or cursor write can be acknowledged.
+Custom-equality text/tuple subclasses, Boolean-as-count values, missing fields and authority
+promotion fail closed; a malformed initial acknowledgement remains network/storage silent
+and a malformed downstream acknowledgement never checkpoints. This is local injected
+M8.2 hardening, not provider identity, entitlement, delivery completeness, broker-paper
+acceptance, sustained market evidence, native Windows acceptance, funding/live/cloud
+readiness or release approval. OFF defaults, limits, account checks, fail-closed exits and
+emergency-stop independence remain unchanged. No UI control changed: seven beginner tabs
+and black/bright-purple bottom-right hover help remain intact. Implementation remains
+weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+The exact v0.340.334 candidate passed 6,310 tests with 2 platform skips and two
+dependency warnings in 849.21 seconds; the synchronized release/evidence/SSE scope passed
+739 and the complete Activity SSE scope passed 1,024. All sixteen bounded profiles and
+saved-evidence verification matched 415 source files /
+`41151b2c064fba6842f953ac09ed2739214d2fa713789af548c7c67d6815801b`; report SHA-256 is
+`f0d6b6c306bec4250600de41a3a5add1dd53a6c3d9c0baf5251139541a838e04`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal syntax, all
+fourteen Node controllers and the 19-case CI inventory suite passed. The 164-member wheel
+SHA-256 is `9840cf0e461da554af42cc80a93ce61b75262097c26e68e053fed4a61bd209ff`.
+The 1,070-path artifact audit and changed-line high-confidence scan found zero findings;
+hosted pinned Gitleaks, exact-head CI and native Windows/installer gates remain required.
+
+## Active M1-M9 execution discipline
+
+Before every development edit, recover the fresh development head, active stacked reviews,
+exact-head CI and current blockers, then read the read-only
+`snapshot()['milestone_execution_plan']` and `snapshot()['milestone_work_batches']` together
+with the D1-D9 acceptance stages. Select the largest coherent safe batch from the highest
+priority milestone that does not overlap an active write. External broker, genuine-feed,
+native-Windows or independent-review blockers do not justify stalling: continue separate
+offline candidates while preserving the blocker and required evidence exactly. Parallelize
+independent read-only inspection and tests, but serialize repository writes and publish only
+with an expected-head lease.
+
+Every M1-M9 task remains `REVIEW_REQUIRED` until its stated evidence is independently
+available; code, version numbers, test counts, synthetic scores and local hashes are not task
+acceptance. Do not raise the weighted 38% baseline merely for implementing or testing a task.
+Keep release approval, trading permission and launch-date prediction separate, preserve OFF
+defaults, limits, account checks, fail-closed exits, independent emergency stop, seven beginner
+tabs and black/bright-purple bottom-right hover help, and never publish private broker/account
+evidence or credentials.
+
+## v0.340.321 provider transaction acknowledgement binding
+
+Provider POST and GET write contexts now retain their captured SQLite main-file identity through transaction finalization, require the exact main connection and file before close, and sample the same pathname identity again after close. Existing and new contexts both reject an uncommitted return. A during-transaction replacement or injected post-commit identity fault fails closed, preserves the replacement, and leaves any committed pending reservation unavailable for automatic retry or capacity reuse; exception unwinding also rechecks an existing main path. Hosted Windows regression exposed that the disposable provider-result fixture compared a long frozen journal path with the temporary root's 8.3 spelling; it now derives each private relative manifest name against either the caller's lexical root or that exact root's resolved spelling, rejecting paths outside both, with an alias-path regression. The release-trial wrapper also preserves only reviewed fixed paper-tool failure codes without exposing child output, paths or private inputs. This is a sampled local acknowledgement boundary and evidence-path correction, not an atomic directory lease against a non-cooperating change after the final sample, native Windows durability, provider-wide coordination, broker/account/source acceptance, routing, funds, live or release authority. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.320 provider-GET store binding and first-write recovery
+
+The shared local provider-GET budget now freezes its selected parent while retaining the final leaf for no-follow inspection, binds the exact path, provider scope and digest through ownership, and requires the captured regular single-link main-file identity plus exact SQLite main pathname throughout setup. Failed first setup or transaction cleanup uses only the captured path and removes only the unchanged empty regular single-link main file when no rollback, WAL or shared-memory sidecar exists. Mutable aliases, inode replacement, a foreign SQLite connection, provider-scope mutation or a retargeted store object therefore fails closed without redirecting a journal write, deleting a decoy or poisoning an exact operator retry with a schema-less file. No provider GET is performed or retried, no session capacity is reclaimed and no broker-wide pacing, account, source, routing, funds, live or release authority is granted. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.319 provider-POST store binding and Windows emergency child lease
+
+The local provider-POST pacing journal now freezes its selected parent while retaining the final leaf for no-follow inspection, binds the exact path, provider scope and digest through owner acquisition, and requires the captured regular single-link main-file identity plus exact SQLite main pathname throughout setup. Failed-first-write cleanup uses only the captured path, so a mutable parent alias, inode replacement, foreign connection or retargeted store object cannot redirect a write or cause rollback cleanup to delete a decoy. Retargeting rolls back and fails closed. Windows run 43634033695 proved that the directory handle alone did not deny parent rename. The emergency-latch lease now also holds a validated fixed regular single-link child guard without delete sharing until final acknowledgement; directory, reparse and hardlinked guards fail closed, and both handles close on every exit. This is a corrective native gate candidate, not Windows acceptance until a fresh exact-source run passes. No provider request is retried or rearmed, no capacity is reclaimed and no broker-wide pacing, account, routing, funds, live or release authority is granted. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.318 provider-POST first-write recovery
+
+The local provider-POST pacing journal now contains failed first setup and transaction attempts without leaving a schema-less empty SQLite pathname that blocks an exact clean retry. Cleanup is restricted to the captured new regular single-link identity when it remains empty and no rollback, WAL or shared-memory sidecar exists. Replacement, bytes, links, sidecars, close failure or cleanup uncertainty retain the path and fail closed for explicit review. No provider request is retried or rearmed, no capacity is reclaimed and no broker-wide pacing, account, routing, funds, live or release authority is granted. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.317 exact Windows emergency-parent lease
+
+The native emergency-latch lease now opens the exact public Windows parent path with `OPEN_REPARSE_POINT` instead of following a pre-resolved path, and validates the resulting handle as a directory without reparse attributes before any latch entry access. A late junction or symlink replacement therefore fails closed rather than leasing its redirected target. The Windows regression contract also now recognizes ordinary access denial when the still-open latch file itself blocks a parent rename; that is conservative prevention, not evidence that the sampled-identity fence failed. PR #28's Windows regression failure remains recorded and is not dismissed as flaky. POSIX directory descriptors and fsync remain unchanged. This is not administrator/ACL isolation, distributed coordination or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.316 native Windows emergency-latch directory lease
+
+Emergency-latch persist and clear now hold a native Windows backup-semantics handle on the resolved parent directory without delete/rename sharing throughout entry access and final identity acknowledgement. A cooperating process cannot retarget the latch pathname by renaming that directory until the lease closes; handle acquisition, identity drift and close uncertainty fail closed. POSIX directory descriptors and fsync remain mandatory and unchanged. A native Windows regression requires rename denial while leased and successful rename after close. This is not administrator/ACL isolation, distributed coordination or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.315 Windows emergency-latch parent binding
+
+Emergency-latch persist and clear operations now sample one resolved parent-directory identity before entry access and require that same public parent before acknowledging completion. This check remains mandatory when Windows cannot provide the POSIX directory descriptor/fsync boundary. Even an already-absent clear must recheck the parent before returning, preventing a retargeted path from being mistaken for a successful reset while the original latch survives elsewhere. Parent drift raises fixed fail-closed storage uncertainty; the application retains its process-local cut and independently attempts the durable SQLite halt. POSIX descriptor ownership and directory fsync remain unchanged. This is sampled local path integrity, not an atomic Windows directory lease, ACL/administrator protection or physical-power-loss proof. Runtime OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.314 immutable Windows review dispatch
+
+The owner-dispatched Windows release lane can now validate an immutable stacked review commit before promotion. An optional source must be one exact lowercase 40-character SHA, must equal the checkout and must descend from the freshly fetched `development/windows-portal-foundation` head before any repository code executes. With no commit supplied, the checkout must equal that refreshed development head. Push-triggered exact-SHA binding, the finite 150-minute job budget, separate 20-minute distribution-evidence bound and every regression, EXE, installer, recovery, distribution-binding and upload gate remain mandatory. This enables a future exact-source run; it is not Windows or release acceptance by itself. Runtime behavior, OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.313 bounded Windows distribution tail
+
+Exact development Windows run 43595758062 passed the complete regression, Portal syntax, standalone private-tool checks, EXE startup, installer build, install/reinstall, pinned prior-version recovery, data-preserving uninstall and installer phase review before the old 120-minute outer deadline cancelled the release-trial/manifest tail. The source-bound lane now keeps every existing gate with a finite 150-minute outer budget and a separate 20-minute distribution-evidence bound. The cancelled run is not Windows or release acceptance; fresh exact-source execution must complete the manifest, distribution binding and uploads. Runtime behavior, OFF defaults, limits, account checks, fail-closed exits and emergency-stop independence are unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted.
+
+## v0.340.312 emergency canonical tail sample
+
+Every standalone emergency-stop data-root or absent-root ancestor identity sample now finishes with one more exact canonical-path resolution after its trailing `lstat`. A parent directory renamed and replaced by a symlink back to the same inode after the earlier resolution can no longer authorize root creation or the first latch write before the next root guard detects the alias. Two deterministic regressions cover absent-root creation and existing-root storage. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL/administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.311 canonical emergency-root path sampling
+
+The standalone emergency stop now requires every sampled data-root or absent-root ancestor path to resolve to its exact canonical pathname before and after identity inspection. Renaming an intermediate parent and replacing it with a symlink back to the same directory inode can no longer preserve a stale pinned-path claim, create a previously absent root through that alias or reach SQLite after the first intent latch. Three deterministic regressions cover those seams. Existing latch-first ordering, canonical latch validation, independent durable-halt and final-latch attempts, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, full ancestor descriptor lease, ACL/administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.310 absent emergency-root creation lease
+
+The standalone emergency stop now leases the nearest existing resolved ancestor when its selected data root does not yet exist, rechecks that ancestor around parent-hierarchy creation and pins the immediate parent across exclusive root creation. An observed ancestor replacement during priority or directory creation, or movement of the just-created root, stops before latch or SQLite access with a fixed fail-closed diagnostic. Three regressions exercise those seams. Existing-root identity sampling, canonical latch validation, independent durable halt and final-latch attempts, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.309 emergency data-root sample bracketing
+
+The standalone emergency stop now rechecks the exact data-root identity immediately after its pre-halt canonical-latch sample, after durable SQLite cancellation and after its final canonical-latch sample. Moving the same latch inode into a replacement root during either sample cannot preserve a stale VERIFIED claim, and a pre-halt root replacement cannot cause the replacement SQLite path to be opened. Two regressions cover both race seams while preserving an independently completed halt on the retired root. Existing conservative cut presence, canonical fixed-record validation, final latch reassertion, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. This is sampled local filesystem hardening, not an atomic continuous monitor, administrator boundary or physical-power-loss proof. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.308 verified emergency-latch record
+
+The standalone emergency stop now distinguishes conservative cut presence from verified durable-latch evidence. Any latch entry still blocks paper intake and does not suppress the independent durable-halt attempt, but VERIFIED requires the exact fixed record in a regular single-link file that survives stable no-follow identity, content and metadata checks before durable handoff and final reporting. Symlink, hardlink, directory, malformed and in-place-mutated entries remain fail-closed cut requests but cannot manufacture verified ordering or final-presence claims. Six regression cases cover those entry types and mutation while preserving the durable halt. Existing priority-fault containment, data-root identity, final latch reassertion, OFF defaults, bounded risk, account checks and fail-closed exits remain unchanged. No UI controls changed: seven beginner tabs and black/bright-purple bottom-right hover help remain intact. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
+
+## v0.340.307 read-only recovery hardlink fence
+
+Read-only order-history and linked-portfolio recovery now rejects multiple hardlinks before SQLite opens or attaches the selected file. The same selected leaf identity and single-link count are rechecked after opening and after each bounded review, so an alias added during recovery or reconciliation fails closed. Four regressions cover initial and mid-read hardlinks, byte preservation and successful recovery after alias removal. Existing parent-root identity, symlink, regular-file, read-only SQLite, journal-mode, snapshot and authority-denial checks remain mandatory. This is sampled local filesystem hardening, not an atomic continuous monitor, administrator boundary, physical-power-loss proof or provider acceptance. No UI controls changed: seven beginner tabs, black/bright-purple bottom-right hover help, OFF engagement defaults, bounded risk, account checks and independent emergency stop remain unchanged. Broker-paper, genuine-feed 72-hour trials, native ordinary-user Windows acceptance, funding/live/cloud and owner release approval remain outstanding. Implementation remains weighted 38% (30–45%, low confidence) and 0/9 stages independently accepted. Fresh exact-source evidence, security, full Windows regression, browser and installer checks are required before promotion.
 
 ## v0.340.306 provider selected-leaf path validation
 
@@ -678,1519 +3186,7 @@ Final local validation passed 5,824 tests with one expected non-Windows skip; th
 
 ## v0.340.247 parsed-response persistence reconciliation
 
-Once the sole paper POST has returned a completely parsed response, durable response observation now uses repeated local store-binding and reservation checks without asking engagement permission or emergency-stop admission again. Every preflight and in-flight permission, stop, credential, ownership and provider-budget check remains mandatory. No additional provider IO occurs. This prevents a stop assertion or permission revocation at the parsed-response boundary from discarding a known result as outcome-unknown; exact response retention, cold replay and terminal provider-budget completion remain mandatory. The pacing release profile retains both boundary transitions.
-
-The exact-source v0.340.246 remote commit `d73764f403ac3759e2135bc6cd407cd35ac93f10` exposes no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.246 result is pre-claimed. Fresh exact-source v0.340.247 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is injected local reconciliation and control-independence evidence, not actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows saved-credential acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This local D4 reconciliation closure does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,822 tests with one expected non-Windows skip; the complete submission/release-profile modules passed 193, the synchronized release/evidence/version/installer/package focus passed 211 and the explicit Portal/controller focus passed 22 plus all fourteen Node controllers. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `81abb71636408081661b6bdbf04517b301cbbe11b656173084bb4bd56cc56638`; `validation/release_trials_0_340_247.json` SHA256 is `f1b5064396bccedd9c1408a60c3d1e81125ad19976598ebce4fbebc03dac94ba`. Compilation, dependency integrity and generated-roadmap equality passed. The 161-member wheel reports v0.340.247 and has SHA256 `f335141d144942adcf24b1e7764683bc29b8fca39225a48823f60ee17ecfc246`. The 966-path candidate audit and 4,156 introduced-line high-confidence signature scan found zero findings; the locally reachable 10-commit history audit also found zero artifact findings. Local Gitleaks is unavailable and fresh hosted full-history security remains required. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
-
-
-## v0.340.246 stop-independent post-response reconciliation
-
-After the exact single-attempt paper POST response is durably retained and cold-replayed, local provider-budget completion now reuses the final trusted transport timestamp instead of calling engagement permission or emergency-stop admission again. This performs no additional provider IO. It prevents a newly asserted stop or permission revocation from stranding a known response as a pending attempt, while exact token, request head, response head, ownership and cold-replay checks remain mandatory. The pacing release profile retains both post-response control cases.
-
-The exact-source v0.340.245 remote commit `ed4d518971594f4122f1b965b24d165932025252` exposes no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.245 result is pre-claimed. Fresh exact-source v0.340.246 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is injected local reconciliation and control-independence evidence, not actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows saved-credential acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (read-only weighted index 38%; 30–45% uncertainty, low confidence), with 0/9 major stages fully accepted. This local D4 reconciliation closure does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,820 tests with one expected non-Windows skip; the complete submission/release-profile modules passed 191, the synchronized release/version/installer/package focus passed 276 and the explicit Portal/controller focus passed 22 plus all fourteen Node controllers. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `ca860a448703938fa5c1a54a8b51caf99fab42c3cf17efa8237b605a6cc3f34a`; `validation/release_trials_0_340_246.json` SHA256 is `bda2c306cbbb9f5b2ff195ed6d9aa321a8af1568215351eb2965b63d43fb1c2d`. Compilation, dependency integrity and generated-roadmap equality passed. The 161-member wheel reports v0.340.246 and has SHA256 `b3fe9127b725ffddcd57b52fe8e8865bcbfbfd08df6ea4cd1a2bbac4c0f73a63`. The 965-path candidate audit, 4,167 introduced-line high-confidence signature scan and locally reachable 23-commit artifact audit found zero findings; local Gitleaks is unavailable and fresh hosted full-history security remains required. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
-
-
-## v0.340.245 transport-adjacent paper credential fence
-
-The explicit single-attempt Alpaca paper submission boundary now samples the exact caller-provided saved-pair binding after the final permission and emergency-stop checkpoint and immediately before the sole POST transport attempt. If that credential callback fails or the pair changes in the intervening checkpoint, the boundary performs no POST, closes the shared provider budget as `NOT_SENT`, and permanently leaves the prepared request original-client-ID lookup-only. Callback exceptions collapse to a fixed diagnostic without exposing private vault detail. The mandatory pacing release profile retains an injected mutation at this exact boundary.
-
-The exact-source v0.340.244 remote commit `0e9156d52f48831081954f6c1fcd68f9ef9caa7e` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.244 result is pre-claimed. Fresh exact-source v0.340.245 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is sampled local credential-lifecycle and synthetic paper evidence, not an atomic vault lease, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows saved-credential acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This D4 safety closure does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,818 tests with one expected non-Windows skip; the complete submission/release-profile modules passed 189, the focused transport/release set passed 60 and the finalized submission/release/evidence/version/installer/package set passed 250. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `b56fdf660acb1aa736ad39b30404f0a17ef0d812b1929199cdd8d245c5f4d9ff`; `validation/release_trials_0_340_245.json` SHA256 is `60d25a7aabf9aa2a3f2e36d986c73070faa7b8dc498d092755d139472d8e6464`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.245 and has SHA256 `506b08ce337af25eb0ad23692ddf303f56301fac75bdadbea5947f41c8fb90dc`. The 964-path candidate audit, 4,185 introduced-line high-confidence secret scan and locally reachable 95-commit artifact audit found zero findings; local Gitleaks is unavailable and fresh hosted full-history security remains required. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
-
-## v0.340.244 durable order root identity fence
-
-Default durable-order reads and writes now resolve one physical storage root and retain the configured directory's identity through emergency admission, rotation inspection, SQLite order access and linked portfolio reconciliation. Symlink roots are rejected. Replacing the configured directory during the cut check, after order-journal open or during linked read-only replay fails closed before an operation can be acknowledged against the replacement root. Existing environment-retargeting behavior still keeps an operation on its original root.
-
-The exact-source v0.340.243 remote commit `8c9e8f8c388ba4b00a4e488fef307385a41b4293` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.243 result is pre-claimed. Fresh exact-source v0.340.244 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is deterministic local filesystem-race and synthetic paper evidence, not an ACL or administrator boundary, complete malicious-race proof, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This durable-root identity hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,816 tests with one expected non-Windows skip; the synchronized durable-order/release/evidence/version/installer/security focus passed 422 and the direct durable-order/emergency/portfolio focus passed 75. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `00a4405ee0952754f7bdd876046987ec5598433bc89d88dcb0a25e095afe7f40`; `validation/release_trials_0_340_244.json` SHA256 is `0c904f51defee100d04e4fff52f348a8491714185cb5260b175377efcd2bffbe`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.244 and has SHA256 `d9517e39316f80a978cd0a3ba716606781338f65c81737c0baa94e8200a477e1`. The 963-path proposed-candidate public-artifact audit and 4,226 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
-
-
-## v0.340.243 single-root durable order operations
-
-Each default durable-order operation now resolves `NEXUS_PORTABLE_DATA` exactly once and carries that immutable path through emergency-intent inspection, rotation checks, the SQLite order journal and attached portfolio reconciliation. Read-only session/report/recovery paths use the same snapshot. Deterministic regressions change the environment at the latch, connection and linked-restore boundaries and prove that one acknowledged operation cannot split state between roots. This keeps engagement permissions OFF by default and does not add a control or broaden execution authority.
-
-The exact-source v0.340.242 remote commit `eeb4f5eef364c4e0d2b8c3c1c0a7177fe7b11865` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.242 result is pre-claimed. Fresh exact-source v0.340.243 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is deterministic local path-scope and synthetic paper evidence, not an ACL or administrator boundary, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This reconciliation path-scope hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,811 tests with one expected non-Windows skip; the synchronized durable-order/release/evidence/version/installer/security focus passed 417 and the broader affected reconciliation set passed 252 with one expected skip. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `dba211d1e4ecfcb548cd63fbfb45f03e5aa8b897f02beed904fe3b7e3739ca93`; `validation/release_trials_0_340_243.json` SHA256 is `95e4748aaceb85b30769631349aa600057280286bfc1098ef7258940a3e4f8f2`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.243 and has SHA256 `642862b8b99c8bf020292d2be8d51deb2ae2f37da914ee783fef2f4c24cfd9ec`. The 962-path proposed-candidate public-artifact audit and 4,182 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
-
-
-## v0.340.242 pinned emergency-intent directory durability
-
-The independent local paper emergency latch now pins one POSIX parent-directory descriptor across creation, idempotent acknowledgement, removal and directory fsync. Latch entry operations are relative to that descriptor, and the operation refuses success if the public parent path no longer names the same directory. Deterministic replacement-race tests cover both persist and reset boundaries. Windows retains the conservative standard-library fallback because Python cannot fsync directory handles there; native Windows storage-fault acceptance remains open.
-
-The exact-source v0.340.241 remote commit `43ee64e6d405e90e8732510df91527391d139064` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.241 result is pre-claimed. Fresh exact-source v0.340.242 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is sampled same-host POSIX path-identity and synthetic local paper evidence, not an ACL or administrator boundary, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This emergency durability hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,808 tests with one expected non-Windows skip; the synchronized emergency/release/evidence/version/roadmap/installer/security focus passed 369 and the direct emergency intent/cut/storage focus passed 32. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `35d431341fe0bffa377fbbd5d143d6b7b1c21983d6b861e2438d842aae96c3fc`; `validation/release_trials_0_340_242.json` SHA256 is `9254752492cc1a558c8818fa4527ca81d8f0c0f3aea2b6d6f1a8b90516f2e156`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.242 and has SHA256 `1ce008300a18c81573d95ae866ce6f52db8a92326e5c82f63624f37994c5ff81`. The 961-path proposed-candidate public-artifact audit and 4,212 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
-
-
-## v0.340.241 pinned standalone emergency data root
-
-The process-independent local paper emergency command now resolves and pins one non-symlink data-root target before requesting priority or touching the intent latch and order journal. A configured root symlink is refused before priority or storage access, while changing a parent alias after resolution cannot redirect the latch or durable halt. Its public result now has an immutable 20-field schema; the packaged release smoke consumes the path-pinning check alongside independent, SQLite-contention, CPU-pressure and native Windows read-only-journal evidence.
-
-The exact-source v0.340.240 remote commit `0d6bcb0b80088b9c655409ebdf2514c450079785` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.240 result is pre-claimed. Fresh exact-source v0.340.241 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is sampled same-host path-scope and synthetic local paper evidence, not an ACL or administrator boundary, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows owner-profile acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This emergency path-scope hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,806 tests with one expected non-Windows skip; the synchronized emergency/release/evidence/version/roadmap/installer/package focus passed 253 and the direct emergency lane/storage/intent focus passed 47. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `3f403fd43e7c2cb4fecd93fa5954a11daea0c01e422787d530b1df7cd942dce6`; `validation/release_trials_0_340_241.json` SHA256 is `b6223ec82967302658322a63074793be09c7c087d829053a010799ed2753a222`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.241 and has SHA256 `dfaa2883d4349e16ee7d399855545d0a0a93d7588fd3b4e4aa48fa9b3ae256d6`. The 960-path proposed-candidate public-artifact audit and 4,182 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows owner-profile, funding, live, cloud or release acceptance.
-
-## v0.340.240 strict broker-paper inspection and inventory release schemas
-
-The disposable broker-paper inspection/inventory profile now declares immutable 16-field root; 30-, 30-, 35- and 47-field quote-fixture; 26-field asset report; 9-field asset; 3-field asset timing; 28-field observation; 6-field inventory; 3-field read timing; 21-field open-order-terms; and 16-field portable-observation schemas. Saved validation consumes fixed injected request counts and account variants, exact account/asset scope, quote cryptographic policy, timing, open-order summaries, portable binding and every denied authority field. Nineteen adversarial mutations cover root and nested extensions, mapping subclasses, boolean-as-integer substitutions, changed cryptographic policy, altered counts and promoted authority.
-
-The exact-source v0.340.239 remote commit `6c41913cfeda4dbab394a41f852d0746180c8de4` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.239 result is pre-claimed. Fresh exact-source v0.340.240 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is bounded injected-object and fixed-clock evidence, not actual provider/account access, broker-paper acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This inspection-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,804 tests with one expected non-Windows skip; the complete release-trial module passed 130 tests, the direct inspection/inventory focus passed 381 and the evidence/version/roadmap/installer/package focus passed 82. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `2c20ce5cacd6759432f3596c1899a549dc519ff25f6846363196d0ef28468298`; `validation/release_trials_0_340_240.json` SHA256 is `f3be73d72536540900b084cf5e325b6fa40d22bc234c087dea16438b8facfdf6`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.240 and has SHA256 `e9d4be7cded9dbbacac492ee3c00e202f7a426b5c32c37054f4cdcec35755ca2`. The 959-path proposed-candidate public-artifact audit and 4,345 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.239 strict durable-capacity release schemas
-
-The disposable durable-capacity release profile now declares immutable 13-field root, 14-field treatment, 3-field latency, 4-field recovery, 23-field burst, 24-field execution-quality and 41-field paper-quality schemas. Saved release validation consumes the exact four-treatment matrix, fixed replay accounting, bounded burst equations, finite ordered timings, synthetic scope and every denied authority field without treating local speed as market throughput. Sixteen adversarial mutations cover root or nested extensions, mapping subclasses, changed scope, boolean-as-integer substitutions, non-finite timings, altered counts and promoted authority.
-
-The exact-source v0.340.238 remote commit `e1cc508a4cad18eb4786e07f7ca58ca2329888ac` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.238 result is pre-claimed. Fresh exact-source v0.340.239 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is bounded temporary-database timing and arithmetic evidence, not sustained-market realism, physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, profitability, native-Windows acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This capacity-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,803 tests with one expected non-Windows skip; the complete release-trial module passed 129 tests and the capacity/evidence/version/installer focus passed 159. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `a4223f39b3c67c31d9458ffe8c47c6ab98b963f53acab829ff990ddde3cb2997`; `validation/release_trials_0_340_239.json` SHA256 is `86202a1055db6c0e2d6d04c6aa5a8eb8e9053328fa6b68471d560130e360cf89`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.239 and has SHA256 `af79222f1c08cf703b050aed5924535c7cf064833af879035449bff002082e42`. The 958-path proposed-candidate public-artifact audit and 4,282 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.238 strict operations/offload release schemas
-
-The disposable scripted-operations release profile now declares immutable 18-field root and 33-field physical-offload schemas. Saved release validation consumes the exact synthetic limitations, fixed nine-count operating scope, reconciled/deduplicated/no-history-loss state, every offload integrity check, six exact generation/retired-ID metrics and every denied authority field. Seventeen adversarial mutations cover root or nested extensions, mapping subclasses, altered scope, boolean-as-integer substitutions, changed counts, promoted source and changed authority evidence.
-
-The exact-source v0.340.237 remote commit `692dadb0b1db2695075642409d14d9ed5a9a50b2` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.237 result is pre-claimed. Fresh exact-source v0.340.238 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is bounded temporary-database and scripted-fixture evidence hardening, not physical power-loss proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This operations-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,802 tests with one expected non-Windows skip; the complete release-trial module passed 128 tests and the release/operations/version/installer focus passed 232. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `af347819870fdc47d47bcfc57583d5ff473176dbb65e25ba083245b80fcfeb26`; `validation/release_trials_0_340_238.json` SHA256 is `0cd7d578f42bfe0eca86755342cf2b8e40232ab4df88ef8b0497049c598ea359`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.238 and has SHA256 `2dcc3b5969cdccb48f9cd61c22a389de48be127c444e4afc316e2a8b524fd6e1`. The 957-path proposed-candidate public-artifact audit and 4,179 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.237 strict cross-database recovery release schemas
-
-The disposable cross-database recovery release profile now declares immutable 8-field root and 14-field recovered-state schemas. Saved release validation consumes the exact temporary-fixture limitations, fixed five-file backup scope, false broker/live/release authority, 16-hex session and session-bound BUY/SELL identifiers, stopped/halted/reconciled state, exact archive/quote/modeled-order accounting, injected-only source mode, four evidence digests and the current paper-forward policy digest. Twelve adversarial mutations cover root or nested extensions, mapping subclasses, integer-for-boolean substitutions, malformed or unbound session identity, altered counts/source mode and changed evidence digests.
-
-The exact-source v0.340.236 remote commit `00970d8d565d18cfa93a8c269c2629e22f1e1aa6` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.236 result is pre-claimed. Fresh exact-source v0.340.237 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is bounded temporary-database and injected-quote recovery-evidence hardening, not physical power-loss or cross-version migration proof, actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This recovery-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,801 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 127 tests, the direct recovery focus passed 8 and the release/recovery/version/installer focus passed 194. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `e01985c0841801ad2ddd63ae7a76a28470d81a74896b7747e9eda872ce1d792d`; `validation/release_trials_0_340_237.json` SHA256 is `7adaf2debf3283931ac414856f109a2f705cd665ef2b22bd59c1dc8a51d85710`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.237 and has SHA256 `da2462a47987133eb12230fdbcbb0c0b7b56aec42b4cd1394cde580c7cce9253`. The 956-path proposed-candidate public-artifact audit and 4,181 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.236 strict forward-runner release schemas
-
-The disposable forward-runner release profile now declares immutable 13-field root, 9-field recovery, 6-field per-session, 3-field latency and 44-field retained-coverage schemas. Saved release validation consumes the exact injected-only limitations, fixed 20-round/280-observation scope, unique session and evidence bindings, complete stopped/flat/reconciled recovery state, ordered finite latency summary, every coverage count/reason/hash and every false authority field. Thirteen new adversarial mutations cover extensions at every level, integer-for-boolean substitutions, duplicate session identity, invalid timing order and changed retained-coverage evidence.
-
-The exact-source v0.340.235 remote commit `0a644f5af3cafba2ed957439d2dfb36c3bcd38b7` exposed no connector-visible pull-request workflow run or combined commit status at this checkpoint, so no hosted v0.340.235 result is pre-claimed. Fresh exact-source v0.340.236 public-security, research/browser/evidence and Windows installer checks remain required.
-
-This is bounded injected-quote release-evidence hardening, not actual paper-account/provider acceptance, genuine-feed provenance, sustained-market realism, profitability, native-Windows acceptance, funding/live/cloud readiness or release approval. No credential, account data or retained private market evidence is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,800 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 126 tests, the affected forward-contract focus passed 54 and the release/forward/version/installer focus passed 239. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `710bd1b13c344d360e0e1ff7cf849cb6c73e5dcef73446467c300ebf4dacd59a`; `validation/release_trials_0_340_236.json` SHA256 is `131dfdab2a31f0cc5ccd07b57edd7d0324c0199cadc70696277a9936d84da8fb`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.236 and has SHA256 `19805ab2e75bf9eff1d66f15c6bcc2a3cc7d251877a6b762fb8b1aa6819c9094`. The 955-path proposed-candidate public-artifact audit and 4,232 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.235 strict encrypted-observation release schema
-
-The real-cryptography synthetic encrypted-observation release report now declares an immutable 15-field public schema. Saved release validation consumes the exact synthetic-only source and limitations, fixed Scrypt/AES-GCM policy, all three positive cryptographic checks and every false credential, IO and routing authority field. Seven focused regressions cover extensions, mapping subclasses, broadened source/limitations, altered policy and non-boolean success evidence.
-
-The exact-source v0.340.234 commit `a44569e07c5efcffda3ac9440e34e1841f1eb857` has no connector-visible pull-request workflow runs or combined-status records at this checkpoint, so no hosted v0.340.234 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.235 hosted checks remain required.
-
-This is bounded in-memory cryptographic evidence hardening, not retained private-file protection, universal ACL or disk-encryption proof, native-profile acceptance, provider/account access, sustained genuine-feed, funding/live/cloud or release acceptance. No password, key, ciphertext, private observation, credential or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This release-evidence hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,800 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 126 tests, the affected encrypted-observation/release focus passed 145 and the release/version/installer/package focus passed 271. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `ec6c391378f033718de2961f879f2f480859a813516758b1453826b59f538755`; `validation/release_trials_0_340_235.json` SHA256 is `e3fc0a4e4ee3d06a83777faa965417b097a6afa7b793274fa7b688e122677bd1`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.235 and has SHA256 `c54a586d0af86c064dcb6ba6ea109be5d581d963a2f790711894a670b5e1b849`. The 954-path candidate-tree public-artifact audit and 4,165 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.234 strict open-order-terms release schemas
-
-The fixed open-order-terms release aggregate and both its complete and unsupported reports now declare immutable 6-field and 21-field public schemas. Saved release validation consumes every count, status, reason, arithmetic result, normalized-terms digest and false authority field; pins the fixed supplied-only scope; and independently replays each summary hash. Eighteen regression mutations cover root or nested extensions, mapping subclasses, altered scope, status, counts, reasons, digests and summary hashes.
-
-The exact-source v0.340.233 commit `5785a49c59583faf3b6f033f16fb5ce9d4082fcc` has no connector-visible pull-request workflow runs or combined-status records at this checkpoint, so no hosted v0.340.233 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.234 hosted checks remain required.
-
-This is bounded synthetic open-IOC evidence hardening, not actual provider order/source, paper-account, verified coverage, holds or spendable funds, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained order or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This release-evidence hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,794 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 120 tests, the affected open-order/release focus passed 158 and the release/version/installer/package focus passed 284. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `e795f12d299f653f71677e5f06d919d7f2eb5f82b35f7e211dddc1a6b4e8aafb`; `validation/release_trials_0_340_234.json` SHA256 is `6e153a5da5e5780fd2fd45b6e7f40792f452fce78d35a9cf25624114fb918de9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.234 and has SHA256 `78802186c8aaff508f01f2b994e1388739647d3d75f813c6aabf004cd2192daf`. The 953-path candidate-tree public-artifact audit and 4,204 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.233 strict portable-observation reconciliation release schemas
-
-The portable-observation release aggregate and both its arithmetic-success and boundary-blocked reviews now declare immutable 9-field and 41-field public schemas. Saved release validation also requires exact existing 28-field retained-activity, 32-field observation-balance and 27-field gross-fill envelopes; recomputes both observation input hashes and the retained-balance input hash; binds account, retained head and opening manifest across the pair; consumes every false authority field; and independently reconstructs gross arithmetic from normalized retained activity. Twelve regressions cover extensions, mapping subclasses, altered scope/digests, nested binding and substituted gross results.
-
-The exact-source v0.340.232 commit `e355b24bd15ef87567c98e55cd10f62c6d9c8689` has no connector-visible pull-request workflow runs or combined-status records at this checkpoint, so no hosted v0.340.232 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.233 hosted checks remain required.
-
-This is bounded synthetic portable-observation reconciliation evidence hardening, not actual provider observation/source, paper-account, verified coverage or balance instants, holds or spendable funds, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This reconciliation-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,780 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 106 tests, the affected observation/reconciliation focus passed 102 and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `18db9d52b71bb2e59a359c08dd17607259b4ff7c3bd151fbf950aa1da32ea749`; `validation/release_trials_0_340_233.json` SHA256 is `0e6c13d00624998025746d7a15f15992b7595fae96bcf9efc70459e57318d330`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.233 and has SHA256 `4f71e9f9f429d35aab5862f6846a32e4e6567ec4dbf8927c4836a4a39d1f048c`. The 952-path candidate-tree public-artifact audit and 4,317 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.232 strict head-bound retained-balance release schemas
-
-The head-bound retained-balance release aggregate, review and gross-fill arithmetic now declare immutable 8-field, 32-field and 27-field public schemas, and the embedded retained-activity review must match its exact existing 28-field schema. Saved release validation recomputes the complete gross result from normalized retained records, binds the review input hash and head/account scope, consumes every false authority field and rejects unknown fields, mapping subclasses or altered read-only limitations. Seven regressions reproduce root, review or gross extension and mapping-subclass acceptance plus altered scope language; additional regressions cover the embedded activity schema, input binding and gross replay.
-
-The exact-source v0.340.231 commit `cdda7fd0f2c3c20289f94d6f9eab3dde21d47085` has no connector-visible pull-request workflow runs or combined-status records at this checkpoint, so no hosted v0.340.231 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.232 hosted checks remain required.
-
-This is bounded synthetic retained-balance reconciliation evidence hardening, not actual provider balance/source, paper-account, verified fee allocation, holds or spendable funds, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This reconciliation-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,779 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 105 tests, the affected retained-balance/activity/fee/release focus passed 191 and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `85299e8caafe9fe990d8b50539f396324dda8cb4d4ff6280aacfedbf4422f0a2`; `validation/release_trials_0_340_232.json` SHA256 is `cca258cb25c22c3c2f641455ca0da6a698e93a8c7616b81c7f0491de563a3579`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.232 and has SHA256 `e4be2835a3e4d10b490a347846ffedb97612c3233dee0761581f5caa291be28f`. The 951-path candidate-tree public-artifact audit and 4,320 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.231 strict retained-activity collection release schemas
-
-The retained paper-activity collection release aggregate and its request-derived collection child now declare immutable 16-field and 38-field public schemas. Saved release validation requires exact plain dictionaries at both layers, consumes every collection result, request-origin check and false authority/access field, and rejects unknown fields, mapping subclasses or altered injected-only limitations. Five regressions reproduce root or child extension and mapping-subclass acceptance plus altered scope language; the existing field-level tests now cover every request-derived positive check and false authority/access field.
-
-The exact-source v0.340.230 commit `9f5ec82611a766c50c3e9bec762de5634def1bf5` has no connector-visible pull-request workflow runs or combined-status records at this checkpoint, so no hosted v0.340.230 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.231 hosted checks remain required.
-
-This is bounded synthetic broker-read collection evidence hardening, not actual provider/source, paper-account, authenticated activity/fee coverage, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,778 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 104 tests, the affected collection/request/release focus passed 298 and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `893147a8b7346303ec8e137970661ec7098b959976bf79c4f92c4745f68a5564`; `validation/release_trials_0_340_231.json` SHA256 is `60aff81824e552d9a1ea42d62cadc5878bb242a42ed842575bffa6aa75c16d45`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.231 and has SHA256 `45c50d6899a92f670832332ab14e9b6a47904f4fb7c3c1d0a50661906c1e4e96`. The 950-path / 87,472,521-byte candidate-tree public-artifact audit and 4,197 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.230 strict paper-read pacing release schemas
-
-The complete local paper-read pacing release aggregate and its typed-operation evidence now declare immutable 31-field and 36-field public schemas. Saved release validation requires exact plain dictionaries at both layers, consumes every typed check and false authority field, and rejects unknown fields, mapping subclasses or altered local-only limitations. Five regressions reproduce root or typed-operation extension and mapping-subclass acceptance plus altered scope language; legacy detailed-diagnostic tests now supply the complete envelope instead of bypassing its public schema.
-
-The exact-source v0.340.229 commit-scoped workflow and status queries returned no run or status records at this checkpoint, so no hosted v0.340.229 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.230 hosted checks remain required.
-
-This is bounded synthetic broker-read pacing evidence hardening, not actual provider/source, paper-account, broker-wide quota or distributed-owner acceptance, authenticated activity/fee coverage, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,777 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 103 tests, the affected pacing/release focus passed 276 and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `a771ac26bed26203da32a8f6e2dcbd178669ec4da8e377cab50355cedb3f61ec`; `validation/release_trials_0_340_230.json` SHA256 is `e41ec9de883188ab587c2f87306fb109f009d9f8713808eff2c5b41ff1c5fce2`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.230 and has SHA256 `4bd25d6ada75ba084cad0a8ee1573b8ec1e1e77219be7696a213dbe49764174e`. The 949-path committed-tree public-artifact audit and 4,186 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.229 strict balance/funding evidence schemas
-
-The supplied balance release aggregate, its balance review, negative fences and timestamp profile now declare immutable 7-field, 25-field, 2-field and 15-field public schemas. Saved release validation requires exact plain dictionaries at all four layers, consumes every declared positive and false authority field, and rejects unknown fields, mapping subclasses or altered balance-review limitations. Ten regressions cover root, review, negative-fence and timestamp extension or mapping-subclass acceptance plus altered scope language; previously unchecked atomic-snapshot, broker-connection and automatic-retry claims now fail closed.
-
-The exact-source v0.340.228 commit-scoped workflow and status queries returned no run or status records at this checkpoint, so no hosted v0.340.228 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.229 hosted checks remain required.
-
-This is bounded synthetic balance/funding evidence hardening, not actual provider/source, paper-account, verified activity or fee coverage, authenticated holds or spendable funds, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,776 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 102 tests, the affected balance/funding focus passed 87 and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `e1e1fd13ddda9945777e04af899e455a413f73addff6d38dd7920318c6fa4ac9`; `validation/release_trials_0_340_229.json` SHA256 is `7c950c59486602610e85334057c8837f43e862a09d44fb624bd1825c74cede04`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.229 and has SHA256 `54379b87d8220836dc41bd5cb5410dfbf0465fb2f73aa1dba2aa2faa6339ec7c`. The 948-path committed-tree public-artifact audit and 4,209 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.228 strict activity release aggregate schemas
-
-The complete activity release profile, its retained-activity review and its original-request/fill link now declare immutable 11-field, 28-field and 20-field public schemas. Saved release validation requires exact plain dictionaries at all three layers, consumes every declared positive and false authority field, and rejects unknown fields, mapping subclasses or altered retained-review limitations. Seven regressions reproduce root, link and nested-review extension or mapping-subclass acceptance plus altered scope language; all now fail closed with fixed activity-schema diagnostics.
-
-The exact-source v0.340.227 commit-scoped workflow and status queries returned no run or status records at this checkpoint, so no hosted v0.340.227 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.228 hosted checks remain required.
-
-This is bounded synthetic request/activity evidence hardening, not actual provider/source, paper-account, verified activity or fee coverage, hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,775 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 101 tests, the affected activity/link focus passed 47 and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `8100a934d75e02f97600feceb9853473824bfc2d9c4b6c153ab2077af223a48d`; `validation/release_trials_0_340_228.json` SHA256 is `c5d4c115e789940ed502135b768d1b6ba1727c87b34585845f0fc6d37c90d3bb`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.228 and has SHA256 `aeae297f4b95753ec291d6b050abe5698cd28cba91cf84e8f5f6f9c9d99ec1f5`. The 947-path public-artifact audit and 4,203 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.227 strict accepted request/activity fixture schema
-
-The accepted original-request/activity fixture now declares an immutable 30-field public schema: ten required positive binding checks, nineteen false authority/access flags and one fixed source field. Saved release validation requires an exact plain dictionary, consumes every positive check and false authority flag, and rejects unknown fields or mapping subclasses before this evidence can support the activity profile. Four regressions first reproduced the absent schema contract, accepted extension and mapping-subclass cases, and the unconsumed accepted pacing request-target proof; all now fail closed with fixed request/activity-acceptance diagnostics.
-
-The exact-source v0.340.226 commit-scoped workflow and status queries returned no run or status records at this checkpoint, so no hosted v0.340.226 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all later packaging/installer steps were skipped. Fresh v0.340.227 hosted checks remain required.
-
-This is bounded synthetic request/activity evidence hardening, not actual provider/source, paper-account, verified activity or fee coverage, hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 100 tests, the affected request/activity focus passed 30 and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `aadead4dfeb79c4aca0db6405508ae18ef6939d9827faced5b0ed7a52605c6db`; `validation/release_trials_0_340_227.json` SHA256 is `1bf06bc6fdab63f11a77f86d6f12222c747c447ba70a6d4a3fd18b7026c728de`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.227 and has SHA256 `f2f9603141b63cb482ad14e38a9a79ce89e4f80705fe4e49a1677c76fb6e74a1`. The 946-path public-artifact audit and 4,134 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.226 strict activity-acceptance public schema
-
-The upstream process-death activity-acceptance fixture now declares an immutable 56-field public schema: 40 required positive recovery checks, 12 false authority flags and four fixed scope fields. Saved release validation requires an exact plain dictionary, consumes every declared check and authority flag, and rejects unknown fields, mapping subclasses or altered limitations before this evidence can support downstream reconciliation. Four regressions first reproduced the absent schema, accepted extension and mapping-subclass cases, and accepted altered scope language; all now fail closed with fixed activity-acceptance diagnostics.
-
-The exact-source v0.340.225 commit-scoped workflow and status queries returned no run records at this checkpoint, so no hosted v0.340.225 result is pre-claimed. Exact-source v0.340.224 public security and every research/regression/browser/evidence job passed; its Windows workflow was cancelled during install/test and all packaging/installer steps were skipped. Fresh v0.340.226 hosted checks remain required.
-
-This is bounded synthetic process-death and cooperating-journal evidence hardening, not actual provider/source, paper-account, verified activity coverage, fee/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete release-trial module passed 100 tests and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `784cb42a079acc551581a9e1735364dc457959a7580f02521a648fac846d35a2`; `validation/release_trials_0_340_226.json` SHA256 is `517469520492c24c209ecd5cc4468015988cfe65a7bfb96903a822a2874ccc10`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.226 and has SHA256 `32fad8380db26416da358c729380906275f61786b2df1feac2105e523635f02f`. The 945-path public-artifact audit and 4,192 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.225 strict root reconciliation aggregate
-
-The root accepted-reconciliation fixture now declares an immutable 52-field public schema, and the complete saved release aggregate must be an exact plain dictionary containing precisely those fields plus its 19 named downstream component aggregates. Three regressions first reproduced the missing root schema, accepted arbitrary `private_extension` fields and mapping subclasses, and showed that the accepted pacing request-target proof was not consumed at this boundary; all now fail closed with the fixed reconciliation diagnostics.
-
-Exact-source v0.340.224 public-security run 42430062616 passed. Its Portal browser-help and saved-evidence jobs in research run 42430062703 passed while complete regression remained active, and Windows packaging/installer run 42430062646 remained active in install/test at this checkpoint. Fresh v0.340.225 hosted checks remain required.
-
-This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified response provenance or coverage, fee/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the root-reconciliation/release-trial focus passed 151 tests and the release/version/installer/package focus passed 81. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `51ad198266b895d8b57a0059efa315733258b15a6b1320094d7b7d6edcf97108`; `validation/release_trials_0_340_225.json` SHA256 is `d3588d77aafa2ff218445d17490e63ff4410160d440d35f8befb260e035bb5e2`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.225 and has SHA256 `9b38bdb29cd2041fd98b7b85e64048994a9b9a77820d3c378b2827029d842b9c`. The 944-path public-artifact audit and 4,178 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.224 strict response-bundle public schema
-
-The exact account/activity response-bundle aggregate fixture now declares an immutable 107-field public schema, including all 87 positive semantic, timing, fee-scope, file-stability and negative-case checks. Saved reconciliation validation requires an exact plain dictionary with precisely that schema and consumes every positive check before trusting the bundle. Four regressions first reproduced v0.340.223 lacking the schema contract, accepting arbitrary `private_extension` fields and mapping subclasses, and not consuming two semantic checks; all now fail closed with the fixed bundle diagnostic.
-
-Exact-source v0.340.223 public-security run 42425771483 passed; its research/regression/browser/evidence run 42425770993 and Windows packaging/installer run 42425770990 remained active at this checkpoint. Fresh v0.340.224 hosted checks remain required.
-
-This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified response provenance or coverage, fee/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the response-bundle/release-trial focus passed 187 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `303488bfb8303c172fbf1da52133f06bca1f01a49f37f38eb797234f10d9d434`; `validation/release_trials_0_340_224.json` SHA256 is `d68112171170ec29efa7892ef63acec4d19509751d00e39a00e0115ecbaff27e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.224 and has SHA256 `1f0b5568734a5985013772162aad7f0589a6105550121c349c4b1bbcc8f682bb`. The 943-path public-artifact audit and 4,198 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.223 strict exact-response public schemas
-
-The exact account-response and exact activity-response aggregate fixtures now declare immutable 22-field public schemas. Saved reconciliation validation requires exact plain dictionaries with precisely those schemas before trusting either private-file replay claim or downstream reconciliation evidence. Four regressions first reproduced v0.340.222 lacking both schema contracts and accepting arbitrary `private_extension` fields; all now fail closed with the fixed exact-response diagnostics.
-
-Exact-source v0.340.222 public-security run 42423813771 passed; its research/regression/browser/evidence run 42423813770 remained active and Windows packaging/installer run 42423813798 remained queued at this checkpoint. Exact-source v0.340.221 Portal browser-help and saved-evidence jobs passed while its complete regression and Windows jobs remained active and are not claimed as passed. Fresh v0.340.223 hosted checks remain required.
-
-This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified response provenance or coverage, fee/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private response body, retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the exact-response/release-trial focus passed 129 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `b1d5318d20ec8d8a32d5dd83c6136a872481dd75a0e378f8911b45f2e1841e9f`; `validation/release_trials_0_340_223.json` SHA256 is `46773d9d48b178f167a5d24cc917f486875a1d4ca6e7c90947f9f712dd970958`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.223 and has SHA256 `0a16b1fa8a68d0285e2f174629cf6dfe6c7f9f9279aac68be1c7fb2b179629e5`. The 942-path public-artifact audit and 4,126 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.222 strict account-evidence public schema
-
-The upstream account-evidence aggregate fixture now declares an immutable 47-field public schema. Saved reconciliation validation requires an exact plain dictionary with precisely that schema before trusting any account-evidence claim or downstream provider-POST reconciliation evidence. Two regressions first reproduced v0.340.221 lacking the schema contract and accepting an arbitrary `private_extension`; both now fail closed with the fixed account-evidence diagnostic.
-
-Exact-source v0.340.221 public-security run 42421738290, Portal browser-help job and saved-evidence job passed. Its full offline regression and Windows packaging/installer jobs remained active at this checkpoint and are not claimed as passed. Exact-source v0.340.220 security, complete research/regression/browser/evidence and Windows workflows passed. Fresh v0.340.222 hosted checks remain required.
-
-This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the account-evidence/release-trial focus passed 163 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `0637fb794a0c961bb54f9c00f435b5fab1d416564031137253876c2913d6c0f6`; `validation/release_trials_0_340_222.json` SHA256 is `e3b1b53a6e805121c9b2f674ca726fb1a96d5df3074f66fda3f0c1041415a0ae`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.222 and has SHA256 `4afee0de5b0d8de07148f97c89c269a6103ffedee6e732b0a6eb55150664c756`. The 941-path public-artifact audit and 4,127 introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.221 strict lower reconciliation public schemas
-
-The lower provider-POST reconciliation and retained fee-reference aggregate fixtures now declare immutable 44-field and 49-field public schemas. Saved reconciliation validation requires exact plain dictionaries with precisely those schemas before trusting either dependency or the terminal known-fee reserve evidence. Four regressions first reproduced v0.340.220 lacking both schema contracts and accepting arbitrary `private_extension` fields; all now fail closed with the fixed component diagnostics.
-
-Exact-source v0.340.220 public-security run 42416398217, complete research/regression/browser/evidence run 42416398240 and Windows packaging/installer run 42416398237 passed. Exact-source v0.340.219 security passed; its research and Windows workflows were cancelled and are not acceptance. Fresh v0.340.221 hosted checks remain required.
-
-This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete affected reconciliation/release-trial focus passed 544 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `2fbc0a5a48b329055c55e92249a9dc988ca82a51ba7fccd766746cf804913f44`; `validation/release_trials_0_340_221.json` SHA256 is `d80aa52ac62f3a3173dbff81bc60a64766bed068b9afdc95f4292c207b4d5fea`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.221 and has SHA256 `d9c82e7b6bbdf84f119f9deb1227a35ad44b2b08e85466a69d9d613af95ddbe1`. The 940-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.220 strict known-fee reserve public schema
-
-The terminal known-fee reserve aggregate now declares an immutable 51-field public fixture schema, and the saved reconciliation-acceptance validator requires an exact plain dictionary with precisely those fields before trusting any claim. Two regressions first reproduced v0.340.219 lacking a schema contract and accepting an arbitrary `private_extension`; both now fail closed with the fixed known-fee reserve evidence diagnostic.
-
-Exact-source v0.340.219 public-security run 42411727784, saved-evidence and Portal browser-help jobs in research run 42411727862 passed. Its full regression job and Windows packaging/installer run 42411727905 remained active at this checkpoint and are not claimed as passed. Exact-source v0.340.218 security passed; its research and Windows workflows were cancelled and are not acceptance. Fresh v0.340.220 hosted checks remain required.
-
-This is bounded synthetic release-evidence schema hardening, not actual provider/source, paper-account, complete or verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-schema hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the component/release-trial focus passed 150 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `a547e2a5c1bf45583d36c012ebacacd0dc5e3f53f58ab00de25a9cd81ab6fb2f`; `validation/release_trials_0_340_220.json` SHA256 is `7cfcf3a0186caf739324676be2cd7afd65837d0f0cd99ce5f927c2b963f44219`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.220 and has SHA256 `e054de6a8babbd7ebe631e2aee1511c9b3ef5460943e48921f06549858b2f50a`. The 939-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.219 release evidence consumes fee-reserve replay proof
-
-The saved reconciliation-acceptance profile now explicitly consumes the terminal known-fee reserve replay proof. The aggregate fixture publishes `primary_replay_matches`, and release-trial validation rejects the assertion when absent or false. Two regressions first reproduced v0.340.218 omitting the proof and accepting a forged false proof; both now fail closed with the fixed known-fee reserve evidence diagnostic.
-
-Exact-source v0.340.218 public-security run 42407102094 passed. Research/regression/browser/evidence run 42407102084 and Windows packaging/installer run 42407102095 remained active at this checkpoint and are not claimed as passed. Exact-source v0.340.217 security and research passed; its Windows workflow was cancelled and is not acceptance. Fresh v0.340.219 hosted checks remain required.
-
-This is bounded synthetic release-evidence contract hardening, not actual provider/source, paper-account, complete or verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This evidence-contract hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the component/release-trial focus passed 150 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `502330a7bcd85d6f196d36a25cdc78a2dcd9fc7283ca401767dab5d4160a8601`; `validation/release_trials_0_340_219.json` SHA256 is `e784e1ead082b2fbdb5956b0b7911d2dbadfd6cc8d743ac209564a8bcc681051`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.219 and has SHA256 `ec33d253a2656227358a70ae38e7dd0e81d9cfdf16dfbe44b49b1e9b9321ab65`. The 938-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.218 terminal known-fee reserve replay seam
-
-The terminal known-fee reserve composer now exposes a separately named complete replay entry point over its exact fail-closed review core. A regression first reproduced the missing replay seam; direct equivalence coverage now requires the replay to reconstruct the full primary report, and the public aggregate fixture compares the primary result with that replay. This gives future distrustful composers a stable reconstruction boundary without adding any authority.
-
-Exact-source v0.340.217 public-security run 42401210322 and all three research/regression/browser/evidence jobs in run 42401210207 passed. Windows packaging/installer run 42401210140 was cancelled and is not acceptance. Exact-source v0.340.216 security, research and Windows/installer runs passed. Fresh v0.340.218 hosted checks remain required.
-
-This is bounded local retained-store replay evidence, not actual provider/source, paper-account, complete or verified fee/reference coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, native Windows, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This replay seam does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,774 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the component/release-trial focus passed 150 tests and the release/version/roadmap/evidence focus passed 143. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `626cd8a15487a99c5e8bf94f58c7ac294fb527be9fa968f1a0308784ac3610df`; `validation/release_trials_0_340_218.json` SHA256 is `83149c3fb1daa5e79f0174407f5d7d885a96da82544de9d52aae79848c0e95f6`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.218 and has SHA256 `1fab9cb73ccaab2087f2fa528c4df4631f1e8c3f3fc9871f20d9ac8eb2fd8912`. The 937-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.217 complete fee-reference replay at reserve boundary
-
-The known-fee reserve composer now independently reconstructs the complete retained fee-reference result from the same exact selected journal heads and supplied observations before trusting any primary component field. Ten regressions first reproduced v0.340.216 accepting forged policy, identity, digest, fee counts, timestamp/date scope, uncertainty, limitations and extensions; all now fail closed with the fixed reference-component diagnostic. The fee-reference module exposes a distinct replay entry point with direct equivalence coverage.
-
-Exact-source v0.340.216 public-security run 42397060066, saved-evidence and real-browser control-help jobs in research run 42397060069 passed. Its full regression job and Windows packaging/installer run 42397060119 remained active at this checkpoint and are not claimed as passed. Fresh v0.340.217 hosted checks remain required.
-
-This is bounded local retained-store replay evidence, not actual provider/source, paper-account, verified fee-reference semantics or coverage, posting-time/hold/spendable-funds reconciliation, sustained genuine-feed, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This integrity hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,773 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete affected component focus passed 105 tests and the release/version/roadmap/evidence focus passed 173. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `ae7af9ec818d897c8f462aa81dc9c9fe057cd0a6761d4cbe446f2f8c42fbcabe`; `validation/release_trials_0_340_217.json` SHA256 is `ef7017fa848dd1ade5743084e5ee6fb05880dc0fd0fd201cdcbbc76acb8d5eda`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.217 and has SHA256 `bdbc32a27595cb95979a254274266f4fe151f6180d4583918b60b4a1c9942244`. The 936-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.216 complete fee-reference dependency replay
-
-The retained fee-reference composer now independently reconstructs both its complete provider-POST reconciliation result and its complete accepted-history result from the same exact selected journal heads and supplied observations before trusting any primary component field. Sixteen regressions first reproduced v0.340.215 accepting forged policy, identity, digest, count, arithmetic, uncertainty, limitation and extension fields; all now fail closed with fixed reconciliation-component or accepted-activity-component diagnostics. The reconciliation module exposes a distinct replay entry point with direct equivalence coverage.
-
-Exact-source v0.340.215 public-security run 42391221875, every regression, saved-evidence and real-browser control-help job in research run 42391221972, and Windows packaging/installer run 42391221829 passed. Fresh v0.340.216 hosted checks remain required.
-
-This is bounded local retained-store replay evidence, not actual provider/source, paper-account, verified fee-reference semantics or coverage, posting-time/hold/funds reconciliation, sustained genuine-feed, funding/live/cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This integrity hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,762 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the complete affected component focus passed 393 tests and the release/version/roadmap/evidence focus passed 173. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `effdb846c36421941e308f40bd41da5463ee5faf80de22be3c3a32143fd5ff4c`; `validation/release_trials_0_340_216.json` SHA256 is `d6ec0e16a62a80d84b2a36ac0189eaa58449b2ec3d68aa3110cdf47c67ad522f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.216 and has SHA256 `d2e7618de534578b3439966e5f7023e7a5d8da5e84f52add4c81ea35c5fcf3a8`. The 935-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.215 complete execution-quality component replay
-
-The private execution-quality composer now independently reconstructs both the complete accepted-history result and the supplied execution-quality arithmetic result from the same exact journal heads, selected request/fills and supplied benchmark before trusting any primary component field. Seventeen regressions first reproduced v0.340.214 accepting forged identity, origin, metric, decomposition, timing, limitation and extension fields; all now fail closed with fixed accepted-component or quality-component diagnostics. The arithmetic module exposes a distinct replay entry point and a direct equivalence regression.
-
-Exact-source v0.340.214 public-security run 42386090438 and every regression, saved-evidence and real-browser control-help job in research run 42386090362 passed. Windows packaging/installer run 42386090371 remained active in install/test at this checkpoint and is not claimed as passed. Fresh v0.340.215 hosted checks remain required.
-
-This is bounded local retained-store and supplied-benchmark replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This integrity hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,745 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the component focus passed 89 tests and the downstream release-composition focus passed 216. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `eb7296cf55f7c687f29f66a1bc2da1615384ca4261e7237b8a815993b66359fe`; `validation/release_trials_0_340_215.json` SHA256 is `5e36b243f2b5da748c8316b4c31dafa637c1fa4d44b6fbcef34e2c1c729fee10`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.215 and has SHA256 `7752d0acd05e22ad9ffadc6173cbc8f967e77841f18e9b494a711d82625a624a`. The 934-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.214 complete original-request/activity replay
-
-The accepted-history composer now independently reconstructs the complete lower original-request/retained-activity component from the exact selected request and activity journal heads before trusting any primary result field. The primary component must equal a distinct stable replay in full, so mode, status, read-only state, blockers, request rows, untracked-order IDs, reasons, limitations and extensions cannot be changed while retaining forged outer consistency. Nine regressions first reproduced v0.340.213 accepting those mutations; all now return the fixed request/activity-component diagnostic.
-
-Exact-source v0.340.213 public-security run 42381505683 and every regression, saved-evidence and real-browser control-help job in research run 42381505700 passed. Windows packaging/installer run 42381505714 remained active in install/test at this checkpoint and is not claimed as passed. Fresh v0.340.214 hosted checks remain required.
-
-This is bounded local retained-store replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This integrity hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,727 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the downstream reconciliation/release-evidence focus passed 403 tests and the component/version/roadmap focus passed 59. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `8101b6df3c30a7a181950d154854f19a316539be38b6415958d69c3576ee6d86`; `validation/release_trials_0_340_214.json` SHA256 is `fa76176e3d4c917af3541c47c33b12f45175d31d4c2573daeb53763d6841e439`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.214 and has SHA256 `1016564688ffca6ff160ce777dcb8a714ba0da0e70c9cc5de72adf6ddb0af78b`. The 933-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.213 complete accepted-activity replay
-
-The provider-POST/activity composer now independently reconstructs the complete accepted request/activity component from the exact request, pacing, activity and acceptance journals before trusting any primary result field. The primary component must equal a distinct stable replay in full, so mode, policy, input digest, complete-collection observation state, legacy-baseline state, limitations and extensions cannot be altered while retaining forged outer consistency. Seven regressions first reproduced v0.340.212 accepting those mutations; all now return the fixed activity-component diagnostic.
-
-Exact-source v0.340.212 public-security run 42377373741 passed. Its saved offline evidence and real-browser control-help jobs in research run 42377373712 passed, while the complete regression job and Windows packaging/installer run 42377373784 remained active at this checkpoint and are not claimed as passed. The preceding v0.340.211 Windows run 42373346713 was cancelled and is not acceptance. Fresh v0.340.213 hosted checks remain required.
-
-This is bounded local retained-store replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This integrity hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,717 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the downstream reconciliation/release-trials focus passed 540 tests and the component/version/roadmap focus passed 114. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `8af564cac1c0519aef6585329d28e64102ddd451de8d267fd0d88fa7c1032f9f`; `validation/release_trials_0_340_213.json` SHA256 is `15eee8aaf10087d2a3cf797e5914223adddb131da748d1624dbd6ff93e5f471d`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.213 and has SHA256 `9375b197bbd707bc51de1c34b88f1fec6535648a454a54398d2ad66061e14995`. The 932-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.212 complete provider-POST history replay
-
-The provider-POST/activity composer now independently reconstructs the complete lower provider-POST history component from the exact shared provider budget and request journals before trusting any primary result field. The primary component must equal that separate stable replay in full, so mode, status, read-only state, reasons, unbound-attempt diagnostics, limitations and extensions cannot be changed while retaining a forged complete boolean. Seven regressions first reproduced v0.340.211 accepting those mutations; all now return the fixed POST-component diagnostic.
-
-Exact-source v0.340.211 public-security run 42373346720 and every research/regression/browser/evidence job in run 42373346725 passed. Windows packaging/installer run 42373346713 remained active at this checkpoint and is not claimed as passed. Fresh v0.340.212 hosted checks remain required.
-
-This is bounded local retained-store replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,710 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the downstream reconciliation/release-trials focus passed 513 tests and the component/version/roadmap focus passed 87. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `6f4e7404ddb0c05399fe977f2afeb5038460969c284926c891d519a1c7cc99fc`; `validation/release_trials_0_340_212.json` SHA256 is `aeea3951d25fee3a327bd6225c0ac75c44a09233451c6cb9f28b6c45fd9b8e10`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.212 and has SHA256 `c5d4e6fe74414a4faf94af07ef006e082cc218b93863cad668ebdb247cc9927f`. The 931-path public-artifact audit found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.211 complete provider-POST/activity replay
-
-The provider-POST reconciliation composer now independently reconstructs the complete provider-POST/activity component from the exact shared provider budget plus request, pacing, activity and acceptance journals. The primary component must equal that stable replay in full, so unresolved-attempt, disagreement, unbound-row, untracked-order and blocker diagnostics plus limitations and extensions cannot be changed behind a recomputed outer component hash. Seven regressions first reproduced v0.340.210 accepting those mutations; all now return the fixed POST/activity diagnostic.
-
-Exact-source v0.340.210 public-security run 42369175319, all research/regression/browser/evidence jobs in run 42369175449 and the complete Windows packaging/installer/reinstall/uninstall/distribution run 42369175341 passed. Fresh v0.340.211 hosted checks remain required.
-
-This is bounded local retained-store replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,703 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 517 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `f20a2b4944919877bf088a78539a635c793f880859705f742d95f4f577195afc`; `validation/release_trials_0_340_211.json` SHA256 is `2a88c05fdbe1d94d8838d56c15f18d3e28905a38a2bba0f0239a1c27bcae53a9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.211 and has SHA256 `ee4f71fb994702ef9ef8b3e56ed6401bb94b13859784c7d89a7ff2d575383817`. The final 930-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.210 complete stability-guard replay
-
-The provider-POST reconciliation composer now independently reconstructs the complete four-observation stability-guard review from the exact pacing, activity and acceptance journals plus the same supplied pre-opening, opening, closing and post-closing manifests. The nested guard must equal that stable replay in full, so routing, broker, funds, live-order, retry and release authorities plus guard windows, journal/file/identity/store assurances, overlap counts, limitations and extensions cannot be changed behind recomputed component hashes. Thirty-six regressions first reproduced v0.340.209 accepting those mutations; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.209 public-security run 42363969657 and all research/regression/browser/evidence jobs in run 42363969632 passed. Windows/installer run 42363969627 remained active in install/test at this checkpoint and is not claimed as passed. Exact-source v0.340.208 security, research and Windows/installer workflows passed. Fresh v0.340.210 hosted checks remain required.
-
-This is bounded local retained-store and supplied-manifest replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,696 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 524 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `2520d8ae272ed4bdb15268567644b127c367b23d687738d6fd1da955925ce067`; `validation/release_trials_0_340_210.json` SHA256 is `b1d7728f6428a3428bcc22df244afaae3609fbcd5f1216f4edd0400216a3a222`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.210 and has SHA256 `e6653d8e679619a0e932fc6e9fa1f01def2e7a77de22185cd80404282566f51f`. The final 929-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-
-## v0.340.209 complete nested account-evidence replay
-
-The provider-POST reconciliation composer now independently reconstructs the complete nested account-evidence bundle from the exact guarded request, pacing, activity and acceptance journals plus the same supplied opening/closing manifests. The nested bundle must equal that stable replay in full, so routing, broker, funds, live-order, retry, source/coverage authorities and request agreement, retained-origin, count, arithmetic, reason, limitation and extension fields cannot be changed behind recomputed component hashes. Thirty-five regressions first reproduced v0.340.208 accepting those mutations; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.208 public-security run 42360452854 passed. Its saved-evidence and Portal browser-help jobs in research run 42360452804 passed while complete offline regression remained active; Windows/installer run 42360452814 remained active in install/test at this checkpoint and is not claimed as passed. Fresh v0.340.209 hosted checks remain required.
-
-This is bounded local retained-store and supplied-manifest replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,660 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 488 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `ab9e78a1ac21a2941aa4d74af6d325f47dc904fbf273c6a77bfb9511fd0ec715`; `validation/release_trials_0_340_209.json` SHA256 is `2ecf69375dd82a6d70cb4a3edae98182f0300e2f44ae6df69056fac13ff20369`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.209 and has SHA256 `1fb32949940515eaffd65139ba28bc484769a4864d48577143f2be00c9bcc87d`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.208 complete retained-reconciliation replay
-
-The provider-POST reconciliation composer now independently reconstructs the complete retained reconciliation acceptance from the exact guarded pacing, activity and acceptance journals plus the same supplied opening/closing manifests. The nested accepted review must equal that stable replay in full, so declared coverage scope, requested-boundary verification, acceptance recovery state, limitations and arbitrary extensions cannot be changed behind recomputed outer hashes. Five regressions first reproduced v0.340.207 accepting those mutations; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.207 public-security run 42355458708 passed. Its saved-evidence and Portal browser-help jobs in research run 42355458808 passed while complete offline regression remained active; Windows/installer run 42355458709 remained active in install/test at this checkpoint and is not claimed as passed. Fresh v0.340.208 hosted checks remain required.
-
-This is bounded local retained-store and supplied-manifest replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,625 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 453 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `40be9837c5fe765faf7158e0847efa62dec085954aa03f9d790d628fefac7234`; `validation/release_trials_0_340_208.json` SHA256 is `39bca44ce4ff9f08ff4d4686dc07c07b345d1828f2df2857ec3a7af33f68a0d3`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.208 and has SHA256 `d221a82a947a0523c4969ff4cd4dd834370a52adff3233c9b3b5f6e9789083c0`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.207 retained portable-observation replay
-
-The provider-POST reconciliation composer now independently recomputes the complete portable observation from the exact guarded activity database and the same supplied opening/closing manifests after composing account evidence. The nested observation must equal that stable replay in full, so observation windows, sampled balance changes, boundary-fill diagnostics, declared scope/source, reasons, limitations, extensions and retained-balance diagnostics cannot be changed behind recomputed outer hashes. Fifteen regressions first reproduced v0.340.206 accepting those mutations; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.206 public-security run 42353271055 passed. Its saved-evidence and Portal browser-help jobs in research run 42353271064 passed while complete offline regression remained active; Windows/installer run 42353271054 was pending at this checkpoint and is not claimed as passed. Fresh v0.340.207 hosted checks remain required.
-
-This is bounded local retained-store and supplied-manifest replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,620 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 448 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `8a8d5fe3cea3383eadea859716330e8e687ba66d5cdebe8d512f3d4e19770951`; `validation/release_trials_0_340_207.json` SHA256 is `46ec8abffc6ef08c3d70edf9e57c784139e1c3eba6e9ab88d085414c6c2210f0`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.207 and has SHA256 `72bf8270ee94464726b250c0a190a9833cef363d9c505cbdce3549f1538c9ea0`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.206 retained activity review replay
-
-The provider-POST reconciliation composer now independently replays the complete retained activity review from the exact guarded activity database after composing the account evidence. The nested review must equal that stable replay in full, so retained counts, ambiguity/revision diagnostics, normalization content and projections, collection observations, requested-window summaries, reasons, limitations and extensions cannot be changed behind recomputed outer hashes. Twenty-one regressions first reproduced v0.340.205 accepting those mutations; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.205 public-security run 42351609742 plus saved-evidence and Portal browser-help jobs in research run 42351609278 passed. Its complete offline regression and Windows/installer run 42351609272 remained active at this checkpoint and are not claimed as passed. Fresh v0.340.206 hosted checks remain required.
-
-This is bounded local retained-store replay evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,605 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 433 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `4f841d2e46fa3974c9a84a32f9cc50ddc562938192991bf86a02cc15faf6493c`; `validation/release_trials_0_340_206.json` SHA256 is `5ef3aeeddae5d3f53087704ed99f82b472bbb9b56285d502991279b91d6d5a0a`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.206 and has SHA256 `f0039f87712e6ee7c7385ba74e0d510dcb11df51494b36fc3e6486104ab2e63a`. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.205 retained gross-fill arithmetic replay
-
-The provider-POST reconciliation composer now reconstructs the complete retained gross-fill review from the exact normalized activities and canonical opening/observed balance interval already carried by its portable observation. Every nested arithmetic, count, shortfall, fee-total, fee-scope and denied-authority field must match that replay, and its ending balances, residual, debit-coverage result, retained fee totals and fee counts must match the outer guarded-account projections. Thirty-three regressions first reproduced v0.340.204 accepting rehashed nested arithmetic changes or unbound outer projections; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.204 public-security run 42347215756, research/regression/browser/evidence run 42347215854 and Windows/installer run 42347215753 passed. Fresh v0.340.205 hosted checks remain required.
-
-This is bounded local arithmetic-consistency evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee-link/posting/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,584 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 475 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `97da422a5ae873627fda480789c119611009bc8d097ea00144bb927dc38862f4`; `validation/release_trials_0_340_205.json` SHA256 is `b3e0c2e519b006a1e0f37d06130fb68738af22f91724433998b6a05bbbdd66ad`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.205 and has SHA256 `99758e56f1c78cb8789e14eada1089e0a4f8308f69aa6ce6a4b6156c6f52a89e`. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.204 retained observation subreview contract
-
-The provider-POST reconciliation composer now validates both shared subreviews inside its retained portable observation. The gross-balance review must retain its exact mode, policy, review-only state, shared-review layout, account/activity identity, replayed input hash and arithmetic/head assurances. The retained activity review must preserve its unverified identity, normalized structure, bounded counts and denied authority. Forty-three regressions first reproduced v0.340.203 accepting malformed, rehashed identity disagreement, assurance removal or nested source/broker/funds/ledger/routing/retry/live promotion; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.203 public-security run 42342230332, research/regression/browser/evidence run 42342230320 and Windows/installer run 42342230319 passed. Fresh v0.340.204 hosted checks remain required.
-
-This is bounded local nested-component evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,551 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 442 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `6ab810bedc6df1cbe6b48728e7fe3b012f8191e592d5d1a72bde4efb13bd4e2d`; `validation/release_trials_0_340_204.json` SHA256 is `8027fbc159aa7bb0acff9735d58fb489d4e02c5dcea4d62248cba5cc534dee4d`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.204 and has SHA256 `197638981164aed71af7bed8ee30ba47e9160de811100d9f12760335df61f432`. The final staged 923-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-
-## v0.340.203 retained nested authority contract
-
-The provider-POST reconciliation composer now requires the retained accepted-reconciliation and portable-observation evidence to preserve every denied authority flag and every mandatory replay/arithmetic assurance. Fourteen representative regressions first reproduced v0.340.202 accepting rehashed authority promotion or assurance removal; 53 field-level cases now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.202 public-security run 42338525419, research/regression/browser/evidence run 42338525392 and Windows/installer run 42338525453 passed. Fresh v0.340.203 hosted checks remain required.
-
-This is bounded local nested-authority evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,508 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/component/release/evidence/version/roadmap focus passed 365 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `b04ee124e7e86d53a5922cc2c14b3074888a9c489022ae4a68aa70bfd3bc6174`; `validation/release_trials_0_340_203.json` SHA256 is `76a13a0244581b5406fe77351774260aced87683dcdc1999e594e72096003ddc`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.203 and has SHA256 `6a1c5bc620f9d25f483b86a0df1493bf22a72739d4d63ec856c513055c8b4c31`. The final staged 922-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.202 retained reconciliation envelope integrity
-
-The provider-POST reconciliation composer now validates the complete retained accepted-reconciliation and portable-observation envelopes, recomputes both declared scope hashes, verifies the complete accepted-review digest and requires the nested account, pacing, activity, acceptance and manifest projections to agree with the outer component. Twelve regressions first reproduced v0.340.201 accepting stale retained scopes, rehashed identity/projection disagreement or a malformed retained observation; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.201 public-security run 42333627167, research/regression/browser/evidence run 42333627118 and Windows/installer run 42333627145 passed. Fresh v0.340.202 hosted checks remain required.
-
-This is bounded local component-coherence evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,455 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/component/release/evidence/version/roadmap focus passed 312 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `bf12480a0ac97cac4021b6ac893d02fc648f3f3da1ead68a4b19a003cff3fe07`; `validation/release_trials_0_340_202.json` SHA256 is `0f4cfe947b98d982ea5b6999188e06482569441ed6433abe0dc0019fba5456c0`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.202 and has SHA256 `505f580f5ff96cec8b307ab654a3c3d03e6d5c4b1d0a4366c5b9a8778a6d080d`. The final staged 921-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.201 nested reconciliation scope coherence
-
-The provider-POST reconciliation composer now recomputes the complete declared scope hash for both nested guarded-account reviews and requires their account/activity heads and observation manifests to agree with the outer guarded-account component. Eight regressions first reproduced v0.340.200 accepting stale nested fields or internally rehashed nested disagreement; all now return the fixed account-evidence diagnostic.
-
-Exact-source v0.340.200 public-security run 42328787863, research/regression/browser/evidence run 42328787875 and Windows/installer run 42328787753 passed. Fresh v0.340.201 hosted checks remain required.
-
-This is bounded local component-coherence evidence, not actual provider/source, paper-account, received-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,443 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/component/release/evidence/version/roadmap focus passed 300 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `674c72f4dbe057342929993ed3879d986df23b5cd084fdbcf9e16678e3d5b2bf`; `validation/release_trials_0_340_201.json` SHA256 is `98699730a4e51a1551fab6a28b340b4455963ab0bcf26cc3f59a2e211d942d43`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.201 and has SHA256 `6336d749878df0161fad42a83af211e3cc9ba747e6daa30f8b24a4812cff8679`. The final staged 920-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.200 nested reconciliation component bindings
-
-The provider-POST reconciliation composer now binds the guarded-account component's outer input hash to its declared account-evidence and stability-guard hashes and validates both nested review envelopes. Mismatched outer or nested hashes, non-mapping nested reviews, and wrong nested modes, policies, statuses or read-only claims return the fixed account-evidence diagnostic. Fifteen regressions first reproduced every v0.340.199 acceptance and now pass with the fail-closed binding checks.
-
-Exact-source v0.340.199 public security, complete regression, saved evidence and browser help passed. Its Windows/installer workflow passed install/test, Portal syntax and standalone packaging and remained active in private-paper-tool verification at candidate recovery; fresh v0.340.200 hosted checks remain required.
-
-This is bounded local component-binding evidence, not actual provider/source, paper-account, delivery-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,435 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/component/release/evidence/version/roadmap focus passed 292 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `384b8e3ff4d368e7654e3088f198e74c4b22d39d64fd5597c64a4010bc365cd4`; `validation/release_trials_0_340_200.json` SHA256 is `3ef63f462c1a379d08433e3a6f5bee48b4b43297ec7c80ad029ca84a9eea0b45`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.200 and has SHA256 `54e59db03b5397227c3e5c8307270e4ddb4c4a99dc70a37bcb4fa51f45fae6b7`. The final staged 919-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.199 strict reconciliation component envelopes
-
-The provider-POST reconciliation composer now validates the complete POST/activity and guarded-account component envelopes before projecting their fields. Non-mapping component results, a wrong component mode or policy, false recheck/uncertainty claims and non-canonical values return fixed component-specific failures rather than leaking `AttributeError`/`TypeError` or entering a reviewed result. Nine regressions first reproduced every v0.340.198 boundary and now pass with the fail-closed checks.
-
-Exact-source v0.340.198 saved evidence and browser help passed; its complete regression and Windows/installer workflows remained active at candidate recovery. Exact-source v0.340.197 Windows/installer acceptance subsequently passed. Fresh v0.340.199 hosted checks remain required.
-
-This is bounded local component-contract evidence, not actual provider/source, paper-account, delivery-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,420 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/component/release/evidence/version/roadmap focus passed 277 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `d5c33e2e36dd67eba8e6c8d77d30b42d97b3b5ed079ea20660a69b7d4fb4e03e`; `validation/release_trials_0_340_199.json` SHA256 is `cd4fa8c353ac5058ed5505ad95816967933c4d05dda5696ca1c51b5072727ef6`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.199 and has SHA256 `d06613d16b6cc7a747b366ec130273a0f93a4f4b0cdfdbf1f2aaf5576884b624`. The final staged 918-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.198 strict reconciliation component projections
-
-The provider-POST reconciliation composer now validates every projected field from its POST/activity and guarded-account components before emitting a reviewed result. Projected heads and observation manifests must be exact lowercase SHA-256 strings. Attempt, binding, request and fill counts must be non-boolean nonnegative integers; POST bindings must add up to the retained attempt count, request counts must match retained requests, and reviewed fills cannot exceed retained activities. Missing projections, uppercase or malformed hashes, boolean/negative counts and inconsistent counts return fixed component-specific failures rather than leaking `KeyError` or entering a malformed diagnostic.
-
-Exact-source v0.340.197 public security, saved evidence and browser help passed. Its complete regression and Windows/installer workflows remained active at candidate recovery; fresh v0.340.198 hosted checks remain required.
-
-This is bounded local component-contract evidence, not actual provider/source, paper-account, delivery-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,411 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 268 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `b41d63c23fccf165fad27e4175259606911df476a725897c1b846dc0eaf9f433`; `validation/release_trials_0_340_198.json` SHA256 is `aa09b16ae991358b082cbadc9fb1f1c845ce0d9fe69fdc0286b36ca87dc598a7`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.198 and has SHA256 `0d7124ff8cec15286a251010fd94938d5a844d58183320b5b1caf70c2389859c`. The final staged 917-path public-artifact audit and introduced-line high-confidence secret scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.197 bounded provider-POST residual arithmetic
-
-The installed provider-POST reconciliation composer now admits `gross_only_minus_observed` only when it is an exact two-key `USD`/`BTC` object and both values use the bounded plain-decimal grammar already expected by the reviewed evidence boundary. Missing or extra currencies, exponent notation, oversized integers and non-finite `NaN`/`Infinity` values fail closed before a reviewed reconciliation result can be composed. Finite nonzero residuals remain non-authoritative diagnostics and cannot establish account acceptance.
-
-Exact-source v0.340.196 public-security run 42310927960, research/browser/evidence run 42310927815 and Windows/installer run 42310927721 passed. Fresh v0.340.197 hosted checks remain required.
-
-This is bounded local reconciliation evidence, not actual provider/source, paper-account, delivery-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,402 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized reconciliation/release/evidence/version/roadmap focus passed 259 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `da675dc173a6b80c1bfe68070dfc34cfe25c344a7b0a311b3f8cdcd6e05f06f9`; `validation/release_trials_0_340_197.json` SHA256 is `5655558282e9184666c48133a91bb8ef982ea5db022c134b78b1f4c9b81bccd5`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.197 and has SHA256 `63a8d0f60a160e34dc012ea1c89ad5e41528ce50ef4816cd862b93db7e640800`. The final staged 916-path public-artifact audit and introduced-line high-confidence secret scan found zero findings; local Gitleaks is unavailable, while exact-source v0.340.196 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.196 fingerprint-bound retained-input parsing
-
-The installed one-attempt Activity SSE loader now hashes each parsed retained-input byte string and requires it to equal the exact SHA-256 captured by the private pre-attempt fingerprint. Two byte-identical reads plus stable path/descriptor metadata were insufficient when a coordinating writer supplied the same substituted bytes for both reads and restored the original before closing samples. The new regression reproduces that v0.340.195 acceptance and now requires the fixed fail-closed diagnostic; the complete 294-test acceptance-probe module passes.
-
-Exact-source v0.340.195 public-security run 42305251659, research/browser/evidence run 42305251712 and Windows/installer run 42305251661 passed. Fresh v0.340.196 hosted checks remain required.
-
-This is local injected race evidence, not actual provider/source, paper-account, delivery-coverage, sustained genuine-feed, native storage/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,395 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 454 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `f334c06d9644369a2dcf2d82b91e7e4b3e65e95df522e5eb2c7949d3f97a5527`; `validation/release_trials_0_340_196.json` SHA256 is `5fc846340d6d79c9fc68d611784a457c0a41a684b224af076eeda0e1d6f01ab5`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.196 and has SHA256 `8e591b1f73f6af2f7e11ee6d6e00016397d7cb842a6c78a41d515e3c3ed91ac1`. The final staged public-artifact audit and introduced-line high-confidence secret scan found zero findings; local Gitleaks is unavailable, while exact-source v0.340.195 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.195 byte-consistent retained-input reads
-
-The installed one-attempt Activity SSE loader now requires two byte-identical bounded reads from the already-open retained-input descriptor, while preserving stable type, single-link state, identity, size and timestamp checks around both reads. This closes the Windows creation-time gap where same-inode, same-size substituted content could be parsed after modification and creation metadata were restored. The new regression models that exact boundary: it failed against v0.340.194 and passes with the fixed diagnostic.
-
-Exact-source v0.340.194 security run 42296516134, research/browser/evidence run 42296515957 and Windows/installer run 42296515986 passed. Fresh v0.340.195 hosted checks remain required.
-
-This is local injected race evidence, not actual provider/source, paper-account, delivery-coverage, genuine-feed, native Windows/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the October 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,394 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 453 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `c4e393b5082d8fbaa2e8b1bd54e889f3d36d63c67583e626abfb4424dd0a926e`; `validation/release_trials_0_340_195.json` SHA256 is `6e619022b8f460c6a2c317a042893d0c40cf7e84fe8378610a89cdf31274f019`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.195 and has SHA256 `66ad255015106353de5a4bea3f3a2893f658b45b4d45d8134e9fc28c717141be`. The final staged 914-path / 80,278,463-byte public-artifact audit found zero findings; local Gitleaks is unavailable, while exact-source v0.340.194 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.194 retained-input descriptor stability
-
-The installed one-attempt Activity SSE operator now rejects a retained initial-segment file that changes through the same inode at the same size while it is being read, even if the original bytes are restored before the surrounding fingerprint check. The loader binds file type, single-link state, device/inode, size, modification metadata and creation metadata across the pathname and open descriptor; same-handle and same-path creation-time comparisons preserve the Windows path/handle precision boundary. A regression first reproduced the prior acceptance of changed parsed bytes and now requires the fixed diagnostic.
-
-Exact-source v0.340.193 security run 42290610033 passed. Research/browser/evidence run 42290610028 and Windows/installer run 42290610055 remained active at candidate recovery; browser help and offline evidence jobs had passed, but their complete workflows are not claimed. Fresh v0.340.194 hosted checks remain required.
-
-This is local injected race evidence, not actual provider/source, paper-account, delivery-coverage, genuine-feed, native Windows/power-loss, fee/hold/funds, live, cloud or release acceptance. No credential, private retained event or account data is published. No Portal button or modifiable parameter changed; seven beginner tabs, black/bright-purple bottom-right hover help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut remain unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This hardening does not independently justify changing the Oct 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,393 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 435 tests. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `226ece33d61f63d6e5b0bc417575c6a3f2b9158420d05c0ad0df2ecee9b91fe0`; `validation/release_trials_0_340_194.json` SHA256 is `85b9a1a40d4dbd4466ce57938cbdc6c6d22094f01582ae23ea830aa690471f76`. Compilation, dependency integrity, generated-roadmap equality and all fourteen Node controllers passed. The 161-member wheel reports v0.340.194 and has SHA256 `2ccec439a51e9dc9fb62fd81caf298166996cca5517d6f6454d1e6e8439c0380`. The final staged 913-path / 80,078,300-byte public-artifact audit found zero findings; local Gitleaks is unavailable, while exact-source v0.340.193 hosted security passed. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.193 atomic historical finding-set review
-
-The historical synthetic-finding allowance is now atomic. If either reviewed coordinate appears in a non-empty Gitleaks result, both exact reviewed coordinates must be present; either line alone is an incomplete review with `scan_complete=false`, `reviewed_scope_complete=false` and CLI exit 2. The complete pair plus any new finding remains a completed blocking review with exit 1. Clean scans and new-only findings retain their prior semantics. Full blob proof, exact rule/commit/path/coordinates/fingerprints, redaction, report hardening and the unchanged full-history scanner remain required. No detector, path, commit or history is excluded.
-
-Exact-source v0.340.192 security run 42284818158 passed. Its research/browser/evidence run 42284817987 remained active and its Windows/installer run 42284817944 was queued at recovery; exact-source v0.340.191 Windows/installer run 42279837266 subsequently passed. Fresh v0.340.193 hosted checks remain required. This change adds no runtime/provider request, Portal control, editable parameter, saved credential, retry, order route, funding/live/cloud authority or release approval. Seven beginner tabs, black/bright-purple bottom-right help, OFF defaults, bounded limits, account checks, fail-closed exits and the independent emergency cut are unchanged.
-
-The rough weighted implementation estimate remains about 40% (30–45%, low confidence), with 0/9 major stages fully accepted. This security hardening does not independently justify revising the Oct 18 scope estimate and is separate from release approval, trading permission and launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-Final local validation passed 5,392 tests with one expected non-Windows skip and one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 401 source files / `0d3e227fc5115ca7e2f7b81a74fa1f6659926089ce22550b763330e6a3a5cdb2`; `validation/release_trials_0_340_193.json` SHA256 is `d4225a4e4c886d17d0dcd305152b34bb3423b56dfac34aea21c132413ca792e4`. Compilation, dependency integrity, deterministic roadmap, Portal/controller syntax and the 132-test release-trial/evidence verification passed. The 161-member wheel reports v0.340.193 and has SHA256 `24c52a27617a3cea1b3b90194d464c4c680a53f19ab31ed99fe3860d2192805c`. The current 907-path / 79,462,154-byte public-artifact scan found zero findings. These are local/synthetic checks, not actual broker, genuine-feed, native Windows, funding, live, cloud or release acceptance.
-
-## v0.340.192 exact historical synthetic secret-finding review
-
-The full reachable-history Gitleaks command, default/provider detectors, decoding, redaction and disabled inline/ignore bypasses remain unchanged. A separate trusted-policy reviewer now recognizes only the two exact generic-api-key locations in immutable fixture commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`. Rule, commit, pathname, start/end line and column, fingerprint and redacted-secret shape must match, and Git must return the complete historical fixture with SHA256 `e7f156518badf1a1334a58599043ab61c228297105e39c380a854b6cb61be05b`. Any other finding blocks; missing/changed proof, duplicate/malformed/oversized reports and scanner failures fail closed. Public summaries retain raw=2, reviewed-synthetic=2 and blocking=0 rather than claiming zero raw findings. No history rewrite, scanner exclusion, detector suppression, fixture-directory exemption or raw finding upload is added. See `tools/review_secret_scan.py` and `tests/test_secret_scan_review.py`.
-
-`MILESTONE_STATUS.md` records the Nov 6 accomplishment report and practical remaining gates. Estimates remain about 40% (30–45%, low confidence), with 0/9 accepted stages; the underlying manual scope assessment is dated Oct 18 and is not a measured delivery percentage. Actual authorized broker-paper, sustained real-feed, funding/live/cloud, independent and owner acceptance remain open. No runtime/UI control, editable parameter, saved credential, provider IO, retry, order route or financial/release permission changes. Preserve seven beginner tabs, black/bright-purple bottom-right help, OFF defaults, limits, fail-closed exits and independent emergency cut. Fresh exact-source hosted checks are required.
-
-Candidate validation so far: security/publication/roadmap/version focus passed 119 tests, including 27 new exact-finding review regressions. All sixteen offline profiles and saved-evidence verification match 401 source files / `5d07b9785b39cf94e63a1ba8b2bd7a8b245d49fccd560b663dfe38f244e856b4`; `validation/release_trials_0_340_192.json` SHA256 is `12dafed60e690e9259e2381057461443285ac6ce89e3dcc473ca3c1f89848a15`. Compilation, dependency integrity, deterministic roadmap, Portal syntax and fourteen controllers passed. Reachable-history artifact scanning covered 1,000 commits / 8,713 blobs / 953,764,164 bytes with zero findings. The unchanged pinned Gitleaks scan returned two raw findings; the new reviewer proved exactly two historical synthetic matches and zero blocking findings against the immutable original blob. The wheel SHA256 is `e868da5bf97f0721a11bd2605f4721f95e47e6c62e94c325fa9c2299502d285d`. The complete local regression passed 5,386 tests with one expected non-Windows skip and one existing Starlette/httpx warning. The current 911-path artifact scan and current-snapshot raw Gitleaks scan found zero findings. Historical raw=2/reviewed-synthetic=2/blocking=0 and the real-scanner new-commit negative control passed. Fresh exact-source hosted security, Windows and research checks remain required; no operational or release acceptance is inferred.
-
-A real-scanner negative control copied the identical historical fixture into a new disposable Git commit. The unchanged pinned scanner found both values, and the reviewer returned a blocking exit with raw=2, reviewed=0, blocking=2. This independently confirms that identical fixture bytes at a new commit are not exempted. The disposable control used no real credential or provider request.
-
-## v0.340.191 Activity SSE response-scope failure preservation
-
-The bounded Activity SSE response scope now preserves the original fixed safety failure even if a hostile response context returns a truthy suppression value or raises an ordinary cleanup exception. It cannot continue with partially initialized review state or replace the fixed diagnostic with private provider detail. `KeyboardInterrupt` and `SystemExit` remain visible. The durable reconnect coordinator records the one attempted GET as non-retryable manual review with no body read, cursor advance, provider backoff, automatic retry or sleep. Mandatory transport, reconnect-budget and release fixtures pin this boundary.
-
-This is bounded injected response-scope cleanup evidence. It does not attest a provider/source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, demonstrate native Windows or physical power-loss durability, authorize trading/funding/live/cloud use, prove profitability or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.190 research run 42270833448 passed its complete Windows regression, Portal browser help and saved release evidence, and Windows/installer run 42270833513 passed its full package, install, upgrade, recovery and evidence lane. Public-security run 42270833307 passed the current/reachable artifact audit across 8,699 blobs, 999 commits and 927 paths with zero findings, but failed required full-history Gitleaks on the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; removing them would require the prohibited destructive history rewrite. Fresh v0.340.191 exact-source hosted workflows remain required.
-
-Final local verification passed 5,359 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized eleven-file Activity SSE/release/evidence/version/roadmap focus passed 763 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `7bd1b3b5196fc52ae5f51e066403ee116085b00e29265502c343ee723de1f35a`; `validation/release_trials_0_340_191.json` SHA256 is `3e4d164a78817138631b5f1b2a03c2374a9ac1c26194dadb39b9ff6514b17493`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The finalized 161-member wheel reports v0.340.191 and retains the scope-cleanup fixture. The current candidate audit checked 907 paths and 79,462,154 bytes with zero findings. No actual provider/account/native Windows acceptance was performed.
-
-Final wheel SHA256 is `67cd75dfd9203140a1c2aaded7817e0a9db4830ce1984bff0b45bade80fe9f60`.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.190 Activity SSE redirect-cleanup denial
-
-The Activity SSE redirect handler now cleans up an already-open rejected response without allowing an ordinary close exception to replace the fixed `REDIRECT_DENIED` result or expose private response detail. `KeyboardInterrupt` and `SystemExit` remain unsuppressed. The durable reconnect coordinator records the one attempted GET as non-retryable manual review with no cursor advance, provider backoff, automatic retry or sleep. Mandatory transport, reconnect-budget and release fixtures pin this boundary.
-
-This is bounded injected redirect-cleanup evidence. It does not attest a provider/source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, demonstrate native Windows or physical power-loss durability, authorize trading/funding/live/cloud use, prove profitability or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.189 research run 42262053404 passed its complete Windows regression, Portal browser help and saved release evidence. Windows/installer run 42262053467 remained active when this candidate was finalized. Public-security run 42262053444 passed the current/reachable artifact audit across 8,685 blobs, 998 commits and 926 paths with zero findings, but failed required full-history Gitleaks on the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; removing them would require the prohibited destructive history rewrite. Fresh v0.340.190 exact-source hosted workflows remain required.
-
-Final local verification passed 5,352 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized eleven-file Activity SSE/release/evidence/version/roadmap focus passed 756 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `3533f053846b16364120938f90b807f6d5ece1401bd3387451f38bb9eb80f7e0`; `validation/release_trials_0_340_190.json` SHA256 is `5043a782939adf0d8856c38d350c465a08470e914a13b9d09659fc0c6d2badcc`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.190, retains the redirect-cleanup fixture and has SHA256 `850b23198f46556f22e023ab47fd7e813625ac160950c589815b4d9dcf30f092`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.189 Activity SSE HTTP cleanup/backoff preservation
-
-The Activity SSE transport now preserves the fixed HTTP classification and bounded provider-directed delay even if cleanup of the unentered HTTP error response raises an ordinary exception. A 429 or 503 therefore retains its validated `Retry-After` backoff, one attempted GET, no cursor write and no automatic retry or sleep; private cleanup detail cannot replace the public diagnostic. The response is still closed, while `KeyboardInterrupt` and `SystemExit` remain unsuppressed. Mandatory transport, reconnect-budget and release fixtures pin the boundary.
-
-This is bounded injected cleanup/backoff evidence. It does not attest a provider/source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, demonstrate native Windows or physical power-loss durability, authorize trading/funding/live/cloud use, prove profitability or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.188 research run 42253058670 passed its complete Windows regression, Portal browser help and saved release evidence. Windows/installer run 42253059044 remained active in install/test when this candidate was finalized. Public-security run 42253058799 passed the current/reachable artifact audit across 8,671 blobs, 997 commits and 925 paths with zero findings, but failed required full-history Gitleaks on the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; removing them would require the prohibited destructive history rewrite. Fresh v0.340.189 exact-source hosted workflows remain required.
-
-Final local verification passed 5,348 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 1,048 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `3d4cf8d99f94854354d0e447392499cee10499cc2e36a51f17ebac167e621768`; `validation/release_trials_0_340_189.json` SHA256 is `67688702b4ccda67f38a5b15175db4400e14050e1ce57d19a31473125a000efd`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.189, retains the cleanup/backoff fixture and has SHA256 `2f005cd4243fef35acb5e7f88bb5a909b5a9d57dc80477715565bdea3087e4f5`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.188 Activity SSE response-admission cleanup
-
-The Activity SSE transport now owns cleanup when an already-open provider response refuses context admission. A response whose `__enter__` fails is deterministically closed before the attempt returns the fixed `TRANSPORT_FAILED` diagnostic; private exception detail is not exposed, no response body is read, the durable cursor remains unchanged and the reconnect budget records one bounded caller-driven retry. Ordinary cleanup failures cannot replace the original diagnostic, while `KeyboardInterrupt` and `SystemExit` remain unsuppressed. The mandatory transport fixture and reconnect-budget integration fixture both pin this boundary.
-
-This is injected local exceptional-path evidence. It does not attest a provider/source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, demonstrate native Windows or physical power-loss durability, authorize trading/funding/live/cloud use, prove profitability or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.187 research run 42242345847 and Windows/installer run 42242345837 passed all reported jobs, including full regression, Portal browser help, saved release evidence, standalone EXE, installer, reinstall and data-preserving uninstall. Public-security run 42242345811 passed the current/reachable artifact audit across 8,657 blobs, 996 commits and 924 paths with zero findings, but failed required full-history Gitleaks on the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; removing them would require the prohibited destructive history rewrite. Fresh v0.340.188 exact-source hosted workflows remain required.
-
-Final local verification passed 5,342 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 1,042 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `730ff0c1bda57be2e1b633d69a653ee47afc6a6c773c70aa88df848930ab1583`; `validation/release_trials_0_340_188.json` SHA256 is `a91402554ff5cb72b1bd4939632ba098146d1a5c04a11569ce04283e8e5b7dc3`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.188, retains the response-admission fixture and has SHA256 `c028a224cea6052b2183e5a915ca2dae040a07ea0f84e6f6e285ddf5cbba01fc`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.187 Windows-portable Activity SSE release evidence
-
-The exceptional Activity SSE ownership-release fixture now reproduces the late lease identity failure without renaming an open locked file. It keeps the real cursor ownership lease, opens exactly one injected response, and injects the equivalent fixed identity failure only when the guard exits. The response must close, the cursor must remain unchanged, no retry may occur, and the reconnect attempt must remain in durable non-retryable manual review. The cursor-store suite separately retains platform-specific exit-recheck coverage.
-
-This corrects a test/evidence portability defect; it does not weaken the production guard or add broker authority. It does not prove provider/source identity, actual-account acceptance, sustained market realism, fee/hold/funds reconciliation, physical power-loss durability, live/cloud readiness, profitability, trading permission or release approval. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.186 Portal browser help passed. Its hosted Windows regression failed two tests after 5,313 passes because Windows refused the fixture's attempted rename of an open locked file, producing `TRANSPORT_UNAVAILABLE`; the offline release trial failed on the same mandatory fixture. Windows/installer run 42234572407 remained active in install/test at candidate start. Public-security run 42234572297 failed only because required full-history Gitleaks reaches the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its current/reachable public-artifact audit passed 8,645 blobs, 995 commits and 923 paths with zero findings. Removing those historical findings would require the prohibited destructive history rewrite. Fresh v0.340.187 exact-source hosted workflows remain required.
-
-Final local verification passed 5,337 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 693 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `1962f80ee2f5037cf6fdd8e569b8bed9492c1508d227b45350a7667e010883c5`; `validation/release_trials_0_340_187.json` SHA256 is `3e36163343c95be40c865b9faf6812dc9e870df026259eae5cafafdbac3368d1`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.187, retains the portable release fixture and has SHA256 `edc928430dd3d3698a849726d424c24c7c4a1be7d38da227543e45a52e5941b8`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.186 Activity SSE ownership-release cleanup
-
-The Activity SSE transport now closes an already-open provider response when the cursor ownership guard cannot prove a clean release. The attempt still returns the fixed pre-open guard diagnostic, advances no cursor, performs no retry and leaves the durable reconnect budget in non-retryable manual review. Cleanup preserves process-control signals while ordinary close failures cannot replace the original fixed diagnostic.
-
-This is local injected exceptional-path evidence. It does not prove native Windows or network-filesystem lock semantics, physical power-loss durability, provider/source attestation, actual-account acceptance, delivery coverage, sustained market realism, fee/hold/funds reconciliation, live/cloud readiness, profitability, trading permission or release approval. No private event, credential or account evidence is retained or published.
-
-At candidate start, exact-source v0.340.185 research run 42228285744 remained active: offline release evidence and Portal browser help passed while the full regression was still running. Windows run 42228285765 remained active in install/test. Public-security run 42228285688 failed only because required full-history Gitleaks reaches the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; its current/reachable public-artifact audit passed 8,630 blobs, 994 commits and 922 paths with zero findings. Removing those historical findings would require the prohibited destructive history rewrite. Fresh v0.340.186 exact-source hosted workflows remain required.
-
-Final local verification passed 5,337 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 693 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `3056d63977d0af4b8515106bcb16ccbd6abdb7d0a45bdc21a93f94787e771212`; `validation/release_trials_0_340_186.json` SHA256 is `8ff8255eb009a10bc2d38495c8a4da9e4d0a7c401adaad0f800d393231650c9a`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.186, retains the ownership-release cleanup and has SHA256 `3b96a019d1baae3be255137647ff846655a218b421dd903e7030308f1a7c97a9`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.185 Activity SSE provider-open cursor ownership
-
-The Activity SSE coordinator now holds an OS-backed cursor ownership lease across the final crossed cursor/reservation proof and the provider request open. Every cooperating durable cursor checkpoint takes the same lease, so no checkpoint can enter the last sample-to-open interval. The lease is released immediately after the response is opened; the existing exact-head checks still guard response consumption and completion. Fixed fail-closed diagnostics, retained pending review, explicit caller-driven retry, and OFF-by-default paper authority are unchanged.
-
-This is local injected process-coordination evidence. It does not prove native Windows or network-filesystem lock semantics, physical power-loss durability, provider/source attestation, actual-account acceptance, delivery coverage, sustained market realism, fee/hold/funds reconciliation, live/cloud readiness, profitability, trading permission or release approval. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.184 research/browser/evidence run 42219791973 passed. Its Windows run 42219793345 remained in progress when this candidate was finalized. Public-security run 42219791919 failed only because required full-history Gitleaks reaches the same two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; the current/reachable public-artifact audit passed 8,612 blobs, 993 commits and 921 paths with zero findings. Removing those historical findings would require the prohibited destructive history rewrite. Fresh v0.340.185 exact-source hosted workflows remain required.
-
-Final local verification passed 5,336 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 692 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `9d1ec9050d437fe48be0c44a89c6d1dbaf50531668a22c9789b56b01387186b7`; `validation/release_trials_0_340_185.json` SHA256 is `e7faea0a1d59685c38ae2d8ef7acc01094ead71ed97f708ab08da56d13015db8`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.185, retains the ownership fence and has SHA256 `dcdc4d129fcbd8ee5772562d9bb6d67c0f36a5700e5e3d825a799319a79b28c9`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.184 Activity SSE crossed pre-open store proof
-
-The Activity SSE coordinator now repeats its final durable proof as a crossed cursor/reservation sample: cursor, exact pending reservation, cursor again, then reservation again. A cooperating cursor writer that commits while the first reservation replay is in progress is now caught before provider IO with the fixed cursor-head diagnostic. The advanced cursor and pending attempt remain durable for explicit review; the failed attempt is not falsely completed or consumed.
-
-This is sampled local injected concurrency evidence, not an atomic cross-process lock. A mutation after the final sample remains outside this proof. It does not prove native-vault coordination or physical power-loss durability, attest a provider or source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.183 public-security run 42215582390 failed because its required full-history Gitleaks scan reaches two `generic-api-key` findings in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`. Its current/reachable public-artifact audit passed across 8,598 blobs, 992 commits and 920 paths with zero artifact findings. Research/browser/evidence run 42215582480 was active and Windows run 42215582506 was pending when this candidate began; neither is claimed as passed. Removing the reachable historical findings would require the prohibited destructive history rewrite. Fresh v0.340.184 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local verification passed 5,331 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 601 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `93a2808fc930b0261666bf287d4b65e38f75ef1940ab30b9015e0ca249c0ecdd`; `validation/release_trials_0_340_184.json` SHA256 is `1c58dd308daf306d0c3ade9955442c2b79f2558aa5aec6c992a5ce3bbbc272f9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.184, retains the crossed pre-open proof and has SHA256 `5bde01d1d6bcf782e3a434e4e124fbaefd0b0f8c9d320be36486c8774c391cad`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. This is separate from release approval, trading permission and any launch-date prediction. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.183 Activity SSE final cursor/reservation pre-open fence
-
-The Activity SSE coordinator now installs a dedicated final pre-open check between the last permission, emergency-stop and saved-credential samples and provider IO. That check independently replays the current durable cursor head and the exact pending reconnect reservation. A legitimate concurrent cursor checkpoint from an untrusted callback can no longer allow one stale GET before later reconciliation notices the changed head; it returns the fixed cursor-head diagnostic with zero provider requests and retains the pending reservation for explicit review.
-
-This is disposable local injected concurrency evidence only. It does not prove cross-process/native-vault coordination or physical power-loss durability, attest a provider or source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.182 head `08e6dbdb5e08fe396a9a1109f3aadf2c09dfe922` remained current when this candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the required full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a destructive history rewrite. Fresh v0.340.183 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local verification passed 5,330 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 602 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `46d57b5ae941d17c29b8b2d053bde63d07767eac06e01517a49784f6528c7dc5`; `validation/release_trials_0_340_183.json` SHA256 is `da06e248a7c7031a88283488965a5a5d2688738cc31176ba4acd136ddc89936e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reports v0.340.183, retains the transport/checkpoint/reconnect fence and has SHA256 `28c150616ffc3a1abdb5bbd79b11badb31f971d61462e56ea3ba644f13227e65`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.182 Activity SSE post-control reservation fence
-
-The one-attempt Activity SSE coordinator now replays the exact pending reservation and store bindings after each untrusted permission, emergency-stop and saved-credential callback. A callback that durably retires or retargets the grant at the transport's final pre-open fence now yields fixed uncertainty before any provider GET. Invalid permission or credential callbacks fail before cursor or reconnect-budget storage is created. The mandatory reconnect-budget release fixture reproduces the former credential-callback race and requires zero requests plus durable manual review.
-
-This is disposable local injected concurrency evidence only. It does not prove cross-process/native-vault coordination or physical power-loss durability, attest a provider or source, accept a broker account, prove delivery coverage or sustained market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.181 head `247fd3d94e90adb9a5f2903d48617c53dddd66ea` remained current when this candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the required full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a destructive history rewrite. Fresh v0.340.182 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local verification passed 5,328 tests with one expected non-Windows skip and one existing Starlette/httpx warning. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `abe9161835f7066b9f91018e1c53ab940a23d4b80e60f2f3bf0d73dad5555ca8`; `validation/release_trials_0_340_182.json` SHA256 is `17f484a1a740b660621d1eeef149be2914a7034295348c8db0f9bcc5338b2f0e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.182, retained the mandatory control-race evidence and has SHA256 `00eb12c3d9986d15426036f69c229c235088cfa3c3a953fd0b150fc39a9cfa78`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
-
-## v0.340.181 joint credential-rotation and independent-stop recovery
-
-The mandatory installed recovery fixture now invokes the standalone emergency-stop process after an in-flight saved-pair rotation has already forced the Activity SSE reconnect budget into durable manual review. The stop publishes its intent before the durable order halt, starts no Portal, vault, network or automatic-restart path, preserves the exact cursor/reconnect heads and attempt count, and keeps a subsequent confirmed attempt from reaching any GET despite valid replacement credentials.
-
-This is disposable local injected joint-failure evidence only. It does not prove cross-process/native-vault coordination or physical power-loss durability, attest a provider or source, accept a broker account, prove delivery coverage or market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.180 head `fcd9960e956044e3912932635b83e0b2f4d10361` remained current when this candidate began. GitHub exposed no workflow-run or commit-status records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the required full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals, and removing the reachable commit would require a destructive history rewrite. Fresh v0.340.181 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local verification passed 5,324 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/emergency/release/evidence/version/roadmap focus passed 445 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `c4c74807f58e4c6c88c9a18f0f6e3e77951f4fe4534c8ee1112932e72c728ece`; `validation/release_trials_0_340_181.json` SHA256 is `7e36d256166dd6f143d23ee01cad8d5c4800c17631bcf403fd55b333e7550ea5`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.181, retained the joint-failure evidence and has SHA256 `e12440a75ec711a0dbb205c2002440a0ea9b206793a8ae72f1f294108646ca89`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
-
-
-## v0.340.180 Activity SSE in-flight credential-rotation review
-
-The mandatory installed recovery fixture now rotates the explicit saved paper credential pair while one injected Activity SSE response is being consumed. The old credential generation is revoked after exactly one bounded GET, no cursor checkpoint is accepted, and the reconnect budget enters durable manual review. A subsequent confirmed attempt is denied before any GET even though the replacement pair is valid; fresh review status remains vault/network/storage-write silent.
-
-This is disposable local injected secret-lifecycle evidence only. It does not prove cross-process coordination or physical/native Windows vault durability, attest a provider or source, accept a broker account, prove delivery coverage or market realism, reconcile fees, holds or funds, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-The remote v0.340.179 head `a0e9e0af25b63de9cf3887516e1cb94fa2f7513a` remained current when this candidate began. GitHub exposed no workflow-run records for that exact commit, so no hosted success is inferred. The standing public-security blocker remains the required full-history Gitleaks scan reaching two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain them, and removing the reachable commit would require a destructive history rewrite. Fresh v0.340.180 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local verification passed 5,324 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 439 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `73d62b6fca877eaad91f80ee56892666f4707b8a734908c9654c7d8e938d651a`; `validation/release_trials_0_340_180.json` SHA256 is `295d6e97a78fb9c67ff870522aa8e0150177d8e9163736eb785384cd6eb87b98`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.180, retained the in-flight rotation evidence and has SHA256 `ff6ec3647f14adb0bf871ed181a5fa18dff96fd1b6c6fbadb255f401b6316083`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
-
-
-## v0.340.179 Activity SSE credential-revocation recovery
-
-The mandatory installed recovery fixture now removes the saved paper credential pair after one injected failed GET has committed its retry deadline. At due time the retry fails before any GET, leaves the exact cursor/reconnect snapshot unchanged and does not consume attempt two. Only explicit credential restoration plus a new paper-read confirmation makes one GET and completes attempt two; fresh completed status remains vault/network/storage-write silent and denies a third attempt.
-
-This is disposable local injected secret-lifecycle evidence only. It does not attest a provider or source, accept a broker account, prove delivery coverage or market realism, reconcile fees, holds or funds, demonstrate physical/native Windows vault durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.178 public-security run 42181271891 failed because its required full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals. Removing the reachable commit would require a destructive development-branch history rewrite and was not performed. Research/browser/evidence run 42181271970 and Windows run 42181271862 remained in progress when this candidate began. Fresh v0.340.179 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local verification passed 5,323 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized Activity SSE/release/evidence/version/roadmap focus passed 438 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `17d27d48bd5a4e213ae9515ae2a06038d02575e2d634d0e4f02d6e8a46962320`; `validation/release_trials_0_340_179.json` SHA256 is `e04a77746e0a2fadbade85acaa52629dff6db94ae5a98f6852f849c04fe6ada0`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.179, retained the revoked-retry evidence and has SHA256 `bf84dc3fdb5ae85a22238adddbfec5449f582a00398cb8138a9d5475e8cc2453`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
-
-
-## v0.340.178 explicit due-time Activity SSE retry recovery
-
-The mandatory installed recovery fixture now carries one failed injected GET through the full caller-driven lifecycle. The failed attempt retains its exact retry deadline; a fresh pre-deadline process denies retry, and a fresh due-time status reports eligibility without a request, sleep, credential access, network access or storage write. One separately confirmed retry then makes exactly one GET, commits exactly one checkpoint as attempt two, and a final fresh process replays the completed state while denying a third attempt.
-
-This is disposable local injected recovery evidence only. It does not attest a provider or source, prove delivery coverage or market realism, accept a broker account, reconcile fees, holds or funds, demonstrate physical/native Windows durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.177 research/browser/evidence run 42174016167 passed. Windows run 42174016160 remained active when this candidate began. Public-security run 42174016184 failed because its required full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals. Removing the reachable commit would require a destructive development-branch history rewrite and was not performed. Fresh v0.340.178 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local verification passed 5,322 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/evidence/version/roadmap focus passed 146 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `c4e81ffd9958eb814537e71db4ef89952b5f1141a989ed31972866babdd6ac97`; `validation/release_trials_0_340_178.json` SHA256 is `2b201fd09ffa5b98808fa05ca540256f43ada670e2853a345b2844db22bef4c9`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.178, retained the explicit-retry evidence and has SHA256 `050b409961e49082cd656bd2e5abae1de1f1025ba972c473d4ddaf2079c42b5c`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
-
-
-## v0.340.177 independent emergency stop after failed Activity SSE attempt
-
-The mandatory installed failure-recovery fixture now activates the standalone emergency-stop process after exactly one injected failed Activity SSE GET and a durable retry schedule. The independent process publishes its intent before durable order halt without starting the Portal, requesting credentials, opening a network connection or enabling automatic restart. A fresh process at the exact retry deadline observes the latch, keeps the retained cursor/reconnect heads and attempt count unchanged, and denies another attempt.
-
-This is disposable local safety evidence only. It does not attest a provider or source, prove historical delivery or market realism, accept a broker account, reconcile fees, holds or funds, demonstrate physical/native Windows durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.176 research/browser/evidence run 42168513347 passed. Windows run 42168513457 remained queued when this candidate began. Public-security run 42168513336 failed because its required full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected current source does not contain those literals. Removing the reachable commit would require a destructive development-branch history rewrite and was not performed. Fresh v0.340.177 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local verification passed 5,321 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/evidence/version/roadmap/workflow focus passed 151 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `0ed3f2a8dba95ebf9f0f557be25f3cbaa35fa19adc092be2de0badfb2e111926`; `validation/release_trials_0_340_177.json` SHA256 is `1286acf8c526f9de3e449e446524b54b0de8584bbafe72a2b9959abe5b60b965`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 161-member wheel reported v0.340.177, retained the independent-stop evidence and has SHA256 `c7709fe6b5a169057305cace349e73752379fe929883aef4a7afc227b6ecbc75`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
-
-
-## v0.340.176 installed Activity SSE failed-attempt recovery evidence
-
-The bounded offline reconciliation profile now requires a second synthetic installed-operator proof for the failed one-attempt Activity SSE path. It performs exactly one injected failed GET through the saved-pair boundary, retains the failed attempt and retry deadline, then starts fresh processes without vault or network access. A pre-deadline restart denies another attempt. At the exact deadline, status reports only caller-driven eligibility and performs no request, sleep, retry or continuation. Both cold reads preserve every private temporary file, and every broker, funds, routing, live, cloud and release authority remains false.
-
-This is disposable local acceptance evidence only. It does not attest a provider or source, prove delivery coverage or market realism, accept a broker account, reconcile fees, holds or funds, demonstrate physical/native Windows durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Corrected v0.340.175 head `c21b32292ea889890c51ed2ee5aa54648b4e4e63` remained current when this candidate began. Research/browser/evidence run 42164166046 was active and Windows run 42164165820 was pending. Public-security run 42164165907 failed because its full-history Gitleaks scan still reaches two high-entropy synthetic credential literals in superseded commit `884da4467cf0aaabb85f2963ca7b2db04357bed8`; corrected head source does not contain those literals. Removing the reachable commit would require a destructive development-branch history rewrite and was not performed. Fresh v0.340.176 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed 5,321 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/evidence/version/roadmap/workflow focus passed 151 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `beacc06e20b0dc149219a96bb4182b895ae1d1633b34817b5785d896188eda98`; `validation/release_trials_0_340_176.json` SHA256 is `1a42f7833637fced42a5b2c693ffb3af11622cef95eeeb193202fd34ebd5dd18`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 161-member wheel reported v0.340.176, retained the success and failed-attempt evidence fixtures and has SHA256 `90303445d74125d2d998402e5dcec3d5187a09418186cfc871822d5cbe1e2357`. No actual provider/account/native Windows acceptance was performed.
-
-No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Historical results and synthetic scores are not future profit predictions.
-
-
-## v0.340.175 installed Activity SSE restart evidence
-
-The bounded offline reconciliation profile now includes a synthetic installed-operator proof for the one-attempt Activity SSE path. It performs exactly one injected GET through the saved-pair boundary, checks exact replay and deduplication counts, and then starts a fresh process that replays the completed cursor and reconnect-budget state without vault or network access. The cold replay leaves every private temporary file unchanged and the completed budget denies a second attempt.
-
-This is disposable local acceptance evidence only. It does not attest a provider or source, prove historical delivery coverage, accept a broker account, reconcile fees, holds or funds, demonstrate native Windows durability, authorize routing or live trading, or approve release. No private event, credential or account evidence is retained or published.
-
-Exact-source v0.340.174 commit `3f1c5c6cd0b68b519474226901c73fa342273eb3` passed public-security run 42157751181. Research/browser/evidence run 42157751202 and Windows run 42157751255 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.175 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,320-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized release/version/roadmap/workflow focus passed 132 tests. All sixteen bounded offline profiles and saved-evidence verification match 399 source files / `f6085683a9bbe364640b395135fbd53fc3926cfe3816b6b2c4915faac4f0fc45`; `validation/release_trials_0_340_175.json` SHA256 is `9f4a7c89b91b959a89202f9e94c0a82072b0ddbb60883fe748eab45920191a14`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 161-member wheel reported v0.340.175, retained the restart evidence fixture and has SHA256 `8f82afa674862cc471845e9400e2482f789f0c3ebc82b99015d7247dbea66af5`. No actual provider/account/native Windows acceptance was performed.
-
-Initial exact-source public-security run 42163220946 failed only because Gitleaks classified the two long synthetic fixture credential literals as generic API keys; the fixture now uses low-entropy repeated-character markers that still satisfy local validation. The full-history artifact audit in that run passed across 983 commits and 8,477 blobs. Fresh corrected exact-source security is required.
-
-## v0.340.174 Activity SSE final evidence binding
-
-The installed one-attempt Activity SSE API now requires the exact final acknowledgement schema and independently binds its checkpoint policy and limitations, transport/review input digests, checkpoint receipt, cursor digest, complete count tuple, reconnect reservation and false authority claims to one replayed durable cursor binding before success can leave the installed boundary.
-
-Forty-two direct regressions alter returned or retained evidence after the coordinator has committed, exercise ordinary private binding failures and preserve process-control signals. Every refusal follows exactly one request, retains the completed cursor and reconnect budget, and performs no retry or automatic continuation. This is local final evidence-identity hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.173 commit `61a93c10a598406c052fcc4c95f4758528384edf` passed public-security run 42152009292 and complete offline-regression/browser-help/saved-evidence run 42152009389. Windows run 42152009533 remained active at this candidate checkpoint and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.174 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,319-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 531 tests and the direct boundary suite passed 291 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `f45cb15e7c96eb08d2a105447748c120904a4f1cee660f5fdb3d9525d423ff8c`; `validation/release_trials_0_340_174.json` SHA256 is `d8fd9081a386e510c73e81fa47570ea71d62a27888688117f6375039c2cda064`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 160-member wheel reported v0.340.174, retained the final evidence binding and has SHA256 `296fed8018cbe3e125c8b5d6ac1b59ab8916383c860ceba321155c7f2dac41a4`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.173 Activity SSE final control acknowledgement
-
-The installed one-attempt Activity SSE API now independently revalidates the final explicit authorization, single-request/reconnect, checkpoint eligibility and write, durable binding, emergency-fence, caller-driven bounded-budget, no-automatic-action and no-ledger-mutation claims. The reconnect policy, recovered-acknowledgement shape, actual reconnect semantics and every authority flag must also remain exact before success can leave the installed boundary.
-
-Twenty-nine direct regressions alter those final control claims after the coordinator has committed. Every refusal follows exactly one request, preserves the completed cursor and reconnect budget, and performs no retry or automatic continuation. This is local final control-acknowledgement hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.172 commit `4dff5b95e788272b65431744d372fb8b6c681c10` passed public-security run 42149577126. Research/browser/evidence run 42149577042 and Windows run 42149577079 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.173 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,277-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 489 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `ad102be7546491103d6b8ed2e053f7e1c1f94d0e2f1f5f6a0f30a1dfa90de864`; `validation/release_trials_0_340_173.json` SHA256 is `84a38290f44365d0eca87724da8347d3540e519faacbdc30fa34642eb9404c79`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The installed 160-member wheel reported v0.340.173, retained the final control checks and has SHA256 `fcdc41a4ad66a9accf768aa939f9973548ff4f0e3d400c639557cf57cc755b34`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.172 Activity SSE final request-mode provenance
-
-The installed one-attempt Activity SSE API now binds its final source and provider/stream access acknowledgement to the actual request mode. An injected opener must remain `INJECTED_UNATTESTED` with both access flags false; the production default opener must remain `PAPER_HTTPS_READS` with both flags true. A contradictory post-commit acknowledgement can no longer be rendered as genuine HTTPS or injected evidence.
-
-Eleven direct regressions cover six contradictory acknowledgements, both legitimate request modes, and three post-commit false acknowledgements. Every post-commit refusal follows exactly one request, preserves the completed cursor and reconnect budget, and performs no retry or automatic continuation. This is local final provenance hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.171 commit `dc5b2e929bee63d194928d61841cabf9d2f86c69` passed public-security run 42143612475. Research/browser/evidence run 42143612474 and Windows run 42143612469 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.172 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,248-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 460 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `05d67af1760c1c870d5cbbbdb5d7adea9f180cda695b318ba9b8287c0a9625b0`; `validation/release_trials_0_340_172.json` SHA256 is `6537541c1faf234fb2df6d45f10afb223d68439f3f75c5dcc39ceb6155013190`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `b8871d70dd3dc9767edce6886d13efff709e0d1905c35ac2f7ef6d0768ea8951`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.171 Activity SSE final lifecycle acknowledgement
-
-The installed one-attempt Activity SSE API now revalidates the complete cursor and reconnect-budget schemas after its single provider attempt. The final completed pair must retain complete cursor review state, bind the budget checkpoint to that cursor, and make the durable attempt count and fixed cap agree with the coordinator acknowledgement before success can leave the direct API.
-
-Seven direct regressions cover malformed final schemas, incomplete cursor review state, cross-store checkpoint disagreement, durable attempt-count disagreement, and false coordinator attempt count or cap. Every refusal follows exactly one request, preserves the committed checkpoint and completed budget, and performs no retry or automatic continuation. This is local final-acknowledgement hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.170 commit `e3a9f87074a4486db88f44d6a74e19371a737cc8` passed public-security run 42137587555 and complete offline-regression/browser-help/saved-evidence run 42137587314. Windows run 42137587513 remained active in install/test at this candidate checkpoint and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.171 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,237-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 449 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `5212760e8a97bbea2dda05dfb98ef5a8e7654ea81436a4d1e465e8e42fc562ac`; `validation/release_trials_0_340_171.json` SHA256 is `d686c204c9482172db6a7aee85e211b68bb11c0d67eb56ab9237920733d3f17f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `e0b874a7e77ab132b314c159b4cc744ce3e2ee2f135a4e23d1fa71cbf5fdbcab`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.170 Activity SSE attempt-admission lifecycle
-
-The installed one-attempt Activity SSE API now validates the complete cursor and reconnect-budget schemas, stable cross-store head binding, initialized-cursor review completeness, idle nonterminal budget state, remaining attempt capacity and due retry time before credential coordination. Exact caller heads remain mandatory. A coherent due fresh or retry state still proceeds; malformed, pending, review, completed, exhausted or early state fails at the fixed public diagnostic.
-
-Six direct regressions cover cross-store disagreement, an initialized legacy cursor without complete counts, an early retry and pending/review/completed budgets. Every refusal occurs before credential-vault or provider access and creates no journal. This is local attempt-admission hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.169 commit `24921532216eeb0ad69c6e6b04c632b369efb994` passed public-security run 42133130038 plus browser-help and saved-evidence jobs in research run 42133130231. Its complete offline regression and Windows run 42133129972 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.170 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,230-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 442 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `db9893e303914fbd85d1915f37a3b6cefed62894f061696587e14087da54f1b9`; `validation/release_trials_0_340_170.json` SHA256 is `ffa63cceacc8b5665b3b09f5d22ee1dca1191c3fe6037ff2136c276a87111597`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f9d6615d24db96353000507982ca1093ad33e94fbf16041c89d7b0c4498a114c`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.169 Activity SSE pending-reservation reconciliation
-
-Installed local-only Activity SSE status now binds every pending reconnect reservation to the stable retained cursor and its exact durable history. A first reservation must retain the zero predecessor head. A reservation after a retry must retain distinct attempt and result heads, bind its BEGIN to that result head, and make the provider-directed-delay flag agree exactly with the requested detail and delay. A stable pending-budget/cursor disagreement fails closed, while a changing two-read pair remains a non-throwing inconsistent snapshot.
-
-Three coherent synthetic pending forms, two real durable reservations and seven contradictory or racing views are covered directly. Refusals remain credential-vault and provider-network silent and create no journal. This is local pending-reservation reconciliation, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.168 commit `e69cf33902104e9f5e6ed8184e140dcbc125db48` passed public-security run 42130284085 and the browser-help job in research run 42130284030. Its full regression/evidence jobs and Windows run 42130284005 remained active at this candidate checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.169 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,224-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 436 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `c6726f1e70a4ca07cf054f22d122f210a80ef2300fb67eeaf11d9770c0085e1e`; `validation/release_trials_0_340_169.json` SHA256 is `de93633ef6c5c4b53126cbb1bc5c9e218b0ae60fa7ae978b5d68b4daa6fc1e07`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `41aed751967f367b772c1bc3b197fec1aa78c219cac0a14f5dcec4b890482082`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.168 Activity SSE terminal status reconciliation
-
-Installed local-only Activity SSE status now binds settled reconnect state to its exact requested outcome, detail, provider-delay and fixed-backoff semantics. Retry timing must equal the retained result time plus the applied schedule; ordinary reviews preserve their requested result; emergency conversion and later waiting-state closure remain distinct; completed status requires a SUCCESS result and checkpoint evidence distinct from the prior cursor. A stable completed-budget/cursor disagreement fails closed, while a changing two-read pair remains a non-throwing inconsistent snapshot.
-
-Five legitimate terminal forms and sixteen contradictory terminal or cross-store views are covered directly. Refusals remain credential-vault and provider-network silent and create no journal. This is local terminal-status reconciliation, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.167 commit `2da2d740dc239a78038b8ac54c99d68fe704a2ae` passed public-security run 42121316997, complete offline-regression/browser-help/saved-evidence run 42121316706 and Windows run 42121317181. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.168 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,212-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 424 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `0c2c0e381623087c30b47a37e7157b3dd38af204f93eb44521715f161b4a54d5`; `validation/release_trials_0_340_168.json` SHA256 is `6f5990be207acd0ab0c57d6f0621cf2a3f7b986ad71e7e3c8882a6e55358f09b`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `d7975f23a2ec9a3d5061b5ef384928eebf9262a68185ad4e2a8a265fdcc2d0cc`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.167 Activity SSE reconnect-budget lifecycle admission
-
-Installed local-only Activity SSE status now independently validates the complete reconnect-budget lifecycle. A missing budget must remain exactly empty. Pending, retry, review, emergency-close and completed views must agree on attempt counts, chain heads, expected cursors, outcome codes, delays, provider backoff, checkpoint evidence and terminal flags. Contradictory lifecycle views fail at the fixed public diagnostic before credential-vault access, provider IO or journal creation.
-
-Twelve direct regressions inject impossible zero-attempt, pending, terminal and backoff combinations while retaining the existing legitimate pending, retry, review, emergency-close and completed paths. This is local status lifecycle admission, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.166 commit `717c40812f56114d4afbd6db8be9341b8dcfeec1` passed public-security run 42112172083, complete offline-regression/browser-help/saved-evidence run 42112172247 and Windows run 42112171944. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.167 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,190-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 402 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `425d4632c036e6770008b1f6626823ef0e9aafd73fdbbe27de7d4b606517ef9c`; `validation/release_trials_0_340_167.json` SHA256 is `6dd181b5af563f4c0135610c7b0e469455f5fdda25e8bd49de0c94ee361f1d61`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `cdb52dbfc3335a7aff4992e6d961fd11516136bd826cc6cc1f09f1524a8a4061`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.166 Activity SSE status control-plane admission
-
-Installed local-only Activity SSE status now requires the complete cursor and reconnect-budget public schemas before projecting any safe outward status. Cursor views must remain read-only, bind a valid event ID to its cursor digest, keep bounded retained history and make initialization agree with commit/recovery state; every authority flag must remain false. Budget views must retain the fixed backoff schedule, keep automatic retry and sleep false, and keep every authority flag false. An initialized legacy cursor without complete review counts remains visible for review but is not one-attempt eligible.
-
-Direct regressions inject writable cursor state, false commit state, automatic retry/sleep, changed backoff, authority flags and unexpected fields without credential-vault access, provider IO or journal creation. A coherent two-read cursor advance remains a non-throwing inconsistent snapshot. This is local status control-plane admission, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.165 commit `7f097c10105703b97ebef36f550bba8b7deb9faa` passed public-security run 42102910129, complete offline-regression/browser-help/saved-evidence run 42102910962 and Windows run 42102911227. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.166 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,178-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 390 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `7285af2b06dbad9853d95bcf40b76cb90b6c4b99f7b26c70bfa1a68ea430202a`; `validation/release_trials_0_340_166.json` SHA256 is `14b94590585e7d604754ddada17b9aa01014398a9468171404351203ed9c4a1f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `6cd8d543fe3844f1693e09324b10f8fad4215fb33547cd01bac37a1d75b53e33`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.165 Activity SSE status admission semantics
-
-Installed local-only Activity SSE status now requires cursor initialization, retained-checkpoint count, current-cursor digest and zero/nonzero head state to agree. Reconnect-budget status requires the fixed attempt cap, bounded attempt count and any pending token to match the current budget head. One-attempt eligibility explicitly requires remaining attempt capacity and the read-only status exposes that fixed cap.
-
-Direct regressions inject five contradictory cursor views and three contradictory budget views without credential-vault access, provider IO or journal creation. A separate coherent two-read cursor advance remains a non-throwing inconsistent snapshot, preserving the diagnostic distinction between a legitimate sampled race and a malformed store view. This is local status admission semantics, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.164 commit `9326dddbbb3f703e33ee54b5bfc887b2feafcae2` passed public-security run 42094600439 plus browser-help and saved-evidence jobs in run 42094600268. Its complete offline regression and Windows run 42094600284 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.165 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,168-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 380 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `9d537c4c1ee5193a3f601becb4bcdf466ff3f71f8b5cddee9430b3aa398b8e23`; `validation/release_trials_0_340_165.json` SHA256 is `fa1d1139ccb0c3489510a48dada1617f283376006592d087da89229de6425cfb`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `0854431e5a0d66bc3c86e1f9612e9cb7b27f54afab1b7f6f4e170caff8b12e8d`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.164 Activity SSE nullable status-field containment
-
-Installed local-only Activity SSE status now requires `current_cursor_sha256` and `pending_token` to be explicitly present. Each nullable value must be `None` or a valid digest before any later direct field use. An otherwise valid-looking store view can therefore no longer omit a nullable field and escape as a raw indexing error; malformed non-null values fail at the same fixed public diagnostic.
-
-Direct regressions remove or corrupt each nullable field independently. All cases remain credential-vault and provider-network silent, create no journal and preserve process-control and independent emergency-stop behavior. This is local status shape containment, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.163 commit `262e8e8c0be9963c81788137f7f1f05bd1bcf45b` passed public-security run 42084535570 plus browser-help and saved-evidence jobs in run 42084535525. Its complete offline regression and Windows run 42084535528 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.164 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,160-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 372 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `8dc8c2bf927c19a0cfea3c9e2e85bd0667c1c5e6cbd533397859e24fca3ddd75`; `validation/release_trials_0_340_164.json` SHA256 is `9796edcdb7942755e45253e3845073e09dcb381426ebcef3d7ae3b6938f75025`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `93a4f43bc4c9756b26005c2693a012caa6b1617826496de7266da46a3f3b4986`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.163 Activity SSE status store containment
-
-The installed Activity SSE local-only status API now contains ordinary cursor and reconnect-budget inspection failures at its fixed public diagnostic. It also validates the public status shape before field use, so malformed store views cannot escape as raw indexing or type failures. `KeyboardInterrupt` and `SystemExit` remain independently observable.
-
-Direct regressions inject an ordinary private permission failure, an empty malformed view and both process-control signals into each durable store. Every case remains credential-vault and provider-network silent, creates no journal and preserves the independent emergency-stop behavior. This is local status error containment, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.162 commit `ab455a71b8ea1c57a84edd1a63f4c2a2a9e522bd` passed public-security run 42075170839 plus the complete offline regression, browser-help and saved-evidence jobs in run 42075170882. Windows run 42075170810 remained active at this candidate's predecessor checkpoint and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.163 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,156-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized status/package/release/version/roadmap/audit/evidence focus passed 368 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `ae1f3b49465d4383553238a2c8984202bebbe68008cb0e9858ceb6cbc9a57b2e`; `validation/release_trials_0_340_163.json` SHA256 is `c9bc68da81f88eaa960227973adc79a6afb2a40057b84c048b4eb1aa9a935e8b`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `fc2d119732015e40645792558b065f8f9799c4aa6176c3cf34fef80ce2107fff`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.162 Activity SSE coordinator exception containment
-
-The installed Activity SSE operator now contains ordinary saved-pair coordinator exceptions at its direct public boundary before provider access and after a durable one-request commit. Private lower-layer exception details cannot escape through the API, while `KeyboardInterrupt` and `SystemExit` remain independently observable.
-
-Direct regressions cover an ordinary pre-request permission failure, an ordinary post-commit runtime failure and both post-commit process-control signals. The pre-request case performs no credential-provider request or journal creation. Every post-commit case performs exactly one provider request, preserves the completed reconnect budget and retained checkpoint, performs no retry and remains ineligible for automatic continuation. The existing journal-alias revocation regression now also requires the fixed outer diagnostic. This is operator-boundary error containment, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.161 commit `2cad3c5472a016b6660d62f0f0dfe046c44c4fc4` passed public-security run 42064004986 plus browser-help and saved-evidence jobs in run 42064005270. Its complete offline regression and Windows run 42064004884 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.162 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-
-Final local source verification passed the complete 5,148-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 360 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `060d89293af76d8f8e35108e83b933b4a99db87dc9248891acb2018463eea73f`; `validation/release_trials_0_340_162.json` SHA256 is `8be8510501c35258e20fddf8657849256da18aaf5403dca7813faf4b1e79a511`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `b1de2f23f67beaa5968613b2c96ee4a40a821b6414a14cc995231cf106cf7d7c`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.161 Activity SSE final store-read error containment
-
-The installed Activity SSE operator now contains ordinary final cursor and reconnect-budget inspection failures after its one bounded provider attempt to the fixed public diagnostic. A private SQLite or filesystem exception cannot escape the direct operator boundary after the durable commits, while `KeyboardInterrupt` and `SystemExit` remain independently observable.
-
-Direct regressions inject an ordinary permission failure and both process-control signals into each durable store only after the saved-pair coordinator returns. Every case performs exactly one provider request, preserves the completed reconnect budget and retained checkpoint, performs no retry and leaves the attempt ineligible for automatic continuation. Final snapshots also require well-formed public digest fields before acknowledgement. This is post-attempt error containment, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.160 commit `8fb3069d62321e64f6f099f5e542a9641114bdc8` passed public-security run 42058990679 plus browser-help and saved-evidence jobs in run 42058990497. Its complete offline regression remained active and Windows run 42058990637 had exposed no jobs at this candidate's predecessor checkpoint, so neither is claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.161 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-
-Final local source verification passed the complete 5,144-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 356 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `2c6d9188319007359c67ba814a85c588e0bb02387521d5195a85b1de6b75107c`; `validation/release_trials_0_340_161.json` SHA256 is `32fc03d2093a1d85977d9b1a3791ba7b40abf154b61d4499d2565f3a48447eb6`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f7395051b1a45d448dd5b2d6fed8f1709e1980c60d3768e803833b3de131167e`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.160 Activity SSE final parent error containment
-
-The installed Activity SSE operator now contains ordinary final journal-parent inspection failures after its one bounded provider attempt to the fixed public diagnostic. A private filesystem exception cannot escape the direct operator boundary after the cursor and reconnect-budget commits, while `KeyboardInterrupt` and `SystemExit` remain independently observable.
-
-Direct regressions inject an ordinary permission failure and both process-control signals only after the saved-pair coordinator returns. Every case performs exactly one provider request, preserves the completed reconnect budget and retained checkpoint, performs no retry and leaves the attempt ineligible for automatic continuation. This is post-attempt error containment, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.159 commit `5573e1b45975469f359e5ff929d9ffd37325b899` passed public-security run 42055855787 plus browser-help and saved-evidence jobs in run 42055856294. Its complete offline regression and Windows run 42055856321 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.160 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,138-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 350 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `7bce49540671e89cb68c1723c3cdca40c887ce7dca83489a8d4b0b13c3baf8c7`; `validation/release_trials_0_340_160.json` SHA256 is `558978410ce030fe2a022d5307e01589fd1440289ae24775fa820d4ffb15bf9b`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `394f2bbe99cf63410b419f7e888312a3417af6ccc433e38f511130a298e14ad9`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.159 Activity SSE journal parent identity binding
-
-The installed Activity SSE operator now samples the resolved identity of every existing journal parent directory alongside the cursor, reconnect-budget and order-journal leaves. Replacing an already resolved empty journal directory at the same absolute pathname makes local-only status inconsistent and refuses an attempt before saved-credential or provider access. Newly created legitimate journal parents are promoted into the final identity-bound acknowledgement scope.
-
-Direct regressions replace the actual resolved journal directory during status and immediately after the exact-head preflight. Both preserve the independent latch in the retired directory, create no redirected cursor/budget journal and perform no vault or provider access. This is sampled pathname evidence, not an atomic retained directory descriptor, writer/reset lock, ACL or administrator boundary, distributed stop service, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.158 commit `47a0064614218066d1555f69a7cf1cfb53687bb0` passed public-security run 42044715944, the complete research/browser/evidence run 42044715745 and Windows simulated-research run 42044715814. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.159 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,135-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 347 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `2b2aaf5c2a79dc6771f0ab5f39cb8c53e2302b77c143acf6c03e2639283eb197`; `validation/release_trials_0_340_159.json` SHA256 is `ee8201654ef3aa43eaf576857415877740dfbfaa6f34fb1368ec6799bbdb7f9f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `f4b8b8292cf0364e12ad465fc6eebc75240cdf0e74b34f795eb6a1d3e2269ef6`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.158 Activity SSE emergency-cut leaf coherence
-
-The installed Activity SSE local-only status now samples private-free metadata for the actual independent `emergency_cut.intent` leaf. Any observed leaf, including a directory, symlink or malformed entry, remains an active cut; metadata distinguishes a stable leaf from byte-identical pathname replacement, while ordinary inspection failure is active and inconsistent.
-
-Direct regressions create a latch between samples and replace an existing latch with byte-identical bytes. Both report an active cut, mark the emergency-cut scope and whole snapshot inconsistent, deny one-attempt eligibility, preserve the latch bytes and perform no vault or provider access. This is sampled local pathname evidence, not an atomic descriptor, writer/reset lock, ACL or administrator boundary, distributed stop service, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.157 commit `1a15e69170e163468bc52e9cbedefe1d03e7a94e` passed public-security run 42035996532 and every browser-help, saved-evidence and complete offline-regression job in run 42035996905. Windows run 42035996560 remained active at this candidate's predecessor checkpoint and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.158 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,133-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 345 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `4ac20ba68eaa267cd4e550a83a1693a30b92fd4d0f87a9e22821fba6a90c3808`; `validation/release_trials_0_340_158.json` SHA256 is `e0a68c5296d888e728b85554ea15d80510ca6ad4e94109f28e5a152900737e5f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `eb7af523194e94eca078a2bd55a137b6d49d35597d5cf9e7f561574250fa2435`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.157 Activity SSE final journal content coherence
-
-After guarded Activity SSE coordinator completion, the installed operator now captures bounded identity and full-file fingerprints for the created cursor and reconnect-budget databases. It repeats both checks around every final database read and after constructing the acknowledgement. Same-inode content mutation therefore withholds the acknowledgement without another provider request or rewrite of the completed journals.
-
-Direct regressions append private bytes to each database through the same device/inode immediately after final-scope capture. Both cases fail with the fixed operator diagnostic after exactly one provider request and preserve the mutated bytes and completed durable state. This is sampled bounded local file evidence, not an atomic retained descriptor, writer lock, ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.156 commit `735f241ff9c7ea374cc2c88756ae182e05d8bdf6` passed public-security run 42031767979 plus browser-help and saved-evidence jobs in run 42031768046. Its complete offline regression remained active and Windows run 42031768020 remained queued at this candidate's predecessor checkpoint, so neither is claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.157 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,132-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 344 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `f2825e6d06d3962a366f2e4b6ab9466da8430e2aa62ab8bf0c37bf41ea720eb5`; `validation/release_trials_0_340_157.json` SHA256 is `81ca5d1827f872aff2cf5f017acbdd2429dbef7ee2db911468bf7e8dce9e7749`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `a5721b45ab6a57f68c6374bca3a81b673587b74475185d1a89278473bf508a2c`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.156 Activity SSE final journal identity binding
-
-After the guarded Activity SSE coordinator returns, the installed operator now promotes every present cursor, reconnect-budget and independent emergency-cut journal leaf to an identity-bound final scope. Leaves still missing at that boundary must remain missing through the final cursor/budget reads. A byte-identical replacement of a newly created cursor or budget, or a newly introduced order journal, withholds the installed acknowledgement without retrying provider IO or rewriting the completed journals.
-
-Direct regressions substitute each of the three journal roles immediately after final-scope promotion. Every case fails with the fixed operator diagnostic after exactly one provider request and preserves the substituted bytes plus the already completed cursor/budget state. This is sampled final-read pathname binding, not an atomic retained descriptor, ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.155 commit `617d7fcb6886c4b78c4fa819603bf05d9723339d` passed public-security run 42028210403 plus browser-help and saved-evidence jobs in run 42028210356. Its complete offline regression and Windows run 42028210343 remained active at this candidate's predecessor checkpoint and are not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.156 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,130-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/package/release/version/roadmap/audit/evidence focus passed 342 tests. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `75167e3ed47b5952d994f0a2f3252bb7164eaed70b91ef4f6e8d4e4bcc84893e`; `validation/release_trials_0_340_156.json` SHA256 is `673be0750089957759aa152d856f3433de6cc5bc176c3a962978c42f227a88ed`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `8eb2070368ca062949c8f60186492f8fff286fb95ff72810a26d582e8d03f31d`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.155 Activity SSE journal namespace binding
-
-The installed Activity SSE operator now retains the sampled identity of every existing cursor, reconnect-budget and independent emergency-cut journal leaf. Status requires that namespace to remain coherent across its complete local snapshot. Attempt mode requires existing identities and initially missing leaves to remain unchanged through both sides of the exact-head pre-vault boundary; guarded coordinator initialization remains permitted only afterward.
-
-Direct regressions replace valid journals with byte-identical single-link files during status, introduce otherwise safe single-link files into each missing journal role after the head preflight, and replace an existing order-journal identity. Each change denies eligibility or fails with the fixed operator diagnostic before saved-credential access or provider IO while preserving the substituted private bytes. This is sampled local pathname binding, not an atomic retained descriptor, ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.154 commit `6d8accc3227adfc7d24f419c4ca8ced1d02688f0` passed public-security run 42018844357, browser-help and saved-evidence jobs in run 42018844478 and the complete Windows install/test, EXE, installer, reinstall, uninstall and evidence lane in run 42018844477. Its offline regression failed one SELL emergency-storage contention fixture after 5,098 passes and 23 platform skips because the fixture's six-second waiter was shorter than the durable journal's documented ten-second SQLite busy bound. v0.340.155 aligns the affected emergency-storage waits with that fixed busy bound plus a five-second completion margin; the shielded independent cut, pending-state and durable no-fill assertions remain unchanged. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.155 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local source verification passed the complete 5,127-test regression with one expected non-Windows skip and one existing Starlette/httpx warning; the finalized operator/emergency/package/release/version/roadmap/audit/evidence focus passed 350 tests. The affected SELL contention regression passed ten consecutive repetitions. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `6fe25729979e6792ad463749c4fc8913a459c12a1d838c45509c2eccadad3edd`; `validation/release_trials_0_340_155.json` SHA256 is `59f5c72c36618eb45036c747de234d98984f7036fd334ea9bbe64f20a45dced5`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `e15d2948ebe90964696bbb5a586a38ca46289a192adcf362bd43a10311c7ab86`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.154 Activity SSE existing-journal leaf admission
-
-The installed Activity SSE status and attempt paths now require every existing cursor, reconnect-budget and independent emergency-cut journal leaf to be a regular single-link file before constructing a store or reading the latch. Directories, devices and multiply linked files fail closed with the same fixed operator diagnostic; missing leaves remain eligible for the existing guarded initialization path and legitimate parent aliases remain pinned.
-
-Direct regressions cover directories and hardlinks in all three journal roles for both local-only status and explicitly confirmed attempt mode. Each refusal preserves the unsafe leaf and any unrelated bytes, performs no provider request, creates no other default journal and, in attempt mode, reads no saved credential. This is sampled local pathname hardening, not an ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.153 commit `8ae26e82827978bacafa973c9266a9d0d3d8f2fe` passed public-security run 42012583569 and every browser-help, saved-evidence and complete offline-regression job in run 42012583574. Windows run 42012583629 remained active at this candidate's final predecessor check and is not claimed as passed. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.154 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final source verification passed the 333-test operator/package/release/version/roadmap/audit/evidence focus after the predecessor-CI note and evidence were finalized. The implementation candidate's complete local regression passed 5,121 tests with one expected non-Windows skip and one existing Starlette/httpx warning before that prose-only CI-status update. All sixteen bounded offline profiles and saved-evidence verification match 397 source files / `b71e8e1a3070fab03cef25b57283b88641cf871ee1c209bf543bff0fa21852c4`; `validation/release_trials_0_340_154.json` SHA256 is `f0f7f8dff84b7fa4dca00a292272acd064388f38e2baff48b3c46422e79203ae`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `1ac18b2a8b45dcf7409e0e260bb7201158a1fc35c550aa13578c58aa2918a37e`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.153 Activity SSE journal leaf-path pinning
-
-The installed Activity SSE status and attempt paths now canonicalize each journal parent while preserving the caller-selected leaf name. Cursor, reconnect-budget and independent emergency-cut journal leaf symlinks fail closed before status inspection, credential access, provider IO or journal creation; legitimate parent aliases remain pinned to the validated target directory.
-
-Direct regressions cover all three journal roles in both local-only status and explicitly confirmed attempt mode. Each refusal preserves the unrelated symlink target bytes, performs no provider request, creates no default journal and, in attempt mode, reads no saved credential. Existing parent-alias swap coverage remains green. This is sampled local pathname hardening, not an ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.152 commit `6353b34822c402693ffcdc4b55418de986230cc2` passed public-security run 42003383445, every research-safety/browser/evidence job in run 42003383425 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 42003383403. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.153 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-
-Final local validation passed 5,109 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 321. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `f2b48eae8e2286e76a492737c11bd6bd9ec47de50becfd808b005f007b4162d7`; `validation/release_trials_0_340_153.json` SHA256 was `80e43401ebf2150a5cb5ee60cb4468af52c732e0b2a5a65e2d08be19b9343a51` before this durable result note. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The 160-member wheel SHA256 is `26c8d9ebf938be38e76c30a44569c39e5e566ff4990a0587096a4a35f6abe7e8`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.152 Activity SSE retained-input scope pinning
-
-The installed Activity SSE attempt now pins the validated regular retained-input target before identity and fingerprint capture. A mutable parent symlink cannot silently substitute a different stable private event file after scope validation; alias movement observed during pinning fails closed, while leaf symlinks remain refused.
-
-Direct regressions swap the input parent alias after combined scope validation and prove that the original retained segment supplies the only provider attempt. A separate regression preserves leaf-symlink refusal before vault, provider, cursor or reconnect-journal access. This is sampled local path hardening, not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.151 commit `c327a3f7ac595823f905e57f29a0a0b129eed0c8` passed public-security run 41994206168, every research-safety/browser/evidence job in run 41994206176 and the complete Windows regression, EXE, installer, reinstall and data-preserving uninstall lane in run 41994206219. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.152 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,103 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 315. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `5206cc7f35b4138772e6fb672e5d57d188ae1dbb971150aa55fcee9f50e408cf`; `validation/release_trials_0_340_152.json` SHA256 is `c61f03064cb1b356e43f6ad63dca767f82a095aa96719ce6b56eb22066f3b52e`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `65a8377b7693f390884ad9974ad9f46c70b80ea3a3723c13acdac9288f83a6c0`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.151 Activity SSE resolved operational scope
-
-The installed Activity SSE operator now retains the validated resolved cursor, reconnect-budget and order-journal targets rather than caller-controlled path aliases. A mutable parent symlink can no longer redirect status or attempt storage after scope validation, hide an existing independent emergency-cut latch or move later writes into another directory.
-
-Direct regressions swap the parent alias after scope validation in both status and attempt mode. Status remains bound to the original active latch; the attempt refuses before any credential read, provider request or cursor/reconnect journal creation. This is a sampled local path fence, not an ACL or administrator boundary, provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.150 remote commit `11b638a62d5bab96bfd307ffe0e7fedf8484d8a9` exposed no connector-visible workflow run or commit status when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.151 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,100 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 312. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `385168e4272da4e6c0139ec426f87b65f6c73eb4b85a4b89a75c39b7e1120aec`; `validation/release_trials_0_340_151.json` SHA256 is `502f356a53799d040a71331db41d9433c67f6e451653d53dfba244b07c367749`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `b65bd477f5e9c4acb51bc0e2015909a9092fad99dcb8322aa60f24c020c9f50d`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.150 saved Activity SSE exact-head preflight
-
-The installed `activity-sse` attempt now performs a stable local exact-head preflight before opening saved Windows credentials. It reads the cursor and reconnect-budget journals twice, binds each read to the same bounded pathname identity and full-file fingerprint, and requires the operator-supplied heads to match both stable snapshots. The lower coordinator still rechecks the exact heads at its own boundary; this preflight removes avoidable vault access without weakening the existing race fence.
-
-Invalid, stale or changing preflight state fails with one fixed diagnostic before credential or provider access and before default journal creation. Ordinary local inspection failures also collapse to that diagnostic without private detail, while `KeyboardInterrupt` and `SystemExit` remain independently observable. The two journals are sampled separately rather than as one atomic multi-journal transaction, so this is not provider/source attestation, authorized-account acceptance, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.149 remote commit `b6b69112bcb5559cf314d70de2b46244841aba11` exposed no connector-visible workflow run or commit status when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.150 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,098 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/package/release/version/roadmap/audit/evidence set passed 310. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `cacbec57e50fa8dfa5e5a9043e548f36cb7a25c07bd2e7caf09e852c249400d9`; `validation/release_trials_0_340_150.json` SHA256 is `3d1cbff58b5be3a7c75ee5c88817784e48a33f9bcad5216bcc56106c195a3c15`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `2805a3f3837cff257f28d6ec568cfe5b74b1ce26ee76fc06fa41c3a937c5deff`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.149 saved Activity SSE pre-vault admission fence
-
-The saved-pair Activity SSE seam now samples exact permission and the independent emergency-stop callback before opening the Windows credential vault. Revoked, indeterminate or ordinarily failing admission collapses to the fixed `PAPER_VAULT_READ_REVOKED` diagnostic with zero credential reads and no private exception detail. `KeyboardInterrupt` and `SystemExit` remain independently observable.
-
-Direct regressions cover false and indeterminate callback returns, private-detail exceptions, and both process-control signals at both admission boundaries. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.148 commit `1e4549590b1a07b7d3a259cbb345d6d6672e3ebb` exposed no connector-visible workflow run or commit status when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.149 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,082 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused credential/operator/release/version/roadmap/audit/evidence set passed 362. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `910d823e203b0fac3578a238db1c5e6bfa6a489c3e43bd14cabd6be8bac4af06`; `validation/release_trials_0_340_149.json` SHA256 is `619f9cc80feaeb2d0fd3c0d5f3a2946e6ce714a275dcfc6d9e8582b00a0445fa`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `45c87f834953c18d6bf8ef37575432f9b46e5c1a39c671af164ea9b894dc785a`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.148 Activity SSE attempt-clock admission fence
-
-The installed `activity-sse` attempt now validates its first wall-clock sample as an exact numeric, finite and bounded timestamp before credential, provider or cursor/reconnect-journal access. Invalid values and ordinary clock exceptions fail with the single fixed operator diagnostic, without private exception detail or side effects. `KeyboardInterrupt` and `SystemExit` remain independently observable.
-
-Direct regressions cover exceptions, booleans, strings, non-finite values, negative and oversized values plus both process-control signals. They require zero vault access, zero provider requests and no cursor or reconnect-budget creation. This is not authorized-account acceptance, provider/source or clock attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-Exact-source v0.340.147 commit `3d65cfa5bfa06aa56458b87f032b0b72bd5899b9` exposed no connector-visible workflow run or commit status when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.148 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,072 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 294. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `256aeef013ede0d033fcc8b667f539f24573d55108e20b319b22b8f9af0b7666`; `validation/release_trials_0_340_148.json` SHA256 is `fb1a06026e452b5f27a2f70ff978601fc2b4f2a647d8be27c33f3bfcdabd2cb8`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `ea24f2720792a4b2ca89603a66652130281c7ed39f67c7c7038e154d79c40d48`. No actual provider/account/native Windows acceptance was performed.
-
-
-## v0.340.147 Activity SSE status file-set coherence
-
-The installed `activity-sse` local status path now binds both cursor and reconnect-budget reads to matching bounded pathname identities and full-file fingerprints. A same-path byte-identical journal replacement between reads is reported as `storage_snapshot_consistent=false` and cannot claim one-attempt eligibility even when aggregate heads and counts match. Missing paths remain absent, and sampling never reads credentials, contacts a provider or writes default storage.
-
-Direct regressions commit one injected checkpoint, replace each journal with a byte-identical new inode between status reads, and require explicit inconsistency without another provider request. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-No exact-source v0.340.146 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.147 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,062 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 252. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `08e2d6813017af053e039356b6ba795043fad72a03b0bc6f721c8821edf16410`; `validation/release_trials_0_340_147.json` SHA256 is `fce568c3593593129666e0135aa83506184bf615c2f37c6997edb9027670d1a8`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `936d4d53d9ffb4eb1b61ee780fd76abe8d347b59d9ba27facdb9bd8938ee3fca`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.146 Activity SSE status clock coherence
-
-The installed `activity-sse` local status path now samples wall time twice around the repeated cursor, reconnect-budget and independent emergency-cut observations. One-attempt eligibility requires both clock samples to be numeric, finite, bounded and non-regressing in addition to the durable snapshot agreement. Clock exceptions and invalid samples produce explicit ineligible diagnostics without exposing private error details, reading credentials, contacting a provider or writing default storage.
-
-Direct regressions cover exceptions, booleans, strings, non-finite values, negative and oversized values, backward movement and the stable eligible case. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-No exact-source v0.340.145 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.146 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,060 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 250. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `e45325663b301bfcc5ef457a91cc03bdcbba1ab03dcf576629d44f2e7b704721`; `validation/release_trials_0_340_146.json` SHA256 is `e68e8a14facee7e9ec9cada62cb14cb947cc16460fdfd84d7c4f19c62b5e3f8f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `6793fce1da7b962bc67cc16a93cd5fa51d5c01bb1df4dfd94691abdc83a43230`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.145 coherent Activity SSE status snapshots
-
-The installed `activity-sse` local status path now brackets two cursor inspections and two reconnect-budget inspections with independent emergency-cut samples. One-attempt eligibility is reported only when both durable reads and both latch samples agree; a journal transition or late cut returns `snapshot_consistent=false` and keeps eligibility false. Status remains vault-, network- and storage-write-silent and does not grant provider access or engagement permission.
-
-Direct regressions make each durable store disagree across repeated reads and activate the independent cut between latch samples. They require explicit inconsistency, refusal of eligibility and no credential or provider access. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-No exact-source v0.340.144 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.145 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,051 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit/evidence set passed 241. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `bce37b6ae256e0a8e601e293c0e439945c9a790101c4675a80cbef28e04584ca`; `validation/release_trials_0_340_145.json` SHA256 is `90ad4f703f3028a644577c90c69d5dc881820b525696f8055b58a1152d26085f`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `fa33c9b58783bbabad3329beb9a27c90bdfc6daa63edae5c1e8dff5434a7f448`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.144 installed Activity SSE final cut/input fence
-
-After the one saved-pair coordinator attempt returns, the installed `activity-sse` tool now independently resamples the emergency-cut latch and private retained-input identity before the first final journal inspection, between cursor and reconnect-budget inspection, and again before acknowledging success. A late cut or retained-input change fails with the same fixed diagnostic while the already committed cursor checkpoint and completed reconnect budget remain exactly once for explicit cold review; the wrapper never issues a second GET or rewrites settled journals.
-
-Direct regressions activate the independent cut or replace the private input immediately after a real injected commit. They require refusal, exactly one provider request, one retained checkpoint, a completed reconnect budget and no automatic eligibility. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-No exact-source v0.340.143 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.144 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,048 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit set passed 238. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `24e7f4c05e28293517e2b6c7aeb15d0c21d38c531767e7c7cad4a13487ea81f6`; `validation/release_trials_0_340_144.json` SHA256 is `9fb4af53093f75b7caef5dad873d19a056cd17a792b616f8fbc6316542386bc8`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `a110f75cc218760f2fa5d5cd5b5b4568e4fee2b07e6bd3948aaf320ef8e0aaa6`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.143 installed Activity SSE acknowledgement validation
-
-The installed `activity-sse` attempt now validates the saved-pair coordinator acknowledgement before consuming or rendering any aggregate field. The final boundary allowlists live and injected transport-source labels, binds the account and both durable heads, rejects bool-as-int or out-of-range counts, requires replay-count conservation, bounds the reconnect attempt and requires the fixed commit, recovery, review, budget, vault and no-retry acknowledgements. A malformed post-commit result fails with one fixed diagnostic while the exact checkpoint remains once for explicit cold review; it cannot issue a second GET.
-
-Direct regressions corrupt every accepted field after a real injected commit, require the same fixed refusal, prove one provider request and one retained checkpoint, and cover the impossible stream-without-provider claim. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-No exact-source v0.340.142 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.143 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,046 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused operator/release/version/roadmap/audit set passed 236. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `d11be2e1d21be87dab0f6fc645d59e106923c65f9c99fc38c6591a9bef8c7864`; `validation/release_trials_0_340_143.json` SHA256 is `f9213f65e2e210db5ff0537086df175e85ad891549b709a222bf2b149382c208`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `da5bc26160bad9efe7591c3673e7005319908da47d51e5d410d02e9b06dd1331`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.142 saved-pair Activity SSE acceptance operator
-
-The installed `activity-sse` tool now provides vault/network/storage-silent local status and one OFF-by-default acceptance attempt. An attempt requires a saved read-only Windows credential pair, a bounded private initial-event file outside the checkout, exact cursor and reconnect heads, and separate confirmations for the attempt, provider read and cursor checkpoint. The independent emergency-cut latch is sampled before vault access and throughout the boundary. It never sleeps or retries automatically; aggregate output omits credentials and raw event/order identities.
-
-Focused synthetic tests prove one injected GET, one durable cursor checkpoint, complete review-count binding, confirmation refusal, no-secret output, and emergency-latch refusal before vault or journal mutation. Packaged source smoke includes the new status-only command without creating default storage. This is not authorized-account acceptance, provider/source attestation, sustained-market realism, fee/hold/funds reconciliation, native Windows acceptance, live/cloud readiness or release approval.
-
-No exact-source v0.340.141 workflow run or commit status was exposed when this candidate began. No Portal control or editable parameter changed; the seven beginner tabs and black/bright-purple bottom-right hover help remain unchanged. Preserve OFF defaults, limits, account checks, fail-closed exits and the independent emergency stop. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.142 exact-source hosted workflows and actual authorized-account acceptance remain required.
-
-Final local validation passed 5,022 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the focused acceptance/release set passed 626. All sixteen bounded offline profiles and saved-evidence verification matched 397 source files / `dbe1f1a1a5beabf2edd690ca63e777a3252a3d079ed55ecf65bca59402dd2940`; `validation/release_trials_0_340_142.json` SHA256 is `6681cdcbf318137cccd3403177e81dc1fccb97bb18385790486c0c482986c131`. Compilation, dependency integrity, generated-roadmap equality, Portal syntax and all fourteen Node controllers passed. The wheel SHA256 is `67e3e11305ca18b3c5963a8dda9294f71e8be670ba9d1b5dbee137ee6346beaa`. No actual provider/account/native Windows acceptance was performed.
-
-## v0.340.141 Activity SSE result-envelope validation
-
-The explicit one-attempt Activity SSE coordinator now validates its initial semantic review, private transport pair, reconnect review and cursor-checkpoint acknowledgement before consuming aggregate fields. Malformed internal returns receive fixed fail-closed diagnostics instead of raw unpack or key errors. A fabricated post-commit acknowledgement withholds success while preserving exactly one original-path checkpoint for explicit cold recovery. Mandatory disposable evidence covers that retained uncertain acknowledgement, while direct regressions cover every malformed boundary.
-
-No exact-source v0.340.140 workflow run or commit status was exposed when this candidate began, so hosted Windows/browser/security success is not inferred. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local validation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.141 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.140 Activity SSE semantic-review scope finalization
-
-Both semantic-review boundaries in the explicit one-attempt Activity SSE coordinator now finalize against the exact captured cursor-store instance, path object, resolved path and account digest. Initial-envelope and reconnect-review ordinary failures or successful returns cannot conceal an equal-path object retarget; the fixed store-scope refusal wins over a generic review diagnostic. `KeyboardInterrupt` and `SystemExit` remain independently observable. Mandatory disposable evidence covers the post-GET exceptional boundary, and direct regressions cover both reviewers and both process-control signals.
-
-No exact-source v0.340.139 workflow run or commit status was exposed when this candidate began, so hosted Windows/browser/security success is not inferred. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local review boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.140 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.139 Activity SSE exceptional-exit store finalization
-
-Every ordinary callback boundary in the explicit one-attempt Activity SSE coordinator now finalizes against the exact captured cursor-store instance, path object, resolved path and account digest. Failed initial replay, safety admission, transport and checkpoint calls cannot conceal an equal-path retarget. A retarget followed by an ordinary post-commit exception withholds success while leaving exactly one original-path checkpoint for explicit cold recovery. `KeyboardInterrupt` and `SystemExit` remain independently observable even after commit. Mandatory disposable evidence covers the exceptional lost-acknowledgement recovery, while direct regressions cover initial review, safety, transport, checkpoint and both process-control signals.
-
-No exact-source v0.340.138 workflow run or commit status was exposed when this candidate began, so hosted Windows/browser/security success is not inferred. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local checkpoint boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.139 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.138 Activity SSE coordinator object-scope acknowledgement
-
-The explicit one-attempt Activity SSE checkpoint coordinator now captures one exact cursor-store instance, path object, resolved path and paper-account digest before copying private inputs or invoking any safety, transport or storage callback. It rechecks that scope after every callback and after the checkpoint method returns; foreign equality cannot hide a retarget. A retarget after the SQLite commit loses the success acknowledgement while leaving exactly one checkpoint on the original path for explicit cold recovery. It does not redirect storage or issue a second GET. Mandatory disposable evidence and direct regressions cover pre-network foreign-path mutation and post-commit recovery.
-
-Exact-source v0.340.137 passed public-repository security run 41886456303, every research/browser/offline-evidence job in run 41886456375 and complete Windows EXE/installer/reinstall/distribution run 41886456370. No runtime authority, real provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This injected local checkpoint boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.138 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.137 activity-acceptance object-scope binding
-
-The private activity-acceptance journal now pins one complete mutable store object—resolved path, normalized paper-account ID and account digest—before missing-file inspection, connection setup, replay, baseline binding, append callbacks, commit acknowledgement and final return. Fresh-file cleanup always targets the captured exclusively created path, so a retarget cannot redirect deletion to a decoy. Ordinary object retargets fail closed with a fixed binding diagnostic; `KeyboardInterrupt` and `SystemExit` retain their existing independent precedence. Mandatory disposable evidence covers metadata retarget refusal and captured-path cleanup, while direct tests cover both readers, missing inspection and pre/post-commit callbacks.
-
-Exact-source v0.340.136 public-repository security, browser/help and offline release-evidence jobs passed before this candidate began. Its complete regression and Windows installer/build lanes were still running with no observed failure, so their final results are not inferred here. No runtime authority, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.137 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.136 native Windows fresh-journal cleanup acceptance
-
-Fresh SQLite identity-check failure regressions for the account acceptance, mixed account-read receipt and provider-read receipt stores now accept the native-Windows outcome where the still-open exact new file remains zero bytes. Retained size is never cleanup proof: the test requires the exact exclusively created identity plus fixed cleanup uncertainty and rejects all journal/WAL/shared-memory sidecars. Retained state remains fail-closed for explicit review; adjacent deterministic regressions continue to prove one clean durable retry only when absence was actually restored.
-
-Exact-source v0.340.135 browser/help, public-repository security and offline release-evidence workflows passed. Its Windows safety and simulated-research workflows failed only twelve obsolete `size > 0` assertions covered by this slice. No runtime authority, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic acceptance correction grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.136 exact-source hosted Windows workflows and actual authorized-account acceptance remain required.
-
-## v0.340.135 provider receipt object-scope binding
-
-Provider read-review receipt operations now pin the store path, cached provider digest and complete protected source-path tuple for the full call. Reads recheck that object scope around connection setup, replay, close and final return. Writes recheck it around initial inspection, every ordinary callback, transaction, commit, close and acknowledgement, so a callback cannot redirect creation, change source exclusions or conceal a committed transition. `KeyboardInterrupt` and `SystemExit` remain independently observable before secondary binding checks. Mandatory disposable evidence covers read digest retarget refusal, pre-connect protected-path retarget refusal, clean retry and process-control independence; direct tests cover every binding field and all three callback phases.
-
-No exact-source v0.340.134 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.135 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.134 account receipt object-scope binding
-
-Account read-review receipt operations now pin the store path, cached account, exact pacing-gate object, gate path and gate account for the full call. Reads recheck that object scope around connection setup, replay, close and final return. Writes recheck it around initial inspection, every ordinary callback, transaction, commit, close and acknowledgement, so a callback cannot redirect creation or conceal a committed transition. `KeyboardInterrupt` and `SystemExit` remain independently observable before secondary binding checks. Mandatory disposable evidence covers read retarget refusal, pre-connect write retarget refusal, clean retry and process-control independence; direct tests cover every binding field and all three callback phases.
-
-No exact-source v0.340.133 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.134 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.133 account receipt read-finalization continuity parity
-
-Retained account read-review receipt inspection now pins the original journal identity and bounded bytes before opening SQLite, rechecks them around complete semantic replay and again after connection close before returning success. A close-time journal change wins over a normal return or ordinary close exception. `KeyboardInterrupt` and `SystemExit` remain independently observable and are not replaced by the secondary final proof. Mandatory disposable evidence covers close-time mutation, process-control independence, unchanged retained bytes and exact fresh replay; direct tests cover ordinary success/error close paths and both signals.
-
-No exact-source v0.340.132 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.133 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.132 account receipt write-callback continuity parity
-
-The account read-review receipt writer now pins an existing journal's exact identity and bounded bytes around pre-connect callbacks and samples the same main-file identity, metadata and bytes around callbacks inside its active transaction. A callback cannot hide a retained-journal change by returning normally or raising an ordinary exception. `KeyboardInterrupt` and `SystemExit` remain independently observable and are not replaced by the secondary continuity proof. Mandatory disposable evidence covers both ordinary-failure phases and unchanged replay; direct tests also cover normal callback returns and both process-control signals.
-
-No exact-source v0.340.131 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.132 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.131 retained write-finalization process-control independence
-
-Account read-review receipts, provider read-review receipts and paper-activity acceptance now preserve `KeyboardInterrupt` and `SystemExit` without allowing callback, transaction or outer pathname/content finalizers to mask them. Ordinary callback failures and successful callbacks still complete the exact integrity proof and fail closed on late change. Mandatory disposable evidence interrupts each post-commit callback, proves the committed transition remains exactly once and requires explicit duplicate recovery; direct tests cover both signals at every callback phase.
-
-No exact-source v0.340.130 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.131 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.130 retained read-finalization process-control independence
-
-Provider read-review receipts and paper-activity acceptance now preserve `KeyboardInterrupt` and `SystemExit` without allowing a final pathname/content recheck to mask them. Every ordinary read failure still rechecks the exact captured store and fails closed, and successful reads still complete the final integrity proof. Mandatory disposable evidence mutates only store metadata while interrupting each reader, proves unchanged retained bytes and exact fresh replay, and direct tests cover both signals.
-
-No exact-source v0.340.129 workflow result or commit status was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.130 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.129 provider recovery process-control independence
-
-Provider read-review stable readers, review scope, precommit callbacks and retained-receipt recovery now preserve `KeyboardInterrupt` and `SystemExit` without allowing a secondary source recheck or cold inspection to mask them. Ordinary exceptions still recheck every bound source and fail closed. Ordinary lost acknowledgements still recover only from stable exact retained state. Mandatory evidence proves interrupted recovery inspection retains one receipt and requires explicit duplicate replay; direct tests cover both signals at every boundary.
-
-No exact-source v0.340.128 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.129 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.128 post-commit process-control independence
-
-Account read-review receipts, provider read-review receipts and paper-activity acceptance now normalize only ordinary post-commit sync failures to fixed `COMMIT_DURABILITY_UNCERTAIN`. `KeyboardInterrupt` and `SystemExit` propagate after the transition remains exactly once, requiring explicit cold inspection and duplicate recovery. The provider wrapper no longer converts those signals into reconstructed success; ordinary runtime lost-acknowledgement recovery remains unchanged. Mandatory evidence covers the keyboard-interrupt boundary in all three journals, and direct tests cover both signals.
-
-No exact-source v0.340.127 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.128 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.127 paper-activity close acknowledgement parity
-
-The durable paper-activity acceptance journal now converts ordinary SQLite connection-close failures after a complete read into fixed `READ_ACKNOWLEDGEMENT_UNCERTAIN`; retained bytes stay unchanged and success requires an explicit fresh retry. Ordinary close failures after a committed write become fixed `COMMIT_DURABILITY_UNCERTAIN`; the accepted transition remains exactly once and recovery requires explicit duplicate replay. Semantic validation errors, keyboard interrupts and process-exit signals are not converted. Mandatory saved evidence exercises both recovery paths.
-
-No exact-source v0.340.126 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.127 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.126 paper-activity acceptance initialization identity continuity
-
-Fresh paper-activity acceptance journals now re-prove their exact exclusive-create device/inode before SQLite opens, after connection and main-database binding, and before and after every setup statement. Existing writers also prove the connection path and serialized main content before setup. Mandatory saved evidence injects mid-setup identity loss, proves one connection attempt and no sidecars, and accepts only exact empty-file removal or retention of the same nonempty identity under cleanup uncertainty before an explicit clean retry.
-
-No exact-source v0.340.125 workflow result was visible when this candidate began. No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This local synthetic reconciliation boundary grants no atomic descriptor binding, physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.126 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.125 Windows-portable receipt cleanup acceptance
-
-Exact-source v0.340.124 public-security run 41408293845 passed, and the saved-evidence and Portal browser-help jobs passed. Research run 41408293798 and Windows packaging run 41408293822 both exposed the same eight incorrect direct-test assumptions: Windows SQLite may materialize bytes after early setup PRAGMAs. The implementation already retained the exact nonempty file, failed closed with `UNCOMMITTED_CLEANUP_UNCERTAIN` and did not retry. Direct acceptance now permits only safe removal of the unchanged empty file with the original identity error or retention of the same original nonempty identity with cleanup uncertainty. It proves one connection attempt, no sidecars and no automatic retry; deterministic paired tests prove exact nonempty files are never deleted.
-
-No production permission, provider IO, credential read, UI or editable parameter changed. Preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop. This cross-platform acceptance repair grants no atomic descriptor binding, physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.125 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.124 receipt initialization identity continuity
-
-Fresh account-read and provider-read receipt stores now re-prove the exact exclusive-create device/inode before SQLite opens, after connection, after main-database binding and before and after every setup statement. Mid-setup identity loss closes SQLite and fails closed; cleanup may remove only the exact unchanged empty sidecar-free file, while substitution remains retained under `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory evidence injects a mid-setup identity failure and proves explicit clean retry for both stores. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-Exact-source v0.340.123 commit `93772f547a91dd66b33442f1394b168f11a9d0c9` passed public-security run 41399596360, research safety/browser/evidence run 41399596333 and Windows packaging/installer run 41399596211. This sampled local continuity boundary grants no atomic descriptor binding, physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.124 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.123 account-receipt initialization identity pinning
-
-Fresh mixed account-read receipt initialization now captures the exact device/inode from its exclusive create descriptor. Failed connection or setup removes only that unchanged empty regular single-link file; a substituted path, sidecar, close uncertainty or bytes are retained with fixed `UNCOMMITTED_CLEANUP_UNCERTAIN`. Mandatory pacing evidence proves safe absence restoration, explicit clean retry and refusal to delete a substituted empty path. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-Exact-source v0.340.122 commit `ad43a75980077956e60a58a58a111cf4cd1399d4` passed public-security run 41393196408, research safety/browser/evidence run 41393196440 and Windows packaging/installer run 41393196422. This local initialization boundary grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.123 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.122 account-receipt explicit sync parity
-
-The mixed account-read receipt now matches the provider-read receipt's explicit durability boundary. Its exact writable descriptor must match the committed pathname fingerprint before and after file sync; a newly created POSIX pathname also flushes only its pinned parent-directory descriptor. Flush, descriptor or directory uncertainty fails closed with fixed `COMMIT_DURABILITY_UNCERTAIN`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory pacing evidence includes the account boundary. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-Exact-source v0.340.121 commit `4c6ba730c553b9efbd5d028f1730fb4db61bc256` passed public-security run 41387574788, research safety/browser/evidence run 41387574767 and Windows packaging/installer run 41387574646. This sampled local durability handling grants no physical durability, provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.122 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.121 account-receipt commit finalization pinning
-
-After a committed account-receipt connection re-proves its exact path and serialized content, the writer now captures the pathname identity and bounded fingerprint, guards them across post-commit callbacks and result construction, and rechecks them after connection close. A late identity, metadata or content change fails closed with fixed `FILE_SET_CHANGED`; the committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory evidence covers callback-time and close-time changes. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-Exact-source v0.340.120 commit `c43ab75ba46ddf7310a908a085e75e758cd2f76a` passed public-security run 41382845644, research safety/browser/evidence run 41382845604 and Windows packaging/installer run 41382845516. This sampled local finalization proof grants no provider, broker, market, funds, live/cloud or release authority and is not physical durability. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.121 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.120 account-receipt connection-content continuity
-
-Retained account-receipt inspection now re-proves the same SQLite connection's exact `main` path and serialized content after complete replay. Receipt writes perform the same proof after commit and before success. A late pathname/connection divergence fails closed with fixed `CONNECTION_CONTENT_CHANGED`; read history is unchanged and needs an explicit retry, while a committed receipt remains exactly once and needs explicit exact-head duplicate recovery. Mandatory evidence covers both boundaries. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-Exact-source v0.340.119 commit `41e8c87c2fd03e4a899b4dfec1713bc0c13834ee` passed public-security run 41377499637, research safety/browser/evidence run 41377499818 and Windows packaging/installer run 41377499671. This sampled local continuity proof grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh v0.340.120 exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.119 Windows-portable account-receipt evidence cleanup
-
-The mandatory account-receipt content-binding fixture now closes its disposable foreign SQLite connection explicitly before temporary-directory cleanup. This fixes the exact Windows `WinError 32` handle-lifecycle failure reported by the v0.340.118 regression, evidence and installer workflows; it does not ignore cleanup failures or weaken any content/path check. A direct lifecycle test proves the fixture connection is closed. No UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-This cross-platform evidence repair grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.118 account-receipt connection content binding
-
-Every existing account-read receipt SQLite connection now proves that its serialized `main` bytes match the exact bounded file captured at the already verified store path before setup or application access. A pathname-spoofed foreign connection fails closed with fixed `CONNECTION_CONTENT_CHANGED` and preserves both stores. Exclusive-lock contention remains bounded and reports `DATABASE_BUSY`. No automatic retry, UI or parameter changed; preserve tabs, black/bright-purple bottom-right hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-This local connection-integrity boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.117 account-receipt connection binding
-
-Every retained account-read receipt SQLite connection now proves that its `main` database resolves to the captured store path before any setup PRAGMA, read or write. A substituted read or fresh writer fails closed with fixed `CONNECTION_BINDING_CHANGED`, preserves both databases, and removes only the exact empty newly created target so an explicit clean retry remains possible. No automatic retry, UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-This local connection-integrity boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.116 fail-closed account-receipt commit acknowledgement
-
-Retained account-read receipt writes now convert an ordinary SQLite connection-close failure after commit into fixed `COMMIT_DURABILITY_UNCERTAIN`. The error is sanitized, the committed receipt remains exactly once, and recovery requires an explicit exact-head duplicate replay. Semantic validation errors, keyboard interrupts and process-exit signals are not converted. No automatic retry, UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-This paired local reconciliation boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.115 fail-closed account-read acknowledgement
-
-Retained account-read receipt inspection now converts an ordinary SQLite connection-close failure after a complete read into fixed `READ_ACKNOWLEDGEMENT_UNCERTAIN`. The error is sanitized, retained receipt bytes are unchanged, and success requires an explicit fresh inspection retry. Semantic validation errors, keyboard interrupts and process-exit signals are not converted. No UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-This paired local reconciliation boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.114 fail-closed read-close acknowledgement
-
-Provider-read receipt inspection now converts an ordinary SQLite connection-close failure after a complete read into fixed `READ_ACKNOWLEDGEMENT_UNCERTAIN`. The error is sanitized, retained receipt bytes are unchanged, and success requires an explicit fresh inspection retry. Keyboard interrupts and process-exit signals are not converted. No UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-This local read acknowledgement boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.113 fixed close-error acknowledgement
-
-Ordinary exceptions after a provider-read receipt commit, including SQLite connection-close acknowledgement failures, now become the fixed fail-closed `COMMIT_DURABILITY_UNCERTAIN` result. The wrapper cannot infer success from the retained row; the receipt remains exactly once and requires explicit exact-head duplicate recovery. Keyboard interrupts and process-exit signals are not converted. No UI or parameter changed; preserve tabs, black/purple hover help, OFF defaults, limits, account checks, exits and the independent emergency stop.
-
-This local durability boundary grants no provider, broker, market, funds, live/cloud or release authority. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 accepted stages. Fresh exact-source hosted and actual authorized-account acceptance remain required.
-
-## v0.340.112 provider-read receipt connection-close continuity
-
-The durable provider-read receipt writer now carries its acknowledgement proof through SQLite connection close. After a committed write connection closes, the exact bounded pathname identity and fingerprint must still match before success is returned. A close-time metadata or content disagreement fails closed with the fixed store error; the committed receipt remains exactly once and may be recovered only by an explicit exact-head duplicate replay. No automatic retry is introduced.
-
-This extends the v0.340.111 packaged provider/account history-only preparation mode without changing its separate strict manifest, read-only behavior or false authority flags. No provider request, credential read, UI control, editable parameter, order route, money movement, live/cloud authority or release approval is added. The seven beginner tabs, black/bright-purple bottom-right hover help, OFF engagement defaults, limits, account checks, exits and independent emergency stop remain unchanged.
-
-Rough weighted implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. This local exactly-once acknowledgement boundary does not establish actual broker-paper acceptance, sustained market realism, fee/hold/funds reconciliation, native-owner acceptance, funding/live/cloud readiness, independent review, owner approval or future profitability. Fresh exact-source hosted workflows remain required.
-
-Integrated local validation passed 4,828 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider/history/release/roadmap/version/Windows-contract focus passed 278. All sixteen offline release profiles and saved-evidence verification matched 395 source files / `f56ba9a7f402f6889f83ee6a64ffa9dc0c8741da9c0f4c2919fe26bf7b86fce3`; `validation/release_trials_0_340_112.json` SHA-256 is `c7d4eb4e00aca8fbb902f8916121ef3e6ac34ce23bb4a2fdb502ba489ae90c98`. All fourteen Portal controllers and intercepted browser acceptance at 1280×900, 390×844 and 320×568 passed against unchanged HTML SHA-256 `e441dd5fb7f3a5db5983c3a5a08e3f249c85451b942e220c3d6e06afaaf94f30`. Compilation, dependency integrity and deterministic roadmap checks passed. The wheel SHA-256 is `6e481383d45cdcb7dc323503545fac1a09e76ee4ab815f40544da0225db7c920`. Fresh exact-source hosted/native checks remain required; local synthetic evidence grants no broker, sustained-market, funds, live/cloud, independent or owner acceptance.
-
-## v0.340.111 packaged provider/account history review
-
-The existing packaged `provider-results` tool now accepts an explicit `--history-only` mode with a separate strict `nexus.paper-provider-history-input.v1` manifest. It reviews retained provider/account pacing sessions and exact heads without normalized response bindings. Full-result and history profiles cannot be confused; extra bindings/fields are rejected. Default normalized-result review is preserved. See `PROVIDER_RESULT_REVIEW.md` for the private manifest and operator command.
-
-The mode reuses private-path, bounded JSON, manifest identity/exceptional-exit and exact-journal replay guards. It reads no vault, starts no desktop, creates no default storage, calls no provider and writes no receipt or reservation. Outputs remain `REVIEW_REQUIRED`; no provider/source/fee/hold/funds, routing, live/cloud or release authority follows. Packaged/native acceptance now requires 33 cross-platform command children plus the existing Windows-only fault, including history success and profile-confusion refusal. Preserve OFF defaults, limits, account checks, emergency cut and beginner hover help. No Portal control or editable parameter changes. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Fresh exact-source hosted workflows and actual authorized broker-paper/sustained/native-owner acceptance remain required.
-
-Local candidate checks: all sixteen offline release profiles and saved-evidence verification passed against 395 source files / `5f020b65172498d2cbb99a84ae283eb5bcfaee924ae0be63b11225ab9ede1e69`; `validation/release_trials_0_340_111.json` SHA-256 is `847da9a603e5969ac9ccff1d16b8d53d9c7fb83c2970b2d2a1c9dffa24060784`. Provider-tool/roadmap/version focus passed 71 tests, packaged-tool tests passed 16 and the final release-profile suite passed 99 after its new saved-evidence prerequisite was generated. The first release-focused invocation began before that report existed; its missing-file failures were superseded by the final complete 99-test rerun. All fourteen controllers, Portal syntax, deterministic roadmap, compilation and dependency integrity passed. Fetched-history artifact scanning covered 918 commits / 7,608 blobs / 795,434,213 bytes with zero findings; pinned Gitleaks history scan found none. The wheel SHA-256 is `5c1db3c35af2553c12ceed5bab0e820760973ac28fd5b1b702ab01d4b59ff12d`. The HTML is unchanged from the prior locally accepted three-size browser artifact. Final local regression passed 4,827 tests with one expected non-Windows skip and one existing Starlette/httpx warning. The 823-path candidate artifact scan and pinned Gitleaks candidate scan found zero findings. Fresh exact-source v0.340.111 hosted/native checks remain required; local synthetic tests grant no actual account, sustained-market, funding/live/cloud, independent or owner release acceptance.
-
-## v0.340.110 Portal milestone acceptance checklist
-
-The existing View Release Roadmap button now displays all 28 source-controlled acceptance checks and each stage’s unaccepted prerequisites alongside the rough percentage estimates. The controller validates the complete nine-stage plan, exact step identities, bounded text, prerequisite/status consistency and false authority flags before displaying an assessment. Malformed or promoted plans clear earlier results. Missing legacy plans receive an explicit unavailable message. Rendering uses literal text, 16 px type and a bounded scroll panel; no editable checkbox or execution control is added. Existing black/purple hover help is preserved and the roadmap button explains the read-only scope.
-
-Controller and intercepted-browser checks cover successful rendering, false approval/permission claims, inconsistent prerequisites, malformed/oversized data, stale-result clearing, literal markup and GET-only viewing. No broker credential, provider request, retry, order route, money movement, cloud deployment or release approval is added. Keep OFF defaults, risk limits, account checks and the independent emergency stop unchanged. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages. Authorized broker-paper, sustained genuine-feed and native-owner acceptance remain required.
-
-Narrow-window browser acceptance also exposed clipping in the existing broker-recovery tooltip at 320×568. The broker-recovery and vault-silent pacing-review descriptions are now shorter practical explanations that preserve offline/no-order and unverified-funds scope, with the same black/purple 16 px help styling.
-
-Local validation: all sixteen offline release profiles and saved-evidence verification passed against 395 source files / `400f29c90bc5ee52d2cd7b7a0ef7ad69f7218555fb960bac565a5b45a2d81f5e`; `validation/release_trials_0_340_110.json` SHA-256 is `c2ec7fa45049e07658b34f5922e6fc9b7950fc383242b9df2a458bbf207a0c7f`. The final roadmap/version/help focus passed 15 tests. All fourteen controller checks, compilation, dependency integrity and Portal JavaScript syntax passed. Intercepted real-browser acceptance passed 1280×900, 390×844 and 320×568 with local Playwright 1.56.0; the latest local Playwright 1.64.1 browser download failed with an incomplete archive before that supported-version retry. Browser evidence binds HTML SHA-256 `e441dd5fb7f3a5db5983c3a5a08e3f249c85451b942e220c3d6e06afaaf94f30`, not native Windows or an authenticated market/account. The final wheel SHA-256 is `314583c05bfa6758c6408d3e625aabe0668203bb2608d3cb775658717fa33acd`. The complete local regression passed 4,813 tests with one expected non-Windows skip and one existing Starlette/httpx warning. The final roadmap/version/help focus passed after the tooltip copy fix. Reachable-history artifact scanning covered 917 commits / 7,594 blobs / 793,712,327 bytes with zero findings, and the 822-path candidate artifact scan plus pinned Gitleaks history/candidate scans found zero findings. Fresh exact-source v0.340.110 hosted workflows remain required; local checks grant no native-owner, actual broker, sustained-market, funds/live/cloud or release acceptance.
-
-## v0.340.109 read-only milestone acceptance plan
-
-The bundled roadmap now exposes a remaining-acceptance plan for D1–D9 with stable step IDs, required evidence and unaccepted prerequisite stages. `GET /api/roadmap` and generated `ROADMAP.md` share this source. All steps remain `REVIEW_REQUIRED`; they cannot approve milestones, enable execution or alter the rough 40% estimate (30–45%, low confidence; 0/9 accepted). Dependencies govern acceptance sequencing, not whether development may proceed in parallel. The next major gate remains authorized connected broker-paper and sustained genuine-feed acceptance. See the generated roadmap checklist for practical remaining steps.
-
-No UI control or editable parameter, credential, provider request, automatic retry, order route, funding/live/cloud authority or release approval is added. Preserve OFF engagement defaults, limits, account checks, independent emergency stop and beginner help. Fresh exact-source hosted checks and actual owner/account acceptance remain required.
-
-Previous checkpoint: v0.340.108 requires every private provider-read receipt SQLite connection to prove its intended `main` path before connection setup. Existing writers additionally prove exact bounded pathname bytes before any write PRAGMA or transaction; a substituted fresh connection is rejected before schema creation and its exact empty target is removed. All engagement permissions remain OFF by default; limits, account checks, exits and the independent emergency stop remain unchanged. There is no Portal control, modifiable parameter, saved write credential, provider IO, automatic retry, live endpoint or external authority change.
-
-Candidate validation: all sixteen offline release profiles and saved-evidence verification passed against 395 source files / `c0f0e3e87fa2fb96231ea51d667d22862993439f481e481a5784fc837021fed4`; `validation/release_trials_0_340_109.json` SHA-256 is `abe310381bb552822c3a0b19dc7a2f1d0f4339c6a770ef39c46078587e1484e4`. Compilation, dependency integrity, Portal syntax and all fourteen controller checks passed. Full reachable-history artifact scanning covered 916 commits / 7,584 blobs / 792,294,157 bytes with zero findings; pinned Gitleaks 8.24.3 found zero findings in fetched history and the exact candidate snapshot. These are local engineering checks, not broker, sustained-market, native-owner or release acceptance. Exact-source v0.340.108 (`71ac8de338fbf70d7017284ef5a63cb9d264d3f0`) passed hosted public security `41335872907`, safety/browser/evidence `41335871818` and Windows installer `41335871835`. Final local regression passed 4,813 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the release-evidence/roadmap/version/installer focus passed 45. Fresh exact-source v0.340.109 hosted workflows remain required.
-
-## v0.340.108 provider-read receipt connection setup binding
-
-`PaperProviderReadReviewStore._connect` now proves the opened connection exposes exactly one SQLite `main` database at the intended store path before busy-timeout or journal configuration. An existing writer also serializes to the exact bounded pathname bytes, with a second pathname sample after serialization, before any write PRAGMA or transaction. Fresh-store path disagreement closes the connection and narrowly removes only the exact newly created empty, sidecar-free file before schema creation.
-
-Direct controls substitute a foreign connection during fresh initialization and a pathname-spoofed foreign connection during existing-store setup. Both require fixed refusal, exact database preservation and exact explicit retry. Mandatory disposable evidence independently repeats both boundaries and makes their results required release-profile fields. No account data or retained market evidence enters the repository.
-
-Exact-source v0.340.107 commit `c500f6a58e1c7197901f9bb1dd1d229810be2300` exposed no connector-visible workflow run or commit status at the pre-sprint check. Current-source CI success is therefore not claimed; fresh v0.340.108 workflows and actual authorized paper-account/private-volume acceptance remain required. This sampled local connection-setup proof is not an atomic retained descriptor, OS ownership/ACL proof, physical durability, provider identity, broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, funding/live/cloud readiness, independent acceptance or owner approval. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; release approval and trading permission remain false.
-
-Local prepublication validation passed 4,811 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider-read/release/Windows focus passed 290 and the direct provider-read file passed 74. All sixteen offline profiles and saved-evidence verification matched 395 source files / `dc9430843da841f047492197992e95369ddcdd65f8914aa7f880257ae7d9f427`; `validation/release_trials_0_340_108.json` SHA-256 is `4840ab9ddf1e42bb3b9f23aa0c95d1b657f23c1019c2198722af164e664bc6ca`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controller checks and Portal JavaScript syntax passed. The 820-path / 63,499,479-byte proposed-snapshot artifact audit and introduced-line high-confidence credential scan reported zero findings. The v0.340.108 wheel SHA-256 is `4c570b9aaaedf0758a12998835f740261a385c1c746918daa985a550e66eba44`. Local Gitleaks and Playwright are unavailable. Fresh exact-source hosted workflows remain mandatory. No UI or modifiable parameter changed, so beginner tabs and black/bright-purple bottom-right hover help remain unchanged.
-
-## v0.340.107 provider-read receipt write connection binding
-
-`PaperProviderReadReviewStore.append` now proves the writable connection exposes exactly one `main` database at the captured receipt-store path before replay or mutation. An existing writer must also serialize to the exact bounded pathname bytes, with the pathname sampled again after serialization. After commit every writer repeats the path and content proofs before durability sync and acknowledgement.
-
-Direct controls substitute a foreign writer, spoof its reported pathname and inject serialization-time content divergence. All three paths require fixed connection refusal, exact preservation of both databases and exact later receipt inspection. Mandatory disposable evidence independently repeats those boundaries and makes all three results required release-profile fields. No account data or retained market evidence enters the repository.
-
-Exact-source v0.340.106 commit `b3cda7363865e2b6cc09795e59d4b57d9352178b` exposed no connector-visible workflow run or commit status at the pre-sprint check. Current-source CI success is therefore not claimed; fresh v0.340.107 workflows and actual authorized paper-account/private-volume acceptance remain required. This sampled local write-connection proof is not an atomic retained descriptor, OS ownership/ACL proof, physical durability, provider identity, broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, funding/live/cloud readiness, independent acceptance or owner approval. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; release approval and trading permission remain false.
-
-Local prepublication validation passed 4,809 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider-read/release/Windows focus passed 288 and the direct provider-read file passed 72. All sixteen offline profiles and saved-evidence verification matched 395 source files / `e916625fdb016bea687d97ef121e2df2a344e25b1b4da73577f8256f19a2dbb3`; `validation/release_trials_0_340_107.json` SHA-256 is `3043b74438d056a976c839b21d5c0e0f3de07a1c21bb5d5d421be5663df55cf7`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controller checks and Portal JavaScript syntax passed. The 819-path / 63,311,137-byte proposed-snapshot artifact audit and introduced-line high-confidence credential scan reported zero findings. The v0.340.107 wheel SHA-256 is `083da26c90cec13a65fa5384e460f9627749ab90b3f9d05561bf03f23bd6b0d6`. Local Gitleaks and Playwright are unavailable. Fresh exact-source hosted workflows remain mandatory. No UI or modifiable parameter changed, so beginner tabs and black/bright-purple bottom-right hover help remain unchanged.
-
-## v0.340.106 provider-read receipt serialization continuity
-
-`PaperProviderReadReviewStore.inspect` now rechecks the bounded receipt-store identity and fingerprint immediately after serializing the read-only connection and before accepting its bytes or replaying any receipt. This closes the remaining interval in which a same-identity pathname change during serialization could otherwise reach replay.
-
-A direct control injects serialization-time pathname disagreement over a retained receipt and requires fixed `PAPER_PROVIDER_READ_REVIEW_STORE_FILE_SET_CHANGED`, zero replay loads, exact byte preservation and exact later inspection. Mandatory disposable evidence independently repeats that seam and makes the connection-content continuity result a required release-profile field. No account data or retained market evidence enters the repository.
-
-Exact-source v0.340.105 commit `0db7a6f5cb2f4bbe8bbf8bf7c8796994f1f741c4` exposed no connector-visible workflow run or commit status at the pre-sprint check. Current-source CI success is therefore not claimed; fresh v0.340.106 workflows and actual authorized paper-account/private-volume acceptance remain required. This sampled local read-serialization proof is not an atomic retained descriptor, OS ownership/ACL proof, physical durability, provider identity, broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, funding/live/cloud readiness, independent acceptance or owner approval. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; release approval and trading permission remain false.
-
-Local prepublication validation passed 4,806 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the provider-read/release/Windows focus passed 285 and the direct provider-read file passed 69. All sixteen offline profiles and saved-evidence verification matched 395 source files / `293fb0e9da70699cb1972ac3a0bac1fc63bbdc3d9793ea3ddc36ee17c8cdaffb`; `validation/release_trials_0_340_106.json` SHA-256 is `e6d46e26739e88ff8f1747a71a087ef7529057ddfbf3a6f9647907d602329593`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controller checks and Portal JavaScript syntax passed. The 818-path / 63,118,433-byte proposed-snapshot artifact audit and introduced-line high-confidence credential scan reported zero findings. The v0.340.106 wheel SHA-256 is `7612e0400f3b0b73e27aa3db3152a9c6f21af03fd4d9446655343f00553d3251`. Local Gitleaks and Playwright are unavailable. Fresh exact-source hosted workflows remain mandatory. No UI or modifiable parameter changed, so beginner tabs and black/bright-purple bottom-right hover help remain unchanged.
-
-## v0.340.105 activity-acceptance read serialization continuity
-
-`PaperActivityAcceptanceStore.inspect` and `replay_scopes` now recheck the bounded main-file identity and fingerprint immediately after serializing the read-only connection. This closes the interval between the former pathname sample and connection-byte comparison, so a same-identity pathname change during serialization cannot be accepted as replayed state.
-
-Direct parameterized controls inject serialization-time pathname disagreement for both readers and require fixed `PAPER_ACTIVITY_ACCEPTANCE_STORE_FILE_SET_CHANGED`, exact byte preservation and exact later replay. Mandatory disposable evidence independently repeats the inspect seam over a two-record store and makes the continuity result a required release-profile field. No account data or retained market evidence enters the repository.
-
-Exact-source v0.340.104 commit `41716be50180d089a1d23e96228d48a105cd0ec8` exposed no connector-visible workflow run or commit status at the pre-sprint check. Current-source CI success is therefore not claimed; fresh v0.340.105 workflows and actual authorized paper-account/private-volume acceptance remain required. This sampled local read-serialization proof is not an atomic retained descriptor, OS ownership/ACL proof, physical durability, provider identity, broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, funding/live/cloud readiness, independent acceptance or owner approval. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; release approval and trading permission remain false.
-
-Local prepublication validation passed 4,805 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the activity-acceptance/reconciliation/release/Windows focus passed 342 and the direct acceptance-store file passed 57. All sixteen offline profiles and saved-evidence verification matched 395 source files / `8acadf65c01ce8c82003bce4eb8569a57ae0baacc61ef9138261725eb23165b4`; `validation/release_trials_0_340_105.json` SHA-256 is `58dcfdee643fbec66eb82c13b7efe10b3142917a53bb1a7af0ee2615e26b81ea`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controller checks and Portal JavaScript syntax passed. The 817-path / 62,933,670-byte proposed-snapshot artifact audit and introduced-line high-confidence credential scan reported zero findings. The v0.340.105 wheel SHA-256 is `c2e56eeb9ab79ac0f253674efd39315f33a5ae8df45a1c33f83e248608486daa`. Local Gitleaks and Playwright are unavailable. Fresh exact-source hosted workflows remain mandatory. No UI or modifiable parameter changed, so beginner tabs and black/bright-purple bottom-right hover help remain unchanged.
-
-## v0.340.101 activity-acceptance writable connection content binding
-
-`PaperActivityAcceptanceStore.bind` and `append` now serialize every existing writable connection's `main` database before entering mutation logic. Exact byte length and SHA-256 must equal a bounded fingerprint of the captured store pathname. This supplements the connection-local pathname proof, so a valid foreign SQLite database whose `PRAGMA database_list` result is spoofed cannot be changed before the later cold-read acknowledgement rejects it.
-
-Direct parameterized controls exercise both bind and append against a foreign writable connection that reports the target path, require fixed `PAPER_ACTIVITY_ACCEPTANCE_STORE_CONNECTION_CONTENT_CHANGED`, and prove both databases are unchanged. Mandatory disposable evidence repeats the append refusal and makes the pre-mutation content pin a required release-profile field. No account data or retained market evidence enters the repository.
-
-Exact-source v0.340.100 commit `cb537e43514b18a70ff38d0474998c0f6b4f0d21` exposed no connector-visible workflow run or commit status at the pre-sprint check. Current-source CI success is therefore not claimed; fresh v0.340.101 workflows and actual authorized paper-account/private-volume acceptance remain required. This sampled local content-binding proof is not physical durability, provider identity, broker acceptance, sustained market evidence, native-owner acceptance, fee/hold/funds reconciliation, funding/live/cloud readiness, independent acceptance or owner approval. Rough implementation remains about 40% (30–45%, low confidence), with 0/9 fully accepted stages; release approval and trading permission remain false.
-
-Local prepublication validation passed 4,797 tests with one expected non-Windows skip and one existing Starlette/httpx warning; the activity-acceptance/reconciliation/release/Windows focus passed 356 and the direct acceptance-store file passed 49. All sixteen offline profiles and saved-evidence verification matched 395 source files / `67223e317bb483be369e671f7897590d3f4c40f671676388c9f5b9bd69ac96da`; `validation/release_trials_0_340_101.json` SHA-256 is `7a2f5c2d69f18fc4800dafc90a9e9e601fd93a23e9ebd1e9b535fe817924c133`. Compilation, dependency integrity, deterministic roadmap output, fourteen Node controller checks and Portal JavaScript syntax passed. The 813-path / 62,213,721-byte proposed-snapshot artifact audit and introduced-line high-confidence credential scan reported zero findings. The v0.340.101 wheel SHA-256 is `63c4ce76a31a1b5cea93f911840b74e820bf38e3d57a1a0598aef507aad9932a`. Local Gitleaks and Playwright are unavailable. Fresh exact-source hosted workflows remain mandatory. No UI or modifiable parameter changed, so beginner tabs and black/bright-purple bottom-right hover help remain unchanged.
-
-## v0.340.100 activity-acceptance rebind validation
-
-`PaperActivityAcceptanceStore.bind` now treats an existing store as a current cross-journal assertion instead of an unconditional no-op. Complete replay must match both supplied journal heads, and supplied session/batch totals must equal the retained baseline totals plus the accepted transition count. Exact current-state replay remains idempotent; any different head or count rolls back with fixed `PAPER_ACTIVITY_ACCEPTANCE_STORE_REBIND_DISAGREEMENT` before acknowledgement.
+Once the sole paper POST has returned a completely parsed response, durable response observation now uses repeated local store-binding and reservation checks without asking engagement permission or emergency-stop admission again. Every preflight and in-flight permission, stop, credential, ownership and provider-budget check remains mandatory. No additional provider IO occurs. This prevents a stop assertion or permission revocation at the parsed-response boundary from discarding a known result as outcome-unknown; exact …90219 tokens truncated…ined baseline totals plus the accepted transition count. Exact current-state replay remains idempotent; any different head or count rolls back with fixed `PAPER_ACTIVITY_ACCEPTANCE_STORE_REBIND_DISAGREEMENT` before acknowledgement.
 
 Direct parameterized controls cover both heads and both counts, preserve exact database bytes on disagreement and prove an appended current boundary can be rebound exactly. Mandatory disposable evidence repeats the zero-transition disagreement and exact retry. No account data or retained market evidence enters the repository.
 

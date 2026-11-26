@@ -30,6 +30,14 @@ def test_fee_reserved_roundtrip_covers_each_debit_but_never_verifies_spendable_f
     for flag in ('broker_account_reconciled','broker_connected','ledger_applied','ready_for_routing','spendable_funds_verified','live_orders_enabled'):assert report[flag] is False
 
 
+def test_cash_path_cannot_report_coverage_from_polymorphic_funding_evidence():
+    class ForgedNumber(str):
+        def __str__(self):return '1000'
+    value=data();value['opening_balances']['USD']=ForgedNumber('0')
+    with pytest.raises(ValueError,match='INVALID_BROKER_PROJECTION_NUMBER'):
+        audit(value)
+
+
 def test_positive_final_balance_cannot_fund_an_earlier_buy():
     value=data();value['opening_balances']['USD']='50';value['observed_balances']['USD']='59.78011'
     assert projection.reconcile(**value)['input_consistency_ok']

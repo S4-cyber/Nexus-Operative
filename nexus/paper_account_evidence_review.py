@@ -141,8 +141,11 @@ def public_summary(result):
     """
     modes={'PAPER_ACCOUNT_EVIDENCE_BUNDLE_REVIEW':POLICY,
         'PAPER_ACCOUNT_EVIDENCE_STABILITY_GUARD_REVIEW':STABILITY_POLICY}
-    if (type(result) is not dict or modes.get(result.get('mode'))!=result.get('policy') or
-        result.get('status')!='REVIEW_REQUIRED' or
+    if type(result) is not dict or any(type(key) is not str for key in result):
+        _fail('PUBLIC_SUMMARY_INVALID')
+    mode=result.get('mode');policy=result.get('policy');status=result.get('status')
+    if (type(mode) is not str or type(policy) is not str or type(status) is not str or
+        modes.get(mode)!=policy or status!='REVIEW_REQUIRED' or
         result.get('read_only') is not True or any(result.get(k) is not False for k in FLAGS)):
         _fail('PUBLIC_SUMMARY_INVALID')
     checks=('journals_rechecked_unchanged','journal_files_rechecked_unchanged',
@@ -157,14 +160,15 @@ def public_summary(result):
         _fail('PUBLIC_SUMMARY_INVALID')
     gross=result.get('gross_only_minus_observed')
     if result['inventory_arithmetic_evaluated']:
-        if (type(gross) is not dict or set(gross)!= {'USD','BTC'} or
+        if (type(gross) is not dict or any(type(key) is not str for key in gross) or
+            set(gross)!= {'USD','BTC'} or
             any(type(v) is not str or re.fullmatch(r'-?(?:0|[1-9][0-9]{0,63})(?:\.[0-9]{1,36})?',v) is None for v in gross.values())):
             _fail('PUBLIC_SUMMARY_INVALID')
         difference='NO_GROSS_DIFFERENCE' if all(Decimal(v)==0 for v in gross.values()) else 'DIFFERENCES_PRESENT'
     else:
         if gross is not None:_fail('PUBLIC_SUMMARY_INVALID')
         difference='NOT_EVALUATED'
-    guarded=result['policy']==STABILITY_POLICY
+    guarded=policy==STABILITY_POLICY
     guard_checks=('stability_guard_bound','guard_manifests_distinct','guard_windows_ordered',
         'adjacent_guard_balances_stable','guard_declared_sources_agree',
         'guard_retained_fill_events_absent',
@@ -174,7 +178,7 @@ def public_summary(result):
         'accepted_declared_windows_cover_guard_envelope')
     if guarded and any(result.get(k) is not True for k in guard_checks):
         _fail('PUBLIC_SUMMARY_INVALID')
-    return dict(mode='PAPER_ACCOUNT_EVIDENCE_PUBLIC_SUMMARY',policy=result['policy'],status='REVIEW_REQUIRED',read_only=True,
+    return dict(mode='PAPER_ACCOUNT_EVIDENCE_PUBLIC_SUMMARY',policy=policy,status='REVIEW_REQUIRED',read_only=True,
         **{k:result[k] for k in (*checks,*counts)},gross_difference_status=difference,
         **({k:True for k in guard_checks} if guarded else {}),
         **{k:False for k in FLAGS},

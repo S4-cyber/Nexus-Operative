@@ -2,6 +2,7 @@ import json
 import sqlite3
 import pytest
 from nexus import order_checkpoints as cp
+from nexus.order_accounting import AccountingOrderGateway
 from nexus.durable_orders import DurableOrderGateway
 
 
@@ -15,6 +16,19 @@ def populate(tmp_path,monkeypatch):
     g.cancel('a')  # Already filled; no command consumed.
     g.submit('b','ETH-USD','BUY',25)
     return g
+
+
+def test_no_fill_state_roundtrips_and_legacy_checkpoint_defaults_empty():
+    gateway=AccountingOrderGateway(clock=lambda:0)
+    gateway.no_fill_events[('a'*16,7,'exit','slice_2')]=dict(
+        order_id='exit',side='SELL',event_id='slice_2',sequence=2,
+        reason='ORDER_EXPIRED_WITHOUT_FILL',evaluated_at='1022',expires_at='1022',
+        evidence_cycle=7,evidence_session='a'*16,evidence_quote_sha256='b'*64)
+    payload=cp.encode(gateway)
+    assert cp.decode(payload).no_fill_events==gateway.no_fill_events
+    legacy=json.loads(payload);legacy.pop('no_fill_events')
+    restored=cp.decode(json.dumps(legacy,sort_keys=True,separators=(',',':')))
+    assert restored.no_fill_events=={}
 
 
 def test_checkpoint_prefix_verified_fresh_then_cached(tmp_path,monkeypatch):

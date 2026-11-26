@@ -43,9 +43,10 @@ def _review_exact(journal,store,*,expected_request_head,expected_activity_head):
     if not requests['requests']:blockers.add('NO_RETAINED_REQUESTS')
     if not retained['retained_batches']:blockers.add('NO_RETAINED_ACTIVITY_BATCHES')
     if not activity['normalization_evaluated']:blockers.add('MERGED_ACTIVITY_NORMALIZATION_UNAVAILABLE')
-    orders={}
+    orders={};order_snapshots={}
     for receipt in retained['receipts'].values():
         for order in receipt['orders']:
+            order_snapshots.setdefault(order['broker_order_id'],[]).append(order)
             prior=orders.get(order['broker_order_id'])
             if prior is None or order['updated_at']>prior['updated_at']:orders[order['broker_order_id']]=order
     bound={};rows=[]
@@ -60,9 +61,19 @@ def _review_exact(journal,store,*,expected_request_head,expected_activity_head):
                 for key in ('broker_order_id','client_order_id','side','status','filled_quantity',
                     'average_fill_price','updated_at')):
                 reasons.add('REQUEST_ACTIVITY_SNAPSHOT_DISAGREEMENT')
+        matched=[] if snapshot is None else order_snapshots.get(snapshot['broker_order_id'],[])
         fills=[] if snapshot is None else [r for r in retained['normalized_activities'] if r['kind']=='FILL' and r['broker_order_id']==snapshot['broker_order_id']]
         with localcontext() as context:
             context.prec=80;quantity=number(payload['qty']);limit=number(payload['limit_price']);total=number('0',zero=True)
+            for observed in matched:
+                if 'requested_quantity' not in observed:
+                    reasons.add('ACTIVITY_REQUESTED_QUANTITY_UNBOUND')
+                elif number(observed['requested_quantity'])!=quantity:
+                    reasons.add('ACTIVITY_REQUESTED_QUANTITY_DISAGREEMENT')
+                if 'limit_price' not in observed:
+                    reasons.add('ACTIVITY_LIMIT_PRICE_UNBOUND')
+                elif number(observed['limit_price'])!=limit:
+                    reasons.add('ACTIVITY_LIMIT_PRICE_DISAGREEMENT')
             for fill in fills:
                 total+=number(fill['quantity'])
                 if fill['client_order_id']!=identity or fill['side']!=payload['side'].upper() or fill['product']!='BTC-USD':reasons.add('FILL_REQUEST_IDENTITY_DISAGREEMENT')
@@ -79,7 +90,7 @@ def _review_exact(journal,store,*,expected_request_head,expected_activity_head):
     untracked=sorted(set(orders)-set(bound))
     if untracked:blockers.add('UNTRACKED_ACTIVITY_ORDERS_REQUIRE_REVIEW')
     if _requests(journal)!=requests or store.inspect()!=retained:_fail('JOURNALS_CHANGED_DURING_REVIEW')
-    scope=dict(policy='nexus.request-activity-review.v1',account_sha256=journal.account_digest,
+    scope=dict(policy='nexus.request-activity-review.v2',account_sha256=journal.account_digest,
         request_head_sha256=expected_request_head,activity_head_sha256=expected_activity_head)
     reasons=sorted(blockers|{'ACTIVITY_COVERAGE_UNVERIFIED','FEE_LINK_AND_TIMING_UNVERIFIED','HOLD_AND_ACCOUNT_RECONCILIATION_REQUIRED'})
     return dict(mode='BROKER_REQUEST_ACTIVITY_REVIEW',status='REVIEW_REQUIRED',read_only=True,

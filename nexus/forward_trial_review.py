@@ -16,13 +16,15 @@ import sqlite3
 import os
 import time
 
-from nexus import forward_evidence, forward_event_evidence, forward_sessions
+from nexus import (forward_evidence, forward_event_evidence, forward_sessions,
+    forward_trial_reconciliation)
+from nexus.forward_reconciliation_review import modeled_execution_set_sha256
 from nexus.paper_forward import SESSION_LIMIT
 from nexus import feed_guard as feed_policy
 from nexus.feed_guard import FeedGuard
 from nexus.paper_policy import admit
 from nexus.sqlite_journal_guard import (capture_file_fingerprints,
-    capture_file_identities, guard_file_set_finalization,
+    capture_file_identities, check_path_set, guard_file_set_finalization,
     require_file_fingerprints, require_file_identities)
 
 MINIMUM_SECONDS=72*3600
@@ -46,7 +48,8 @@ LIMITATIONS=('Private local operational evidence only. Coverage requires both a 
     'boundaries are not bridged, and over-limit uncovered gaps remain operational incidents even when aggregate coverage '
     'exceeds 95%. This rechecks supplied content, not independent feeds, clock authenticity, genuine market '
     'data, uptime, broker execution, profitability, account reconciliation or a passed sustained trial. BUY/SELL outcomes '
-    'remain operational incidents until their modeled executions are explicitly bound to durable order/fill reconciliation. Labels/hashes are '
+    'remain local evidence-gap incidents until their modeled executions are bound to one exact supplied reconciliation bundle. The bundle and its '
+    'hashes are rewritable local receipts, not proof that an order journal or external execution is authentic. Labels/hashes are '
     'rewritable; sampled file identity/fingerprint binding and the read snapshot are not an execution lock. No provider/credential access, account mutation, automatic start or '
     'release permission.')
 PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_seconds','minimum_trial_seconds',
@@ -63,6 +66,9 @@ PUBLIC_KEYS=frozenset(('mode','status','read_only','after','until','window_secon
     'retained_event_records','events_in_window','legacy_unbound_observations_in_window',
     'quote_outcome_disagreements_in_window','event_incident_records_in_window',
     'modeled_execution_events_in_window',
+    'bundle_bound_modeled_execution_events_in_window',
+    'unreconciled_modeled_execution_events_in_window',
+    'reconciliation_bundle_sha256',
     'retained_exchange_admissions','exchange_admissions_in_window',
     'exchange_admission_incidents_in_window',
     'event_trace_complete','incident_free_coverage_target_met','evidence_snapshot_sha256',
@@ -167,22 +173,39 @@ def _quote_recheck(point, policy, guard, previous_exchange):
         return False,previous_exchange,None
 
 
-def review(path, *, after, until):
+def review(path, *, after, until, reconciliation_bundle=None):
     with localcontext() as context:
         context.prec=50
-        return _review(path,after=after,until=until)
+        return _review(path,after=after,until=until,
+            reconciliation_bundle=reconciliation_bundle)
 
 
-def _review(path, *, after, until):
+def _bundle_bytes(path):
+    try:
+        flags=(os.O_RDONLY|getattr(os,'O_BINARY',0)|getattr(os,'O_NOFOLLOW',0)|
+            getattr(os,'O_NONBLOCK',0))
+        with os.fdopen(os.open(path,flags),'rb',buffering=0) as stream:
+            raw=stream.read(forward_trial_reconciliation.MAX_BUNDLE_BYTES+1)
+        if not 1<=len(raw)<=forward_trial_reconciliation.MAX_BUNDLE_BYTES:_fail()
+        return raw
+    except (OSError,TypeError,ValueError):_fail()
+
+
+def _review(path, *, after, until, reconciliation_bundle):
     """Bind a result to one exact retained file through finalization."""
     start,end=_window(after),_window(until)
     if not 0<end-start<=MAX_WINDOW_SECONDS:_fail()
     path=Path(path)
     if not existing_history(path):raise FileNotFoundError('FORWARD_TRIAL_REVIEW_FAILED')
     try:
-        identities=capture_file_identities((path,),'FORWARD_TRIAL_REVIEW_')
+        selected=((path,) if reconciliation_bundle is None else
+            check_path_set((path,Path(reconciliation_bundle)),
+                'FORWARD_TRIAL_REVIEW_'))
+        identities=capture_file_identities(selected,'FORWARD_TRIAL_REVIEW_')
         pinned=Path(identities[0][0])
-        paths=(pinned,);limits=(MAX_DATABASE_BYTES,)
+        paths=tuple(Path(item[0]) for item in identities)
+        limits=(MAX_DATABASE_BYTES,) if len(paths)==1 else (
+            MAX_DATABASE_BYTES,forward_trial_reconciliation.MAX_BUNDLE_BYTES)
         fingerprints=capture_file_fingerprints(paths,limits,
             'FORWARD_TRIAL_REVIEW_')
         def stable_source():
@@ -194,13 +217,20 @@ def _review(path, *, after, until):
             except ValueError:_fail()
         with guard_file_set_finalization(paths,limits,identities,fingerprints,
                 'FORWARD_TRIAL_REVIEW_'):
+            bundle=None;bundle_sha256=None
+            if len(paths)==2:
+                raw=_bundle_bytes(paths[1]);stable_source()
+                bundle=forward_trial_reconciliation.loads(raw)
+                bundle_sha256=hashlib.sha256(raw).hexdigest()
             result=_review_bound(pinned,after=after,until=until,start=start,end=end,
-                stable_source=stable_source)
+                stable_source=stable_source,reconciliation_bundle=bundle,
+                reconciliation_bundle_sha256=bundle_sha256)
         return result
     except ValueError:_fail()
 
 
-def _review_bound(path, *, after, until, start, end, stable_source):
+def _review_bound(path, *, after, until, start, end, stable_source,
+                  reconciliation_bundle,reconciliation_bundle_sha256):
     """Bounded one-transaction local review; no app environment or default path."""
     deadline=time.monotonic()+20
     with _snapshot(path,stable_source) as db:
@@ -253,7 +283,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             if type(payload) is not str or forward_evidence.canonical(json.loads(payload))!=payload:_fail()
         interval_candidates=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
         events_in_window=legacy_unbound=outcome_disagreements=event_incidents=0
-        modeled_execution_events=0
+        modeled_execution_events=0;modeled_in_window_by_session={}
+        reconciliation_sessions={}
         admissions_in_window=admission_incidents=0;cross_session_admissions=[]
         legacy_admission_incidents=unmatched_admission_incidents=0
         event_trace_complete=True
@@ -306,6 +337,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             if event_tables:
                 events=forward_event_evidence.review(db,sid)
                 event_points=events['points']
+                session_modeled_in_window=0
                 if not events['integrity_ok']:session_event_complete=False
                 if event_points:
                     first_event=event_points[0]['record'];last_event=event_points[-1]['record']
@@ -326,6 +358,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                                 event_incidents+=1
                             if record['decision'] in ('BUY','SELL'):
                                 modeled_execution_events+=1
+                                session_modeled_in_window+=1
                         previous_event_at=event_at;previous_event_cycle=record['cycle']
                     if event_counts!=counts:session_event_complete=False
                 elif lifecycle_in_window:session_event_complete=False
@@ -350,6 +383,21 @@ def _review_bound(path, *, after, until, start, end, stable_source):
                     session_event_complete=False
                     for records in outcomes.values():
                         outcome_disagreements+=sum(start<=_number(record['at'])<=end for record in records)
+                session_modeled=sum(point['kind']=='OUTCOME' and
+                    point['record']['decision'] in ('BUY','SELL')
+                    for point in event_points)
+                if session_modeled_in_window:
+                    modeled_in_window_by_session[sid]=session_modeled_in_window
+                    reconciliation_sessions[sid]=dict(session_summary=dict(
+                        session=sid,started_at=started,updated_at=updated,state=state,
+                        policy=policy,counts=counts,last=last),
+                        quote_head_sha256=evidence['head_sha256'],
+                        quote_observations=len(points),
+                        event_head_sha256=events['head_sha256'],
+                        event_records=len(event_points),
+                        modeled_order_outcomes=session_modeled,
+                        modeled_execution_set_sha256=
+                            modeled_execution_set_sha256(event_points))
             else:
                 event_points=[];session_event_complete=False
             session_quote_errors=0
@@ -466,6 +514,13 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         intervals=[(left,right) for left,right,left_point,right_point in
             interval_candidates if left_point not in cross_rejected and
             right_point not in cross_rejected]
+        reconciled_sessions=({} if reconciliation_bundle is None else
+            forward_trial_reconciliation.validate(reconciliation_bundle,
+                reconciliation_sessions))
+        bundle_bound_modeled_execution_events=sum(
+            modeled_in_window_by_session[sid] for sid in reconciled_sessions)
+        unreconciled_modeled_execution_events=(modeled_execution_events-
+            bundle_bound_modeled_execution_events)
         if seen!=count:_fail()
         binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,
             quote_heads=heads,quote_rows=count,event_heads=event_heads,
@@ -485,7 +540,7 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         target=duration>=MINIMUM_SECONDS and fraction>=Decimal('.95') and not flagged and not injected and not unknown and not disagreements and not admission_incidents and selected>0
         rejected=selected-eligible
         trace_incomplete=not event_trace_complete or legacy_unbound or outcome_disagreements
-        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps or trace_incomplete or event_incidents or admission_incidents or modeled_execution_events)
+        incidents=bool(rejected or quote_errors or other_stopped or paused or running or disagreements or injected or unknown or over_limit_gaps or trace_incomplete or event_incidents or admission_incidents or unreconciled_modeled_execution_events)
         incident_free_target=target and not incidents and event_trace_complete
         if duration<MINIMUM_SECONDS:reasons.add('REQUESTED_WINDOW_SHORTER_THAN_72_HOURS')
         if fraction<Decimal('.95'):reasons.add('DECLARED_PUBLIC_COVERAGE_BELOW_95_PERCENT')
@@ -500,8 +555,8 @@ def _review_bound(path, *, after, until, start, end, stable_source):
         if not selected:reasons.add('NO_OBSERVATIONS_IN_WINDOW')
         if trace_incomplete:reasons.add('DURABLE_EVENT_TRACE_INCOMPLETE')
         if event_incidents:reasons.add('EVENT_INCIDENTS_RETAINED_IN_WINDOW')
-        if modeled_execution_events:
-            reasons.add('MODELED_EXECUTION_RECONCILIATION_NOT_BOUND')
+        if unreconciled_modeled_execution_events:
+            reasons.add('MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND')
         if legacy_admission_incidents:reasons.add('LEGACY_EXCHANGE_ADMISSIONS_UNBOUND')
         if unmatched_admission_incidents:reasons.add('EXCHANGE_ADMISSION_OUTCOME_MISSING')
         return dict(mode='RETAINED_FORWARD_OPERATIONAL_COVERAGE_REVIEW',status='REVIEW_REQUIRED',read_only=True,
@@ -528,6 +583,11 @@ def _review_bound(path, *, after, until, start, end, stable_source):
             quote_outcome_disagreements_in_window=outcome_disagreements,
             event_incident_records_in_window=event_incidents,
             modeled_execution_events_in_window=modeled_execution_events,
+            bundle_bound_modeled_execution_events_in_window=
+                bundle_bound_modeled_execution_events,
+            unreconciled_modeled_execution_events_in_window=
+                unreconciled_modeled_execution_events,
+            reconciliation_bundle_sha256=reconciliation_bundle_sha256,
             retained_exchange_admissions=admission_count,
             exchange_admissions_in_window=admissions_in_window,
             exchange_admission_incidents_in_window=admission_incidents,
@@ -544,8 +604,10 @@ class _Parser(argparse.ArgumentParser):
 
 def main():
     parser=_Parser(description=__doc__);parser.add_argument('--history',required=True)
-    parser.add_argument('--after',required=True);parser.add_argument('--until',required=True);args=parser.parse_args()
-    try:result=review(args.history,after=args.after,until=args.until)
+    parser.add_argument('--after',required=True);parser.add_argument('--until',required=True)
+    parser.add_argument('--reconciliation-bundle');args=parser.parse_args()
+    try:result=review(args.history,after=args.after,until=args.until,
+        reconciliation_bundle=args.reconciliation_bundle)
     except (OSError,ValueError,TypeError,KeyError,ArithmeticError,sqlite3.Error,MemoryError,RecursionError):
         print('FORWARD_TRIAL_REVIEW_FAILED');return 2
     print(json.dumps(result,sort_keys=True));return 0

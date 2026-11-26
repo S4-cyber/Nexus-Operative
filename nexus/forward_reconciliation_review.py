@@ -29,6 +29,7 @@ REASONS=frozenset((
     'INDEPENDENT_CUT_REQUIRES_SESSION_REVIEW'))
 RECEIPT_PROFILE='nexus.forward-session-review-receipt.v1'
 MODELED_OUTCOME_PROFILE='nexus.forward-modeled-outcome.v1'
+MODELED_EXECUTION_SET_PROFILE='nexus.forward-modeled-execution-set.v1'
 
 
 def _sha(value):
@@ -40,6 +41,35 @@ def _clock(value):
     return type(value) in (int,float) and math.isfinite(value)
 
 
+def modeled_execution_set_sha256(event_points):
+    """Commit to every modeled event without exporting private order terms."""
+    if type(event_points) is not list:raise ValueError('FORWARD_MODELED_EXECUTION_SET_INVALID')
+    executions=[];seen=set()
+    for point in event_points:
+        if type(point) is not dict or type(point.get('record')) is not dict:
+            raise ValueError('FORWARD_MODELED_EXECUTION_SET_INVALID')
+        record=point['record']
+        if point.get('kind')!='OUTCOME' or record.get('decision') not in ('BUY','SELL'):
+            continue
+        sequence=point.get('sequence');cycle=record.get('cycle')
+        side=record.get('decision');order_id=record.get('order_id')
+        quote=record.get('quote_evidence_sha256');fill=record.get('modeled_fill_sha256')
+        if (type(sequence) is not int or sequence<1 or sequence in seen or
+                type(cycle) is not int or cycle<1 or type(side) is not str or
+                type(order_id) is not str or not order_id or len(order_id)>256 or
+                type(quote) is not str or re.fullmatch(r'[a-f0-9]{64}',quote) is None or
+                type(fill) is not str or re.fullmatch(r'[a-f0-9]{64}',fill) is None):
+            raise ValueError('FORWARD_MODELED_EXECUTION_SET_INVALID')
+        seen.add(sequence)
+        executions.append(dict(event_sequence=sequence,cycle=cycle,side=side,
+            order_id=order_id,quote_evidence_sha256=quote,
+            modeled_fill_sha256=fill))
+    executions.sort(key=lambda item:(item['event_sequence'],item['cycle'],
+        item['side'],item['order_id'],item['quote_evidence_sha256'],
+        item['modeled_fill_sha256']))
+    return _sha(dict(profile=MODELED_EXECUTION_SET_PROFILE,executions=executions))
+
+
 def reconciliation_sha256(*,session,state,quote_head_sha256,event_head_sha256,
                           order_snapshot_sha256,final_order_snapshot_sha256,
                           cut_evidence,reasons,summary):
@@ -48,6 +78,7 @@ def reconciliation_sha256(*,session,state,quote_head_sha256,event_head_sha256,
         'quote_outcomes','modeled_order_outcomes','modeled_no_fill_outcomes',
         'event_trace_complete','quote_outcome_bijection',
         'durable_order_outcomes_reconciled','durable_fill_attempts_bound',
+        'modeled_execution_set_sha256',
         'durable_no_fill_outcomes_reconciled','durable_no_fill_attempts_bound',
         'cut_evidence_stable','cut_binding_verified','independent_cut_observed',
         'latest_modeled_outcome_sha256')
@@ -263,6 +294,7 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             if modeled_sources else None)
         latest_modeled_outcome_sha256=(
             _sha(latest_modeled_outcome) if latest_modeled_outcome is not None else None)
+        modeled_set_sha256=modeled_execution_set_sha256(event_points)
         recorded_no_fills=[]
         for point in event_points:
             record=point['record']
@@ -318,6 +350,7 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             quote_outcome_bijection='QUOTE_OUTCOME_BIJECTION_DISAGREEMENT' not in reasons,
             durable_order_outcomes_reconciled=order_outcomes_ok,
             durable_fill_attempts_bound=fill_attempts_bound,
+            modeled_execution_set_sha256=modeled_set_sha256,
             durable_no_fill_outcomes_reconciled=no_fill_outcomes_ok,
             durable_no_fill_attempts_bound=no_fill_attempts_bound,
             cut_state_before=before,cut_state_after=after,
@@ -341,6 +374,8 @@ def reconcile(*,session,started_at,updated_at,state,counts,last,quotes,events,
             modeled_order_outcomes=0,modeled_no_fill_outcomes=0,event_trace_complete=False,
             quote_outcome_bijection=False,durable_order_outcomes_reconciled=False,
             durable_fill_attempts_bound=False,
+            modeled_execution_set_sha256=_sha(dict(
+                profile=MODELED_EXECUTION_SET_PROFILE,executions=[])),
             durable_no_fill_outcomes_reconciled=False,
             durable_no_fill_attempts_bound=False,
             cut_state_before='PRESENT_UNVERIFIED',cut_state_after='PRESENT_UNVERIFIED',

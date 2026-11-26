@@ -56,10 +56,18 @@ def attach(db, path):
     # Atomic multi-file commit requires rollback journals on both databases.
     if db.execute('PRAGMA main.journal_mode').fetchone()[0] != 'delete' or db.execute('PRAGMA portfolio.journal_mode').fetchone()[0] != 'delete':
         raise ValueError('ATOMIC_PORTFOLIO_REQUIRES_DELETE_JOURNALS')
-    db.execute('PRAGMA portfolio.synchronous=FULL')
+    if db.in_transaction:
+        if db.execute('PRAGMA portfolio.synchronous').fetchone()[0]!=2:
+            raise ValueError('ATOMIC_PORTFOLIO_REQUIRES_FULL_SYNC')
+    else:db.execute('PRAGMA portfolio.synchronous=FULL')
     portfolio = AttachedPortfolio(db)
     create_schema(portfolio)
     return portfolio
+
+
+def reserve_writer(portfolio):
+    """Acquire this transaction's linked-ledger writer reservation."""
+    portfolio.execute('UPDATE meta SET value=value WHERE 0')
 
 
 def attach_read_only(db, path):

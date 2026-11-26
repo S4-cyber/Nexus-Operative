@@ -66,6 +66,16 @@ def _database_busy(error):
 def _busy():raise ValueError('ORDER_JOURNAL_DATABASE_BUSY') from None
 
 
+def _state_snapshot(gateway):
+    return (gateway.halted,gateway.portfolio_linked,json.dumps([
+        gateway.intents,gateway.archived_intents,gateway.archive_batches,
+        gateway.archival_boundary,gateway.epoch_lineage,
+        gateway.retired_order_id_fingerprints,gateway.account,
+        gateway.order_terms,sorted((str(key),value) for key,value in gateway.executions.items()),
+        sorted((str(key),value) for key,value in gateway.quote_events.items()),
+        sorted((str(key),value) for key,value in gateway.no_fill_events.items())],sort_keys=True))
+
+
 @contextmanager
 def _transaction(db):
     """Normalize bounded statement/final-commit contention without retry."""
@@ -271,17 +281,25 @@ class DurableOrderGateway:
         with closing(self._connect(path)) as db:
             root_guard.require_current()
             with _transaction(db):
-                portfolio=execution_portfolio.attach(db,path.parent/'paper_portfolio.sqlite3')
-                root_guard.require_current()
                 db.execute('BEGIN IMMEDIATE')
                 # Linearize ordinary mutation against the independent latch
                 # after any SQLite wait. A cut published first must win.
                 if cut_guarded:require_cut_clear()
                 gateway,count=self._restore(db)
-                results=[]
+                portfolio=None
+                # A linked quote fill must sample its runtime clock only after
+                # both durable stores are writable. Otherwise a portfolio-lock
+                # wait can age an already sampled quote into a stale fill.
+                if (execution_clock is not None and gateway.portfolio_linked and
+                        any(method=='simulate_quote_fill' for method,_,_,_ in prepared)):
+                    portfolio=execution_portfolio.attach(
+                        db,path.parent/'paper_portfolio.sqlite3')
+                    execution_portfolio.reserve_writer(portfolio)
+                    root_guard.require_current()
+                evaluated_prepared=[]
                 for method,args,kwargs,payload in prepared:
-                    if cut_guarded:require_cut_clear()
                     if method=='simulate_quote_fill' and execution_clock is not None:
+                        if cut_guarded:require_cut_clear()
                         evaluated=execution_clock()
                         try:valid=type(evaluated) in (int,float) and math.isfinite(evaluated)
                         except OverflowError:valid=False
@@ -291,6 +309,16 @@ class DurableOrderGateway:
                         payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
                         command=json.loads(payload);args=command['args'];kwargs=command['kwargs']
                         if cut_guarded:require_cut_clear()
+                    evaluated_prepared.append((method,args,kwargs,payload))
+                prepared=evaluated_prepared
+                self._require_last_halt_reserve(db,gateway,count,prepared)
+                if portfolio is None:
+                    portfolio=execution_portfolio.attach(
+                        db,path.parent/'paper_portfolio.sqlite3')
+                    root_guard.require_current()
+                results=[]
+                for method,args,kwargs,payload in prepared:
+                    if cut_guarded:require_cut_clear()
                     result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
                     results.append(result)
                 # A cut published by or during the final mutation must still
@@ -299,19 +327,52 @@ class DurableOrderGateway:
                 root_guard.require_current()
         return results
 
+    def _require_last_halt_reserve(self,db,gateway,count,prepared):
+        if (count+len(prepared)<MAX_RETAINED_COMMANDS and
+                count-gateway.archival_boundary+len(prepared)<MAX_COMMANDS):
+            return
+        preview,preview_count=self._restore(db)
+        if preview_count!=count:raise ValueError('ORDER_JOURNAL_RECOVERY_FAILED')
+        for method,args,kwargs,_payload in prepared:
+            active_count=count-preview.archival_boundary
+            if method=='archive_terminal':args=(*args,count+1)
+            if (preview.portfolio_linked and method=='simulate_event' and
+                    (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL'):
+                raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
+            before=_state_snapshot(preview)
+            getattr(preview,method)(*args,**kwargs)
+            after=_state_snapshot(preview)
+            if before!=after:
+                if (not preview.halted and
+                        ((method!='archive_terminal' and active_count+1>=MAX_COMMANDS) or
+                         count+1>=MAX_RETAINED_COMMANDS)):
+                    raise ValueError('ORDER_JOURNAL_LAST_HALT_RESERVE')
+                count+=1
+
     def _apply(self,db,portfolio,gateway,count,method,args,kwargs,payload):
         active_count=count-gateway.archival_boundary
         if method=='archive_terminal':
             args=(*args,count+1)
             payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
-        if gateway.portfolio_linked:
-            if method not in ('emergency_halt','cancel','expire_order','expire_due'):
-                execution_portfolio.compare(portfolio,gateway.account)
-            if method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
-                raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
-        before = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items()), sorted((str(k), v) for k,v in gateway.no_fill_events.items())], sort_keys=True))
+        linked=gateway.portfolio_linked
+        portfolio_checked=linked and method not in ('emergency_halt','cancel','expire_order','expire_due')
+        linked_account=copy.deepcopy(gateway.account) if portfolio_checked else None
+        if linked and method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
+            raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
+        before=_state_snapshot(gateway)
         result = getattr(gateway, method)(*args, **kwargs)
-        after = (gateway.halted,gateway.portfolio_linked, json.dumps([gateway.intents, gateway.archived_intents, gateway.archive_batches, gateway.archival_boundary, gateway.epoch_lineage, gateway.retired_order_id_fingerprints, gateway.account, gateway.order_terms, sorted((str(k), v) for k,v in gateway.executions.items()), sorted((str(k), v) for k,v in gateway.quote_events.items()), sorted((str(k), v) for k,v in gateway.no_fill_events.items())], sort_keys=True))
+        after=_state_snapshot(gateway)
+        if before != after:
+            # Never spend the final durable slot on a command that leaves the
+            # gateway running.  A subsequent emergency halt must remain
+            # appendable under both the active epoch and retained-history caps.
+            if (not gateway.halted and
+                    ((method!='archive_terminal' and active_count+1>=MAX_COMMANDS) or
+                     count+1>=MAX_RETAINED_COMMANDS)):
+                raise ValueError('ORDER_JOURNAL_LAST_HALT_RESERVE')
+        if portfolio_checked:
+            if portfolio is None:raise ValueError('LINKED_PORTFOLIO_UNAVAILABLE')
+            execution_portfolio.compare(portfolio,linked_account)
         if before != after:
             if method=='link_portfolio':
                 execution_portfolio.link(portfolio,gateway.account)

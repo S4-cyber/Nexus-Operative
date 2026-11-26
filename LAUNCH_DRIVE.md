@@ -1,4 +1,27 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.413 durable final-halt reserve
+
+Durable order admission now preserves one final appendable command slot for
+emergency halt whenever a state-changing command would otherwise leave the
+gateway running. The invariant is enforced independently against the active-
+epoch and retained-history limits before linked-ledger side effects. A reset
+with two slots remaining may use the penultimate slot and a subsequent halt may
+use the final slot; a reset, cancellation, expiry or other mutation cannot spend
+that final slot while leaving the gateway unhalted. Duplicate no-op replays and
+halted logical archival retain their existing behavior.
+
+Read-only capacity diagnostics identify `FINAL_HALT_SLOT_RESERVED` and direct
+the operator to `EMERGENCY_HALT_REQUIRED`. This is bounded local durability and
+restart-safety hardening, not native storage-fault, broker/account/source,
+genuine-market, sustained-trial, performance, profitability, funding, cloud,
+Windows/installer or release acceptance. Engagement and optional AI remain OFF
+by default; account checks, reducing exits, fail-closed behavior and the
+independent emergency-stop path remain unchanged. No button or editable
+parameter was added, so the seven beginner-friendly tabs and black/bright-
+purple bottom-right hover help remain unchanged. The read-only roadmap estimate
+stays exact 38% weighted (displayed about 40%, 30–45% low-confidence), with 0/9
+stages independently accepted and no release or trading permission.
+
 ## v0.340.412 detached reconciliation evidence boundary
 
 The development risk-tier portal controls and the complete detached trial-

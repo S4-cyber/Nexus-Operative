@@ -77,8 +77,10 @@ def report(command_count,intent_count,halted,command_limit,retained_commands=Non
         (EXIT_INTENT_RESERVE if exit_intent_reserve_active else 0))
     ordinary_intent_remaining=max(0,ordinary_intent_limit-intent_count)
     exit_intent_remaining=max(0,intent_remaining-ordinary_intent_remaining)
+    final_halt_reserved=not halted and total_remaining==1
     reasons=[]
     if halted:reasons.append('EMERGENCY_HALT_ACTIVE')
+    if final_halt_reserved:reasons.append('FINAL_HALT_SLOT_RESERVED')
     if remaining==0:reasons.append('JOURNAL_NORMAL_INTAKE_EXHAUSTED')
     if intent_remaining==0:reasons.append('ACTIVE_INTENT_CAP_REACHED')
     elif exit_intent_reserve_active and ordinary_intent_remaining==0:
@@ -96,6 +98,7 @@ def report(command_count,intent_count,halted,command_limit,retained_commands=Non
                 new_intents_allowed=not halted and remaining>0 and ordinary_intent_remaining>0,
                 lifecycle_intake_allowed=not halted and remaining>0,
                 reasons=reasons,automatic_archival_available=False,explicit_logical_archival_available=True,history_deleted=False,
-                recommended_action='STOP_NEW_INTAKE_AND_REVIEW_ARCHIVAL' if remaining==0 or ordinary_intent_remaining==0 else 'MONITOR_CAPACITY',
+                recommended_action=('EMERGENCY_HALT_REQUIRED' if final_halt_reserved else
+                    'STOP_NEW_INTAKE_AND_REVIEW_ARCHIVAL' if remaining==0 or ordinary_intent_remaining==0 else 'MONITOR_CAPACITY'),
                 retained_commands=retained_commands,retained_limit=retained_limit,
-                note='Diagnostic snapshot, not a reservation. Admission is rechecked transactionally. A linked paper account protects one existing intent slot for a matching position-reducing exit; it does not increase the total limit. Duplicate replays do not consume commands; cancellation, expiry and halt can use remaining control slots.')
+                note='Diagnostic snapshot, not a reservation. Admission is rechecked transactionally. A linked paper account protects one existing intent slot for a matching position-reducing exit; it does not increase the total limit. Duplicate replays do not consume commands; cancellation and expiry can use control capacity until the final durable slot, which is reserved for emergency halt.')

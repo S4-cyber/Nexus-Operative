@@ -1,4 +1,28 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.420 final direct paper BUY emergency fence
+
+Direct paper-portfolio BUY admission now samples the independently writable
+durable emergency latch both before and after exact captured-quote
+revalidation. The first sample preserves emergency refusal priority when both
+the cut and quote refusal are already present. The final sample is the last
+fallible guard before the first accounting read or mutation, so a cut asserted
+during quote validation rolls back without a position, cash delta, position
+event or seal. The protected checks perform no market fetch or retry; tier-OFF
+ordering remains intact and reducing SELL exits remain available.
+
+A deterministic regression asserts the durable cut from inside the second
+exact-quote validation and requires the initialization-only ledger to remain.
+This is bounded same-host fail-closed ordering, not distributed atomicity,
+provider/account/source or broker acceptance, genuine-market or sustained-
+trial acceptance, performance, profitability, funding, cloud, Windows/
+installer or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, fail-closed behavior and exits remain intact.
+No button or editable parameter was added, so the seven beginner-friendly tabs
+and black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45% low-
+confidence), with 0/9 stages independently accepted and no release or trading
+permission.
+
 ## v0.340.419 direct paper BUY post-wait quote freshness
 
 Direct paper-portfolio BUY admission now revalidates the exact captured

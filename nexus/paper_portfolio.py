@@ -197,6 +197,11 @@ def buy(product,notional,quote,tier=None,cut_requested=None):
                     # the same captured read-only observation; never fetch or
                     # retry external transport while accounting locks are held.
                     _,ask=check_quote(product,quote)
+                    # Quote validation is deliberately fallible work after the
+                    # earlier latch sample. Re-sample the independently writable
+                    # cut now so it remains the final guard before accounting.
+                    if cut_requested is not None and cut_requested():
+                        raise ValueError("EMERGENCY_CUT_INTERRUPTED_TRADE")
                     capital=D(meta["initial"])
                     exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
                     if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")

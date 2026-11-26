@@ -326,6 +326,50 @@ def test_direct_buy_quote_expiring_during_writer_wait_rolls_back(
     assert snapshot["positions"]==[] and snapshot["event_count"]==1
 
 
+def test_direct_buy_cut_during_quote_revalidation_rolls_back(
+        tmp_path,monkeypatch):
+    """A cut published inside the protected quote check must veto the BUY."""
+    from nexus import emergency_intent,paper_portfolio
+
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public",
+           "received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",
+                       json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+
+    original=paper_portfolio.check_quote
+    calls={"count":0}
+
+    def publish_cut_after_protected_quote_validation(product,value):
+        result=original(product,value)
+        calls["count"]+=1
+        if calls["count"]==2:
+            emergency_intent.path(
+                backend.research_order_gateway._path()).write_bytes(
+                    emergency_intent.RECORD)
+        return result
+
+    monkeypatch.setattr(paper_portfolio,"check_quote",
+                        publish_cut_after_protected_quote_validation)
+    response=client.post("/api/paper/portfolio/buy",json={
+        "product":"BTC-USD","notional":10,"tier":"terrestrial"})
+
+    assert calls["count"]==2
+    assert response.status_code==409
+    assert response.json()=={"detail":"EMERGENCY_CUT_INTERRUPTED_TRADE"}
+    snapshot=client.get("/api/paper/portfolio").json()
+    assert snapshot["positions"]==[] and snapshot["event_count"]==1
+    assert emergency_intent.requested(backend.research_order_gateway._path())
+
+
 def test_standalone_cut_during_direct_buy_vetoes_ledger_commit(
         tmp_path,monkeypatch):
     """A durable cut asserted after both BUY writer reservations must win."""

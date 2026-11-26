@@ -10,13 +10,15 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-# Full reachable history measured 1,467,457,423 uncompressed bytes on 2026-11-19.
+# Full reachable history measured 1,652,385,179 uncompressed bytes on 2026-11-25.
 # Preserve a finite complete-history ceiling while separately bounding every
 # object and each candidate's newly reachable delta from its exact trusted base.
+# The consolidated reconciliation stack measured 350,308,100 delta bytes;
+# retain bounded headroom without relaxing the independent object-count cap.
 MAX_BYTES = 4 * 1024 * 1024 * 1024
 MAX_OBJECTS = 100000
 MAX_OBJECT_BYTES = 16 * 1024 * 1024
-MAX_DELTA_BYTES = 64 * 1024 * 1024
+MAX_DELTA_BYTES = 512 * 1024 * 1024
 MAX_DELTA_OBJECTS = 4096
 PRIVATE_MAGIC = (b'SQLite format 3\x00', b'-----'+b'BEGIN PRIVATE KEY-----', b'-----'+b'BEGIN RSA PRIVATE KEY-----',
                  b'-----'+b'BEGIN EC PRIVATE KEY-----', b'-----'+b'BEGIN OPENSSH PRIVATE KEY-----',

@@ -10,10 +10,14 @@ from pathlib import Path, PurePosixPath
 import re
 import subprocess
 
-# Full reachable history measured 1,202,605,780 uncompressed bytes on 2026-11-12.
-# Keep a finite 1.5-GiB budget with growth headroom; scan all objects without pruning.
-MAX_BYTES = 1536 * 1024 * 1024
+# Full reachable history measured 1,467,457,423 uncompressed bytes on 2026-11-19.
+# Preserve a finite complete-history ceiling while separately bounding every
+# object and each candidate's newly reachable delta from its exact trusted base.
+MAX_BYTES = 4 * 1024 * 1024 * 1024
 MAX_OBJECTS = 100000
+MAX_OBJECT_BYTES = 16 * 1024 * 1024
+MAX_DELTA_BYTES = 64 * 1024 * 1024
+MAX_DELTA_OBJECTS = 4096
 PRIVATE_MAGIC = (b'SQLite format 3\x00', b'-----'+b'BEGIN PRIVATE KEY-----', b'-----'+b'BEGIN RSA PRIVATE KEY-----',
                  b'-----'+b'BEGIN EC PRIVATE KEY-----', b'-----'+b'BEGIN OPENSSH PRIVATE KEY-----',
                  b'-----'+b'BEGIN ENCRYPTED PRIVATE KEY-----', b'NEXUS-OBS-ENC-1\n', b'NEXUS-QUOTE-EVIDENCE-ENC-1\n')
@@ -37,11 +41,52 @@ def content_rule(prefix):
     return None
 
 
+class _AmbiguousJSON(ValueError):pass
+
+
+def _strict_object(pairs):
+    value={}
+    for key,item in pairs:
+        if key in value:raise _AmbiguousJSON()
+        value[key]=item
+    return value
+
+
+def _reject_constant(_value):raise _AmbiguousJSON()
+
+
+def _json_shaped(raw):
+    """Recognize a bounded JSON document prefix without exposing content."""
+    encodings=[]
+    for marker,encoding in ((b'\xef\xbb\xbf','utf-8-sig'),
+                            (b'\xff\xfe\x00\x00','utf-32'),
+                            (b'\x00\x00\xfe\xff','utf-32'),
+                            (b'\xff\xfe','utf-16'),(b'\xfe\xff','utf-16')):
+        if raw.startswith(marker):
+            encodings.append(encoding);break
+    encodings.append('utf-8')
+    for encoding in encodings:
+        try:text=raw[:4096].decode(encoding)
+        except UnicodeError:continue
+        prefix=text.lstrip()
+        if prefix.startswith('{'):return True
+        if prefix.startswith('['):
+            # A TOML section such as ``[build-system]`` is not JSON-shaped.
+            # Require the first array value to begin like a JSON token while
+            # retaining fail-closed handling for a truncated bare ``[``.
+            remainder=prefix[1:].lstrip()
+            return not remainder or remainder[0] in ']{["-0123456789tfn'
+        return False
+    return False
+
+
 def json_rule(raw):
-    if not raw.lstrip().startswith(b'{'):return None
     if len(raw)>8*1024*1024:return 'OVERSIZED_JSON_REQUIRES_REVIEW'
-    try:value=json.loads(raw)
-    except (ValueError,UnicodeError,RecursionError):return None
+    try:value=json.loads(raw,object_pairs_hook=_strict_object,
+                         parse_constant=_reject_constant)
+    except _AmbiguousJSON:return 'AMBIGUOUS_JSON_REQUIRES_REVIEW'
+    except (ValueError,UnicodeError,RecursionError):
+        return 'MALFORMED_JSON_REQUIRES_REVIEW' if _json_shaped(raw) else None
     if not isinstance(value,dict):return None
     if value.get('schema')=='nexus.order-retired-id-baseline-review.v1':
         return 'PRIVATE_ORDER_ID_BASELINE_REVIEW'
@@ -55,7 +100,7 @@ def json_rule(raw):
         'SUPPLIED_EXECUTION_QUALITY_REVIEW','PAPER_EXECUTION_QUALITY_REVIEW','READ_ONLY_PAPER_BTC_QUOTE_OBSERVATION','PAPER_REQUEST_QUOTE_HISTORY','PAPER_REQUEST_QUOTE_RECEIPT','PAPER_QUOTE_CAPTURE_STATUS','EXPLICIT_PAPER_QUOTE_CAPTURE','PRIVATE_PAPER_QUOTE_BUNDLE_REVIEW',
         'PAPER_PROVIDER_READ_BUDGET_REVIEWED_RECOVERY','PAPER_READ_PACING_REVIEWED_RECOVERY',
         'PAPER_ACCOUNT_RESPONSE_NORMALIZATION_REVIEW','PAPER_ACTIVITY_RESPONSE_NORMALIZATION_REVIEW',
-        'PAPER_EXACT_RESPONSE_BUNDLE_REVIEW'):
+        'PAPER_EXACT_RESPONSE_BUNDLE_REVIEW','READ_ONLY_BROKER_SUBMISSION_REVIEW'):
         return 'PRIVATE_FINANCIAL_REPORT'
     return None
 
@@ -66,8 +111,53 @@ def _git(repo,*args):
     return result.stdout
 
 
-def audit(repo, *, history=False, required_refs=()):
+def _exact_commit(repo, value, label):
+    code=f'INVALID_{label}_COMMIT'
+    unavailable=f'{label}_COMMIT_UNAVAILABLE'
+    if type(value) is not str or re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}',value) is None:
+        raise ValueError(code)
+    result=subprocess.run(['git','-C',str(repo),'rev-parse','--verify',value+'^{commit}'],
+        capture_output=True,check=False,timeout=120)
+    if result.returncode:raise ValueError(unavailable)
+    resolved=result.stdout.strip()
+    if resolved.decode('ascii','strict')!=value:raise ValueError(code)
+    return resolved
+
+
+def _delta_ids(repo, baseline_commit, candidate_commit):
+    baseline=_exact_commit(repo,baseline_commit,'BASELINE')
+    candidate=_exact_commit(repo,candidate_commit,'CANDIDATE')
+    relation=subprocess.run(['git','-C',str(repo),'merge-base','--is-ancestor',
+        baseline.decode(),candidate.decode()],capture_output=True,check=False,timeout=120)
+    if relation.returncode==1:raise ValueError('BASELINE_NOT_ANCESTOR')
+    if relation.returncode:raise ValueError('GIT_AUDIT_INCOMPLETE')
+    raw=_git(repo,'rev-list','--objects',candidate.decode(),'^'+baseline.decode())
+    ids=set()
+    for line in raw.splitlines():
+        oid=line.split(b' ',1)[0]
+        if re.fullmatch(rb'[0-9a-f]{40,64}',oid) is None:raise ValueError('INVALID_GIT_OBJECT')
+        ids.add(oid)
+    return ids
+
+
+def _tree_modes(raw, oid_bytes):
+    modes=[];cursor=0
+    while cursor<len(raw):
+        space=raw.find(b' ',cursor);nul=raw.find(b'\0',space+1)
+        if space<0 or nul<0 or nul+1+oid_bytes>len(raw):raise ValueError('INVALID_GIT_OBJECT')
+        mode=raw[cursor:space]
+        if re.fullmatch(rb'[0-7]{5,6}',mode) is None:raise ValueError('INVALID_GIT_OBJECT')
+        modes.append(mode);cursor=nul+1+oid_bytes
+    return modes
+
+
+def audit(repo, *, history=False, required_refs=(), baseline_commit=None,
+          candidate_commit=None):
     repo = Path(repo); findings = []; total = 0; blobs = 0
+    if (baseline_commit is None)!=(candidate_commit is None):
+        raise ValueError('DELTA_COMMIT_PAIR_REQUIRED')
+    if baseline_commit is not None and not history:
+        raise ValueError('DELTA_REQUIRES_HISTORY')
     if history and _git(repo,'rev-parse','--is-shallow-repository').strip() != b'false': raise ValueError('FULL_HISTORY_REQUIRED')
     for ref in required_refs:
         if not re.fullmatch(r'refs/[A-Za-z0-9_./-]+',ref): raise ValueError('INVALID_REQUIRED_REF')
@@ -77,13 +167,28 @@ def audit(repo, *, history=False, required_refs=()):
     for name in sorted(paths):
         rule = path_rule(name)
         if rule: findings.append(dict(rule=rule,path_sha256=hashlib.sha256(name.encode()).hexdigest()))
+    delta_ids=_delta_ids(repo,baseline_commit,candidate_commit) if baseline_commit is not None else set()
+    current_ids=set()
+    if history:
+        for line in _git(repo,'ls-files','-s').splitlines():
+            fields=line.split()
+            oid=fields[1] if len(fields)>=2 else b''
+            if re.fullmatch(rb'[0-9a-f]{40,64}',oid) is None:
+                raise ValueError('INVALID_GIT_OBJECT')
+            current_ids.add(oid)
     objects = _git(repo,'rev-list','--objects','--all') if history else _git(repo,'ls-files','-s')
     ids = set()
     for line in objects.splitlines():
-        oid = line.split(b' ',1)[0] if history else line.split()[1]
+        fields=line.split()
+        if not history:
+            if len(fields)<4 or fields[0] not in (b'100644',b'100755'):
+                findings.append(dict(rule='NON_REGULAR_GIT_ENTRY',entry_sha256=hashlib.sha256(line).hexdigest()))
+            oid=fields[1] if len(fields)>=2 else b''
+        else:oid = line.split(b' ',1)[0]
         if re.fullmatch(rb'[0-9a-f]{40,64}',oid) is None: raise ValueError('INVALID_GIT_OBJECT')
         ids.add(oid)
     if len(ids)>MAX_OBJECTS: raise ValueError('OBJECT_AUDIT_CAP')
+    delta_total=0
     child = subprocess.Popen(['git','-C',str(repo),'cat-file','--batch'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL)
     try:
         for oid in sorted(ids):
@@ -92,25 +197,49 @@ def audit(repo, *, history=False, required_refs=()):
             if len(header)!=3 or header[0]!=oid: raise ValueError('OBJECT_AUDIT_INCOMPLETE')
             size=int(header[2]);total+=size
             if size<0:raise ValueError('INVALID_OBJECT_SIZE')
+            if size>MAX_OBJECT_BYTES:raise ValueError('OBJECT_BYTE_CAP')
             if total>MAX_BYTES: raise ValueError('HISTORY_BYTE_CAP')
-            remaining=size;prefix=b'';json_blocks=[];is_json=None
+            if oid in delta_ids:delta_total+=size
+            remaining=size;prefix=b'';json_blocks=[];tree_blocks=[]
             while remaining:
                 block=child.stdout.read(min(65536,remaining))
                 if not block: raise ValueError('OBJECT_AUDIT_INCOMPLETE')
-                if is_json is None:is_json=block.lstrip().startswith(b'{')
-                if is_json and size<=8*1024*1024:json_blocks.append(block)
+                if header[1]==b'tree':tree_blocks.append(block)
+                # Parse every bounded blob as a possible JSON document. Prefix
+                # heuristics miss valid BOM-prefixed encodings and let renamed
+                # private reports pass the public-repository boundary.
+                if header[1]==b'blob' and size<=8*1024*1024:json_blocks.append(block)
                 prefix=(prefix+block[:128])[:128];remaining-=len(block)
             if child.stdout.read(1)!=b'\n': raise ValueError('OBJECT_AUDIT_INCOMPLETE')
+            if header[1]==b'tree':
+                for mode in _tree_modes(b''.join(tree_blocks),len(oid)//2):
+                    if mode not in (b'100644',b'100755',b'40000',b'040000'):
+                        findings.append(dict(rule='NON_REGULAR_GIT_ENTRY',tree_sha=oid.decode()))
             if header[1]!=b'blob':continue
             blobs+=1;rule=content_rule(prefix)
-            if not rule and is_json:rule=json_rule(b''.join(json_blocks)) if size<=8*1024*1024 else 'OVERSIZED_JSON_REQUIRES_REVIEW'
+            if not rule and size<=8*1024*1024:rule=json_rule(b''.join(json_blocks))
+            if (not rule and size>8*1024*1024 and
+                    (prefix.lstrip().startswith(b'{') or prefix.startswith(
+                        (b'\xef\xbb\xbf',b'\xff\xfe',b'\xfe\xff',b'\xff\xfe\x00\x00',b'\x00\x00\xfe\xff')))):
+                rule='OVERSIZED_JSON_REQUIRES_REVIEW'
+            # A previously repaired malformed JSON blob can remain reachable
+            # in immutable history. Continue to reject it if it is current or
+            # introduced anywhere in the reviewed delta; do not make a policy
+            # upgrade retroactively brick an otherwise clean repository.
+            if (rule=='MALFORMED_JSON_REQUIRES_REVIEW' and history and
+                    oid not in current_ids and oid not in delta_ids):
+                rule=None
             if rule:findings.append(dict(rule=rule,blob_sha=oid.decode()))
         child.stdin.close()
         if child.wait(timeout=15)!=0:raise ValueError('OBJECT_AUDIT_INCOMPLETE')
     finally:
         if child.poll() is None:child.kill();child.wait()
+    if len(delta_ids)>MAX_DELTA_OBJECTS:raise ValueError('DELTA_OBJECT_CAP')
+    if delta_total>MAX_DELTA_BYTES:raise ValueError('DELTA_BYTE_CAP')
     return dict(mode='PUBLIC_REPOSITORY_ARTIFACT_AUDIT',passed=not findings,history_scanned=history,
         paths_checked=len(paths),blobs_checked=blobs,bytes_checked=total,findings=findings,
+        baseline_commit=baseline_commit,candidate_commit=candidate_commit,
+        delta_objects_checked=len(delta_ids),delta_bytes_checked=delta_total,
         commits_checked=int(_git(repo,'rev-list','--count','--all').strip()) if history else None,
         limitations='Reachable fetched refs only. Not a secret detector, source attestation, privacy guarantee or review of deleted refs, Actions logs/artifacts, issues or external copies.')
 
@@ -118,12 +247,18 @@ def audit(repo, *, history=False, required_refs=()):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repository',default='.');parser.add_argument('--history',action='store_true')
-    parser.add_argument('--require-ref',action='append',default=[]);args=parser.parse_args()
-    try:report=audit(args.repository,history=args.history,required_refs=args.require_ref)
+    parser.add_argument('--require-ref',action='append',default=[])
+    parser.add_argument('--baseline-commit');parser.add_argument('--candidate-commit');args=parser.parse_args()
+    try:report=audit(args.repository,history=args.history,required_refs=args.require_ref,
+        baseline_commit=args.baseline_commit,candidate_commit=args.candidate_commit)
     except (OSError,ValueError,UnicodeError,subprocess.SubprocessError) as error:
         allowed={'FULL_HISTORY_REQUIRED','INVALID_REQUIRED_REF','GIT_AUDIT_INCOMPLETE',
             'INVALID_GIT_OBJECT','OBJECT_AUDIT_CAP','INVALID_OBJECT_SIZE',
-            'HISTORY_BYTE_CAP','OBJECT_AUDIT_INCOMPLETE'}
+            'HISTORY_BYTE_CAP','OBJECT_BYTE_CAP','DELTA_COMMIT_PAIR_REQUIRED',
+            'DELTA_REQUIRES_HISTORY','INVALID_BASELINE_COMMIT','BASELINE_COMMIT_UNAVAILABLE',
+            'INVALID_CANDIDATE_COMMIT','CANDIDATE_COMMIT_UNAVAILABLE',
+            'BASELINE_NOT_ANCESTOR','DELTA_OBJECT_CAP','DELTA_BYTE_CAP',
+            'OBJECT_AUDIT_INCOMPLETE'}
         code=str(error) if type(error) is ValueError and str(error) in allowed else 'INTERNAL_ERROR'
         print('PUBLIC_REPOSITORY_AUDIT_INCOMPLETE:'+code);return 2
     print(json.dumps(report,sort_keys=True));return 0 if report['passed'] else 1

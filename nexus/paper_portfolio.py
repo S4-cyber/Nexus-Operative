@@ -33,9 +33,9 @@ def _transaction(db, *, immediate=False):
     """Normalize bounded statement/final-commit contention without retry."""
     try:
         if immediate:
-            # New exposure admission must own SQLite's writer reservation
-            # before it audits any ledger state.  A deferred transaction would
-            # leave a cross-process gap between the governor and the mutation.
+            # Protected accounting mutations must own SQLite's writer
+            # reservation before auditing ledger or position state. A deferred
+            # transaction would leave a cross-process read-to-write gap.
             db.execute('BEGIN IMMEDIATE')
         with db:yield
     except sqlite3.OperationalError as error:
@@ -222,11 +222,16 @@ def sell(product,quote):
     bid,_=check_quote(product,quote)
     with LOCK:
         with closing(_connect()) as db:
-            with _transaction(db):
+            with _transaction(db,immediate=True):
                 if dict(db.execute("SELECT key,value FROM meta")).get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
                 cash=verify_ledger(db)
                 pos=db.execute("SELECT quantity,entry FROM positions WHERE product=?",(product,)).fetchone()
                 if not pos:raise ValueError("Paper position unavailable")
+                # The route preflight cannot cover time spent waiting for or
+                # auditing the ledger transaction. Revalidate the same captured
+                # public observation immediately before the first mutation;
+                # never fetch or retry provider transport under this lock.
+                bid,_=check_quote(product,quote)
                 qty=D(pos[0]);delta=qty*bid*(D(1)-FEE)
                 db.execute("DELETE FROM positions WHERE product=?",(product,))
                 db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))

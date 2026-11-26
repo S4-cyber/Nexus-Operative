@@ -54,6 +54,46 @@ def test_every_authority_denies_external_and_automatic_authority():
     assert by_id["LOCAL_PAPER_REDUCING_EXIT"]["reducing_exit_available_during_cut"] is True
 
 
+@pytest.mark.parametrize("mutation,code",[
+    (lambda rows:({**rows[0],"automatic_start":True},*rows[1:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:({**rows[0],"automatic_resume":True},*rows[1:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:({**rows[0],"default":"ON"},*rows[1:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:(*rows[:6],{**rows[6],"default":"READY"},*rows[7:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:(*rows[:-1],{**rows[-1],"default":"APPROVED"}),
+        "DECLARATION_INVALID"),
+    (lambda rows:({**rows[0],"routes":list(rows[0]["routes"])},*rows[1:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:({**rows[0],"gates":()},*rows[1:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:(*rows[:2],{**rows[2],"routes":()},*rows[3:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:(rows[0],{**rows[1],"routes":rows[0]["routes"]},*rows[2:]),
+        "ROUTE_DECLARATION_DUPLICATE"),
+    (lambda rows:({**rows[0],"scope":"UNREVIEWED_SCOPE"},*rows[1:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:({**rows[0],"gates":("UNREVIEWED_GATE",)},*rows[1:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:(*rows[:2],
+        {**rows[2],"reducing_exit_available_during_cut":False},*rows[3:]),
+        "DECLARATION_INVALID"),
+    (lambda rows:({**rows[0],"id":rows[1]["id"]},*rows[1:]),
+        "DECLARATION_DUPLICATE"),
+    (lambda rows:({**rows[0],"id":"UNREVIEWED_AUTHORITY"},*rows[1:]),
+        "INVENTORY_MISMATCH"),
+])
+def test_authority_declaration_mutations_fail_closed(
+        monkeypatch,mutation,code):
+    monkeypatch.setattr(authority_inventory,"AUTHORITIES",
+        tuple(mutation(AUTHORITIES)))
+    with pytest.raises(ValueError,
+            match="^ADMISSION_AUTHORITY_"+code+"$"):
+        snapshot(app)
+
+
 def test_external_transport_presence_is_exact_but_never_authority():
     report=snapshot(app)
     boundaries=report['external_transport_boundaries']

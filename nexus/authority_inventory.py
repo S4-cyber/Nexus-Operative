@@ -193,6 +193,73 @@ AUTHORITY_PUBLIC_KEYS = frozenset((
     "id", "scope", "routes", "default", "gates", "automatic_start",
     "automatic_resume", "reducing_exit_available_during_cut",
     "learned_policy_promotion", *AUTHORITY_FLAGS))
+AUTHORITY_DECLARATION_KEYS = frozenset((
+    "id", "scope", "routes", "default", "gates", "automatic_start",
+    "automatic_resume", "reducing_exit_available_during_cut"))
+REVIEWED_AUTHORITY_CONTRACT = {
+    "TIER_PERMISSION": (
+        "LOCAL_SIMULATION_ENTRY_ONLY",
+        (("PUT", "/api/tiers/{tier}/permission"),), "OFF",
+        ("EXPLICIT_BOOLEAN_SELECTION", "PERSISTED_SETTINGS_REVIEW"), False),
+    "LOCAL_PAPER_ENTRY": (
+        "LOCAL_SYNTHETIC_PORTFOLIO",
+        (("POST", "/api/paper/portfolio/buy"),), "DENIED",
+        ("PORTAL_NOT_PAUSED", "EMERGENCY_CUT_CLEAR", "TIER_PERMISSION_ON",
+         "TIER_NOTIONAL_CAP", "FRESH_PUBLIC_QUOTE", "POST_LOCK_GATE_RECHECK"),
+        False),
+    "LOCAL_PAPER_REDUCING_EXIT": (
+        "LOCAL_SYNTHETIC_PORTFOLIO",
+        (("POST", "/api/paper/portfolio/sell"),), "NO_POSITION_NOOP",
+        ("EXISTING_LONG_ONLY", "FRESH_PUBLIC_QUOTE", "ATOMIC_LEDGER_REDUCTION"),
+        True),
+    "EXPERIMENTAL_FORWARD_SESSION": (
+        "PUBLIC_QUOTE_LOCAL_PAPER",
+        (("POST", "/api/paper/forward/start"),
+         ("POST", "/api/paper/forward/stop")), "STOPPED",
+        ("EXPLICIT_START", "TIER_PERMISSION_ON", "IMMUTABLE_POLICY",
+         "EMERGENCY_CUT_CLEAR", "SINGLE_LOCAL_OWNER", "BOUNDED_STORAGE"), True),
+    "SIMULATED_ORDER_INTENT": (
+        "LOCAL_DISCONNECTED_SIMULATION",
+        (("POST", "/api/execution/intent/simulate"),
+         ("POST", "/api/execution/intent/{client_order_id}/cancel")), "NO_INTENT",
+        ("EXPLICIT_REQUEST", "LOCAL_RISK_SCREEN", "EMERGENCY_CUT_CLEAR",
+         "DURABLE_IDEMPOTENT_JOURNAL"), True),
+    "OPTIONAL_AI_ADVISORY": (
+        "UNTRUSTED_RESEARCH_TEXT_ONLY",
+        (("POST", "/api/paper/ai-provider/{role}/research"),
+         ("POST", "/api/paper/ai-provider/public-preview/send")), "OFF",
+        ("EXPLICIT_REQUEST", "EXACT_CREDENTIAL_SOURCE", "BOUNDED_PROCESS_CALLS",
+         "STRICT_RESPONSE_SCHEMA", "NO_TOOLS"), False),
+    "BROKER_PAPER_READ": (
+        "ACCOUNT_READS_ONLY_NO_ORDER_METHOD",
+        (("POST", "/api/execution/alpaca-paper/local-credentials/inspect"),
+         ("POST", "/api/execution/alpaca-paper/local-credentials/paced-inspect"),
+         ("POST", "/api/execution/alpaca-paper/local-credentials/asset-rules")),
+        "OFF", ("WINDOWS_VAULT", "EXPLICIT_CONFIRMATION",
+        "EXPECTED_PAPER_ACCOUNT", "LOCAL_PACING", "READ_ONLY_METHODS"), False),
+    "PAPER_SETTINGS": (
+        "LOCAL_SIMULATION_LIMITS", (("PUT", "/api/paper/settings"),),
+        "SAFE_DEFAULTS", ("EXPLICIT_SAVE", "BOUNDED_EXACT_SCHEMA",
+        "DURABLE_READBACK"), False),
+    "EMERGENCY_CUT": (
+        "LOCAL_PROCESS_AND_DURABLE_ORDER_VETO",
+        (("POST", "/api/simulate/halt"),
+         ("POST", "/api/simulate/halt/reset")), "CLEAR",
+        ("CUT_CAN_ONLY_RESTRICT", "INDEPENDENT_CONTROL_LANE",
+         "RESET_EXPLICIT_CONFIRMATION", "RESET_STAYS_DISENGAGED"), True),
+    "FUNDING_PREVIEW": (
+        "VALIDATION_ONLY_NO_BANK_CONNECTOR",
+        (("POST", "/api/funding/preview"),), "PREVIEW_ONLY",
+        ("EXACT_BOUNDED_INPUT", "NO_BANK_LINK", "NO_TRANSFER_METHOD"), False),
+    "LEARNED_MODEL_OUTPUT": (
+        "ADVISORY_RESEARCH_ONLY",
+        (("POST", "/api/paper/model-council"),
+         ("POST", "/api/paper/council")), "NO_PROMOTION_AUTHORITY",
+        ("ADVISORY_ONLY", "NO_POLICY_WRITE", "NO_EXECUTION_OWNER"), False),
+    "PRODUCTION_RELEASE": (
+        "OWNER_AND_INDEPENDENT_REVIEW_OUTSIDE_APP", (), "NOT_APPROVED",
+        ("ALL_NINE_STAGES_ACCEPTED", "EXPLICIT_OWNER_DECISION"), False),
+}
 REPORT_PUBLIC_KEYS = frozenset((
     "mode", "read_only", "route_bindings_verified",
     "source_declaration_complete", "authorities", "authority_count",
@@ -263,6 +330,56 @@ def _reviewed_external_boundaries():
     return rows
 
 
+def _reviewed_authorities(available):
+    """Validate source declarations before publishing any summary claim."""
+    rows=[];identifiers=[];declared=set()
+    for declaration in AUTHORITIES:
+        if (type(declaration) is not dict or
+                frozenset(declaration)!=AUTHORITY_DECLARATION_KEYS):
+            raise ValueError("ADMISSION_AUTHORITY_DECLARATION_INVALID")
+        identifier=declaration.get("id")
+        if identifier in identifiers:
+            raise ValueError("ADMISSION_AUTHORITY_DECLARATION_DUPLICATE")
+        identifiers.append(identifier)
+        routes=declaration.get("routes");gates=declaration.get("gates")
+        if (type(identifier) is not str or
+                type(declaration.get("scope")) is not str or
+                type(declaration.get("default")) is not str or
+                type(routes) is not tuple or
+                any(type(route) is not tuple or len(route)!=2 or
+                    any(type(value) is not str for value in route) or
+                    route[0] not in MUTATING_METHODS or
+                    not route[1].startswith("/api/") for route in routes) or
+                type(gates) is not tuple or not gates or
+                any(type(gate) is not str or not gate for gate in gates) or
+                len(set(gates))!=len(gates) or
+                type(declaration.get("reducing_exit_available_during_cut")) is not bool or
+                declaration.get("automatic_start") is not False or
+                declaration.get("automatic_resume") is not False):
+            raise ValueError("ADMISSION_AUTHORITY_DECLARATION_INVALID")
+        for route in routes:
+            if route in declared:
+                raise ValueError(
+                    "ADMISSION_AUTHORITY_ROUTE_DECLARATION_DUPLICATE")
+            declared.add(route)
+        row=dict(declaration)
+        row["routes"]=[dict(method=method,path=path) for method,path in routes]
+        row.update({flag:False for flag in AUTHORITY_FLAGS})
+        row["learned_policy_promotion"]=False
+        rows.append(row)
+    if set(identifiers)!=set(REVIEWED_AUTHORITY_CONTRACT):
+        raise ValueError("ADMISSION_AUTHORITY_INVENTORY_MISMATCH")
+    if any(REVIEWED_AUTHORITY_CONTRACT[declaration["id"]] != (
+            declaration["scope"], declaration["routes"],
+            declaration["default"], declaration["gates"],
+            declaration["reducing_exit_available_during_cut"])
+            for declaration in AUTHORITIES):
+        raise ValueError("ADMISSION_AUTHORITY_DECLARATION_INVALID")
+    if declared-available:
+        raise ValueError("ADMISSION_AUTHORITY_ROUTE_INVENTORY_MISMATCH")
+    return rows
+
+
 def snapshot(application):
     """Bind the declared authority routes to this exact application."""
     available = set()
@@ -276,18 +393,8 @@ def snapshot(application):
     runtime_mutating={binding for binding in available if binding[0] in MUTATING_METHODS}
     if runtime_mutating != reviewed_mutating:
         raise ValueError("ADMISSION_AUTHORITY_MUTATING_ROUTE_INVENTORY_MISMATCH")
-    declared = {route for authority in AUTHORITIES for route in authority["routes"]}
-    missing = declared - available
-    if missing:
-        raise ValueError("ADMISSION_AUTHORITY_ROUTE_INVENTORY_MISMATCH")
-    rows = []
-    for authority in AUTHORITIES:
-        row = dict(authority)
-        row["routes"] = [dict(method=method, path=path)
-                         for method, path in authority["routes"]]
-        row.update({flag: False for flag in AUTHORITY_FLAGS})
-        row["learned_policy_promotion"] = False
-        rows.append(row)
+    rows=_reviewed_authorities(available)
+    by_id={row["id"]:row for row in rows}
     capabilities={row["capability"] for row in mutating_rows}
     external_capabilities={row["capability"] for row in external_rows}
     return dict(
@@ -299,7 +406,8 @@ def snapshot(application):
         external_transport_boundaries_verified=True,
         external_transport_boundaries=external_rows,
         external_transport_boundary_count=len(external_rows),
-        runtime_engagement_default="OFF", external_ai_default="OFF",
+        runtime_engagement_default=by_id["TIER_PERMISSION"]["default"],
+        external_ai_default=by_id["OPTIONAL_AI_ADVISORY"]["default"],
         broker_order_route_present="BROKER_ORDER" in capabilities,
         bank_transfer_route_present="BANK_TRANSFER" in capabilities,
         cloud_control_route_present="CLOUD_CONTROL" in capabilities,
@@ -307,7 +415,9 @@ def snapshot(application):
         bank_transfer_transport_present="BANK_TRANSFER" in external_capabilities,
         cloud_control_transport_present="CLOUD_CONTROL" in external_capabilities,
         ai_advisory_transport_present="AI_ADVISORY_POST" in external_capabilities,
-        automatic_resume_present=False, learned_policy_promotion_present=False,
+        automatic_resume_present=any(row["automatic_resume"] for row in rows),
+        learned_policy_promotion_present=any(
+            row["learned_policy_promotion"] for row in rows),
         **{flag: False for flag in AUTHORITY_FLAGS},
         limitations=("Source-declared route, gate and credentialed external-POST inventory only. "
             "Transport presence is not route exposure, configuration, provider/account acceptance, "

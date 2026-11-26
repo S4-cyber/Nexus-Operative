@@ -1,4 +1,32 @@
 # Nexus Operative versioning and launch gates
+## v0.340.424 reducing-exit and authority truthfulness fences
+
+Direct paper-ledger reducing SELL admission now owns SQLite's writer reservation
+before reading ledger or position state, then revalidates the same captured
+public quote immediately before accounting mutation. Competing exits cannot
+both credit one position. If the quote expires during the ledger audit, the
+transaction rolls back without changing cash, position, event history or the
+ledger seal. The protected check performs no provider I/O, refetch or retry.
+A fresh quote still permits the reducing exit, including while the independent
+emergency cut restricts new entry.
+
+The read-only admission-authority inventory now validates each source
+declaration against one exact reviewed contract for its ID, scope, routes,
+default, gates, automatic-start/resume flags and reducing-exit semantics.
+Duplicate route ownership fails closed, and top-level default and automatic
+claims are derived only from validated rows. Saved offline release evidence
+must reproduce those same exact current public authority rows before it can
+reverify. This grants no authority and is
+not broker, account, source, genuine-market, sustained-trial, native Windows,
+funding, live, cloud or release acceptance. No Portal button or editable
+parameter was added. Engagement and optional AI remain OFF by default; limits,
+account checks, fail-closed behavior, seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
 ## v0.340.423 explicit Trial Readiness reconciliation composition
 
 Trial Readiness can now consume one explicitly supplied, privacy-safe local

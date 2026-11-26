@@ -1406,14 +1406,27 @@ def _validate(profile, result):
             authority['runtime_engagement_default']=='OFF' and
             authority['external_ai_default']=='OFF',
             'HTTP_AUTHORITY_INVENTORY_SCHEMA')
+        expected_authorities=[]
+        for declaration in AUTHORITIES:
+            row=dict(declaration)
+            row['routes']=[dict(method=method,path=path)
+                for method,path in declaration['routes']]
+            row['gates']=list(declaration['gates'])
+            row.update({flag:False for flag in AUTHORITY_FLAGS})
+            row['learned_policy_promotion']=False
+            expected_authorities.append(row)
         _require(type(authority['authorities']) is list and
-            len(authority['authorities'])==len(AUTHORITIES) and
-            all(type(row) is dict and frozenset(row)==AUTHORITY_PUBLIC_KEYS and
-                row['automatic_start'] is False and
-                row['automatic_resume'] is False and
-                row['learned_policy_promotion'] is False and
-                all(row[flag] is False for flag in AUTHORITY_FLAGS)
-                for row in authority['authorities']),
+            authority['authorities']==expected_authorities and
+            all(type(row) is dict and frozenset(row)==AUTHORITY_PUBLIC_KEYS
+                and row['automatic_start'] is expected['automatic_start']
+                and row['automatic_resume'] is expected['automatic_resume']
+                and row['learned_policy_promotion'] is
+                    expected['learned_policy_promotion']
+                and row['reducing_exit_available_during_cut'] is
+                    expected['reducing_exit_available_during_cut']
+                and all(row[flag] is expected[flag] for flag in AUTHORITY_FLAGS)
+                for row,expected in zip(
+                    authority['authorities'],expected_authorities)),
             'HTTP_AUTHORITY_DECLARATIONS')
         expected_mutating=[dict(method=method,path=path,
             authority_class=authority_class,capability=capability)

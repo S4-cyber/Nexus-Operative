@@ -1,4 +1,38 @@
 # Nexus Operative continuity instructions
+## v0.340.421 optional Windows artifact birth time
+
+Exact development-branch Windows run `45807905265` first failed artifact
+verification and then cascaded through other artifact consumers. The run did
+not retain field-level stat observations, so its exact metadata cause remains
+unverified. Local reproduction identified a matching compatibility failure:
+Python documents `st_birthtime_ns` as optional, while the verifier required a
+compatible path/open-descriptor pair. Windows cross-source identity now keeps
+device, file index, size, modification time and link count mandatory, compares
+birth time only when both samples expose exact integers, and rejects malformed
+exposed or unequal available values.
+
+The initial pathname observation is retained separately and every later path
+sample must preserve same-source metadata and any available birth time. Same-
+source descriptor stability, regular-file and single-link checks, retained
+handles, directory pinning and both complete SHA-256 passes remain strict.
+Deterministic component regressions model path birth time present and
+descriptor birth time absent while their cross-source ctime meanings differ,
+plus pathname-only metadata changes after open. The runtime dependency floor
+also moves from the advisory-
+affected `cryptography` 47.x resolution to the 50.x line. Nexus uses AES-GCM
+and scrypt; focused compatibility tests and a clean dependency audit are
+required. This is local compatibility evidence pending an exact hosted
+Windows pass, not Windows/installer acceptance, signing, provenance,
+independent security clearance, broker/
+account/source or sustained-trial acceptance, performance, profitability,
+funding, cloud or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain intact. No button or editable parameter was
+added, so seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The read-only roadmap estimate remains exact 38%
+weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
 ## v0.340.420 final direct paper BUY emergency fence
 
 Direct paper-portfolio BUY admission now samples the independently writable

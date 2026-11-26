@@ -37,37 +37,32 @@ def test_windows_path_descriptor_ctime_mismatch_uses_birthtime(monkeypatch):
     assert subject._same_path_and_open_file(path_sample, descriptor_sample)
 
 
-def test_windows_path_descriptor_missing_birthtime_falls_back_only_when_both_absent(
-        monkeypatch):
+def test_windows_path_descriptor_birthtime_absence_is_optional(monkeypatch):
     monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
-    monkeypatch.setattr(subject, "_WINDOWS_BIRTHTIME_REQUIRED", False)
     without_birth = vars(_stat_sample()).copy()
     without_birth.pop("st_birthtime_ns")
 
     assert subject._same_path_and_open_file(
         SimpleNamespace(**without_birth), SimpleNamespace(**without_birth))
-    assert not subject._same_path_and_open_file(
+    assert subject._same_path_and_open_file(
         SimpleNamespace(**without_birth),
         SimpleNamespace(**dict(without_birth, st_ctime_ns=9)))
-    assert not subject._same_path_and_open_file(
+    assert subject._same_path_and_open_file(
         _stat_sample(), SimpleNamespace(**without_birth))
-
-
-def test_modern_windows_path_descriptor_requires_birthtime(monkeypatch):
-    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
-    monkeypatch.setattr(subject, "_WINDOWS_BIRTHTIME_REQUIRED", True)
-    without_birth = vars(_stat_sample()).copy()
-    without_birth.pop("st_birthtime_ns")
-
-    assert not subject._same_path_and_open_file(
-        SimpleNamespace(**without_birth), SimpleNamespace(**without_birth))
+    assert subject._same_path_and_open_file(
+        SimpleNamespace(**without_birth), _stat_sample())
 
 
 @pytest.mark.parametrize("invalid", (None, True, 6.0, "6"))
 def test_windows_path_descriptor_rejects_invalid_birthtime(monkeypatch, invalid):
     monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    without_birth = vars(_stat_sample()).copy()
+    without_birth.pop("st_birthtime_ns")
     assert not subject._same_path_and_open_file(
         _stat_sample(), _stat_sample(st_birthtime_ns=invalid))
+    assert not subject._same_path_and_open_file(
+        SimpleNamespace(**without_birth),
+        _stat_sample(st_birthtime_ns=invalid))
 
 
 @pytest.mark.parametrize("changes", (
@@ -126,6 +121,121 @@ def test_windows_stat_fstat_ctime_mismatch_verifies_distribution(
     monkeypatch.setattr(subject.os, "fstat", descriptor_stat)
 
     assert subject.verify(document, tmp_path)["artifact_integrity_ok"]
+
+
+def test_windows_optional_descriptor_birthtime_verifies_distribution(
+        tmp_path, monkeypatch):
+    """Python documents birth time as optional even on supported runtimes."""
+    artifact = tmp_path / "a.exe"
+    artifact.write_bytes(b"reviewed")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    path_type = type(tmp_path)
+    original_lstat = path_type.lstat
+    original_stat = subject.os.stat
+    original_fstat = subject.os.fstat
+
+    class PathStatView:
+        def __init__(self, sample):
+            self._sample = sample
+            self.st_birthtime_ns = sample.st_ctime_ns
+            self.st_ctime_ns = sample.st_ctime_ns
+
+        def __getattr__(self, name):
+            return getattr(self._sample, name)
+
+    class DescriptorStatView:
+        def __init__(self, sample):
+            self._sample = sample
+            self.st_ctime_ns = sample.st_ctime_ns + 1
+
+        def __getattr__(self, name):
+            if name == "st_birthtime_ns":
+                raise AttributeError(name)
+            return getattr(self._sample, name)
+
+    assert not hasattr(DescriptorStatView(_stat_sample()), "st_birthtime_ns")
+
+    def path_lstat(path):
+        return PathStatView(original_lstat(path))
+
+    def path_stat(*args, **kwargs):
+        return PathStatView(original_stat(*args, **kwargs))
+
+    def descriptor_stat(descriptor):
+        return DescriptorStatView(original_fstat(descriptor))
+
+    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    monkeypatch.setattr(path_type, "lstat", path_lstat)
+    monkeypatch.setattr(subject.os, "stat", path_stat)
+    monkeypatch.setattr(subject.os, "fstat", descriptor_stat)
+
+    assert subject.verify(document, tmp_path)["artifact_integrity_ok"]
+
+
+def _install_windows_path_metadata_change(tmp_path, monkeypatch):
+    path_type = type(tmp_path)
+    original_lstat = path_type.lstat
+    original_fstat = subject.os.fstat
+    leaf_samples = 0
+
+    class PathStatView:
+        def __init__(self, sample, changed):
+            self._sample = sample
+            adjustment = int(changed)
+            self.st_birthtime_ns = sample.st_ctime_ns + adjustment
+            self.st_ctime_ns = sample.st_ctime_ns + adjustment
+
+        def __getattr__(self, name):
+            return getattr(self._sample, name)
+
+    class DescriptorStatView:
+        def __init__(self, sample):
+            self._sample = sample
+            self.st_ctime_ns = sample.st_ctime_ns + 2
+
+        def __getattr__(self, name):
+            if name == "st_birthtime_ns":
+                raise AttributeError(name)
+            return getattr(self._sample, name)
+
+    def path_lstat(path):
+        nonlocal leaf_samples
+        sample = original_lstat(path)
+        if path.name != "a.exe":
+            return sample
+        leaf_samples += 1
+        return PathStatView(sample, changed=leaf_samples > 1)
+
+    def descriptor_stat(descriptor):
+        return DescriptorStatView(original_fstat(descriptor))
+
+    monkeypatch.setattr(subject, "_WINDOWS_STAT_COMPAT", True)
+    monkeypatch.setattr(subject.os, "supports_dir_fd", set())
+    monkeypatch.setattr(path_type, "lstat", path_lstat)
+    monkeypatch.setattr(subject.os, "fstat", descriptor_stat)
+
+
+def test_windows_verify_rejects_path_metadata_change_with_optional_birthtime(
+        tmp_path, monkeypatch):
+    artifact = tmp_path / "a.exe"
+    artifact.write_bytes(b"reviewed")
+    document = subject.manifest([artifact], VERSION, SOURCE)
+    _install_windows_path_metadata_change(tmp_path, monkeypatch)
+
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="ARTIFACT_CHANGED_DURING_READ"):
+        subject.verify(document, tmp_path)
+
+
+def test_windows_file_entry_rejects_path_metadata_change_with_optional_birthtime(
+        tmp_path, monkeypatch):
+    artifact = tmp_path / "a.exe"
+    artifact.write_bytes(b"reviewed")
+    _install_windows_path_metadata_change(tmp_path, monkeypatch)
+
+    with pytest.raises(subject.ArtifactManifestError,
+                       match="ARTIFACT_CHANGED_DURING_READ"):
+        subject.file_entry(artifact)
 
 
 def test_directory_path_only_check_does_not_require_cross_source_metadata(

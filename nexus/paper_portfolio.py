@@ -161,7 +161,9 @@ def verify_ledger(db):
 
 def buy(product,notional,quote,tier=None,cut_requested=None):
     amount=num(notional)
-    _,ask=check_quote(product,quote)
+    # Reject malformed input before taking durable writer reservations. The
+    # exact captured quote is checked again after any writer wait below.
+    check_quote(product,quote)
     with LOCK:
         with closing(_connect()) as db:
             with _transaction(db,immediate=True):
@@ -189,6 +191,12 @@ def buy(product,notional,quote,tier=None,cut_requested=None):
                     # writable while this transaction is waiting or auditing.
                     if cut_requested is not None and cut_requested():
                         raise ValueError("EMERGENCY_CUT_INTERRUPTED_TRADE")
+                    # Do not commit new exposure from a quote that was fresh at
+                    # route admission but aged out while the portfolio or tier
+                    # settings writer reservation was unavailable. Revalidate
+                    # the same captured read-only observation; never fetch or
+                    # retry external transport while accounting locks are held.
+                    _,ask=check_quote(product,quote)
                     capital=D(meta["initial"])
                     exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
                     if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")

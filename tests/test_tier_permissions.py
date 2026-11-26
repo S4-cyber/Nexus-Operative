@@ -288,6 +288,44 @@ def test_direct_buy_writer_reservation_holds_tier_permission_until_commit(
     assert len(snapshot["positions"])==1 and snapshot["event_count"]==2
 
 
+def test_direct_buy_quote_expiring_during_writer_wait_rolls_back(
+        tmp_path,monkeypatch):
+    """A quote that ages out while both BUY writers are held cannot commit."""
+    from nexus import paper_portfolio
+
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    clock={"now":100.0}
+    monkeypatch.setattr(paper_portfolio.time,"time",lambda:clock["now"])
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":100.0,
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",
+                       json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+
+    original=paper_portfolio.verify_ledger
+
+    def age_quote_after_protected_ledger_audit(db):
+        cash=original(db)
+        clock["now"]=111.0
+        return cash
+
+    monkeypatch.setattr(paper_portfolio,"verify_ledger",
+                        age_quote_after_protected_ledger_audit)
+    response=client.post("/api/paper/portfolio/buy",json={
+        "product":"BTC-USD","notional":10,"tier":"terrestrial"})
+
+    assert response.status_code==422
+    assert response.json()=={"detail":"Quote too old"}
+    snapshot=client.get("/api/paper/portfolio").json()
+    assert snapshot["positions"]==[] and snapshot["event_count"]==1
+
+
 def test_standalone_cut_during_direct_buy_vetoes_ledger_commit(
         tmp_path,monkeypatch):
     """A durable cut asserted after both BUY writer reservations must win."""

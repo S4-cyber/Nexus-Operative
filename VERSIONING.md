@@ -1,4 +1,28 @@
 # Nexus Operative versioning and launch gates
+## v0.340.419 direct paper BUY post-wait quote freshness
+
+Direct paper-portfolio BUY admission now revalidates the exact captured
+read-only public quote after acquiring its portfolio and settings writer
+reservations, verifying the exact ledger and sampling the independent emergency
+latch. Only the post-wait validated ask enters quantity and cash accounting. A
+quote that was fresh at route admission but ages beyond the existing ten-second
+limit during contention now refuses and rolls back without a position, cash
+delta, position event or seal. The protected check performs no second market
+fetch and no retry; emergency refusal remains higher priority, tier-OFF ordering
+remains intact, and reducing SELL exits remain available.
+
+A deterministic synthetic-clock regression advances the quote during the
+protected ledger audit and requires the initialization-only ledger to remain.
+This is bounded local freshness enforcement, not provider/account/source
+acceptance, genuine-market or sustained-trial acceptance, performance,
+profitability, funding, cloud, Windows/installer or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed behavior and exits remain intact. No button or editable parameter
+was added, so the seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate
+remains exact 38% weighted (displayed about 40%, 30–45% low-confidence), with
+0/9 stages independently accepted and no release or trading permission.
+
 ## v0.340.418 direct paper BUY emergency-latch checkpoint
 
 Direct paper-portfolio BUY admission now resamples the independently writable

@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.418'
+REVISION = '0.340.419'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1453,8 +1453,16 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Direct paper-ledger BUY admission now samples the independently writable durable emergency latch again after both database writer reservations and ledger verification, before any accounting mutation. A standalone cut asserted while the BUY waits therefore refuses and rolls back the local entry. This is one bounded same-host sample, not distributed atomicity, broker acceptance or release approval.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct paper-ledger BUY admission now revalidates the exact captured public quote after its portfolio and settings writer reservations and emergency-latch sample, using only the post-wait validated ask for accounting, so a quote that ages beyond the existing ten-second limit during contention rolls back without a position or ledger event and without any refetch or retry' if item.id in ('M3','M4','M7') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Direct paper-ledger BUY admission now revalidates the same captured read-only public quote after both durable writer reservations and the emergency-latch sample, immediately before accounting mutation. A quote that ages out during contention refuses and rolls back without network I/O, retry, position or ledger event. This is bounded local freshness enforcement, not provider/source acceptance, genuine-market realism, sustained-trial acceptance or release approval.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.418 closes the direct paper-portfolio emergency-latch wait window. After the BUY owns both its portfolio and settings writer reservations and verifies the exact ledger, it samples the independently writable durable cut before any accounting mutation. A standalone cut asserted while the BUY waits now refuses and rolls back the entry with no new position or ledger event. The latch takes neither database guard, tier OFF ordering remains intact, and reducing SELL exits remain available. This is a bounded same-host sample, not atomic distributed stop coordination, broker/account/source acceptance, genuine-market or sustained-trial acceptance, performance, profitability, funding, cloud, Windows/installer or release approval. Runtime engagement and optional AI remain OFF by default; limits, account checks, fail-closed behavior and exits remain intact. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.419 closes the direct paper-portfolio quote-freshness wait window. The BUY still rejects malformed or stale input before taking durable reservations, then revalidates the exact captured read-only quote after it owns both the portfolio and settings writer reservations, verifies the ledger and samples the independent emergency latch. Only the post-wait validated ask enters accounting. A quote that ages beyond the existing ten-second limit during contention therefore rolls back without a position, cash delta or ledger event. Revalidation performs no network fetch or retry; emergency refusal remains higher priority, tier OFF ordering remains intact and reducing SELL exits remain available. This is bounded local freshness enforcement, not provider/source acceptance, genuine-market or sustained-trial acceptance, performance, profitability, funding, cloud, Windows/installer or release approval. Runtime engagement and optional AI remain OFF by default; limits, account checks, fail-closed behavior and exits remain intact. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

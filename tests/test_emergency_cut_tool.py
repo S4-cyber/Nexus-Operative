@@ -727,6 +727,61 @@ def test_transient_final_replay_fault_is_bounded_and_read_only(
     assert recovery['commands']==1 and recovery['halted']
 
 
+def test_transient_order_identity_observation_is_retried_without_reissuing_halt(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    halt_result=DurableOrderGateway(order_path).emergency_halt()
+    identity=order_path.stat();original=Path.lstat;observations=[]
+    def transient_first_observation(self):
+        if self==order_path:
+            observations.append(1)
+            if len(observations)==1:
+                raise PermissionError('TRANSIENT_WINDOWS_STAT_DENIAL')
+        return original(self)
+    monkeypatch.setattr(Path,'lstat',transient_first_observation)
+    assert emergency_cut_tool._halt_replayed_bounded(
+        order_path,halt_result,identity)
+    assert len(observations)>=3
+    recovery=DurableOrderGateway(order_path).recovery_report()
+    assert recovery['commands']==1 and recovery['halted']
+
+
+def test_transient_initial_order_identity_capture_is_bounded_in_activation(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    original=emergency_cut_tool._observed_order_identity;observations=[]
+    def transient_first_capture(path):
+        observations.append(1)
+        if len(observations)==1:return None,None
+        return original(path)
+    monkeypatch.setattr(emergency_cut_tool,'_observed_order_identity',
+        transient_first_capture)
+    report=emergency_cut_tool.activate(tmp_path)
+    assert report['passed'] and report['durable_order_halt_confirmed']
+    assert len(observations)>=6
+    recovery=DurableOrderGateway(
+        tmp_path/'order_lifecycle.sqlite3').recovery_report()
+    assert recovery['commands']==1 and recovery['halted']
+
+
+def test_transient_pre_final_replay_identity_sample_enters_bounded_observer(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    original=emergency_cut_tool._same_order;observations=[]
+    def transient_gate(path,identity):
+        observations.append(1)
+        if len(observations)==3:return None
+        return original(path,identity)
+    monkeypatch.setattr(emergency_cut_tool,'_same_order',transient_gate)
+    report=emergency_cut_tool.activate(tmp_path)
+    assert report['passed'] and report['durable_order_halt_confirmed']
+    assert len(observations)>=5
+    recovery=DurableOrderGateway(
+        tmp_path/'order_lifecycle.sqlite3').recovery_report()
+    assert recovery['commands']==1 and recovery['halted']
+
+
 def test_replay_confirmation_retry_ceiling_and_definitive_negative(
         tmp_path,monkeypatch):
     from nexus import emergency_cut_tool

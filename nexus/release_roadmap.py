@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.417'
+REVISION = '0.340.418'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1445,8 +1445,16 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Linked durable BUY admission and direct paper-ledger BUY commits now share a bounded settings writer reservation with their durable position commit. Tier OFF or cap changes that win first are observed and refuse the position; changes that lose wait until the admitted BUY commits. Reducing exits and the independent emergency latch remain outside the guard. This is local transaction ordering, not broker, genuine-market, sustained-trial or release acceptance.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct paper-ledger BUY admission now resamples the independently writable durable emergency latch after its portfolio and settings writer reservations and exact ledger audit but before the first accounting mutation, so a cut asserted during that wait rolls back without a position or ledger event' if item.id in ('M3','M4') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Direct paper-ledger BUY admission now samples the independently writable durable emergency latch again after both database writer reservations and ledger verification, before any accounting mutation. A standalone cut asserted while the BUY waits therefore refuses and rolls back the local entry. This is one bounded same-host sample, not distributed atomicity, broker acceptance or release approval.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.417 extends the bounded settings-database writer reservation to the direct paper-portfolio BUY commit. An OFF or cap change that commits before the ledger reaches its guard is observed and refuses the position; after the BUY owns both writer reservations, OFF waits until the position and sealed ledger event commit. The linked gateway guard remains intact. Reducing SELL exits and the independent emergency latch remain outside the guard. Threaded real-SQLite regressions cover both direct-ledger orderings. This is local cooperating transaction ordering, not broker/account/source acceptance, genuine-market or sustained-trial acceptance, distributed coordination, performance, profitability, funding, cloud, Windows/installer or release approval. Runtime engagement and optional AI remain OFF by default; limits, account checks, fail-closed behavior and exits remain intact. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.418 closes the direct paper-portfolio emergency-latch wait window. After the BUY owns both its portfolio and settings writer reservations and verifies the exact ledger, it samples the independently writable durable cut before any accounting mutation. A standalone cut asserted while the BUY waits now refuses and rolls back the entry with no new position or ledger event. The latch takes neither database guard, tier OFF ordering remains intact, and reducing SELL exits remain available. This is a bounded same-host sample, not atomic distributed stop coordination, broker/account/source acceptance, genuine-market or sustained-trial acceptance, performance, profitability, funding, cloud, Windows/installer or release approval. Runtime engagement and optional AI remain OFF by default; limits, account checks, fail-closed behavior and exits remain intact. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

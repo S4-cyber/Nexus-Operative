@@ -159,7 +159,7 @@ def verify_ledger(db):
         raise ValueError("Cash journal mismatch: new simulated buys blocked")
     return cash
 
-def buy(product,notional,quote,tier=None):
+def buy(product,notional,quote,tier=None,cut_requested=None):
     amount=num(notional)
     _,ask=check_quote(product,quote)
     with LOCK:
@@ -180,7 +180,16 @@ def buy(product,notional,quote,tier=None):
                     if "cash" not in meta:raise ValueError("Initialize first")
                     if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
                         raise ValueError("Already holding this paper product")
-                    cash=verify_ledger(db);capital=D(meta["initial"])
+                    cash=verify_ledger(db)
+                    # The route's preflight cannot cover time spent waiting for
+                    # the portfolio and settings writer reservations. Sample
+                    # the independent durable latch again after both are held
+                    # and before the first accounting mutation. The latch does
+                    # not acquire either database guard and remains independently
+                    # writable while this transaction is waiting or auditing.
+                    if cut_requested is not None and cut_requested():
+                        raise ValueError("EMERGENCY_CUT_INTERRUPTED_TRADE")
+                    capital=D(meta["initial"])
                     exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
                     if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")
                     if amount>capital*D(".02") or amount*(D(1)+FEE)>cash:

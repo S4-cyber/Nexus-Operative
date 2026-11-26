@@ -1,4 +1,25 @@
 # Nexus Operative continuity instructions
+## v0.340.418 direct paper BUY emergency-latch checkpoint
+
+Direct paper-portfolio BUY admission now resamples the independently writable
+durable emergency latch after acquiring its portfolio and settings writer
+reservations and verifying the exact ledger, but before the first accounting
+mutation. A standalone cut asserted while the BUY waits therefore refuses the
+entry and rolls back without a new position, cash delta, position event or
+seal. The latch takes neither database guard, the v0.340.417 tier-OFF ordering
+remains intact, and reducing SELL exits remain available.
+
+A threaded real-SQLite regression forces the cut after both writers are held.
+This is one bounded same-host stop sample, not atomic distributed coordination,
+broker/account/source acceptance, genuine-market or sustained-trial acceptance,
+performance, profitability, funding, cloud, Windows/installer or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed behavior and exits remain intact. No button or editable
+parameter was added, so the seven beginner-friendly tabs and black/bright-
+purple bottom-right hover help remain unchanged. The read-only roadmap estimate
+remains exact 38% weighted (displayed about 40%, 30–45% low-confidence), with
+0/9 stages independently accepted and no release or trading permission.
+
 ## v0.340.417 direct paper BUY tier-OFF commit fence
 
 The direct paper-portfolio BUY path now carries its selected tier into the

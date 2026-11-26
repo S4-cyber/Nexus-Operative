@@ -287,6 +287,56 @@ def test_direct_buy_writer_reservation_holds_tier_permission_until_commit(
     snapshot=client.get("/api/paper/portfolio").json()
     assert len(snapshot["positions"])==1 and snapshot["event_count"]==2
 
+
+def test_standalone_cut_during_direct_buy_vetoes_ledger_commit(
+        tmp_path,monkeypatch):
+    """A durable cut asserted after both BUY writer reservations must win."""
+    import threading
+    from nexus import emergency_intent,paper_portfolio
+
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",
+                       json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+
+    writers_held=threading.Event();release=threading.Event()
+    original=paper_portfolio.verify_ledger
+
+    def hold_with_both_writer_reservations(db):
+        writers_held.set()
+        assert release.wait(2)
+        return original(db)
+
+    monkeypatch.setattr(paper_portfolio,"verify_ledger",
+                        hold_with_both_writer_reservations)
+    result={}
+    buyer=threading.Thread(target=lambda:result.update(response=client.post(
+        "/api/paper/portfolio/buy",json={"product":"BTC-USD","notional":10,
+                                         "tier":"terrestrial"})))
+    buyer.start()
+    try:
+        assert writers_held.wait(2)
+        intent_path=emergency_intent.path(backend.research_order_gateway._path())
+        intent_path.write_bytes(emergency_intent.RECORD)
+    finally:
+        release.set()
+        buyer.join(2)
+    assert not buyer.is_alive()
+    assert result["response"].status_code==409
+    assert result["response"].json()=={
+        "detail":"EMERGENCY_CUT_INTERRUPTED_TRADE"}
+    snapshot=client.get("/api/paper/portfolio").json()
+    assert snapshot["positions"]==[] and snapshot["event_count"]==1
+    assert emergency_intent.requested(backend.research_order_gateway._path())
+
 def test_emergency_cut_keeps_reducing_paper_exit_available(tmp_path,monkeypatch):
     from nexus import emergency_intent
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))

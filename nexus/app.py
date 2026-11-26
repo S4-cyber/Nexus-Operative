@@ -98,7 +98,7 @@ async def application_lifespan(application):
             if lifecycle_executor is not None:
                 lifecycle_executor.shutdown(wait=True,cancel_futures=False)
 
-app = FastAPI(title="Nexus Operative", version="0.340.417",lifespan=application_lifespan)
+app = FastAPI(title="Nexus Operative", version="0.340.418",lifespan=application_lifespan)
 from nexus.local_http_boundary import LocalHTTPBoundary
 app.add_middleware(LocalHTTPBoundary)
 _started = time.monotonic()
@@ -412,7 +412,7 @@ def status():
     with _cut_lock:
         halted=_halted;pending=bool(_cut_pending)
         cut_state='CLEAR' if not halted else 'PENDING' if pending else 'VERIFIED' if _cut_confirmed else 'UNCONFIRMED'
-    return {"version":"0.340.417", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
+    return {"version":"0.340.418", "mode":"SYNTHETIC_PAPER_ONLY", "portal_enabled":not _paused,
       "halted":halted, "emergency_cut_pending":pending,"emergency_cut_state":cut_state,
       "broker_connected":False,"bank_connected":False,
       "live_orders_enabled":False, "money_movement_enabled":False, "ai_connected":False}
@@ -585,8 +585,11 @@ def paper_portfolio_buy(data:PaperTrade):
         with _trading_control_lock:
             if _execution_halted() or epoch!=_cut_epoch:raise HTTPException(status_code=409,detail="EMERGENCY_CUT_INTERRUPTED_TRADE")
             if _paused:raise HTTPException(status_code=409,detail="PORTAL_PAUSED")
-            return paper_buy(data.product,data.notional,quote,data.tier)
-    except ValueError as exc:raise HTTPException(status_code=422,detail=str(exc))
+            return paper_buy(data.product,data.notional,quote,data.tier,
+                             cut_requested=_execution_halted)
+    except ValueError as exc:
+        code=409 if str(exc)=="EMERGENCY_CUT_INTERRUPTED_TRADE" else 422
+        raise HTTPException(status_code=code,detail=str(exc))
 
 @app.post("/api/paper/portfolio/sell")
 def paper_portfolio_sell(data:PaperClose):

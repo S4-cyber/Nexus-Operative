@@ -1,4 +1,29 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.408 bounded Windows journal observation
+
+The standalone emergency stop now distinguishes a temporarily unavailable
+Windows journal-identity observation from a definitive alias, structural
+failure or inode replacement. Only the unavailable observation consumes the
+existing three-attempt read-only replay budget; a mismatch, an unhalted durable
+replay or the third unavailable sample still returns UNCONFIRMED immediately.
+The durable halt mutation remains single-shot, reset remains separate and the
+independent latch remains asserted.
+
+This closes the exact failure observed in both Windows regression shards of
+parent PR #128 without weakening pathname replacement fencing. It is bounded
+local emergency-stop hardening, not native Windows/installer acceptance,
+broker/account/funds acceptance, sustained-market evidence, performance,
+profitability, cloud deployment or release approval. Hosted success must be
+observed on the exact child commit before this fix is considered CI-verified.
+
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits and fail-closed behavior remain unchanged. No button or editable
+parameter was added; seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate stays
+38% weighted (displayed about 40%, 30–45% low-confidence range), with 0/9
+stages independently accepted and no release or trading permission.
+
+
 ## v0.340.407 retained fill remainder agreement
 
 Retained provider activity now requires each fill completion type to agree with

@@ -141,27 +141,48 @@ def _same_intent(order_path,identity):
     return emergency_intent.same_canonical(order_path,identity)
 
 
-def _order_identity(order_path):
-    """Sample one regular single-link order journal without following aliases."""
+def _observed_order_identity(order_path):
+    """Classify a no-follow journal sample without hiding read denial."""
     try:before=order_path.lstat()
-    except OSError:return None
+    except OSError:return None,None
     if (stat.S_ISLNK(before.st_mode) or
             not stat.S_ISREG(before.st_mode) or before.st_nlink!=1):
-        return None
+        return False,None
     try:after=order_path.lstat()
-    except OSError:return None
+    except OSError:return None,None
     if (stat.S_ISLNK(after.st_mode) or
             not stat.S_ISREG(after.st_mode) or after.st_nlink!=1 or
             not os.path.samestat(before,after)):
-        return None
-    return after
+        return False,None
+    return True,after
+
+
+def _order_identity(order_path):
+    """Sample one regular single-link order journal without following aliases."""
+    observed,identity=_observed_order_identity(order_path)
+    return identity if observed is True else None
+
+
+def _order_identity_bounded(order_path):
+    """Acquire one baseline identity with the same strict read-only ceiling."""
+    for _attempt in range(3):
+        observed,identity=_observed_order_identity(order_path)
+        if observed is True:return identity
+        if observed is False:return None
+    return None
+
+
+def _order_identity_match(order_path,identity):
+    """Return agreement, mismatch, or transient observation unavailability."""
+    if identity is None:return False
+    observed,current=_observed_order_identity(order_path)
+    if observed is None:return None
+    return bool(observed and os.path.samestat(identity,current))
 
 
 def _same_order(order_path,identity):
-    """Require both cold replays to observe the same public journal object."""
-    current=_order_identity(order_path)
-    return (identity is not None and current is not None and
-        os.path.samestat(identity,current))
+    """Return journal identity agreement, mismatch, or read unavailability."""
+    return _order_identity_match(order_path,identity)
 
 
 def _halt_replayed_bounded(order_path,result,identity):
@@ -173,18 +194,30 @@ def _halt_replayed_bounded(order_path,result,identity):
     authoritative immediately; neither the halt command nor reset is retried.
     """
     for attempt in range(3):
-        if not _same_order(order_path,identity):return False
+        before=_same_order(order_path,identity)
+        if before is False:return False
+        if before is None:
+            if attempt==2:return False
+            continue
         try:replayed=emergency_halt_replayed(order_path,result)
         except (OSError,sqlite3.OperationalError):
-            if not _same_order(order_path,identity):return False
+            after=_same_order(order_path,identity)
+            if after is False:return False
             if attempt==2:return False
             continue
         except ValueError as error:
             if error.args!=('ORDER_JOURNAL_DATABASE_BUSY',):raise
-            if not _same_order(order_path,identity):return False
+            after=_same_order(order_path,identity)
+            if after is False:return False
             if attempt==2:return False
             continue
-        return bool(replayed and _same_order(order_path,identity))
+        if not replayed:return False
+        after=_same_order(order_path,identity)
+        if after is False:return False
+        if after is None:
+            if attempt==2:return False
+            continue
+        return True
     return False
 
 
@@ -232,7 +265,7 @@ def activate(data_root=None):
                     # The warm return is not durable evidence.  Reopen and
                     # replay the journal through a fresh gateway before any
                     # public result may claim cleanup was confirmed.
-                    order_identity = _order_identity(order_path)
+                    order_identity = _order_identity_bounded(order_path)
                     first_durable_halt = _halt_replayed_bounded(
                         order_path,halt_result,order_identity)
                     if not _same_data_root(root,root_identity):
@@ -257,8 +290,7 @@ def activate(data_root=None):
                     # the durable journal again after the final latch.  Reset,
                     # retry and a second halt mutation remain intentionally
                     # outside this emergency command.
-                    if (first_durable_halt and
-                            _same_order(order_path,order_identity)):
+                    if first_durable_halt:
                         durable_halt = _halt_replayed_bounded(
                             order_path,halt_result,order_identity)
     except Exception:

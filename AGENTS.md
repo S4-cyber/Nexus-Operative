@@ -1,4 +1,27 @@
 # Nexus Operative continuity instructions
+## v0.340.428 paper open-order admission fence
+
+The explicit one-shot Alpaca paper POST boundary now samples the fixed
+open-orders endpoint at initial preflight, repeated pre-reservation review and
+final post-reservation review. Each response must be an exact bounded,
+account-consistent empty collection. An initial or repeated-preflight order
+fails before either durable attempt reservation. A post-reservation order
+retains the lookup-only request marker, closes the shared local provider budget
+as NOT_SENT with zero actual POSTs and cannot re-arm automatically.
+
+Reported terms are deliberately not converted into available capacity. The
+three reads are sequential, not atomic provider snapshots, provider hold
+reconciliation or spendable-funds proof. This is local injected fail-closed
+evidence, not broker/account/source, genuine-market, sustained-trial, native
+Windows, funding, live, cloud or release acceptance. No Portal button or
+editable parameter was added. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior,
+independent emergency stop, seven beginner-friendly tabs and black/bright-
+purple bottom-right hover help remain unchanged. The roadmap estimate remains
+exact 38% weighted (displayed about 40%, 30–45% low-confidence), with 0/9
+stages independently accepted and no release or trading permission.
+
+
 ## v0.340.427 order-journal leaf identity
 
 Every mutable order journal is now bound to one regular, single-link public

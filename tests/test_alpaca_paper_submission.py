@@ -39,6 +39,16 @@ def asset(**changes):
     value.update(changes); return value
 
 
+def open_order(**changes):
+    value=dict(id='01234567-89ab-cdef-0123-456789abcde1',
+        client_order_id='existing_buy',symbol='BTC/USD',asset_class='crypto',
+        side='buy',type='limit',time_in_force='ioc',order_class='simple',
+        extended_hours=False,qty='1',limit_price='100',status='new',
+        filled_qty='0',filled_avg_price=None,
+        updated_at='2026-10-17T18:00:00Z')
+    value.update(changes);return value
+
+
 class Reply:
     def __init__(self, value, *, url=None, status=200, headers=None, raw=None):
         self.url=url; self.status=status
@@ -52,13 +62,21 @@ class Reply:
 
 
 class Opener:
-    def __init__(self, values=None):
+    def __init__(self, values=None, open_orders=None):
         positions=[dict(symbol='BTC/USD',asset_class='crypto',side='long',qty='3',qty_available='3')]
         self.values=list(values or [account(),positions,asset(),account(),positions,
                                     account(),positions,asset(),response()])
+        self.open_orders=list(open_orders or ([],[],[]))
+        self.value_index=0;self.open_order_index=0
         self.requests=[];self.responses=[]
     def open(self, request, timeout):
-        self.requests.append((request,timeout)); value=self.values[len(self.requests)-1]
+        self.requests.append((request,timeout))
+        if request.full_url==getattr(module,'OPEN_ORDERS_URL',None):
+            value=self.open_orders[self.open_order_index]
+            self.open_order_index+=1
+        else:
+            value=self.values[self.value_index]
+            self.value_index+=1
         if isinstance(value,BaseException): raise value
         reply=value if isinstance(value,Reply) else Reply(value)
         if reply.url is None: reply.url=request.full_url
@@ -142,6 +160,7 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['sequential_preflight_stable']
     assert result['post_reservation_risk_resampled']
     assert result['post_reservation_asset_resampled']
+    assert result['open_order_reservations_absent_at_three_samples']
     assert result['post_transport_credentials_rechecked']
     assert result['post_transport_controls_rechecked']
     assert result['typed_local_transport_authorization_consumed']
@@ -170,11 +189,12 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
         'sendable','ready_for_routing','broker_account_reconciled','spendable_funds_verified',
         'ledger_applied','live_orders_enabled','money_movement_enabled','release_approved'))
     assert [request.full_url for request,_ in opener.requests]==[
+        module.ACCOUNT_URL,module.POSITIONS_URL,module.OPEN_ORDERS_URL,module.ASSET_URL,
+        module.ACCOUNT_URL,module.POSITIONS_URL,module.OPEN_ORDERS_URL,
         module.ACCOUNT_URL,module.POSITIONS_URL,module.ASSET_URL,
-        module.ACCOUNT_URL,module.POSITIONS_URL,module.ACCOUNT_URL,
-        module.POSITIONS_URL,module.ASSET_URL,module.ORDER_URL]
+        module.OPEN_ORDERS_URL,module.ORDER_URL]
     assert [request.get_method() for request,_ in opener.requests]==[
-        'GET','GET','GET','GET','GET','GET','GET','GET','POST']
+        'GET','GET','GET','GET','GET','GET','GET','GET','GET','GET','GET','POST']
     posted=json.loads(opener.requests[-1][0].data)
     assert posted==plan()['payload']
     assert all(request.get_header('Apca-api-key-id')==KEY and
@@ -186,6 +206,100 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert (prepared[2].history()[0]['request_after_head_sha256']==
             result['journal']['head_sha256'])
     assert KEY not in json.dumps(result) and SECRET not in json.dumps(result)
+
+
+def test_existing_open_order_requires_review_before_reservation(prepared):
+    opener=Opener(open_orders=[[open_order()],[],[]])
+    before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,
+            match='OPEN_ORDER_RESERVATIONS_REVIEW_REQUIRED'):
+        submit(prepared,opener)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert prepared[0].path.read_bytes()==before
+    assert prepared[2].inspect()['attempts']==0
+
+
+def test_malformed_open_order_terms_fail_before_reservation(prepared):
+    opener=Opener(open_orders=[[{'private':SECRET,
+        'account_id':'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'}],[],[]])
+    before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,
+            match='OPEN_ORDERS_INVALID') as error:
+        submit(prepared,opener)
+    assert SECRET not in str(error.value)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert prepared[0].path.read_bytes()==before
+    assert prepared[2].inspect()['attempts']==0
+
+
+@pytest.mark.parametrize('orders',[
+    (),
+    type('OpenOrderList',(list,),{})([]),
+    [type('OpenOrderRow',(dict,),{})()],
+    [{} for _ in range(129)],
+])
+def test_open_order_collection_shape_is_exact_and_bounded(prepared,orders):
+    with pytest.raises(module.PaperSubmissionError,match='OPEN_ORDERS_INVALID'):
+        module._require_empty_open_orders(orders,ACCOUNT,
+            nonempty_code='OPEN_ORDER_RESERVATIONS_REVIEW_REQUIRED')
+
+
+def test_open_order_collection_cap_blocks_before_reservation(prepared):
+    opener=Opener(open_orders=[[{} for _ in range(129)],[],[]])
+    before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match='OPEN_ORDERS_INVALID'):
+        submit(prepared,opener)
+    assert prepared[0].path.read_bytes()==before
+    assert prepared[2].inspect()['attempts']==0
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+
+
+def test_open_orders_change_before_reservation_never_marks_or_posts(prepared):
+    opener=Opener(open_orders=[[],[open_order()],[]])
+    before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match='PREFLIGHT_OPEN_ORDERS_CHANGED'):
+        submit(prepared,opener)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert prepared[0].path.read_bytes()==before
+    assert prepared[2].inspect()['attempts']==0
+
+
+def test_open_orders_change_after_reservation_never_posts_or_rearms(prepared):
+    opener=Opener(open_orders=[[],[],[open_order()]])
+    with pytest.raises(module.PaperSubmissionError,
+            match='POST_RESERVATION_OPEN_ORDERS_CHANGED'):
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    assert retained['lookup_by_original_client_id_required']
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    state=prepared[2].inspect()
+    assert state['pending_token'] is None and state['completed_attempts']==1
+    repeat=Opener()
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,repeat)
+    assert not repeat.requests and prepared[2].history()==history
+
+
+def test_open_orders_endpoint_and_session_boundary_are_exact():
+    assert module.OPEN_ORDERS_URL==(
+        'https://paper-api.alpaca.markets/v2/orders?status=open&limit=129&direction=asc')
+    opener=Opener()
+    def session():
+        return module._Session(KEY,SECRET,opener=opener,
+            wall_clock=lambda:1000,elapsed_clock=lambda:50,
+            permission_check=lambda:True,emergency_stop_check=lambda:False,
+            credential_check=lambda:True,store_binding_check=lambda:None)
+    with pytest.raises(module.PaperSubmissionError,match='PATH_DENIED'):
+        session().request(module.OPEN_ORDERS_URL+'&extra=true')
+    with pytest.raises(module.PaperSubmissionError,match='METHOD_DENIED'):
+        session().request(module.OPEN_ORDERS_URL,payload=plan()['payload'])
+    capped=session();capped.requests=module.MAX_REQUESTS
+    with pytest.raises(module.PaperSubmissionError,match='REQUEST_CAP'):
+        capped.request(module.ACCOUNT_URL)
+    assert module.MAX_REQUESTS==12 and not opener.requests
 
 
 @pytest.mark.parametrize('field,value',[('confirm_paper_order',False),('confirm_single_attempt',False)])
@@ -938,7 +1052,7 @@ def test_credential_mutation_during_final_transport_checkpoint_never_posts(
         # The second explicit credential sample occurs after the final risk
         # reads.  Mutate during the following POST-adjacent permission check,
         # reproducing the interval that used to follow the last pair check.
-        if credential_samples >= 2 and len(opener.requests)==8:
+        if credential_samples >= 2 and len(opener.requests)==11:
             credential_current=False
         return True
     with pytest.raises(module.PaperSubmissionError,
@@ -1073,7 +1187,7 @@ def test_trusted_transport_deadline_includes_final_checkpoint_work(
     def delayed_checkpoint(self):
         nonlocal trusted_now
         result=original(self)
-        if self.request_head_guard is not None and self.requests==8:
+        if self.request_head_guard is not None and self.requests==11:
             trusted_now=17
         return result
     monkeypatch.setattr(module._Session,'checkpoint',delayed_checkpoint)

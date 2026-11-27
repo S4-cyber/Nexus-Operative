@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.427'
+REVISION = '0.340.428'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1521,8 +1521,27 @@ DELIVERY_STAGES = tuple((dict(stage,
         ' Retained forward-trial review now distinguishes truly absent legacy exchange-admission evidence from retained rows whose head is missing, and its evidence digest binds the exact already-guarded database bytes. This closes local diagnostic truthfulness gaps without authenticating the source, market realism, uptime or sustained acceptance.'))
     if stage['id'] in ('D3','D8') else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the internal one-shot Alpaca paper POST boundary now '
+        'requires three sequential bounded, account-consistent empty '
+        'reported-open-order samples: initial and repeated pre-reservation '
+        'reads fail before durable attempt state, while a post-reservation '
+        'appearance retains the lookup-only marker, closes the local provider '
+        'budget as NOT_SENT and never dispatches; reported terms are not '
+        'treated as provider hold or spendable-funds proof' if item.id=='M8'
+        else ''),item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' The internal paper-only POST boundary now '
+        'requires empty bounded open-order collections at initial, repeated '
+        'pre-reservation and final post-reservation samples. A later reported '
+        'order refuses before POST and cannot re-arm a retained attempt. This '
+        'is a sequential fail-closed admission fence, not provider hold, '
+        'account or spendable-funds acceptance.' if stage['id']=='D4' else ''))
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.427 binds every mutable order journal to one regular, single-link public leaf and its exact SQLite main attachment. Safe first creation uses exclusive no-follow opening, existing symlink and hardlink aliases refuse before schema or command mutation, and the retained leaf is resampled after replay, before each command and immediately before commit. A public-path replacement therefore rolls back instead of acknowledging a command on retired evidence, and the standalone emergency cut cannot mutate a hardlinked external journal. Hosted predecessor run 45936468426 exposed two POSIX-only open-SQLite replacement fixtures on Windows; they now skip only where Windows itself denies the fixture mutation, while portable alias tests remain and exact-source hosted regression is mandatory. Cancellation, expiry and emergency halt remain journal-only safety writes without a portfolio dependency. This grants no authority and is not broker, account, source, genuine-market, sustained-trial, Windows, funding, live, cloud or release acceptance. There is no new Portal button or editable parameter. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.428 closes an unsafe paper-order admission gap without interpreting unverified provider terms as spending authority. The explicit one-shot Alpaca paper POST boundary now reads the fixed open-orders endpoint at initial preflight, repeated pre-reservation review and final post-reservation review. Each response must be an exact bounded, account-consistent empty collection. An initial or repeated-preflight order fails before either durable attempt reservation; a final order retains the lookup-only request marker, closes the shared local provider budget as NOT_SENT with zero actual POSTs and cannot re-arm automatically. These sequential samples are not atomic, do not reconcile provider holds and do not prove spendable funds, broker/account/source acceptance or genuine-market behavior. No Portal button or editable parameter was added. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, independent emergency stop, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. This grants no funding, live, cloud, release or trading authority. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

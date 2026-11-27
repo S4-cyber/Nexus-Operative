@@ -31,11 +31,12 @@ from nexus.sqlite_journal_guard import (capture_file_identities, check_path_set,
 
 ACCOUNT_URL = inspection.ROOT + '/v2/account'
 POSITIONS_URL = inspection.ROOT + '/v2/positions'
+OPEN_ORDERS_URL = inspection.URLS[2]
 ASSET_URL = inspection.ASSET_URL
 ORDER_URL = contract.PAPER_ORDERS_URL
 REQUEST_TIMEOUT = 4
 TOTAL_SECONDS = 16
-MAX_REQUESTS = 9
+MAX_REQUESTS = 12
 MAX_BODY = inspection.MAX_BODY
 POST_BUDGET_SCOPE = 'ALPACA_PAPER_ORDERS'
 _TRUSTED_MONOTONIC = time.monotonic
@@ -209,6 +210,26 @@ def _account_and_funds(account_raw, positions_raw, expected_account_id, payload)
             seen = True
         if available < quantity:
             _fail('OBSERVED_BTC_AVAILABLE_INSUFFICIENT')
+
+
+def _require_empty_open_orders(raw, expected_account_id, *, nonempty_code):
+    """Require one bounded, account-consistent empty provider collection.
+
+    Reported terms are not provider hold reconciliation or spendable-funds
+    proof.  This POST boundary therefore admits no reported open orders rather
+    than interpreting their quantities or prices as safe capacity offsets.
+    """
+    try:
+        if (type(raw) is not list or len(raw) > inspection.MAX_ITEMS or
+                any(type(row) is not dict for row in raw)):
+            _fail('OPEN_ORDERS_INVALID')
+        inspection._collection_rows(raw, expected_account_id)
+    except PaperSubmissionError:
+        raise
+    except (inspection.PaperInspectionError, TypeError, ValueError):
+        _fail('OPEN_ORDERS_INVALID')
+    if raw:
+        _fail(nonempty_code)
 
 
 def _risk_snapshot(account_raw, positions_raw, expected_account_id):
@@ -666,7 +687,8 @@ class _Session:
             _fail('RECONCILIATION_CHECK_FAILED')
 
     def request(self, url, *, payload=None):
-        if url not in (ACCOUNT_URL, POSITIONS_URL, ASSET_URL, ORDER_URL):
+        if url not in (ACCOUNT_URL, POSITIONS_URL, OPEN_ORDERS_URL,
+                       ASSET_URL, ORDER_URL):
             _fail('PATH_DENIED')
         if self.requests >= MAX_REQUESTS:
             _fail('REQUEST_CAP')
@@ -854,12 +876,18 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
     if sampled_account['id'] != expected_account_id:
         _fail('ACCOUNT_ID_DISAGREEMENT')
     positions = session.request(POSITIONS_URL)
+    open_orders = session.request(OPEN_ORDERS_URL)
+    _require_empty_open_orders(open_orders, expected_account_id,
+        nonempty_code='OPEN_ORDER_RESERVATIONS_REVIEW_REQUIRED')
     asset = session.request(ASSET_URL)
     _account_and_funds(account, positions, expected_account_id, payload)
     initial_asset = _asset(asset, payload)
     initial_risk = _risk_snapshot(account, positions, expected_account_id)
     current_account = session.request(ACCOUNT_URL)
     current_positions = session.request(POSITIONS_URL)
+    current_open_orders = session.request(OPEN_ORDERS_URL)
+    _require_empty_open_orders(current_open_orders, expected_account_id,
+        nonempty_code='PREFLIGHT_OPEN_ORDERS_CHANGED')
     _account_and_funds(current_account, current_positions, expected_account_id, payload)
     current_risk = _risk_snapshot(current_account, current_positions, expected_account_id)
     if current_risk != initial_risk:
@@ -952,6 +980,12 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
             final_asset = session.request(ASSET_URL)
             if _asset(final_asset, payload) != initial_asset:
                 _fail('POST_RESERVATION_ASSET_CHANGED')
+            # Keep the most volatile provider collection as the last network
+            # read before transport.  This remains sequential rather than
+            # atomic, but does not add another GET-sized blind window.
+            final_open_orders = session.request(OPEN_ORDERS_URL)
+            _require_empty_open_orders(final_open_orders, expected_account_id,
+                nonempty_code='POST_RESERVATION_OPEN_ORDERS_CHANGED')
             session.credential_checkpoint('CREDENTIALS_CHANGED_AFTER_MARKER')
             session.transport_authorization = transport_authorization
             session.emergency_stop_path = bound_emergency_stop_path
@@ -1088,6 +1122,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         durable_unknown_outcome_marker_committed=True,
         account_and_position_capacity_resampled=True,
         sequential_preflight_stable=True,
+        open_order_reservations_absent_at_three_samples=True,
         post_reservation_risk_resampled=True,
         post_reservation_asset_resampled=True,
         post_transport_credentials_rechecked=True,
@@ -1120,7 +1155,7 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
         spendable_funds_verified=False, ledger_applied=False,
         live_orders_enabled=False, money_movement_enabled=False,
         release_approved=False,
-        limitations="One explicitly confirmed Alpaca paper POST after two matching fixed-endpoint asset eligibility/increment samples, two matching pre-reservation account/BTC-position admission samples and one matching post-reservation account/BTC-position sample. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects. Opaque caller callbacks finish before an OFF-by-default, one-shot typed local credential/permission lease and request-journal writer-exclusion snapshot are acquired. The exact credential pair and local permission remain serialized for cooperating in-process writers through synchronous opener entry, while cooperating SQLite writers cannot advance the marked request head before that entry. The caller explicitly confirms one canonical owner runtime/order path for the durable latch; it is never inferred from broker evidence storage. After opaque callbacks, the originally pinned request/provider-budget identities, exact pending reservation and a callback-free trusted monotonic deadline are rechecked under the request-head guard. The independent emergency stop does not share either guard and is sampled last; a cut observed before opener entry closes the retained reservation as NOT_SENT, consumes the one-shot authorization and cannot re-arm automatically. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process ownership lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. Once a complete response is parsed, response persistence and terminal local provider-budget reconciliation use local store/reservation proofs plus the final trusted transport timestamp without permission or emergency-stop reauthorization; they perform no further provider IO and remain exact-head/cold-replay checked. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay, and the immutable response observation is replayed again after the terminal budget write. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is cooperating local linearization plus a sampled stop, not an atomic provider snapshot, a distributed credential/permission lease, a provider-side revocation guarantee, descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. A non-cooperating writer, provider-side credential revocation, another host/process outside the typed lease, or a stop asserted after the final sample is not atomically excluded. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.")
+        limitations="One explicitly confirmed Alpaca paper POST after two matching fixed-endpoint asset eligibility/increment samples, two matching pre-reservation account/BTC-position admission samples, one matching post-reservation account/BTC-position sample and three sequential bounded empty reported-open-order samples. Any reported open order blocks rather than being interpreted as a provider hold or spendable-capacity offset. Exact request and Alpaca provider-budget paths/scopes are pinned in private retained store objects. Opaque caller callbacks finish before an OFF-by-default, one-shot typed local credential/permission lease and request-journal writer-exclusion snapshot are acquired. The exact credential pair and local permission remain serialized for cooperating in-process writers through synchronous opener entry, while cooperating SQLite writers cannot advance the marked request head before that entry. The caller explicitly confirms one canonical owner runtime/order path for the durable latch; it is never inferred from broker evidence storage. After opaque callbacks, the originally pinned request/provider-budget identities, exact pending reservation and a callback-free trusted monotonic deadline are rechecked under the request-head guard. The independent emergency stop does not share either guard and is sampled last; a cut observed before opener entry closes the retained reservation as NOT_SENT, consumes the one-shot authorization and cannot re-arm automatically. The provider-budget BEGIN and request-marker write returns are ignored; their exact durable records are accepted only after stable read-only replay, with the pending provider reservation additionally requiring the original in-process ownership lease. A restart may inspect or explicitly close retained state but cannot silently resume provider IO. Once a complete response is parsed, response persistence and terminal local provider-budget reconciliation use local store/reservation proofs plus the final trusted transport timestamp without permission or emergency-stop reauthorization; they perform no further provider IO and remain exact-head/cold-replay checked. The response append atomically requires the exact marked request head and payload; both the exact response event and provider-budget completion are accepted only after stable cold replay, and the immutable response observation is replayed again after the terminal budget write. Lost local commit acknowledgements never repeat provider IO, while uncommitted results remain pending and review-blocked. This is cooperating local linearization plus a sampled stop, not an atomic provider snapshot, a distributed credential/permission lease, provider hold reconciliation, a provider-side revocation guarantee, descriptor-held multi-file atomicity, an ACL audit or protection against an administrator. A reported order can appear between sequential samples; a non-cooperating writer, provider-side credential revocation, another host/process outside the typed lease, or a stop asserted after the final sample is not atomically excluded. Any lost/ambiguous POST outcome requires original-client-ID recovery, blocks the POST budget for review and can never be resent automatically. The budget coordinates cooperating callers sharing one private path only; broker-wide quota and distributed ownership are unverified. Matching sequential reads are not atomic, observed amounts are not settled-funds proof, and a response is not execution/fee/hold/account acceptance. No Portal route, saved write credential scope, strategy integration, retry, cancellation, ledger application, live endpoint, funding or release authority.")
 
 
 def fixture_report():
@@ -1158,14 +1193,19 @@ def fixture_report():
             return chunk
     class Opener:
         def __init__(self,journal,fail=False,late_account=None,late_positions=None,
-                     final_account=None,final_positions=None,final_asset=None):
+                     final_account=None,final_positions=None,final_asset=None,
+                     initial_open_orders=None,late_open_orders=None,
+                     final_open_orders=None):
             self.journal=journal;self.fail=fail;self.requests=[]
-            self.values=[account,positions,asset,
+            self.values=[account,positions,
+                [] if initial_open_orders is None else initial_open_orders,asset,
                 account if late_account is None else late_account,
                 positions if late_positions is None else late_positions,
+                [] if late_open_orders is None else late_open_orders,
                 account if final_account is None else final_account,
                 positions if final_positions is None else final_positions,
-                asset if final_asset is None else final_asset,raw]
+                asset if final_asset is None else final_asset,
+                [] if final_open_orders is None else final_open_orders,raw]
             self.marker_before_post=False;self.post_response_complete=False
         def open(self,request,timeout):
             self.requests.append(request)
@@ -1236,6 +1276,23 @@ def fixture_report():
                 and not changed_journal.recovery()['requests'][0]['submission_attempt_marked']
                 and changed_budget.inspect()['attempts']==0
                 and not any(request.get_method()=='POST' for request in changed_opener.requests))
+        late_orders_journal,late_orders_selected=prepared(root/'late-open-orders')
+        late_orders_budget=PaperProviderPostBudget(
+            root/'late-open-orders-post-budget.sqlite3')
+        late_orders_opener=Opener(late_orders_journal,
+            late_open_orders=[dict(raw)])
+        late_open_order_blocked=False
+        try:submit_once(late_orders_journal,'nx_submit_fixture',key,secret,
+            **options(late_orders_selected,late_orders_opener,
+                      late_orders_budget))
+        except PaperSubmissionError as error:
+            late_open_order_blocked=(
+                str(error)=='PAPER_SUBMISSION_PREFLIGHT_OPEN_ORDERS_CHANGED'
+                and not late_orders_journal.recovery()['requests'][0]
+                    ['submission_attempt_marked']
+                and late_orders_budget.inspect()['attempts']==0
+                and not any(request.get_method()=='POST'
+                            for request in late_orders_opener.requests))
         reserved_journal,reserved_selected=prepared(root/'reserved-changed')
         reserved_budget=PaperProviderPostBudget(root/'reserved-changed-post-budget.sqlite3')
         reserved_opener=Opener(reserved_journal,
@@ -1272,6 +1329,28 @@ def fixture_report():
                         replayed_head==history[0]['after_head_sha256'])
                 except PaperSubmissionError:
                     pass
+        reserved_orders_journal,reserved_orders_selected=prepared(
+            root/'reserved-open-orders')
+        reserved_orders_budget=PaperProviderPostBudget(
+            root/'reserved-open-orders-post-budget.sqlite3')
+        reserved_orders_opener=Opener(reserved_orders_journal,
+            final_open_orders=[dict(raw)])
+        post_reservation_open_order_blocked=False
+        try:submit_once(reserved_orders_journal,'nx_submit_fixture',key,secret,
+            **options(reserved_orders_selected,reserved_orders_opener,
+                      reserved_orders_budget))
+        except PaperSubmissionError as error:
+            orders_history=reserved_orders_budget.history()
+            post_reservation_open_order_blocked=(
+                str(error)==
+                    'PAPER_SUBMISSION_POST_RESERVATION_OPEN_ORDERS_CHANGED'
+                and reserved_orders_journal.recovery()['requests'][0]
+                    ['lookup_by_original_client_id_required']
+                and len(orders_history)==1
+                and orders_history[0]['outcome']=='NOT_SENT'
+                and orders_history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in reserved_orders_opener.requests))
         asset_journal,asset_selected=prepared(root/'reserved-asset-changed')
         asset_budget=PaperProviderPostBudget(
             root/'reserved-asset-changed-post-budget.sqlite3')
@@ -1301,7 +1380,7 @@ def fixture_report():
             return credential_current
         def credential_permission():
             nonlocal credential_current
-            if credential_samples >= 2 and len(credential_opener.requests)==8:
+            if credential_samples >= 2 and len(credential_opener.requests)==11:
                 credential_current=False
             return True
         post_transport_credential_change_blocked=False
@@ -1792,6 +1871,13 @@ def fixture_report():
                 safety_closure_request_head_bracketed,
             alpaca_post_budget_scope_required=
                 result['alpaca_post_budget_scope_required'] is True,
+            open_order_reservations_absent_at_three_samples=
+                result['open_order_reservations_absent_at_three_samples'] is True and
+                sum(request.full_url==OPEN_ORDERS_URL
+                    for request in opener.requests)==3,
+            late_open_order_blocked_before_reservation=late_open_order_blocked,
+            post_reservation_open_order_blocked_before_post=
+                post_reservation_open_order_blocked,
             late_risk_change_blocked_before_reservation=late_risk_change_blocked,
             post_reservation_risk_change_blocked_before_post=
                 post_reservation_change_blocked,

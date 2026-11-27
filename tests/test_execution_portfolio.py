@@ -352,6 +352,7 @@ def test_linked_fill_rejects_alias_portfolio_leaf_without_mutation(
 
 def test_linked_fill_rechecks_portfolio_leaf_after_attach_before_commit(
         tmp_path,monkeypatch):
+    if os.name=='nt':pytest.skip('Open SQLite replacement requires POSIX semantics')
     gateway=linked(tmp_path,monkeypatch)
     portfolio_path=tmp_path/'paper_portfolio.sqlite3'
     original_attach=execution_portfolio.attach
@@ -378,6 +379,7 @@ def test_linked_fill_rechecks_portfolio_leaf_after_attach_before_commit(
 
 def test_linked_fill_rechecks_portfolio_leaf_after_final_comparison(
         tmp_path,monkeypatch):
+    if os.name=='nt':pytest.skip('Open SQLite replacement requires POSIX semantics')
     gateway=linked(tmp_path,monkeypatch)
     portfolio_path=tmp_path/'paper_portfolio.sqlite3'
     before_order=gateway.path.read_bytes()

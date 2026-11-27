@@ -104,6 +104,24 @@ def test_priority_failure_never_prevents_latch_or_durable_halt(tmp_path,monkeypa
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
 
 
+def test_standalone_cut_does_not_mutate_hardlinked_external_journal(tmp_path):
+    external=tmp_path.parent/(tmp_path.name+'-external.sqlite3')
+    external_gateway=DurableOrderGateway(external)
+    external_gateway.submit('external','BTC-USD','BUY',25)
+    before=external.read_bytes();report=external_gateway.recovery_report()
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    try:os.link(external,order_path)
+    except (OSError,NotImplementedError):pytest.skip('Hardlinks unavailable')
+    from nexus.emergency_cut_tool import activate
+    result=activate(tmp_path)
+    assert not result['passed']
+    assert result['emergency_cut_state']=='UNCONFIRMED'
+    assert emergency_intent.requested(order_path)
+    assert external.read_bytes()==before
+    order_path.unlink()
+    assert DurableOrderGateway(external).recovery_report()==report
+
+
 @pytest.mark.parametrize('failure',[RuntimeError('PRIORITY_API_FAILED'),None,
     {'attempted':True,'confirmed':True,'priority_class':'STANDARD'},
     {'attempted':False,'confirmed':False,'priority_class':'HIGH'},

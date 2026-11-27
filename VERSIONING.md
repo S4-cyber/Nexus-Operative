@@ -1,4 +1,32 @@
 # Nexus Operative versioning and launch gates
+## v0.340.427 order-journal leaf identity
+
+Every mutable order journal is now bound to one regular, single-link public
+leaf and its exact SQLite main attachment. Safe first creation uses an
+exclusive no-follow open. Existing symlink and hardlink aliases refuse before
+schema or command mutation, and the retained leaf is sampled after replay,
+before each command and immediately before commit. A public-path replacement
+therefore rolls back instead of acknowledging a command on retired evidence.
+The standalone emergency cut also cannot mutate a hardlinked external journal.
+
+Hosted predecessor run `45936468426` exposed two POSIX-only open-SQLite
+replacement fixtures on Windows. They now skip only where Windows itself
+denies the fixture mutation; the production guard remains exercised by its
+portable alias tests and exact-source hosted regression is still mandatory.
+
+Cancellation, expiry and emergency halt remain journal-only safety writes and
+do not gain a portfolio dependency. This is sampled local filesystem integrity,
+not an administrator-proof or continuously atomic lease, broker/account/source
+acceptance, genuine-market or sustained-trial acceptance, native Windows,
+funding, live, cloud or release approval. No Portal control or editable
+parameter was added. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior, seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate stays exact 38% weighted (displayed about 40%,
+30–45% low-confidence), with 0/9 stages independently accepted and no release
+or trading permission.
+
+
 ## v0.340.426 storage-boundary truthfulness
 
 Ordinary linked-portfolio writes now reject symlink, non-regular and hardlinked

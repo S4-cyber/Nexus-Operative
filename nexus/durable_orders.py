@@ -121,6 +121,75 @@ class _OrderRootIdentity:
             raise ValueError('ORDER_STORAGE_ROOT_CHANGED')
 
 
+class _MutableOrderLeaf:
+    """Retain one regular, single-link journal leaf across a write."""
+    def __init__(self,path,root_guard):
+        self.path=Path(path);self.root_guard=root_guard
+        root_guard.require_current()
+        try:observed=self.path.lstat()
+        except FileNotFoundError:
+            flags=os.O_RDWR|os.O_CREAT|os.O_EXCL
+            flags|=getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_BINARY',0)
+            try:fd=os.open(self.path,flags,0o600)
+            except FileExistsError:
+                observed=self._observe()
+            except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+            else:
+                try:
+                    opened=os.fstat(fd)
+                    observed=self._observe()
+                    if not os.path.samestat(opened,observed):
+                        raise ValueError('ORDER_HISTORY_CHANGED')
+                finally:os.close(fd)
+        self._require_valid(observed)
+        try:resolved=self.path.resolve(strict=True)
+        except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+        after=self._observe()
+        self._require_valid(after)
+        if not os.path.samestat(observed,after):
+            raise ValueError('ORDER_HISTORY_CHANGED')
+        root_guard.require_current()
+        self.observed=observed;self.resolved=resolved
+
+    def _observe(self):
+        try:return self.path.lstat()
+        except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+
+    @staticmethod
+    def _require_valid(observed):
+        if stat.S_ISLNK(observed.st_mode):raise ValueError('ORDER_HISTORY_SYMLINK')
+        if not stat.S_ISREG(observed.st_mode):
+            raise ValueError('ORDER_HISTORY_REGULAR_FILE_REQUIRED')
+        if observed.st_nlink!=1:raise ValueError('ORDER_HISTORY_SINGLE_LINK_REQUIRED')
+
+    def require_current(self):
+        self.root_guard.require_current()
+        current=self._observe()
+        if (stat.S_ISLNK(current.st_mode) or not stat.S_ISREG(current.st_mode) or
+                current.st_nlink!=1 or
+                not os.path.samestat(self.observed,current)):
+            raise ValueError('ORDER_HISTORY_CHANGED')
+        try:resolved=self.path.resolve(strict=True)
+        except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+        if resolved!=self.resolved:raise ValueError('ORDER_HISTORY_CHANGED')
+        self.root_guard.require_current()
+
+    def require_attached(self,db):
+        self.require_current()
+        try:
+            attached=[Path(filename).resolve(strict=True)
+                for _,name,filename in db.execute('PRAGMA database_list')
+                if name=='main']
+        except OSError:raise ValueError('ORDER_HISTORY_CONNECTION_MISMATCH') from None
+        if len(attached)!=1 or attached[0]!=self.resolved:
+            raise ValueError('ORDER_HISTORY_CONNECTION_MISMATCH')
+        self.require_current()
+
+
+class _GuardedOrderConnection(sqlite3.Connection):
+    """SQLite connection carrying its exact write-side filesystem leases."""
+
+
 class DurableOrderGateway:
     def __init__(self, path=None, checkpoints_enabled=True, rotation_recovery=False):
         if type(checkpoints_enabled) is not bool:raise ValueError('INVALID_CHECKPOINT_OPTION')
@@ -147,15 +216,22 @@ class DurableOrderGateway:
 
     def _connect(self,path=None):
         path=self._path() if path is None else Path(path)
-        self._require_rotation_clear(path)
+        root_guard=_OrderRootIdentity(path,create=True)
+        path=root_guard.path
+        root_guard.require_current();self._require_rotation_clear(path)
+        leaf_guard=_MutableOrderLeaf(path,root_guard)
         db = None
         try:
-            db = sqlite3.connect(path, timeout=DB_BUSY_TIMEOUT_MS/1000)
+            db = sqlite3.connect(leaf_guard.resolved,
+                timeout=DB_BUSY_TIMEOUT_MS/1000,factory=_GuardedOrderConnection)
+            db.order_leaf_guard=leaf_guard;db.order_root_guard=root_guard
+            leaf_guard.require_attached(db)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             db.execute('PRAGMA synchronous=FULL')
             db.execute('''CREATE TABLE IF NOT EXISTS commands(
                 sequence INTEGER PRIMARY KEY, payload TEXT NOT NULL)''')
             db.execute('CREATE TABLE IF NOT EXISTS order_checkpoints(sequence INTEGER PRIMARY KEY,prefix_sha256 TEXT NOT NULL,state_json TEXT NOT NULL)')
+            leaf_guard.require_attached(db)
             return db
         except sqlite3.OperationalError as error:
             if db is not None:db.close()
@@ -284,13 +360,17 @@ class DurableOrderGateway:
                 raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')
             if len({step[1][0] for step in prepared})!=1:raise ValueError('QUOTE_ORDER_TRANSACTION_ID_MISMATCH')
         with closing(self._connect(path)) as db,ExitStack() as entry_guards:
-            root_guard.require_current()
+            leaf_guard=getattr(db,'order_leaf_guard',None)
+            if not isinstance(leaf_guard,_MutableOrderLeaf):
+                raise ValueError('ORDER_HISTORY_CONNECTION_MISMATCH')
+            leaf_guard.require_attached(db)
             with _transaction(db):
                 db.execute('BEGIN IMMEDIATE')
                 # Linearize ordinary mutation against the independent latch
                 # after any SQLite wait. A cut published first must win.
                 if cut_guarded:require_cut_clear()
                 gateway,count=self._restore(db)
+                leaf_guard.require_attached(db)
                 portfolio=None
                 # A linked quote fill must sample its runtime clock only after
                 # both durable stores are writable. Otherwise a portfolio-lock
@@ -326,12 +406,14 @@ class DurableOrderGateway:
                 results=[]
                 for method,args,kwargs,payload in prepared:
                     if cut_guarded:require_cut_clear()
+                    leaf_guard.require_attached(db)
                     result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload,entry_guards)
                     results.append(result)
                 # A cut published by or during the final mutation must still
                 # win before SQLite can commit the order and linked portfolio.
                 if cut_guarded:require_cut_clear()
                 if portfolio is not None:portfolio.require_current()
+                leaf_guard.require_attached(db)
                 root_guard.require_current()
             # The order and linked portfolio commit before ExitStack releases
             # the settings writer reservation held by any admitted BUY fill.

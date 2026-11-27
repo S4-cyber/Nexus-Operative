@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
@@ -10,6 +11,66 @@ from nexus.order_accounting import order_id_fingerprint, retired_id_set_sha256
 class EqualText(str):
     def __eq__(self,other):return True
     def __ne__(self,other):return False
+
+
+def test_mutation_rejects_symlinked_order_leaf_without_touching_target(tmp_path):
+    target=tmp_path/'target.sqlite3';alias=tmp_path/'alias.sqlite3'
+    gateway=DurableOrderGateway(target)
+    gateway.submit('order','BTC-USD','BUY',25)
+    before=target.read_bytes();report=gateway.recovery_report()
+    try:alias.symlink_to(target)
+    except (OSError,NotImplementedError):pytest.skip('File symlinks unavailable')
+    with pytest.raises(ValueError,match='ORDER_HISTORY_SYMLINK'):
+        DurableOrderGateway(alias).emergency_halt()
+    assert target.read_bytes()==before
+    assert DurableOrderGateway(target).recovery_report()==report
+
+
+def test_mutation_rejects_hardlinked_order_leaf_without_touching_target(tmp_path):
+    target=tmp_path/'target.sqlite3';alias=tmp_path/'alias.sqlite3'
+    gateway=DurableOrderGateway(target)
+    gateway.submit('order','BTC-USD','BUY',25)
+    before=target.read_bytes();report=gateway.recovery_report()
+    try:os.link(target,alias)
+    except (OSError,NotImplementedError):pytest.skip('Hardlinks unavailable')
+    with pytest.raises(ValueError,match='ORDER_HISTORY_SINGLE_LINK_REQUIRED'):
+        DurableOrderGateway(alias).emergency_halt()
+    assert target.read_bytes()==before
+    alias.unlink()
+    assert DurableOrderGateway(target).recovery_report()==report
+
+
+def test_public_order_leaf_replacement_before_commit_rolls_back_retired_journal(
+        tmp_path,monkeypatch):
+    if os.name=='nt':pytest.skip('Open SQLite rename fixture requires POSIX semantics')
+    path=tmp_path/'orders.sqlite3';retired=tmp_path/'retired.sqlite3'
+    replacement=tmp_path/'replacement.sqlite3'
+    gateway=DurableOrderGateway(path)
+    gateway.submit('order','BTC-USD','BUY',25)
+    replacement_gateway=DurableOrderGateway(replacement)
+    replacement_gateway.submit('replacement','BTC-USD','BUY',10)
+    original_report=gateway.recovery_report()
+    replacement_report=replacement_gateway.recovery_report()
+    original_restore=gateway._restore;replaced=False
+    def replace_after_restore(db):
+        nonlocal replaced
+        result=original_restore(db)
+        if not replaced:
+            path.rename(retired);replacement.rename(path);replaced=True
+        return result
+    monkeypatch.setattr(gateway,'_restore',replace_after_restore)
+    with pytest.raises(ValueError,match='ORDER_HISTORY_CHANGED'):
+        gateway.emergency_halt()
+    assert DurableOrderGateway(retired).recovery_report()==original_report
+    assert DurableOrderGateway(path).recovery_report()==replacement_report
+
+
+def test_rotation_marker_refusal_does_not_create_absent_order_journal(tmp_path):
+    path=tmp_path/'orders.sqlite3'
+    (tmp_path/'nexus-order-rotation.intent').write_text('{}')
+    with pytest.raises(ValueError,match='ORDER_ROTATION_RECOVERY_REQUIRED'):
+        DurableOrderGateway(path).emergency_halt()
+    assert not path.exists()
 
 
 def test_polymorphic_command_number_is_rejected_before_storage_creation(tmp_path):

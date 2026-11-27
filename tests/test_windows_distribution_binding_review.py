@@ -16,6 +16,9 @@ def fixture(tmp_path):
     tmp_path.mkdir(parents=True, exist_ok=True)
     installer = tmp_path / f"NexusOperative-Setup-{VERSION}.exe"
     installer.write_bytes(b"installer distribution fixture")
+    standalone = tmp_path / "NexusOperative.exe"
+    standalone.write_bytes(b"standalone executable fixture")
+    standalone_digest = hashlib.sha256(standalone.read_bytes()).hexdigest()
     size, digest = review._installer(installer)
     phase = {
         "mode": "VERIFIED_INSTALLER_PHASE_EVIDENCE", "passed": True,
@@ -32,6 +35,9 @@ def fixture(tmp_path):
     result_review = {
         "mode": "VERIFIED_INSTALLER_RESULT_EVIDENCE", "version": VERSION,
         "source_commit": SOURCE, "installer_sha256": digest,
+        "standalone_executable_sha256": standalone_digest,
+        "installed_executable_sha256": standalone_digest,
+        "reinstalled_executable_sha256": standalone_digest,
         "session_id": phase["session_id"], "raw_result_bytes": 123,
         "raw_result_sha256": "c" * 64, "maximum_root_process_timeout_seconds": 300,
         "output_drain_timeout_seconds": 10,
@@ -42,7 +48,7 @@ def fixture(tmp_path):
     result_path = tmp_path / review.INSTALLER_RESULT_REVIEW_NAME
     result_path.write_text(json.dumps(result_review, sort_keys=True), encoding="utf-8")
     result_raw = result_path.read_bytes()
-    artifact = manifest([installer, result_path], VERSION, SOURCE)
+    artifact = manifest([installer, standalone, result_path], VERSION, SOURCE)
     return installer, size, digest, phase, result_review, result_raw, artifact
 
 
@@ -64,6 +70,10 @@ def test_exact_phase_installer_and_manifest_binding_passes(tmp_path):
     assert result["passed"] and result["phase_evidence_bound"] and result["artifact_manifest_bound"]
     assert result["final_installer_rehashed"] and result["installer_sha256"] == parts[2]
     assert result["installer_result_review_bound"] and result["installer_result_semantics_bound"]
+    assert result["standalone_executable_sha256"] == parts[4]["standalone_executable_sha256"]
+    assert result["standalone_executable_manifest_bound"] is True
+    assert result["installed_executable_manifest_bound"] is True
+    assert result["reinstalled_executable_manifest_bound"] is True
     assert result["installer_result_session_id"] == parts[3]["session_id"]
     assert all(result[key] is False for key in (
         "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
@@ -84,6 +94,8 @@ def test_exact_phase_installer_and_manifest_binding_passes(tmp_path):
     lambda phase, result, artifact: result.update(version="0.340.46"),
     lambda phase, result, artifact: result.update(source_commit="b" * 40),
     lambda phase, result, artifact: result.update(installer_sha256="b" * 64),
+    lambda phase, result, artifact: result.update(installed_executable_sha256="b" * 64),
+    lambda phase, result, artifact: result.update(reinstalled_executable_sha256="b" * 64),
     lambda phase, result, artifact: result.update(session_id="not-a-session"),
     lambda phase, result, artifact: result.update(first_run_paper_defaults=False),
     lambda phase, result, artifact: result.update(release_approved=True),
@@ -106,6 +118,23 @@ def test_missing_or_changed_result_review_manifest_entry_is_rejected(tmp_path):
     parts[6]["artifacts"] = [entry for entry in parts[6]["artifacts"]
         if entry["name"] != review.INSTALLER_RESULT_REVIEW_NAME]
     with pytest.raises(review.DistributionBindingError, match="result review manifest binding"):
+        verify(*parts)
+
+
+def test_missing_or_changed_standalone_manifest_entry_is_rejected(tmp_path):
+    parts = fixture(tmp_path)
+    parts[6]["artifacts"] = [entry for entry in parts[6]["artifacts"]
+        if entry["name"] != "NexusOperative.exe"]
+    with pytest.raises(review.DistributionBindingError,
+            match="standalone manifest binding"):
+        verify(*parts)
+
+    parts = fixture(tmp_path / "changed-standalone")
+    entry = next(row for row in parts[6]["artifacts"]
+        if row["name"] == "NexusOperative.exe")
+    entry["sha256"] = "e" * 64
+    with pytest.raises(review.DistributionBindingError,
+            match="standalone manifest binding"):
         verify(*parts)
 
     parts = fixture(tmp_path / "changed")

@@ -1,4 +1,25 @@
 # Nexus Operative versioning and launch gates
+## v0.340.431 installed executable identity binding
+
+The Windows installer smoke now hashes the exact standalone executable and
+requires both the first installed and reinstalled `NexusOperative.exe` to have
+the same SHA-256. It rechecks the standalone source after uninstall. Closed
+result evidence preserves all three equal digests, distribution review binds
+the public `NexusOperative.exe` manifest entry to that identity, and the
+ordinary-user owner-profile reviewer rechecks the full chain. Missing,
+changed, promoted or mismatched fields fail closed.
+
+This is exact CI artifact identity, not clean-machine, native-window,
+ordinary-user, power-loss, signing, broker/account/source, genuine-market,
+sustained-trial or release acceptance. No Portal button or editable parameter
+was added. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior, independent emergency stop,
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The roadmap estimate remains exact 38% weighted (displayed
+about 40%, 30–45% low-confidence), with 0/9 stages independently accepted and
+no release or trading permission.
+
+
 ## v0.340.430 replaced-owner POST interruption
 
 A pending paper POST reservation whose retained local owner marker identity was

@@ -31,7 +31,8 @@ RESULT_TRUE = {
     "prior_version_data_recovery", "packaged_backup_recovery", "same_version_reinstall",
     "halt_recovered", "uninstall_preserved_data", "external_process_output_drains_bounded",
     "phase_evidence_recorded", "phase_evidence_bound", "exact_source_bound",
-    "installer_digest_bound", "single_session_bound",
+    "installer_digest_bound", "single_session_bound", "installed_executable_matches_standalone",
+    "reinstalled_executable_matches_standalone",
 }
 RESULT_FALSE = {
     "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified", "native_windows_acceptance",
@@ -39,6 +40,8 @@ RESULT_FALSE = {
 }
 RESULT_KEYS = {
     "mode", "version", "source_commit", "installer_sha256", "session_id",
+    "standalone_executable_sha256", "installed_executable_sha256",
+    "reinstalled_executable_sha256",
     "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
     "output_drain_timeout_seconds", "limitations",
 } | RESULT_TRUE | RESULT_FALSE
@@ -187,6 +190,10 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
             or installer_result["version"] != expected_version
             or installer_result["source_commit"] != expected_source_commit
             or installer_result["installer_sha256"] != installer_sha256
+            or type(installer_result["standalone_executable_sha256"]) is not str
+            or SHA256.fullmatch(installer_result["standalone_executable_sha256"]) is None
+            or installer_result["installed_executable_sha256"] != installer_result["standalone_executable_sha256"]
+            or installer_result["reinstalled_executable_sha256"] != installer_result["standalone_executable_sha256"]
             or installer_result["session_id"] != phase["session_id"]
             or result_session.version != 4 or str(result_session) != installer_result["session_id"]
             or type(installer_result["raw_result_bytes"]) is not int
@@ -227,6 +234,10 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
             "name": INSTALLER_RESULT_REVIEW_NAME, "bytes": installer_result_bytes,
             "sha256": installer_result_sha256}:
         raise DistributionBindingError("result review manifest binding")
+    standalone_entry = entries.get("NexusOperative.exe")
+    if (standalone_entry is None
+            or standalone_entry["sha256"] != installer_result["standalone_executable_sha256"]):
+        raise DistributionBindingError("standalone manifest binding")
     return {
         "mode": "VERIFIED_INSTALLER_DISTRIBUTION_BINDING",
         "passed": True,
@@ -238,10 +249,14 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
         "installer_result_session_id": installer_result["session_id"],
         "installer_result_review_bytes": installer_result_bytes,
         "installer_result_review_sha256": installer_result_sha256,
+        "standalone_executable_sha256": installer_result["standalone_executable_sha256"],
         "phase_evidence_bound": True,
         "installer_result_review_bound": True,
         "installer_result_semantics_bound": True,
         "artifact_manifest_bound": True,
+        "standalone_executable_manifest_bound": True,
+        "installed_executable_manifest_bound": True,
+        "reinstalled_executable_manifest_bound": True,
         "final_installer_rehashed": True,
         "native_windows_acceptance": False,
         "actual_broker_acceptance": False,

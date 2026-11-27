@@ -29,6 +29,7 @@ SEMANTIC_TRUE = {
     "prior_version_data_recovery", "packaged_backup_recovery",
     "same_version_reinstall", "halt_recovered", "uninstall_preserved_data",
     "external_process_output_drains_bounded", "phase_evidence_recorded",
+    "installed_executable_matches_standalone", "reinstalled_executable_matches_standalone",
 }
 SEMANTIC_FALSE = {
     "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified",
@@ -37,6 +38,8 @@ SEMANTIC_FALSE = {
 }
 RAW_KEYS = {
     "mode", "version", "source_commit", "installer_sha256", "session_id",
+    "standalone_executable_sha256", "installed_executable_sha256",
+    "reinstalled_executable_sha256",
     "maximum_root_process_timeout_seconds", "output_drain_timeout_seconds", "limitations",
 } | SEMANTIC_TRUE | SEMANTIC_FALSE
 PHASE_KEYS = {
@@ -49,6 +52,8 @@ PHASE_KEYS = {
 }
 REVIEW_KEYS = {
     "mode", "passed", "version", "source_commit", "installer_sha256", "session_id",
+    "standalone_executable_sha256", "installed_executable_sha256",
+    "reinstalled_executable_sha256",
     "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
     "output_drain_timeout_seconds",
     "phase_evidence_bound", "exact_source_bound", "installer_digest_bound",
@@ -130,6 +135,10 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
             or result["source_commit"] != expected_source_commit
             or type(result["installer_sha256"]) is not str
             or SHA256.fullmatch(result["installer_sha256"]) is None
+            or type(result["standalone_executable_sha256"]) is not str
+            or SHA256.fullmatch(result["standalone_executable_sha256"]) is None
+            or result["installed_executable_sha256"] != result["standalone_executable_sha256"]
+            or result["reinstalled_executable_sha256"] != result["standalone_executable_sha256"]
             or result["maximum_root_process_timeout_seconds"] != 300
             or type(result["maximum_root_process_timeout_seconds"]) is not int
             or result["output_drain_timeout_seconds"] != 10
@@ -169,6 +178,9 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
         "version": expected_version,
         "source_commit": expected_source_commit,
         "installer_sha256": result["installer_sha256"],
+        "standalone_executable_sha256": result["standalone_executable_sha256"],
+        "installed_executable_sha256": result["installed_executable_sha256"],
+        "reinstalled_executable_sha256": result["reinstalled_executable_sha256"],
         "session_id": session_id,
         "raw_result_bytes": raw_result_bytes,
         "raw_result_sha256": raw_result_sha256,

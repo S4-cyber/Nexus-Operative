@@ -1,5 +1,6 @@
 param(
     [Parameter(Mandatory=$true)][string]$Installer,
+    [Parameter(Mandatory=$true)][string]$StandaloneExecutable,
     [Parameter(Mandatory=$true)][string]$Version,
     [Parameter(Mandatory=$true)][string]$EvidenceDirectory,
     [Parameter(Mandatory=$true)][string]$UpgradeSource,
@@ -15,9 +16,11 @@ $resultEvidence = Join-Path $EvidenceDirectory 'installer-result.json'
 $python = (Get-Command python -ErrorAction Stop).Source
 if ($Version -cnotmatch '^0\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'Invalid development version binding' }
 if ($SourceCommit -cnotmatch '^[0-9a-f]{40}$') { throw 'Invalid source commit binding' }
+if (!(Test-Path -LiteralPath $StandaloneExecutable -PathType Leaf)) { throw 'Standalone executable missing' }
 if (Test-Path $phaseEvidence) { throw 'Installer phase evidence already exists' }
 if (Test-Path $resultEvidence) { throw 'Installer result evidence already exists' }
 $installerSha256 = (Get-FileHash $Installer -Algorithm SHA256).Hash.ToLowerInvariant()
+$standaloneExecutableSha256 = (Get-FileHash -LiteralPath $StandaloneExecutable -Algorithm SHA256).Hash.ToLowerInvariant()
 $phaseSessionId = [Guid]::NewGuid().ToString('D')
 
 function Write-Phase([string]$Label, [string]$Status, [int]$TimeoutSeconds) {
@@ -48,6 +51,8 @@ function Install-Nexus([string]$Label) {
     if (!(Test-Path "$installDir/NexusOperative.exe")) { throw 'Installed executable missing' }
 }
 Install-Nexus 'install'
+$installedExecutableSha256 = (Get-FileHash -LiteralPath "$installDir/NexusOperative.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($installedExecutableSha256 -cne $standaloneExecutableSha256) { throw 'Installed executable does not match standalone executable' }
 Invoke-BoundedProcess $python @('tools/packaged_paper_tools_smoke.py','--executable',"$installDir/NexusOperative.exe",'--output',"$EvidenceDirectory/installed-paper-tools.json") 'installed-paper-tools' 300
 Invoke-BoundedProcess $python @('tools/installed_smoke.py','--exe',"$installDir/NexusOperative.exe",'--data',"$dataDir",'--version',$Version,'--setup-check','first-run','--output',"$EvidenceDirectory/first-start.json") 'first-installed-start' 120
 $journal = Join-Path $dataDir 'order_lifecycle.sqlite3'
@@ -56,6 +61,8 @@ $journalHash = (Get-FileHash $journal -Algorithm SHA256).Hash
 $settings = Join-Path $dataDir 'portal_settings.sqlite3'
 $settingsHash = (Get-FileHash $settings -Algorithm SHA256).Hash
 Install-Nexus 'reinstall'
+$reinstalledExecutableSha256 = (Get-FileHash -LiteralPath "$installDir/NexusOperative.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($reinstalledExecutableSha256 -cne $standaloneExecutableSha256) { throw 'Reinstalled executable does not match standalone executable' }
 if ((Get-FileHash $journal -Algorithm SHA256).Hash -ne $journalHash) { throw 'Reinstall modified user journal' }
 if ((Get-FileHash $settings -Algorithm SHA256).Hash -ne $settingsHash) { throw 'Reinstall modified saved setup' }
 Invoke-BoundedProcess $python @('tools/installed_smoke.py','--exe',"$installDir/NexusOperative.exe",'--data',"$dataDir",'--version',$Version,'--expect-halted','--setup-check','saved','--output',"$EvidenceDirectory/reinstalled-start.json") 'reinstalled-start' 120
@@ -79,11 +86,16 @@ if ((Get-FileHash $sentinel -Algorithm SHA256).Hash -ne $sentinelHash) { throw '
 if ((Get-FileHash $journal -Algorithm SHA256).Hash -ne $journalHash) { throw 'Uninstall modified user journal' }
 if ((Get-FileHash $settings -Algorithm SHA256).Hash -ne $settingsHash) { throw 'Uninstall modified saved setup' }
 if ((Get-FileHash $defaultSettings -Algorithm SHA256).Hash -ne $defaultSettingsHash) { throw 'Uninstall modified default saved setup' }
+$finalStandaloneExecutableSha256 = (Get-FileHash -LiteralPath $StandaloneExecutable -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($finalStandaloneExecutableSha256 -cne $standaloneExecutableSha256) { throw 'Standalone executable changed during installer smoke' }
 $result = [ordered]@{
     mode = 'INSTALLER_SMOKE_RESULT'
     version = $Version
     source_commit = $SourceCommit
     installer_sha256 = $installerSha256
+    standalone_executable_sha256 = $standaloneExecutableSha256
+    installed_executable_sha256 = $installedExecutableSha256
+    reinstalled_executable_sha256 = $reinstalledExecutableSha256
     session_id = $phaseSessionId
     first_run_paper_defaults = $true
     saved_setup_survived_reinstall = $true
@@ -94,6 +106,8 @@ $result = [ordered]@{
     prior_version_data_recovery = $true
     packaged_backup_recovery = $true
     same_version_reinstall = $true
+    installed_executable_matches_standalone = $true
+    reinstalled_executable_matches_standalone = $true
     halt_recovered = $true
     uninstall_preserved_data = $true
     external_process_output_drains_bounded = $true

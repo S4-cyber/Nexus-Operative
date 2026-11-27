@@ -44,7 +44,8 @@ INSTALLER_RESULT_TRUE = {
     "prior_version_data_recovery", "packaged_backup_recovery", "same_version_reinstall",
     "halt_recovered", "uninstall_preserved_data", "external_process_output_drains_bounded",
     "phase_evidence_recorded", "phase_evidence_bound", "exact_source_bound",
-    "installer_digest_bound", "single_session_bound",
+    "installer_digest_bound", "single_session_bound", "installed_executable_matches_standalone",
+    "reinstalled_executable_matches_standalone",
 }
 INSTALLER_RESULT_FALSE = {
     "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified", "native_windows_acceptance",
@@ -52,6 +53,8 @@ INSTALLER_RESULT_FALSE = {
 }
 INSTALLER_RESULT_KEYS = {
     "mode", "version", "source_commit", "installer_sha256", "session_id",
+    "standalone_executable_sha256", "installed_executable_sha256",
+    "reinstalled_executable_sha256",
     "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
     "output_drain_timeout_seconds", "limitations",
 } | INSTALLER_RESULT_TRUE | INSTALLER_RESULT_FALSE
@@ -84,6 +87,8 @@ BINDING_KEYS = {
     "installer_sha256", "installer_result_session_id", "installer_result_review_bytes",
     "installer_result_review_sha256", "phase_evidence_bound", "installer_result_review_bound",
     "installer_result_semantics_bound", "artifact_manifest_bound", "final_installer_rehashed",
+    "standalone_executable_sha256", "standalone_executable_manifest_bound",
+    "installed_executable_manifest_bound", "reinstalled_executable_manifest_bound",
     "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
     "money_movement_enabled", "release_approved", "limitations",
 }
@@ -233,10 +238,13 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
             or binding["installer_result_review_bytes"] < 1
             or type(binding["installer_result_review_sha256"]) is not str
             or SHA256.fullmatch(binding["installer_result_review_sha256"]) is None
+            or type(binding["standalone_executable_sha256"]) is not str
+            or SHA256.fullmatch(binding["standalone_executable_sha256"]) is None
             or any(binding[key] is not True for key in (
                 "phase_evidence_bound", "installer_result_review_bound",
                 "installer_result_semantics_bound", "artifact_manifest_bound",
-                "final_installer_rehashed"))
+                "final_installer_rehashed", "standalone_executable_manifest_bound",
+                "installed_executable_manifest_bound", "reinstalled_executable_manifest_bound"))
             or any(binding[key] is not False for key in (
                 "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
                 "money_movement_enabled", "release_approved"))
@@ -246,6 +254,9 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
             or installer_result["version"] != expected_version
             or installer_result["source_commit"] != expected_source_commit
             or installer_result["installer_sha256"] != binding["installer_sha256"]
+            or installer_result["standalone_executable_sha256"] != binding["standalone_executable_sha256"]
+            or installer_result["installed_executable_sha256"] != binding["standalone_executable_sha256"]
+            or installer_result["reinstalled_executable_sha256"] != binding["standalone_executable_sha256"]
             or installer_result["session_id"] != binding["installer_result_session_id"]
             or _session(installer_result["session_id"]) != installer_result["session_id"]
             or type(installer_result["raw_result_bytes"]) is not int
@@ -281,7 +292,7 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
         if name not in entries or (expected is not None and entries[name] != expected):
             raise OwnerProfileReviewError("manifest tool binding")
     executable_bytes, executable_sha256 = entries["NexusOperative.exe"]
-    if executable_bytes < 1:
+    if executable_bytes < 1 or executable_sha256 != binding["standalone_executable_sha256"]:
         raise OwnerProfileReviewError("executable")
     if (probe["profile"] != PROBE_PROFILE or probe["version"] != expected_version
             or probe["source_commit"] != expected_source_commit
@@ -315,6 +326,7 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
         "installer_result_review_bound": True,
         "installer_result_semantics_bound": True,
         "installed_executable_bound": True,
+        "installer_execution_identity_chain_bound": True,
         "probe_tool_manifest_bound": True,
         "review_tool_manifest_bound": True,
         "executing_reviewer_bound": True,

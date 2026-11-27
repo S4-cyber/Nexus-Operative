@@ -183,12 +183,16 @@ def test_windows_workflow_retains_bounded_release_tail_and_always_uploads_diagno
     assert 'python tools/windows_installer_phase_review.py --input' in workflow
     assert 'NEXUS_SOURCE_COMMIT=$actual' in workflow
     assert '-SourceCommit $env:NEXUS_SOURCE_COMMIT' in workflow
+    assert '-StandaloneExecutable "$PWD/dist/NexusOperative.exe"' in workflow
     assert '--installer $installer --expected-version $version' in workflow
     assert '--expected-source-commit $env:NEXUS_SOURCE_COMMIT' in workflow
     assert 'installer-phase-review.json' in workflow
     assert 'python tools/windows_installer_result_review.py --input' in workflow
     assert '--phase-review "$env:RUNNER_TEMP/nexus-installer-evidence/installer-phase-review.json"' in workflow
     assert 'installer-result-review.json' in workflow
+    assert 'standalone_executable_sha256' in (ROOT/'tools/windows_installer_smoke.ps1').read_text(encoding='utf-8')
+    assert 'installed_executable_sha256' in (ROOT/'tools/windows_installer_smoke.ps1').read_text(encoding='utf-8')
+    assert 'reinstalled_executable_sha256' in (ROOT/'tools/windows_installer_smoke.ps1').read_text(encoding='utf-8')
     assert 'python tools/windows_distribution_binding_review.py --phase-review' in workflow
     assert '--installer-result-review release/installer-result-review.json' in workflow
     assert '--artifact-manifest release/artifact-manifest.json' in workflow

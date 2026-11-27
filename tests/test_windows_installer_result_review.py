@@ -10,6 +10,7 @@ from tools import windows_installer_result_review as review
 VERSION = "0.340.364"
 SOURCE = "a" * 40
 DIGEST = "b" * 64
+EXECUTABLE_DIGEST = "d" * 64
 SESSION = "12345678-1234-4234-8234-123456789abc"
 
 
@@ -17,6 +18,9 @@ def fixture():
     result = {
         "mode": "INSTALLER_SMOKE_RESULT", "version": VERSION, "source_commit": SOURCE,
         "installer_sha256": DIGEST, "session_id": SESSION,
+        "standalone_executable_sha256": EXECUTABLE_DIGEST,
+        "installed_executable_sha256": EXECUTABLE_DIGEST,
+        "reinstalled_executable_sha256": EXECUTABLE_DIGEST,
         "maximum_root_process_timeout_seconds": 300, "output_drain_timeout_seconds": 10,
         "limitations": review.RESULT_LIMITATIONS,
         **{key: True for key in review.SEMANTIC_TRUE},
@@ -53,6 +57,11 @@ def test_exact_semantic_result_is_bound_to_phase_without_authority():
     assert result["passed"] and result["phase_evidence_bound"]
     assert result["exact_source_bound"] and result["installer_digest_bound"]
     assert result["single_session_bound"] and result["session_id"] == SESSION
+    assert result["standalone_executable_sha256"] == EXECUTABLE_DIGEST
+    assert result["installed_executable_sha256"] == EXECUTABLE_DIGEST
+    assert result["reinstalled_executable_sha256"] == EXECUTABLE_DIGEST
+    assert result["installed_executable_matches_standalone"] is True
+    assert result["reinstalled_executable_matches_standalone"] is True
     assert all(result[key] is True for key in review.SEMANTIC_TRUE)
     assert all(result[key] is False for key in review.SEMANTIC_FALSE)
 
@@ -76,6 +85,9 @@ def test_every_required_false_semantic_is_enforced(key):
 @pytest.mark.parametrize(("target", "key", "value"), (
     ("result", "version", "0.340.1"), ("result", "source_commit", "c" * 40),
     ("result", "installer_sha256", "c" * 64), ("result", "session_id", "not-a-session"),
+    ("result", "standalone_executable_sha256", "c" * 64),
+    ("result", "installed_executable_sha256", "c" * 64),
+    ("result", "reinstalled_executable_sha256", "c" * 64),
     ("result", "maximum_root_process_timeout_seconds", True),
     ("result", "output_drain_timeout_seconds", True), ("result", "limitations", "promoted"),
     ("phase", "version", "0.340.1"), ("phase", "source_commit", "c" * 40),

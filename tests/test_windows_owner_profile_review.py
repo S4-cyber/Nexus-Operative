@@ -34,6 +34,9 @@ def fixture(tmp_path):
     installer_result = {
         "mode": "VERIFIED_INSTALLER_RESULT_EVIDENCE", "version": VERSION,
         "source_commit": SOURCE, "installer_sha256": installer_info[1],
+        "standalone_executable_sha256": executable_info[1],
+        "installed_executable_sha256": executable_info[1],
+        "reinstalled_executable_sha256": executable_info[1],
         "session_id": SESSION, "raw_result_bytes": 123,
         "raw_result_sha256": "c" * 64, "maximum_root_process_timeout_seconds": 300,
         "output_drain_timeout_seconds": 10,
@@ -52,8 +55,12 @@ def fixture(tmp_path):
         "installer_result_session_id": SESSION,
         "installer_result_review_bytes": installer_result_info[0],
         "installer_result_review_sha256": installer_result_info[1],
+        "standalone_executable_sha256": executable_info[1],
         "phase_evidence_bound": True, "installer_result_review_bound": True,
         "installer_result_semantics_bound": True, "artifact_manifest_bound": True,
+        "standalone_executable_manifest_bound": True,
+        "installed_executable_manifest_bound": True,
+        "reinstalled_executable_manifest_bound": True,
         "final_installer_rehashed": True, "native_windows_acceptance": False,
         "actual_broker_acceptance": False, "live_orders_enabled": False,
         "money_movement_enabled": False, "release_approved": False, "limitations": "fixture",
@@ -112,6 +119,7 @@ def test_exact_owner_profile_probe_is_bound_without_promoting_authority(tmp_path
     assert result["distribution_binding_file_bound"]
     assert result["installer_result_review_bound"] and result["installer_result_semantics_bound"]
     assert result["installed_executable_bound"] and result["probe_tool_manifest_bound"]
+    assert result["installer_execution_identity_chain_bound"] is True
     assert result["review_tool_manifest_bound"] and result["executing_reviewer_bound"]
     assert result["private_paths_retained"] is False
     assert all(result[key] is False for key in (
@@ -134,6 +142,8 @@ def test_exact_owner_profile_probe_is_bound_without_promoting_authority(tmp_path
     ("binding", "installer_result_review_sha256", "b" * 64),
     ("binding", "release_approved", True),
     ("binding", "installer_sha256", "b" * 64),
+    ("binding", "standalone_executable_sha256", "b" * 64),
+    ("binding", "installed_executable_manifest_bound", False),
     ("manifest", "release_approved", True),
     ("manifest", "source_commit", "b" * 40),
 ))
@@ -166,6 +176,11 @@ def test_missing_or_changed_manifest_tools_are_rejected(tmp_path):
 def test_installer_result_semantics_and_manifest_binding_are_required(tmp_path):
     parts = fixture(tmp_path)
     parts[10]["first_run_paper_defaults"] = False
+    with pytest.raises(review.OwnerProfileReviewError, match="installer result"):
+        verify(parts)
+
+    parts = fixture(tmp_path / "digest-mismatch")
+    parts[10]["reinstalled_executable_sha256"] = "b" * 64
     with pytest.raises(review.OwnerProfileReviewError, match="installer result"):
         verify(parts)
 

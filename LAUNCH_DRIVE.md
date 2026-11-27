@@ -1,4 +1,49 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.425 durable reconciliation truthfulness
+
+Linked order and portfolio recovery now compare every retained fill by exact
+order/event identity, action, product, quantity, price and fee in addition to
+the aggregate account snapshot. Missing, extra, renamed, duplicate or unequal
+fills fail cold recovery, session snapshots and ordinary linked mutation before
+new side effects. Retained linked lifecycle fills without priced execution
+evidence also fail replay. Cancellation, expiry and the independent emergency
+halt no longer attach the portfolio for safety-only writes, and halt
+confirmation cold-replays only the exact journal, so portfolio disagreement or
+unavailability cannot make these protective actions dependent on accounting.
+
+Retained exchange-admission rows without their session head now report explicit
+integrity failure instead of appearing as legacy absence. Cold feed recovery
+also rejects admission rows whose session is missing, and canonical non-object
+admission payloads now produce bounded integrity failure. The forward-trial
+evidence snapshot digest also includes the already bounded and rechecked main
+database SHA-256, so retained-byte changes that alter diagnostics alter the
+digest without a second read. These are local integrity fences, not broker,
+account, source, genuine-market, sustained-trial, native Windows, funding, live,
+cloud or release acceptance. No Portal control or editable parameter was added.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior, seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+Local verification completed 16/16 bounded offline profiles and independent
+saved-evidence revalidation against 437 source inputs at
+`9c8f7dd73605c2e7a8f0a75fdbc74a85aa608efa208af4751d909f60c33ea6ce`;
+the saved report SHA-256 is
+`2d8120335c430b67e2c87892241790d502061e5f017094aca2fdd71d2de41f0f`.
+The six affected modules passed 295 tests, and the final lock-independence
+focus passed three tests. The complete deterministic shards passed 3,564 and
+3,571 tests respectively, with four total expected platform skips and the
+existing Starlette/httpx deprecation warning. Compilation, dependency
+integrity, deterministic roadmap output, Portal syntax, 14 Node controllers
+and all 35 CI-inventory checks passed. A clean wheel install reported
+v0.340.425; its 170-member SHA-256 is
+`7d8e816f25cd2cb3ddd96dde9dd0848750b7e2a660e7cb920a7d47a7dd19375c`.
+These local and synthetic checks do not replace exact-source hosted Windows,
+installer, browser or security gates.
+
+
 ## v0.340.424 reducing-exit and authority truthfulness fences
 
 Direct paper-ledger reducing SELL admission now owns SQLite's writer reservation

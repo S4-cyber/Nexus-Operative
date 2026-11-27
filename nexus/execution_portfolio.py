@@ -151,6 +151,48 @@ def compare(portfolio, account):
     _require_current(portfolio)
 
 
+def compare_linked(portfolio, gateway):
+    """Require exact replayed fill identity as well as aggregate balances."""
+    compare(portfolio,gateway.account)
+    _require_current(portfolio)
+    try:
+        lifecycle_fills={(order_id,event_id)
+            for order_id,order in (list(gateway.intents.items())+
+                list(gateway.archived_intents.items()))
+            for event_id,event in order['lifecycle_events'].items()
+            if event['kind']=='FILL'}
+        if lifecycle_fills!=set(gateway.executions):
+            raise ValueError('EXECUTION_PORTFOLIO_DISAGREEMENT')
+        expected={}
+        for key,detail in gateway.executions.items():
+            if type(key) is not tuple or len(key)!=2 or key in expected:
+                raise ValueError('EXECUTION_PORTFOLIO_DISAGREEMENT')
+            order_id,event_id=key
+            order=gateway.lookup(order_id)
+            if (type(order_id) is not str or type(event_id) is not str or
+                    type(order) is not dict or order.get('side') not in ('BUY','SELL') or
+                    type(order.get('product')) is not str or type(detail) is not dict):
+                raise ValueError('EXECUTION_PORTFOLIO_DISAGREEMENT')
+            expected[key]=(f"PAPER_FILL_{order['side']}",order['product'],
+                Decimal(detail['quantity']),Decimal(detail['price']),
+                Decimal(detail['fee']))
+        missing=object()
+        for order_id,event_id,action,product,quantity,price,fee in portfolio.execute(
+                'SELECT f.order_id,f.event_id,l.action,l.product,'
+                'f.quantity,f.price,f.fee FROM execution_fills AS f '
+                'JOIN ledger AS l ON l.id=f.ledger_id ORDER BY f.ledger_id'):
+            key=(order_id,event_id)
+            observed=(action,product,Decimal(quantity),Decimal(price),Decimal(fee))
+            if expected.pop(key,missing)!=observed:
+                raise ValueError('EXECUTION_PORTFOLIO_DISAGREEMENT')
+        if expected:
+            raise ValueError('EXECUTION_PORTFOLIO_DISAGREEMENT')
+    except (KeyError,TypeError,ValueError,ArithmeticError):
+        _require_current(portfolio)
+        raise ValueError('EXECUTION_PORTFOLIO_DISAGREEMENT') from None
+    _require_current(portfolio)
+
+
 def apply_fill(portfolio, order, event_id, detail, account):
     qty=Decimal(detail['quantity']);price=Decimal(detail['price']);fee=Decimal(detail['fee'])
     cash=verify_ledger(portfolio)
@@ -173,4 +215,3 @@ def apply_fill(portfolio, order, event_id, detail, account):
     portfolio.execute('INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES (?,?,?,?,?)',(cur.lastrowid,action,order['product'],str(qty),str(entry)))
     portfolio.execute('INSERT INTO execution_fills VALUES (?,?,?,?,?,?)',(cur.lastrowid,order['id'],event_id,str(qty),str(price),str(fee)))
     append_seal(portfolio,cur.lastrowid)
-    compare(portfolio,account)

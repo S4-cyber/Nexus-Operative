@@ -34,31 +34,22 @@ async def until(predicate):
         await asyncio.sleep(.001)
 
 
-@pytest.mark.parametrize('store',['orders','portfolio'])
-def test_real_write_lock_keeps_cut_pending_but_signals_runner_without_waiting(control,monkeypatch,store):
+def test_real_order_write_lock_keeps_cut_pending_but_signals_runner_without_waiting(control,monkeypatch):
     c,g,r,w,starts,obs=control
     c.post('/api/portal',json={'enabled':True});c.post('/api/paper/forward/start',json=START)
     g.submit('partial','BTC-USD','BUY',100,tier='terrestrial');g.simulate_priced_fill('partial','f1',1,1,25)
     before=g.recovery_report();entered=threading.Event();allow_halt=threading.Event()
     contending=threading.Event();original=g.emergency_halt;original_connect=g._connect
-    original_attach=execution_portfolio.attach
     def mark():
         entered.set();assert allow_halt.wait(5);return original()
     def connect(path=None):
         db=original_connect(path)
-        if store=='orders':
-            db.set_trace_callback(lambda statement:
-                contending.set() if statement=='BEGIN IMMEDIATE' else None)
+        db.set_trace_callback(lambda statement:
+            contending.set() if statement=='BEGIN IMMEDIATE' else None)
         return db
-    def attach_portfolio(db,path):
-        contending.set()
-        return original_attach(db,path)
     monkeypatch.setattr(g,'emergency_halt',mark)
     monkeypatch.setattr(g,'_connect',connect)
-    if store=='portfolio':
-        monkeypatch.setattr(execution_portfolio,'attach',attach_portfolio)
-    path=g._path() if store=='orders' else g._path().parent/'paper_portfolio.sqlite3'
-    writer=sqlite3.connect(path);writer.execute('BEGIN IMMEDIATE')
+    writer=sqlite3.connect(g._path());writer.execute('BEGIN IMMEDIATE')
     async def exercise():
         cuts=[asyncio.create_task(api.halt()) for _ in range(2)]
         try:
@@ -88,6 +79,28 @@ def test_real_write_lock_keeps_cut_pending_but_signals_runner_without_waiting(co
     assert r.status()['cut_requested'] and not r.status()['enabled']
     assert c.post('/api/simulate/halt/reset',json={'confirm_reset':True}).json()['emergency_cut_state']=='CLEAR'
     assert not r.status()['cut_requested'] and not r.status()['enabled'] and w.status()['enabled']
+
+
+def test_real_portfolio_write_lock_does_not_delay_emergency_cut(control):
+    c,g,r,w,starts,obs=control
+    c.post('/api/portal',json={'enabled':True})
+    c.post('/api/paper/forward/start',json=START)
+    g.submit('partial','BTC-USD','BUY',100,tier='terrestrial')
+    g.simulate_priced_fill('partial','f1',1,1,25)
+    before=g.recovery_report()['execution_account']
+    writer=sqlite3.connect(g._path().parent/'paper_portfolio.sqlite3')
+    writer.execute('BEGIN IMMEDIATE')
+    try:
+        result=asyncio.run(asyncio.wait_for(api.halt(),5))
+        assert result['emergency_cut_state']=='VERIFIED'
+        assert r.status()['cut_requested'] and not r.status()['enabled']
+    finally:
+        writer.rollback();writer.close()
+    after=g.recovery_report()
+    assert after['halted'] and after['portfolio_reconciled']
+    assert after['execution_account']==before
+    assert next(o for o in after['orders'] if o['id']=='partial')[
+        'status']=='SIMULATED_CANCELLED'
 
 
 @pytest.mark.parametrize('side',['BUY','SELL'])

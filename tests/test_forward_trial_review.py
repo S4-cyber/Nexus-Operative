@@ -630,6 +630,29 @@ def test_crash_tail_exchange_admission_is_incident_and_zero_coverage(
     assert 'EXCHANGE_ADMISSION_OUTCOME_MISSING' in result['review_reasons']
 
 
+def test_retained_exchange_admission_without_head_fails_read_only_reviews(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([],trial.PUBLIC,'RUNNING')])
+    policy=admit('btc_momentum_experiment_v1');sid='0000000000000001'
+    quote=dict(provider='coinbase_exchange_public',product='BTC-USD',
+        bid='100',ask='100.1',last='100',received_at=START,
+        exchange_time=until(0),read_only=True,orders_allowed=False)
+    with closing(sqlite3.connect(path)) as db,db:
+        evidence.initialize_exchange_admissions(db,sid)
+        evidence.append_exchange_admission(db,sid,1,START,quote,
+            trial.PUBLIC,policy['policy_sha256'],START)
+        db.execute('DELETE FROM forward_exchange_admission_heads WHERE session=?',
+            (sid,))
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='^FORWARD_TRIAL_REVIEW_FAILED$'):
+        run(path,60)
+    with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True)) as db:
+        with pytest.raises(ValueError,
+                match='^FORWARD_RETAINED_FEED_BASELINE_INVALID$'):
+            PaperForwardRunner._retained_feed_baseline(db,policy)
+    assert path.read_bytes()==before
+
+
 def test_missing_quote_outcome_is_reported_without_repair(tmp_path,monkeypatch):
     path=database(tmp_path,monkeypatch,[([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')])
     with closing(sqlite3.connect(path)) as db,db:
@@ -640,6 +663,27 @@ def test_missing_quote_outcome_is_reported_without_repair(tmp_path,monkeypatch):
     assert result['incident_free_coverage_target_met'] is False
     assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in result['review_reasons']
     assert path.read_bytes()==before
+
+
+def test_evidence_snapshot_digest_binds_retained_database_bytes(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,
+        [([(0,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    initial=run(path,10)
+    assert initial['event_trace_complete'] is True
+    with closing(sqlite3.connect(path)) as db,db:
+        db.execute('UPDATE forward_events SET ordinal=ordinal+10 WHERE sequence=2')
+    changed=path.read_bytes()
+    reviewed=run(path,10)
+    repeated=run(path,10)
+    assert reviewed['event_trace_complete'] is False
+    assert reviewed['operational_incidents_present'] is True
+    assert 'DURABLE_EVENT_TRACE_INCOMPLETE' in reviewed['review_reasons']
+    assert reviewed['evidence_snapshot_sha256']!=initial['evidence_snapshot_sha256']
+    assert repeated['evidence_snapshot_sha256']==reviewed['evidence_snapshot_sha256']
+    assert path.read_bytes()==changed
+
 
 @pytest.mark.parametrize(('source,reason'),[
     (trial.INJECTED,'INJECTED_OBSERVATIONS_IN_WINDOW'),

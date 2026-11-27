@@ -1,9 +1,10 @@
 from decimal import Decimal
+import json
 import sqlite3
 import threading
 import pytest
 from nexus import execution_portfolio,tier_permissions
-from nexus.durable_orders import DurableOrderGateway
+from nexus.durable_orders import DurableOrderGateway,emergency_halt_replayed
 from nexus.paper_portfolio import state, buy
 from nexus.portfolio_governor import audit_portfolio
 from nexus.tier_permissions import configure
@@ -255,6 +256,125 @@ def test_independent_audit_detects_resealed_execution_disagreement(tmp_path,monk
     report=audit_portfolio()
     assert 'EXECUTION_CASH_DISAGREEMENT' in report['reasons']
     assert 'EXECUTION_POSITION_DISAGREEMENT' in report['reasons']
+
+
+def test_renamed_durable_fill_cannot_claim_linked_reconciliation(
+        tmp_path,monkeypatch):
+    """Exact economics cannot hide a cross-store fill identity mismatch."""
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    configure('terrestrial',True)
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    portfolio_path=tmp_path/'paper_portfolio.sqlite3'
+    gateway=DurableOrderGateway(order_path)
+    gateway.initialize_account(10000)
+    gateway.link_portfolio()
+    session='0123456789abcdef'
+    order_id=f'pf_{session}_buy'
+    gateway.submit(order_id,'BTC-USD','BUY',100,tier='terrestrial')
+    gateway.simulate_priced_fill(order_id,'original',1,1,25,'.01')
+    assert gateway.recovery_report()['portfolio_reconciled']
+
+    with sqlite3.connect(order_path) as db:
+        sequence,payload=db.execute(
+            'SELECT sequence,payload FROM commands ORDER BY sequence DESC LIMIT 1'
+        ).fetchone()
+        command=json.loads(payload)
+        command['args'][1]='different'
+        db.execute('UPDATE commands SET payload=? WHERE sequence=?',
+            (json.dumps(command),sequence))
+
+    before=(order_path.read_bytes(),portfolio_path.read_bytes())
+    cold=DurableOrderGateway(order_path)
+    operations=(
+        cold.recovery_report,
+        lambda:cold.session_orders_snapshot(session),
+        lambda:cold.simulate_priced_fill(order_id,'different',1,1,25,'.01'),
+        lambda:cold.simulate_priced_fill(order_id,'another',2,1,25,'.01'))
+    for operation in operations:
+        with pytest.raises(ValueError,match='^EXECUTION_PORTFOLIO_DISAGREEMENT$'):
+            operation()
+        assert (order_path.read_bytes(),portfolio_path.read_bytes())==before
+
+    # The independent journal-only stop remains available despite the
+    # pre-existing linked-ledger disagreement.
+    halt=cold.emergency_halt()
+    assert halt['halted']
+    assert emergency_halt_replayed(order_path,halt)
+    with sqlite3.connect(order_path) as db:
+        method=json.loads(db.execute(
+            'SELECT payload FROM commands ORDER BY sequence DESC LIMIT 1'
+        ).fetchone()[0])['method']
+    assert method=='emergency_halt'
+    assert portfolio_path.read_bytes()==before[1]
+
+
+def test_linked_safety_only_transactions_do_not_attach_portfolio(
+        tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch)
+    gateway.submit('expire','BTC-USD','BUY',25,tier='terrestrial')
+    gateway.set_execution_terms('expire',1000,5)
+    gateway.submit('due','BTC-USD','BUY',25,tier='terrestrial')
+    gateway.set_execution_terms('due',1000,5)
+
+    def forbidden_attach(*_args,**_kwargs):
+        raise AssertionError('safety operation attached the linked portfolio')
+
+    monkeypatch.setattr(execution_portfolio,'attach',forbidden_attach)
+    assert gateway.cancel('buy')['status']=='SIMULATED_CANCELLED'
+    assert gateway.expire_order('expire',1005)['status']=='SIMULATED_EXPIRED'
+    assert gateway.expire_due(1005)['expired_order_ids']==['due']
+    halt=gateway.emergency_halt()
+    assert halt['halted'] and emergency_halt_replayed(gateway.path,halt)
+
+
+def test_linked_replay_rejects_retained_unpriced_fill(tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch)
+    with sqlite3.connect(gateway.path.resolve().as_uri(),uri=True) as db:
+        sequence=db.execute('SELECT MAX(sequence) FROM commands').fetchone()[0]+1
+        payload=json.dumps(dict(method='simulate_event',
+            args=['buy','unpriced',1,'FILL',25],kwargs={}))
+        db.execute('INSERT INTO commands VALUES (?,?)',(sequence,payload))
+    before=(gateway.path.read_bytes(),
+        (tmp_path/'paper_portfolio.sqlite3').read_bytes())
+    with pytest.raises(ValueError,match='^ORDER_JOURNAL_RECOVERY_FAILED$'):
+        DurableOrderGateway(gateway.path).recovery_report()
+    assert (gateway.path.read_bytes(),
+        (tmp_path/'paper_portfolio.sqlite3').read_bytes())==before
+
+
+@pytest.mark.parametrize('disagreement',(
+    'missing','extra','duplicate','side','product','quantity','price','fee',
+    'archived_product'))
+def test_exact_linked_fill_comparator_rejects_each_identity_or_economic_field(
+        tmp_path,monkeypatch,disagreement):
+    gateway=linked(tmp_path,monkeypatch)
+    gateway.simulate_priced_fill('buy','fill',1,1,25,'.01')
+    with sqlite3.connect(gateway.path.resolve().as_uri(),uri=True) as db:
+        replayed,_=gateway._restore(db)
+        if disagreement=='missing':
+            replayed.executions.pop(('buy','fill'))
+        elif disagreement=='extra':
+            replayed.executions[('buy','extra')]=dict(
+                quantity='1',price='25',fee='.01',sequence=1)
+        elif disagreement=='duplicate':
+            class DuplicateItems(dict):
+                def items(self):
+                    item=next(super().items().__iter__())
+                    return (item,item)
+            replayed.executions=DuplicateItems(replayed.executions)
+        elif disagreement in ('side','product'):
+            replayed.intents['buy'][disagreement]=(
+                'SELL' if disagreement=='side' else 'ETH-USD')
+        elif disagreement in ('quantity','price','fee'):
+            replayed.executions[('buy','fill')][disagreement]='2'
+        else:
+            replayed.archived_intents['buy']=replayed.intents.pop('buy')
+            replayed.archived_intents['buy']['product']='ETH-USD'
+        portfolio=execution_portfolio.attach_read_only(
+            db,tmp_path/'paper_portfolio.sqlite3')
+        with pytest.raises(ValueError,
+                match='^EXECUTION_PORTFOLIO_DISAGREEMENT$'):
+            execution_portfolio.compare_linked(portfolio,replayed)
 
 
 def test_halt_can_persist_despite_portfolio_disagreement(tmp_path,monkeypatch):

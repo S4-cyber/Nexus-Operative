@@ -136,21 +136,24 @@ def review_exchange_admissions(db,session):
         (session,)).fetchmany(ADMISSION_LIMIT+1)
     head=db.execute('SELECT admissions,head FROM forward_exchange_admission_heads WHERE session=?',
         (session,)).fetchone()
-    if head is None:return None
     if len(rows)>ADMISSION_LIMIT:raise ValueError('FORWARD_EXCHANGE_ADMISSION_CAP_EXCEEDED')
-    previous=GENESIS;reasons=[];points=[];seen=0
+    if head is None and not rows:return None
+    previous=GENESIS
+    reasons=[] if head is not None else ['EXCHANGE_ADMISSION_HEAD_MISSING']
+    points=[];seen=0
     for cycle,payload,prev,sha in rows:
         if (cycle<=seen or prev!=previous or digest(previous,payload)!=sha):
             reasons.append('EXCHANGE_ADMISSION_CHAIN_DISAGREEMENT')
         try:
             data=json.loads(payload)
-            if canonical(data)!=payload:raise ValueError()
+            if type(data) is not dict or canonical(data)!=payload:raise ValueError()
         except (ValueError,TypeError,json.JSONDecodeError):
             reasons.append('EXCHANGE_ADMISSION_PAYLOAD_INVALID');data={}
         if data.get('cycle')!=cycle or data.get('session')!=session:
             reasons.append('EXCHANGE_ADMISSION_IDENTITY_DISAGREEMENT')
         data['_digest']=sha;points.append(data);seen=cycle;previous=sha
-    if head!=(len(rows),previous):reasons.append('EXCHANGE_ADMISSION_HEAD_DISAGREEMENT')
+    if head is not None and head!=(len(rows),previous):
+        reasons.append('EXCHANGE_ADMISSION_HEAD_DISAGREEMENT')
     return dict(integrity_ok=not reasons,reasons=sorted(set(reasons)),
         admissions=len(rows),head_sha256=previous,
         parent_head_sha256=rows[-1][2] if rows else None,points=points)

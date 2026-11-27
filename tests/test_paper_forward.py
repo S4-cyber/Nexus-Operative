@@ -257,6 +257,19 @@ raise SystemExit(80)
     resumed.stop()
 
 
+def test_cold_feed_baseline_rejects_orphan_exchange_admission(
+        tmp_path,monkeypatch):
+    runner,_,clock=setup(tmp_path,monkeypatch)
+    warmup(runner,clock)
+    runner.stop()
+    with sqlite3.connect(tmp_path/'paper_forward.sqlite3') as db:
+        db.execute('DELETE FROM sessions')
+    cold=PaperForwardRunner(DurableOrderGateway(tmp_path/'orders.sqlite3'),
+        clock.quote,lambda:clock.now)
+    with cold._read_db() as db:
+        with pytest.raises(ValueError,
+                match='^FORWARD_RETAINED_FEED_BASELINE_INVALID$'):
+            cold._retained_feed_baseline(db,cold._policy)
 def test_normal_and_price_rejected_quotes_bind_durable_admissions(
         tmp_path,monkeypatch):
     r,g,c=setup(tmp_path,monkeypatch)

@@ -790,14 +790,14 @@ def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
 def test_transient_final_replay_fault_is_bounded_and_read_only(
         tmp_path,monkeypatch):
     from nexus import emergency_cut_tool
-    original=DurableOrderGateway.recovery_report
+    original=DurableOrderGateway.halt_recovery_report
     calls=[]
     def transient_second_replay(self):
         calls.append(1)
         if len(calls)==2:
             raise ValueError('ORDER_JOURNAL_DATABASE_BUSY')
         return original(self)
-    monkeypatch.setattr(DurableOrderGateway,'recovery_report',
+    monkeypatch.setattr(DurableOrderGateway,'halt_recovery_report',
         transient_second_replay)
     report=emergency_cut_tool.activate(tmp_path)
     assert calls==[1,1,1]

@@ -229,13 +229,15 @@ def _review(path, *, after, until, reconciliation_bundle):
                 bundle_sha256=digest
             result=_review_bound(pinned,after=after,until=until,start=start,end=end,
                 stable_source=stable_source,reconciliation_bundle=bundle,
-                reconciliation_bundle_sha256=bundle_sha256)
+                reconciliation_bundle_sha256=bundle_sha256,
+                forward_database_sha256=fingerprints[0][7])
         return result
     except ValueError:_fail()
 
 
 def _review_bound(path, *, after, until, start, end, stable_source,
-                  reconciliation_bundle,reconciliation_bundle_sha256):
+                  reconciliation_bundle,reconciliation_bundle_sha256,
+                  forward_database_sha256):
     """Bounded one-transaction local review; no app environment or default path."""
     deadline=time.monotonic()+20
     with _snapshot(path,stable_source) as db:
@@ -542,7 +544,8 @@ def _review_bound(path, *, after, until, start, end, stable_source,
         binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,
             quote_heads=heads,quote_rows=count,event_heads=event_heads,
             event_rows=event_count,exchange_admission_heads=admission_heads,
-            exchange_admission_rows=admission_count)).encode()).hexdigest()
+            exchange_admission_rows=admission_count,
+            forward_database_sha256=forward_database_sha256)).encode()).hexdigest()
     with localcontext() as context:
         context.prec=50
         merged=_merge(intervals);covered=sum((b-a for a,b in merged),Decimal(0));duration=end-start

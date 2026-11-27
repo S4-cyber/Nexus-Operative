@@ -447,6 +447,79 @@ def test_abandoned_lease_requires_exact_confirmed_interruption(tmp_path):
     assert history[0]['actual_posts'] is None
 
 
+@pytest.mark.skipif(os.name == 'nt',
+    reason='Windows denies replacing an open owner marker')
+def test_replaced_owner_has_distinct_confirmed_unknown_interruption(tmp_path):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    owner,token=begin(budget);retained_owner=owner.identity()
+    replacement=tmp_path/'replacement-owner.lock'
+    replacement.write_bytes(owner.path.read_bytes())
+    os.replace(replacement,owner.path)
+    with pytest.raises(ValueError,match='OWNER_FILE_CHANGED'):
+        owner.__exit__()
+    cold=PaperProviderPostBudget(path);head=cold.inspect()['head_sha256']
+    with pytest.raises(ValueError,match='OWNER_SCOPE_CHANGED'):
+        cold.interrupt(token,expected_head=head,confirm_interrupted=True,
+            admission=lambda:1002)
+    result=cold.interrupt_replaced_owner(token,expected_head=head,
+        confirm_owner_replaced=True,confirm_uncertainty_preserved=True,
+        admission=lambda:1002)
+    state=cold.inspect();history=cold.history()
+    receipt=cold.replaced_owner_interruption_receipt()
+    assert result['head_sha256']==receipt['interruption_head_sha256']
+    assert receipt['previous_head_sha256']==head
+    assert receipt['token']==token
+    assert receipt['retained_owner_sha256']==retained_owner
+    assert receipt['replacement_owner_sha256']!=retained_owner
+    assert receipt['exact_interruption_replayed'] is True
+    assert receipt['read_only'] is True
+    assert state['pending_token'] is None and state['review_required'] is True
+    assert state['next_allowed_at']==87402
+    assert len(history)==1 and history[0]['outcome']=='INTERRUPTED_UNKNOWN'
+    assert history[0]['actual_posts'] is None
+    assert history[0]['request_after_head_sha256'] is None
+    assert all(result[key] is False for key in ('automatic_retry',
+        'automatic_recovery','owner_repaired','attempt_rearmed',
+        'ready_for_routing','release_approved'))
+
+
+def test_same_owner_cannot_use_replaced_owner_interruption(tmp_path):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    owner,token=begin(budget);owner.__exit__()
+    cold=PaperProviderPostBudget(path);state=cold.inspect()
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match='OWNER_REPLACEMENT_REQUIRED'):
+        cold.interrupt_replaced_owner(token,
+            expected_head=state['head_sha256'],confirm_owner_replaced=True,
+            confirm_uncertainty_preserved=True,admission=lambda:1002)
+    assert path.read_bytes()==before
+    assert cold.inspect()==state and cold.history()==()
+
+
+@pytest.mark.parametrize(('token_value','head_value','owner_confirmed',
+                           'uncertainty_confirmed','reason'),(
+    ('bad',None,True,True,'TOKEN_INVALID'),
+    (None,'f'*64,True,True,'HEAD_DISAGREEMENT'),
+    (None,None,False,True,'CONFIRMATION_REQUIRED'),
+    (None,None,True,False,'CONFIRMATION_REQUIRED'),
+))
+def test_replaced_owner_interruption_rejects_unreviewed_or_stale_inputs(
+        tmp_path,token_value,head_value,owner_confirmed,
+        uncertainty_confirmed,reason):
+    path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
+    owner,token=begin(budget);owner.__exit__();state=budget.inspect()
+    before=path.read_bytes()
+    with pytest.raises(ValueError,match=reason):
+        budget.interrupt_replaced_owner(
+            token if token_value is None else token_value,
+            expected_head=(state['head_sha256'] if head_value is None
+                           else head_value),
+            confirm_owner_replaced=owner_confirmed,
+            confirm_uncertainty_preserved=uncertainty_confirmed,
+            admission=lambda:1002)
+    assert path.read_bytes()==before
+
+
 def test_provider_scope_and_chain_tampering_fail_closed(tmp_path):
     path=tmp_path/'post.sqlite3';budget=PaperProviderPostBudget(path)
     owner,token=begin(budget);finish(budget,owner,token)

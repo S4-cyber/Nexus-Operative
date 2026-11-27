@@ -1,4 +1,39 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.430 replaced-owner POST interruption
+
+A pending paper POST reservation whose retained local owner marker identity was
+replaced now has one distinct, bounded reconciliation path. Ordinary
+interruption remains strict. The standalone operator command requires the exact
+pending token and chain head, proves the current and retained owner digests
+differ, requires explicit owner-replacement and uncertainty-preservation
+confirmations, appends at most one hash-chained interruption, and accepts a lost
+local acknowledgement only through two stable cold receipts under the
+replacement lease and exact journal identity.
+
+The private receipt is create-only and reserved before the journal append. It
+uses full-write, file-identity, size and durability checks; a failed receipt
+write can be retried only by cold-replaying the exact already-recorded token
+and previous head without another event. The Windows/source desktop allowlist
+exposes this bounded command as `--paper-tool post-interruption` without
+starting the UI, connecting a broker or reading credentials.
+
+The attempt becomes `INTERRUPTED_UNKNOWN` with unknown POST count, no
+request-after head, a full-day cooldown and review required. It cannot retry,
+re-arm, repair the owner or grant routing authority. Mandatory offline evidence
+also requires exact asset flag types, a final provider-owner reproof before
+POST, zero POST after owner loss and exact replaced-owner lost-ack replay.
+
+These are local injected fail-closed controls, not broker/account/source,
+genuine-market, sustained-trial, native Windows, installer, funding, live,
+cloud or release acceptance. No Portal button or editable parameter was added.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior, independent emergency stop, seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The roadmap estimate remains exact 38% weighted (displayed about
+40%, 30–45% low-confidence), with 0/9 stages independently accepted and no
+release or trading permission.
+
+
 ## v0.340.429 execution-boundary authority
 
 The standalone emergency command now attempts and rechecks its independent

@@ -1801,6 +1801,60 @@ def fixture_report():
         try:submit_once(journal,'nx_submit_fixture',key,secret,**options(selected,Opener(journal),budget))
         except PaperSubmissionError as error:
             repeat_blocked=str(error)=='PAPER_SUBMISSION_LOCAL_REVIEW_BLOCKED'
+        typed_asset_journal,typed_asset_selected=prepared(
+            root/'typed-asset-flags')
+        typed_asset_budget=PaperProviderPostBudget(
+            root/'typed-asset-flags-post-budget.sqlite3')
+        typed_asset_opener=Opener(typed_asset_journal,
+            final_asset=dict(asset,tradable=1))
+        exact_asset_flag_types_required=False
+        try:
+            submit_once(typed_asset_journal,'nx_submit_fixture',key,secret,
+                **options(typed_asset_selected,typed_asset_opener,
+                          typed_asset_budget))
+        except PaperSubmissionError as error:
+            typed_history=typed_asset_budget.history()
+            exact_asset_flag_types_required=(
+                str(error)=='PAPER_SUBMISSION_ASSET_INVALID'
+                and len(typed_history)==1
+                and typed_history[0]['outcome']=='NOT_SENT'
+                and typed_history[0]['actual_posts']==0
+                and not any(request.get_method()=='POST'
+                            for request in typed_asset_opener.requests))
+        owner_journal,owner_selected=prepared(root/'final-owner-reproof')
+        owner_budget=PaperProviderPostBudget(
+            root/'final-owner-reproof-post-budget.sqlite3')
+        owner_opener=Opener(owner_journal);owner_lost=False
+        owner_samples=0;owner_type=type(owner_budget.ownership())
+        original_owner_validate=owner_type.validate
+        def lost_owner_validate(self):
+            if owner_lost:
+                raise ValueError(
+                    'PAPER_PROVIDER_POST_BUDGET_OWNER_FILE_CHANGED')
+            return original_owner_validate(self)
+        def lose_owner_at_final_transport_sample():
+            nonlocal owner_lost,owner_samples
+            owner_samples+=1
+            if owner_samples==3: owner_lost=True
+            return True
+        owner_type.validate=lost_owner_validate
+        final_provider_owner_reproved_before_post=False
+        try:
+            submit_once(owner_journal,'nx_submit_fixture',key,secret,
+                **dict(options(owner_selected,owner_opener,owner_budget),
+                    credential_check=lose_owner_at_final_transport_sample))
+        except ValueError as error:
+            owner_state=owner_budget.inspect()
+            final_provider_owner_reproved_before_post=(
+                str(error)=='PAPER_PROVIDER_POST_BUDGET_OWNER_FILE_CHANGED'
+                and owner_samples==3
+                and owner_state['pending_token'] is not None
+                and owner_state['review_required'] is False
+                and owner_budget.history()==()
+                and not any(request.get_method()=='POST'
+                            for request in owner_opener.requests))
+        finally:
+            owner_type.validate=original_owner_validate
         checks=dict(marker_committed_before_post=opener.marker_before_post,
             exactly_one_post=sum(request.get_method()=='POST' for request in opener.requests)==1,
             account_and_position_capacity_resampled=
@@ -1896,6 +1950,9 @@ def fixture_report():
                 post_reservation_change_blocked,
             post_reservation_asset_change_blocked_before_post=
                 post_reservation_asset_change_blocked,
+            exact_asset_flag_types_required=exact_asset_flag_types_required,
+            final_provider_owner_reproved_before_post=
+                final_provider_owner_reproved_before_post,
             safety_closure_cold_replayed=safety_closure_cold_replayed,
             response_retained=retained['snapshot']['status']=='new',
             transport_loss_preserved_for_original_id_lookup=loss_preserved,

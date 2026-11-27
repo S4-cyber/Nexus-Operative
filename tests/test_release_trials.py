@@ -740,6 +740,8 @@ def test_pacing_profile_requires_single_attempt_submission_transport_fences():
                   'late_risk_change_blocked_before_reservation',
                   'post_reservation_risk_change_blocked_before_post',
                   'post_reservation_asset_change_blocked_before_post',
+                  'exact_asset_flag_types_required',
+                  'final_provider_owner_reproved_before_post',
                   'transport_loss_preserved_for_original_id_lookup','repeat_submission_blocked',
                   'output_never_sendable'):
         changed=copy.deepcopy(result);changed['single_attempt_submission_transport'][field]=False
@@ -753,6 +755,25 @@ def test_pacing_profile_requires_single_attempt_submission_transport_fences():
             trials._validate('pacing',changed)
 
 
+def test_pacing_profile_requires_replaced_owner_interruption_fences():
+    result=trials._pacing_trial();trials._validate('pacing',result)
+    required=('ordinary_interrupt_refused_replaced_owner',
+        'replaced_owner_interrupted_exactly_once',
+        'lost_acknowledgement_cold_replayed',
+        'unknown_outcome_and_cooldown_preserved')
+    for field in required:
+        changed=copy.deepcopy(result)
+        changed['replaced_owner_post_interruption'][field]=False
+        with pytest.raises(ValueError,match='POST_INTERRUPTION_FENCES'):
+            trials._validate('pacing',changed)
+    for field in ('actual_provider_access','actual_vault_access',
+                  'owner_repaired','attempt_rearmed','automatic_retry',
+                  'ready_for_routing','live_orders_enabled',
+                  'money_movement_enabled','release_approved'):
+        changed=copy.deepcopy(result)
+        changed['replaced_owner_post_interruption'][field]=True
+        with pytest.raises(ValueError,match='POST_INTERRUPTION_AUTHORITY'):
+            trials._validate('pacing',changed)
 def test_pacing_profile_requires_resolved_unknown_post_recovery_fences():
     result=trials._pacing_trial();trials._validate('pacing',result)
     for field in ('unresolved_request_denied','exact_terminal_resolution_bound',

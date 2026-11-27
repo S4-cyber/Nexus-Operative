@@ -35,6 +35,7 @@ CHECKS = (
     'post_unknown_outcome_retained_for_original_id',
     'post_terminal_recovery_lost_acknowledgement_replayed',
     'post_original_request_never_rearmed',
+    'post_replaced_owner_interruption_review_bound',
     'sse_failure_retained_without_automatic_retry',
     'sse_due_retry_explicit_and_single',
     'sse_emergency_stop_independent',
@@ -93,6 +94,8 @@ POST_TRANSPORT_KEYS = frozenset((
     'late_risk_change_blocked_before_reservation',
     'post_reservation_risk_change_blocked_before_post',
     'post_reservation_asset_change_blocked_before_post',
+    'exact_asset_flag_types_required',
+    'final_provider_owner_reproved_before_post',
     'safety_closure_cold_replayed', 'response_retained',
     'transport_loss_preserved_for_original_id_lookup',
     'local_provider_post_budget_retained', 'repeat_submission_blocked',
@@ -121,6 +124,19 @@ POST_RECOVERY_KEYS = frozenset((
     'spendable_funds_verified', 'ready_for_routing',
     'live_orders_enabled', 'money_movement_enabled', 'release_approved'))
 POST_RECOVERY_FALSE = GET_FALSE
+
+POST_INTERRUPTION_KEYS = frozenset((
+    'source', 'passed', 'ordinary_interrupt_refused_replaced_owner',
+    'replaced_owner_interrupted_exactly_once',
+    'lost_acknowledgement_cold_replayed',
+    'unknown_outcome_and_cooldown_preserved',
+    'actual_provider_access', 'actual_vault_access', 'owner_repaired',
+    'attempt_rearmed', 'automatic_retry', 'ready_for_routing',
+    'live_orders_enabled', 'money_movement_enabled', 'release_approved'))
+POST_INTERRUPTION_FALSE = frozenset((
+    'actual_provider_access', 'actual_vault_access', 'owner_repaired',
+    'attempt_rearmed', 'automatic_retry', 'ready_for_routing',
+    'live_orders_enabled', 'money_movement_enabled', 'release_approved'))
 
 SSE_KEYS = frozenset((
     'source', 'passed', 'first_failure_retained_without_retry',
@@ -191,7 +207,8 @@ def _component(value, *, keys, source, false_fields):
             raise ValueError('PAPER_TRANSPORT_UNCERTAINTY_MATRIX_COMPONENT')
 
 
-def review(get_recovery, post_transport, post_recovery, sse_reconnect):
+def review(get_recovery, post_transport, post_recovery, post_interruption,
+        sse_reconnect):
     """Validate exact disposable component reports and return no raw evidence."""
     _component(get_recovery, keys=GET_KEYS,
         source='TEMPORARY_PROVIDER_READ_BUDGET_RECOVERY_FIXTURE',
@@ -202,6 +219,9 @@ def review(get_recovery, post_transport, post_recovery, sse_reconnect):
     _component(post_recovery, keys=POST_RECOVERY_KEYS,
         source='TEMPORARY_RESOLVED_UNKNOWN_POST_RECOVERY_FIXTURE',
         false_fields=POST_RECOVERY_FALSE)
+    _component(post_interruption, keys=POST_INTERRUPTION_KEYS,
+        source='TEMPORARY_REPLACED_OWNER_INTERRUPTION_FIXTURE',
+        false_fields=POST_INTERRUPTION_FALSE)
     _component(sse_reconnect, keys=SSE_KEYS,
         source='TEMPORARY_INJECTED_ACTIVITY_SSE_RECONNECT_BUDGET_FIXTURE',
         false_fields=SSE_FALSE)
@@ -213,6 +233,7 @@ def review(get_recovery, post_transport, post_recovery, sse_reconnect):
         post_unknown_outcome_retained_for_original_id=True,
         post_terminal_recovery_lost_acknowledgement_replayed=True,
         post_original_request_never_rearmed=True,
+        post_replaced_owner_interruption_review_bound=True,
         sse_failure_retained_without_automatic_retry=True,
         sse_due_retry_explicit_and_single=True,
         sse_emergency_stop_independent=True,
@@ -235,5 +256,7 @@ def fixture_report():
         fixture_report as get_fixture)
     from nexus.paper_provider_post_recovery import (
         fixture_report as post_recovery_fixture)
+    from nexus.paper_provider_post_interruption import (
+        fixture_report as post_interruption_fixture)
     return review(get_fixture(), post_fixture(), post_recovery_fixture(),
-        sse_fixture())
+        post_interruption_fixture(), sse_fixture())

@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.429'
+REVISION = '0.340.430'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1550,7 +1550,10 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
         'original provider-budget ownership lease inside the final serialized '
         'request guard after credential resampling; a replaced owner marker '
         'cannot enter the provider opener and leaves the lookup-only request '
-        'plus pending local budget for explicit review' if item.id=='M8' else ''),
+        'plus pending local budget for explicit review; a separately confirmed '
+        'replaced-owner interruption now closes that exact tail as permanent '
+        'unknown outcome with a full-day cooldown, cold receipt replay and no '
+        'retry, owner repair or request re-arm' if item.id=='M8' else ''),
     item.remaining) for item in MILESTONES)
 
 DELIVERY_STAGES = tuple((dict(stage,
@@ -1564,13 +1567,16 @@ DELIVERY_STAGES = tuple((dict(stage,
         'asset booleans and re-proves its original local provider owner inside '
         'the final serialized guard after credential resampling. Late owner '
         'loss performs zero POSTs and cannot reacquire, repair or re-arm the '
-        'attempt automatically. This is local injected fail-closed evidence, '
+        'attempt automatically. A distinct operator-confirmed replaced-owner '
+        'event can now retain the attempt as INTERRUPTED_UNKNOWN under full-day '
+        'review, including lost local acknowledgement replay, without provider '
+        'or credential access. This is local injected fail-closed evidence, '
         'not provider identity, authorized-account or broker acceptance.' if
         stage['id']=='D4' else '')) if stage['id'] in ('D3','D4') else stage)
     for stage in DELIVERY_STAGES)
 
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.429 closes three execution-boundary authority gaps without adding provider, account, funding, live, cloud or release authority. The standalone emergency command now attempts and rechecks its independent durable latch even when the selected order-journal leaf is a symlink; the order gateway still rejects that unsafe leaf before SQLite mutation, while a running paper loop adopts the latch. The explicit one-shot Alpaca paper POST boundary now requires exact JSON text, boolean and numeric asset field types, so numeric lookalikes cannot satisfy eligibility. After the final credential sample and inside the serialized request guard, the original local provider-budget ownership lease is re-proved before the independent stop and opener. Late owner loss performs zero POSTs and leaves the lookup-only request plus pending budget for explicit review without reacquisition, repair or automatic retry. These are local injected fail-closed controls, not broker/account/source, genuine-market, sustained-trial, native Windows or installer acceptance. No Portal button or editable parameter was added. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, independent emergency stop, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted and no release or trading permission."
+CURRENT_HARDENING = "v0.340.430 adds one bounded durable reconciliation path for a pending paper POST whose retained local owner marker identity was replaced. Ordinary interruption remains strict. The new standalone command requires the exact pending token and head, proves the current and retained owner digests differ, requires explicit owner-replacement and uncertainty-preservation confirmations, appends at most one hash-chained interruption and accepts a lost local acknowledgement only through two stable cold receipts under the replacement lease and exact journal identity. The attempt becomes INTERRUPTED_UNKNOWN with unknown POST count, no request-after head, a full-day cooldown and review required; it cannot retry, re-arm, repair the owner or grant routing authority. Mandatory offline release evidence now also requires exact asset flag types, a final provider-owner reproof before POST and zero POST after owner loss. These are local injected fail-closed controls, not broker/account/source, genuine-market, sustained-trial, native Windows or installer acceptance. No Portal button or editable parameter was added. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, independent emergency stop, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted and no release or trading permission."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

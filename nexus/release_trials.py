@@ -38,6 +38,7 @@ PACING_PUBLIC_KEYS = frozenset(('read_completion','snapshot_time',
     'bounded_recovery_crash_drill',
     'bounded_recovery_step','submission_admission',
     'single_attempt_submission_transport','resolved_unknown_post_recovery',
+    'replaced_owner_post_interruption',
     'provider_read_budget_recovery','provider_budget_write_acknowledgement',
     'account_read_pacing_recovery',
     'provider_read_history_review','account_read_history_review',
@@ -931,6 +932,8 @@ def _pacing_trial():
         submission_transport=submission_transport_fixture()
         from nexus.paper_provider_post_recovery import fixture_report as post_recovery_fixture
         post_recovery=post_recovery_fixture()
+        from nexus.paper_provider_post_interruption import fixture_report as post_interruption_fixture
+        post_interruption=post_interruption_fixture()
         from nexus.paper_provider_budget_recovery import fixture_report as read_recovery_fixture
         read_recovery=read_recovery_fixture()
         from nexus.paper_read_pacing_recovery import fixture_report as account_recovery_fixture
@@ -952,7 +955,7 @@ def _pacing_trial():
         from nexus.sqlite_journal_guard import path_fixture_report
         from nexus.alpaca_paper_contract import timestamp_fixture_report
         from nexus.paper_read_pacing import completion_fixture_report
-        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),owner_scope_durability=_owner_scope_durability_trial(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,provider_read_budget_recovery=read_recovery,provider_budget_write_acknowledgement=budget_ack,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,account_read_history_review=account_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
+        return dict(read_completion=completion_fixture_report(),snapshot_time=timestamp_fixture_report(),path_preflight=path_fixture_report(),typed_operations=typed_fixture_report(),owner_scope_durability=_owner_scope_durability_trial(),bounded_recovery_crash_drill=crash,bounded_recovery_step=bounded_step,submission_admission=submission,single_attempt_submission_transport=submission_transport,resolved_unknown_post_recovery=post_recovery,replaced_owner_post_interruption=post_interruption,provider_read_budget_recovery=read_recovery,provider_budget_write_acknowledgement=budget_ack,account_read_pacing_recovery=account_recovery,provider_read_history_review=provider_read_review,account_read_history_review=account_read_review,provider_post_history_review=post_review,provider_post_activity_review=post_activity,passed=True, source='FIXED_LOCAL_INJECTED_CLOCK_FIXTURE', completed_sessions=state['sessions'],
             replayed_events=state['events'], cooldown_enforced=cooldown, retry_after_retained=rate_limit,
             authentication_block_retained=auth, pending_read_not_auto_released=interrupted,
             explicit_owned_interruption_retained=explicit_review, interrupted_full_day_cooldown=long_wait,
@@ -1386,7 +1389,7 @@ def _validate(profile, result):
         native_windows_required=tools['host_os']=='WINDOWS_NT'
         _require(tools['mode']=='PACKAGED_PAPER_OPERATOR_TOOLS_SMOKE' and tools['passed'] is True and
             tools['host_os'] in ('WINDOWS_NT','NON_WINDOWS') and
-            tools['tool_invocations']==35+int(native_windows_required) and
+            tools['tool_invocations']==36+int(native_windows_required) and
             tools['native_windows_storage_fault_checked'] is native_windows_required and
             all(tools[k] is True for k in PAPER_TOOL_CHECKS),'HTTP_PAPER_TOOLS')
         _require(all(tools[k] is False for k in ('provider_reads_requested','credential_reads_requested','live_orders_enabled','money_movement_enabled','release_approved','native_windows_acceptance')),'HTTP_PAPER_TOOLS_AUTHORITY')
@@ -2111,6 +2114,8 @@ def _validate(profile, result):
              'late_risk_change_blocked_before_reservation',
              'post_reservation_risk_change_blocked_before_post',
              'post_reservation_asset_change_blocked_before_post',
+             'exact_asset_flag_types_required',
+             'final_provider_owner_reproved_before_post',
              'transport_loss_preserved_for_original_id_lookup','repeat_submission_blocked',
              'output_never_sendable')),'SUBMISSION_TRANSPORT_FENCES')
         _require(all(transport[k] is False for k in ('actual_provider_access','actual_vault_access',
@@ -2139,6 +2144,23 @@ def _validate(profile, result):
             'actual_vault_access','broker_account_reconciled','spendable_funds_verified',
             'ready_for_routing','live_orders_enabled','money_movement_enabled','release_approved')),
             'POST_RECOVERY_AUTHORITY')
+        from nexus.paper_provider_post_interruption import (
+            CHECKS as POST_INTERRUPTION_CHECKS,
+            FLAGS as POST_INTERRUPTION_FLAGS,
+            PUBLIC_FIXTURE_KEYS as POST_INTERRUPTION_PUBLIC_KEYS)
+        post_interruption=result['replaced_owner_post_interruption']
+        _require(type(post_interruption) is dict and
+            frozenset(post_interruption)==POST_INTERRUPTION_PUBLIC_KEYS,
+            'POST_INTERRUPTION_SCHEMA')
+        _require(post_interruption['source']==
+            'TEMPORARY_REPLACED_OWNER_INTERRUPTION_FIXTURE' and
+            post_interruption['passed'] is True and
+            all(post_interruption[k] is True
+                for k in POST_INTERRUPTION_CHECKS),
+            'POST_INTERRUPTION_FENCES')
+        _require(all(post_interruption[k] is False
+            for k in POST_INTERRUPTION_FLAGS),
+            'POST_INTERRUPTION_AUTHORITY')
         read_recovery=result['provider_read_budget_recovery']
         _require(read_recovery['source']==
             'TEMPORARY_PROVIDER_READ_BUDGET_RECOVERY_FIXTURE' and

@@ -30,21 +30,25 @@ def fixture():
         "mode": "VERIFIED_INSTALLER_PHASE_EVIDENCE", "passed": True,
         "phases_verified": 10, "records_verified": 20, "version": VERSION,
         "source_commit": SOURCE, "installer_sha256": DIGEST, "session_id": SESSION,
+        "raw_phase_bytes": 456, "raw_phase_sha256": "e" * 64,
         "exact_source_bound": True, "installer_digest_bound": True,
         "single_session_bound": True, "sequence_complete": True, "timeouts_respected": True,
         "maximum_root_process_timeout_seconds": 300, "output_drain_timeout_seconds": 10,
         "maximum_observed_duration_seconds": 1.25,
         "native_windows_acceptance": False, "actual_broker_acceptance": False,
         "live_orders_enabled": False, "money_movement_enabled": False,
-        "release_approved": False, "limitations": "fixture",
+        "release_approved": False, "limitations": review.PHASE_LIMITATIONS,
     }
     return result, phase
 
 
-def verify(result, phase):
+def verify(result, phase, phase_raw=None):
     raw = json.dumps(result, sort_keys=True).encode()
+    phase_raw = phase_raw or json.dumps(phase, sort_keys=True).encode()
     return review.verify(result, phase, raw_result_bytes=len(raw),
         raw_result_sha256=hashlib.sha256(raw).hexdigest(),
+        phase_review_bytes=len(phase_raw),
+        phase_review_sha256=hashlib.sha256(phase_raw).hexdigest(),
         expected_version=VERSION, expected_source_commit=SOURCE)
 
 
@@ -60,10 +64,24 @@ def test_exact_semantic_result_is_bound_to_phase_without_authority():
     assert result["standalone_executable_sha256"] == EXECUTABLE_DIGEST
     assert result["installed_executable_sha256"] == EXECUTABLE_DIGEST
     assert result["reinstalled_executable_sha256"] == EXECUTABLE_DIGEST
+    assert result["phase_review_bytes"] > 0
+    assert len(result["phase_review_sha256"]) == 64
+    assert result["raw_phase_bytes"] == fixture()[1]["raw_phase_bytes"]
+    assert result["raw_phase_sha256"] == fixture()[1]["raw_phase_sha256"]
     assert result["installed_executable_matches_standalone"] is True
     assert result["reinstalled_executable_matches_standalone"] is True
     assert all(result[key] is True for key in review.SEMANTIC_TRUE)
     assert all(result[key] is False for key in review.SEMANTIC_FALSE)
+
+
+def test_equal_semantics_different_phase_review_bytes_change_binding():
+    result, phase = fixture()
+    compact = json.dumps(phase, sort_keys=True, separators=(",", ":")).encode()
+    indented = (json.dumps(phase, sort_keys=True, indent=2) + "\n").encode()
+    first = verify(result, phase, compact)
+    second = verify(result, phase, indented)
+    assert first["phase_review_sha256"] != second["phase_review_sha256"]
+    assert first["phase_review_bytes"] != second["phase_review_bytes"]
 
 
 @pytest.mark.parametrize("key", sorted(review.SEMANTIC_TRUE))

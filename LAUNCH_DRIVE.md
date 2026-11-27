@@ -1,4 +1,27 @@
 # Nexus Operative — Main Launch Drive: v1.0
+## v0.340.432 exact Windows phase evidence binding
+
+The Windows phase reviewer now binds the exact raw `installer-phases.jsonl`
+byte count and SHA-256. Result review binds the exact
+`installer-phase-review.json` bytes and carries the raw-log identity forward.
+The workflow ships and manifests that phase review; distribution and
+ordinary-user owner-profile review independently recheck its exact bytes,
+manifest entry and raw-log lineage. A semantically equivalent substituted
+phase review now fails closed.
+
+The raw JSONL remains separate diagnostic evidence and is not added to the
+public distribution. This closes a CI evidence-integrity gap only; it is not
+clean-machine, native-window, ordinary-user, power-loss, signing,
+broker/account/source, genuine-market, sustained-trial or release acceptance.
+No Portal button or editable parameter was added. Engagement and optional AI
+remain OFF by default; limits, account checks, reducing exits, fail-closed
+behavior, independent emergency stop, seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The roadmap
+estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
 ## v0.340.431 installed executable identity binding
 
 The Windows installer smoke now hashes the exact standalone executable and

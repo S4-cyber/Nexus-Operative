@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.431'
+REVISION = '0.340.432'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1579,12 +1579,20 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
     item.evidence + ('; the Windows installer smoke now hashes the exact standalone executable before installation, requires both the first installed and reinstalled executable hashes to match it, rechecks the standalone source after uninstall and carries the three equal digests through strict reviewed result evidence; distribution review then requires the public NexusOperative.exe manifest entry to match that digest, and owner-profile review rechecks the complete installer execution-identity chain' if item.id in ('M1','M9') else ''),
     item.remaining) for item in MILESTONES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Windows phase reviewer now binds the exact raw phase-log byte count and SHA-256, result review binds the exact phase-review artifact and carries raw-log lineage forward, and distribution plus owner-profile review require the shipped phase review to match its manifest entry byte-for-byte' if item.id in ('M1','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Windows CI now fails closed unless the standalone executable, first installed executable and reinstalled executable have one exact SHA-256 identity, the standalone source remains unchanged through the smoke, and the reviewed artifact manifest binds NexusOperative.exe to that identity. The ordinary-user owner-profile reviewer independently rechecks the resulting closed evidence chain. This is exact CI artifact identity, not clean-machine, native-window, ordinary-user, power-loss, signing or release acceptance.')
     if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
 
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Windows CI also binds the exact raw phase-log identity into the phase review, the exact phase-review bytes into result evidence, and the shipped phase review into the distribution manifest and ordinary-user review chain. Semantically equivalent artifact substitution fails closed. This remains CI evidence integrity, not clean-machine, native-window, ordinary-user, power-loss, signing or release acceptance.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.431 closes a Windows distribution identity gap. The installer smoke hashes the exact standalone executable, requires both first-installed and reinstalled NexusOperative.exe bytes to have the same SHA-256, and rechecks that the standalone source did not change during the run. Closed-schema result review preserves all three equal digests; distribution review requires the public NexusOperative.exe manifest entry to match; owner-profile review rechecks the complete chain. Any missing, changed, promoted or mismatched field fails closed. This is exact CI artifact identity only, not clean-machine, native-window, ordinary-user, power-loss, signing, broker/account/source, genuine-market, sustained-trial or release acceptance. No Portal button or editable parameter was added. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, independent emergency stop, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted and no release or trading permission."
+CURRENT_HARDENING = "v0.340.432 closes a Windows phase-evidence substitution gap. The phase reviewer binds the exact raw installer phase-log bytes and SHA-256; result review binds the exact phase-review artifact and carries raw-log lineage forward; the workflow ships and manifests that phase review; distribution and ordinary-user owner-profile review recheck its exact bytes, manifest entry and lineage. Semantically equivalent substitution now fails closed. The raw JSONL remains separate diagnostic evidence and is not added to the public distribution. This is CI evidence integrity only, not clean-machine, native-window, ordinary-user, power-loss, signing, broker/account/source, genuine-market, sustained-trial or release acceptance. No Portal button or editable parameter was added. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, independent emergency stop, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted and no release or trading permission."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

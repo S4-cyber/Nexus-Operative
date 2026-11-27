@@ -152,6 +152,22 @@ def test_polymorphic_account_fields_never_pass_submission_preflight():
         module._account_and_funds(raw,[],ACCOUNT,plan()['payload'])
 
 
+@pytest.mark.parametrize('field,value',[
+    ('tradable',1),('tradable',1.0),
+    ('fractionable',1),('fractionable',1.0),
+])
+def test_numeric_asset_flags_fail_before_reservations(prepared,field,value):
+    malformed=asset(**{field:value})
+    opener=Opener([account(),[],malformed,account(),[],account(),[],asset(),
+                   response()])
+    request_before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match='ASSET_INVALID'):
+        submit(prepared,opener)
+    assert prepared[0].path.read_bytes()==request_before
+    assert prepared[2].inspect()['attempts']==0
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+
+
 def test_single_attempt_commits_unknown_before_post_and_retains_response(prepared):
     opener=Opener();result=submit(prepared,opener)
     assert result['paper_only'] and result['single_attempt_consumed']
@@ -1024,7 +1040,7 @@ def test_post_reservation_risk_change_never_posts_and_never_rearms(
     (asset(min_order_size='1'),'POST_RESERVATION_ASSET_CHANGED'),
     (asset(min_trade_increment='.25'),'POST_RESERVATION_ASSET_CHANGED'),
     (asset(price_increment='.25'),'POST_RESERVATION_ASSET_CHANGED'),
-    ({'malformed':'asset'},'ASSET_NOT_ELIGIBLE'),
+    ({'malformed':'asset'},'ASSET_INVALID'),
 ])
 def test_post_reservation_asset_change_never_posts_and_never_rearms(
         prepared,final_asset,code):
@@ -1038,6 +1054,83 @@ def test_post_reservation_asset_change_never_posts_and_never_rearms(
     assert prepared[2].history()[0]['actual_posts']==0
     with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
         submit(prepared,Opener())
+
+
+@pytest.mark.parametrize('field,value',[
+    ('tradable',1),('tradable',1.0),
+    ('fractionable',1),('fractionable',1.0),
+])
+def test_numeric_final_asset_flags_never_post_or_rearm(
+        prepared,field,value):
+    malformed=asset(**{field:value})
+    opener=Opener([account(),[],asset(),account(),[],account(),[],malformed])
+    with pytest.raises(module.PaperSubmissionError,match='ASSET_INVALID'):
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    history=prepared[2].history()
+    assert retained['lookup_by_original_client_id_required']
+    assert retained['snapshot'] is None
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+def test_late_provider_owner_loss_never_enters_post_opener(
+        prepared,monkeypatch):
+    owner_type=type(prepared[2].ownership());original=owner_type.validate
+    owner_lost=False;credential_samples=0
+    def validate(self):
+        if owner_lost:raise ValueError(
+            'PAPER_PROVIDER_POST_BUDGET_OWNER_FILE_CHANGED')
+        return original(self)
+    def credential_check():
+        nonlocal owner_lost,credential_samples
+        credential_samples+=1
+        if credential_samples==3:owner_lost=True
+        return True
+    monkeypatch.setattr(owner_type,'validate',validate)
+    opener=Opener()
+    with pytest.raises(ValueError,match='OWNER_FILE_CHANGED'):
+        submit(prepared,opener,credential_check=credential_check)
+    retained=prepared[0].recovery()['requests'][0]
+    state=prepared[2].inspect()
+    assert credential_samples==3
+    assert retained['lookup_by_original_client_id_required']
+    assert retained['snapshot'] is None
+    assert state['pending_token'] is not None and state['review_required'] is False
+    assert prepared[2].history()==()
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Windows denies replacing the open owner marker')
+def test_replaced_provider_owner_path_never_enters_post_opener(
+        prepared,tmp_path):
+    budget=prepared[2];owner_path=budget.path.with_name(
+        budget.path.name+'.owner.lock')
+    credential_samples=0
+    def credential_check():
+        nonlocal credential_samples
+        credential_samples+=1
+        if credential_samples==3:
+            replacement=tmp_path/'replacement-owner.lock'
+            replacement.write_bytes(owner_path.read_bytes())
+            os.replace(replacement,owner_path)
+        return True
+    opener=Opener()
+    with pytest.raises(ValueError,match='OWNER_FILE_CHANGED'):
+        submit(prepared,opener,credential_check=credential_check)
+    retained=prepared[0].recovery()['requests'][0]
+    state=PaperProviderPostBudget(budget.path).inspect()
+    assert credential_samples==3
+    assert retained['lookup_by_original_client_id_required']
+    assert retained['snapshot'] is None
+    assert state['pending_token'] is not None and state['review_required'] is False
+    assert PaperProviderPostBudget(budget.path).history()==()
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
 
 
 def test_credential_mutation_during_final_transport_checkpoint_never_posts(

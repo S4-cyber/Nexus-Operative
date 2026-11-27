@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.428'
+REVISION = '0.340.429'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -1540,8 +1540,37 @@ DELIVERY_STAGES = tuple((dict(stage,
         'account or spendable-funds acceptance.' if stage['id']=='D4' else ''))
     if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the standalone emergency command now attempts and '
+        'rechecks its independent durable latch even when the selected order '
+        'journal leaf is a symlink, while the journal gateway still refuses '
+        'that unsafe leaf before SQLite mutation' if item.id=='M7' else
+        '; the internal one-shot Alpaca paper POST boundary now requires exact '
+        'JSON text, boolean and numeric asset field types and re-proves the '
+        'original provider-budget ownership lease inside the final serialized '
+        'request guard after credential resampling; a replaced owner marker '
+        'cannot enter the provider opener and leaves the lookup-only request '
+        'plus pending local budget for explicit review' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' The standalone emergency command no longer '
+        'lets an unsafe order-journal symlink suppress the independent stop '
+        'latch. The latch is durably attempted first and adopted by the running '
+        'paper loop, while journal mutation remains refused. This is bounded '
+        'same-host emergency independence, not native Windows, broker or '
+        'sustained-trial acceptance.' if stage['id']=='D3' else
+        ' The explicit paper-only POST boundary rejects numeric lookalikes for '
+        'asset booleans and re-proves its original local provider owner inside '
+        'the final serialized guard after credential resampling. Late owner '
+        'loss performs zero POSTs and cannot reacquire, repair or re-arm the '
+        'attempt automatically. This is local injected fail-closed evidence, '
+        'not provider identity, authorized-account or broker acceptance.' if
+        stage['id']=='D4' else '')) if stage['id'] in ('D3','D4') else stage)
+    for stage in DELIVERY_STAGES)
+
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.428 closes an unsafe paper-order admission gap without interpreting unverified provider terms as spending authority. The explicit one-shot Alpaca paper POST boundary now reads the fixed open-orders endpoint at initial preflight, repeated pre-reservation review and final post-reservation review. Each response must be an exact bounded, account-consistent empty collection. An initial or repeated-preflight order fails before either durable attempt reservation; a final order retains the lookup-only request marker, closes the shared local provider budget as NOT_SENT with zero actual POSTs and cannot re-arm automatically. These sequential samples are not atomic, do not reconcile provider holds and do not prove spendable funds, broker/account/source acceptance or genuine-market behavior. No Portal button or editable parameter was added. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, independent emergency stop, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. This grants no funding, live, cloud, release or trading authority. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.429 closes three execution-boundary authority gaps without adding provider, account, funding, live, cloud or release authority. The standalone emergency command now attempts and rechecks its independent durable latch even when the selected order-journal leaf is a symlink; the order gateway still rejects that unsafe leaf before SQLite mutation, while a running paper loop adopts the latch. The explicit one-shot Alpaca paper POST boundary now requires exact JSON text, boolean and numeric asset field types, so numeric lookalikes cannot satisfy eligibility. After the final credential sample and inside the serialized request guard, the original local provider-budget ownership lease is re-proved before the independent stop and opener. Late owner loss performs zero POSTs and leaves the lookup-only request plus pending budget for explicit review without reacquisition, repair or automatic retry. These are local injected fail-closed controls, not broker/account/source, genuine-market, sustained-trial, native Windows or installer acceptance. No Portal button or editable parameter was added. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, independent emergency stop, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted and no release or trading permission."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

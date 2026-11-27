@@ -1,4 +1,50 @@
 # Nexus Operative continuity instructions
+## v0.340.429 execution-boundary authority
+
+The standalone emergency command now attempts and rechecks its independent
+durable latch even when the selected order-journal leaf is a symlink. The order
+gateway still refuses that unsafe leaf before SQLite mutation, while a running
+paper loop adopts the latch and stops before an in-flight quote can submit.
+
+The explicit one-shot Alpaca paper POST boundary now requires exact JSON text,
+boolean and numeric asset field types, so numeric lookalikes cannot satisfy
+eligibility. After the final credential sample and inside the serialized
+request guard, the original local provider-budget ownership lease is re-proved
+before the independent stop and provider opener. Late owner loss performs zero
+POSTs and leaves the lookup-only request plus pending local budget for explicit
+review, without owner reacquisition, repair, automatic retry or re-arming.
+
+These are local injected fail-closed controls, not broker/account/source,
+genuine-market, sustained-trial, native Windows, installer, funding, live,
+cloud or release acceptance. No Portal button or editable parameter was added.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior, independent emergency stop, seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The roadmap estimate remains exact 38% weighted (displayed about
+40%, 30–45% low-confidence), with 0/9 stages independently accepted and no
+release or trading permission.
+
+Local verification passed the complete deterministic regression at 7,172
+tests with four expected platform skips and the existing Starlette/httpx
+deprecation warning. The focused execution-boundary suite passed 196 tests;
+the release/version/roadmap/evidence/workflow focus passed 227 with two
+platform skips; and independent review passed 207 without finding a safety
+bypass. All 16/16 bounded offline profiles revalidated against 437 source
+inputs at
+`0f2b3e654394bccb3eb943e92869a1593d9730fe2a9f0aa6b6128a4eea3e6efb`;
+the saved report SHA-256 is
+`09f24be14ccbd7ec5c3bceb08702449a72a962696af966880e6d575890d6bf74`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+JavaScript syntax and all 35 CI-inventory checks passed. A clean isolated wheel
+install reported v0.340.429 with no broken requirements; the 170-member wheel
+SHA-256 is
+`bab75fd3680b73be9366f928ed39d80859afb482dd8f95a7197dc0df53afc0db`.
+These local and synthetic checks do not replace fresh exact-source hosted
+security, Windows-regression, browser/help, installer, broker-paper account or
+sustained-market acceptance.
+
+
+
 ## v0.340.428 paper open-order admission fence
 
 The explicit one-shot Alpaca paper POST boundary now samples the fixed

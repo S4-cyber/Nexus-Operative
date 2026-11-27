@@ -241,7 +241,6 @@ def activate(data_root=None):
     halt_result = order_identity = None
     try:
         if not root_stable:raise ValueError('DATA_ROOT_CHANGED')
-        if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
         try:
             emergency_intent.persist(order_path)
             if not _same_data_root(root,root_identity):

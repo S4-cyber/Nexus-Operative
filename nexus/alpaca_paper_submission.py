@@ -137,13 +137,23 @@ class PaperTransportAuthorizationLease:
 
 
 def _asset(raw, payload):
-    if not isinstance(raw, dict):
+    if type(raw) is not dict or len(raw) > 64:
+        _fail('ASSET_INVALID')
+    text_fields = ('symbol', 'class', 'status')
+    flag_fields = ('tradable', 'fractionable')
+    number_fields = ('min_order_size', 'min_trade_increment',
+                     'price_increment')
+    if (any(type(raw.get(key)) is not str for key in text_fields) or
+            any(type(raw.get(key)) is not bool for key in flag_fields) or
+            any(type(raw.get(key)) not in (str, int, float, Decimal)
+                for key in number_fields)):
         _fail('ASSET_INVALID')
     expected = {
         'symbol': 'BTC/USD', 'class': 'crypto', 'status': 'active',
         'tradable': True, 'fractionable': True,
     }
-    if any(raw.get(key) != value for key, value in expected.items()):
+    if (any(raw.get(key) != value for key, value in expected.items()) or
+            raw['tradable'] is not True or raw['fractionable'] is not True):
         _fail('ASSET_NOT_ELIGIBLE')
     try:
         minimum = contract.number(raw.get('min_order_size'))
@@ -320,13 +330,15 @@ def _pin_stores(journal, post_budget, expected_account_id):
 
 def _reservation_state_check(journal, post_budget, *, client_order_id,
         expected_request_head, expected_payload_sha256, expected_admission,
-        expected_post_token, expected_post_admitted_at):
+        expected_post_token, expected_post_admitted_at, ownership):
     """Recheck both exact durable reservation tails without mutating them."""
     try:
+        post_budget._owned(ownership)
         request = journal.recovery()
         budget = post_budget.inspect()
         request_again = journal.recovery()
         budget_again = post_budget.inspect()
+        post_budget._owned(ownership)
         selected = [row for row in request['requests']
                     if row['client_order_id'] == client_order_id]
         stable = (request == request_again and budget == budget_again and
@@ -959,7 +971,8 @@ def submit_once(journal, client_order_id, api_key, api_secret, *,
                 expected_payload_sha256=expected_payload_sha256,
                 expected_admission=marker_admission,
                 expected_post_token=token,
-                expected_post_admitted_at=reservation_admitted_at)
+                expected_post_admitted_at=reservation_admitted_at,
+                ownership=owner)
             session.reservation_check()
             # Re-sample after both durable reservations and immediately before
             # the only POST.  A disagreement consumes the local request marker

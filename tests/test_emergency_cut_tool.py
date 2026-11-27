@@ -122,6 +122,60 @@ def test_standalone_cut_does_not_mutate_hardlinked_external_journal(tmp_path):
     assert DurableOrderGateway(external).recovery_report()==report
 
 
+def test_symlinked_order_journal_cannot_suppress_independent_cut_latch(tmp_path):
+    external=tmp_path.parent/(tmp_path.name+'-symlink-target.sqlite3')
+    external_gateway=DurableOrderGateway(external)
+    external_gateway.submit('external-symlink','BTC-USD','BUY',25)
+    before=external.read_bytes();report=external_gateway.recovery_report()
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    try:order_path.symlink_to(external)
+    except (OSError,NotImplementedError):pytest.skip('Symlinks unavailable')
+    from nexus.emergency_cut_tool import activate
+    result=activate(tmp_path)
+    assert not result['passed']
+    assert result['emergency_cut_state']=='UNCONFIRMED'
+    assert result['halted'] and result['emergency_intent_present']
+    assert not result['durable_order_halt_confirmed']
+    assert result['data_root_path_pinned'] is True
+    assert emergency_intent.requested(order_path)
+    assert external.read_bytes()==before
+    order_path.unlink()
+    assert DurableOrderGateway(external).recovery_report()==report
+
+
+def test_symlink_leaf_during_inflight_fetch_still_stops_restored_runner(
+        tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    configure('terrestrial',True)
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    gateway=DurableOrderGateway(order_path)
+    clock=Clock();runner=PaperForwardRunner(gateway,clock.quote,lambda:clock.now)
+    runner.prepare('terrestrial');warmup(runner,clock)
+    before=[row['id'] for row in gateway.recovery_report()['orders']]
+    entered=threading.Event();release=threading.Event();outcome=[]
+    def blocked(product):
+        entered.set();assert release.wait(10);return clock.quote(product)
+    runner.fetcher=blocked;clock.now+=5;clock.price=102
+    worker=threading.Thread(target=lambda:outcome.append(runner.single_cycle()))
+    worker.start();assert entered.wait(5)
+    parked=tmp_path/'parked-order-lifecycle.sqlite3'
+    try:
+        order_path.rename(parked);order_path.symlink_to(parked)
+    except (OSError,NotImplementedError):
+        release.set();worker.join(5)
+        if parked.exists() and not order_path.exists():parked.rename(order_path)
+        pytest.skip('Open-journal symlink fixture unavailable')
+    from nexus.emergency_cut_tool import activate
+    stopped=activate(tmp_path)
+    order_path.unlink();parked.rename(order_path)
+    assert stopped['halted'] and stopped['emergency_intent_present']
+    assert not stopped['durable_order_halt_confirmed']
+    assert runner.status()['cut_requested'] and not runner.status()['enabled']
+    release.set();worker.join(5);assert not worker.is_alive()
+    assert outcome[0]['reason']=='STOPPED_DURING_FETCH'
+    assert [row['id'] for row in gateway.recovery_report()['orders']]==before
+
+
 @pytest.mark.parametrize('failure',[RuntimeError('PRIORITY_API_FAILED'),None,
     {'attempted':True,'confirmed':True,'priority_class':'STANDARD'},
     {'attempted':False,'confirmed':False,'priority_class':'HIGH'},

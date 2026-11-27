@@ -69,6 +69,42 @@ def test_exchange_admission_tamper_and_partial_schema_fail_closed():
                 admission_quote(),'INJECTED_TRANSPORT_UNATTESTED','a'*64,1005)
 
 
+def test_exchange_admission_rows_without_head_fail_closed():
+    session='1'*16
+    with sqlite3.connect(':memory:') as db:
+        forward_evidence.schema(db)
+        assert forward_evidence.review_exchange_admissions(db,session) is None
+        forward_evidence.initialize_exchange_admissions(db,session)
+        marker=forward_evidence.append_exchange_admission(db,session,1,1000,
+            admission_quote(),'INJECTED_TRANSPORT_UNATTESTED','a'*64,1000)
+        db.execute('DELETE FROM forward_exchange_admission_heads WHERE session=?',
+            (session,))
+        reviewed=forward_evidence.review_exchange_admissions(db,session)
+    assert reviewed['integrity_ok'] is False
+    assert reviewed['reasons']==['EXCHANGE_ADMISSION_HEAD_MISSING']
+    assert reviewed['admissions']==1
+    assert reviewed['head_sha256']==marker
+    assert [point['cycle'] for point in reviewed['points']]==[1]
+
+
+def test_exchange_admission_non_object_payload_fails_closed():
+    session='1'*16
+    with sqlite3.connect(':memory:') as db:
+        forward_evidence.schema(db)
+        forward_evidence.initialize_exchange_admissions(db,session)
+        payload='[]'
+        marker=forward_evidence.digest(forward_evidence.GENESIS,payload)
+        db.execute('INSERT INTO forward_exchange_admissions VALUES (?,?,?,?,?)',
+            (session,1,payload,forward_evidence.GENESIS,marker))
+        db.execute('UPDATE forward_exchange_admission_heads SET admissions=1,head=? '
+            'WHERE session=?',(marker,session))
+        reviewed=forward_evidence.review_exchange_admissions(db,session)
+    assert reviewed['integrity_ok'] is False
+    assert reviewed['reasons']==[
+        'EXCHANGE_ADMISSION_IDENTITY_DISAGREEMENT',
+        'EXCHANGE_ADMISSION_PAYLOAD_INVALID']
+
+
 def test_session_review_rejects_partial_exchange_admission_schema(
         tmp_path,monkeypatch):
     runner,_,_=setup(tmp_path,monkeypatch)

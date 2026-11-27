@@ -7,7 +7,7 @@ import os
 import sqlite3
 import threading
 import time
-from contextlib import closing,contextmanager
+from contextlib import closing,contextmanager,nullcontext
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from nexus.public_data import PRODUCTS
@@ -33,9 +33,9 @@ def _transaction(db, *, immediate=False):
     """Normalize bounded statement/final-commit contention without retry."""
     try:
         if immediate:
-            # New exposure admission must own SQLite's writer reservation
-            # before it audits any ledger state.  A deferred transaction would
-            # leave a cross-process gap between the governor and the mutation.
+            # Protected accounting mutations must own SQLite's writer
+            # reservation before auditing ledger or position state. A deferred
+            # transaction would leave a cross-process read-to-write gap.
             db.execute('BEGIN IMMEDIATE')
         with db:yield
     except sqlite3.OperationalError as error:
@@ -159,9 +159,11 @@ def verify_ledger(db):
         raise ValueError("Cash journal mismatch: new simulated buys blocked")
     return cash
 
-def buy(product,notional,quote):
+def buy(product,notional,quote,tier=None,cut_requested=None):
     amount=num(notional)
-    _,ask=check_quote(product,quote)
+    # Reject malformed input before taking durable writer reservations. The
+    # exact captured quote is checked again after any writer wait below.
+    check_quote(product,quote)
     with LOCK:
         with closing(_connect()) as db:
             with _transaction(db,immediate=True):
@@ -169,36 +171,67 @@ def buy(product,notional,quote):
                 # Reducing SELL exits intentionally do not use this governor.
                 from nexus.portfolio_governor import require_safe_ledger
                 require_safe_ledger(db)
-                meta=dict(db.execute("SELECT key,value FROM meta"))
-                if meta.get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
-                if "cash" not in meta:raise ValueError("Initialize first")
-                if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
-                    raise ValueError("Already holding this paper product")
-                cash=verify_ledger(db);capital=D(meta["initial"])
-                exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
-                if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")
-                if amount>capital*D(".02") or amount*(D(1)+FEE)>cash:
-                    raise ValueError("Position cap or cash exceeded")
-                qty=amount/ask
-                delta=-amount*(D(1)+FEE)
-                db.execute("INSERT INTO positions(product,quantity,entry) VALUES(?,?,?)",(product,str(qty),str(ask)))
-                db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
-                cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
-                db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
-                           (cur.lastrowid,"PAPER_BUY",product,str(qty),str(ask)))
-                from nexus.transaction_seals import append_seal
-                append_seal(db,cur.lastrowid)
+                if tier is None:
+                    permission_guard=nullcontext()
+                else:
+                    from nexus.tier_permissions import entry_commit_guard
+                    permission_guard=entry_commit_guard(tier,amount)
+                with permission_guard:
+                    meta=dict(db.execute("SELECT key,value FROM meta"))
+                    if meta.get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
+                    if "cash" not in meta:raise ValueError("Initialize first")
+                    if db.execute("SELECT 1 FROM positions WHERE product=?",(product,)).fetchone():
+                        raise ValueError("Already holding this paper product")
+                    cash=verify_ledger(db)
+                    # The route's preflight cannot cover time spent waiting for
+                    # the portfolio and settings writer reservations. Sample
+                    # the independent durable latch again after both are held
+                    # and before the first accounting mutation. The latch does
+                    # not acquire either database guard and remains independently
+                    # writable while this transaction is waiting or auditing.
+                    if cut_requested is not None and cut_requested():
+                        raise ValueError("EMERGENCY_CUT_INTERRUPTED_TRADE")
+                    # Do not commit new exposure from a quote that was fresh at
+                    # route admission but aged out while the portfolio or tier
+                    # settings writer reservation was unavailable. Revalidate
+                    # the same captured read-only observation; never fetch or
+                    # retry external transport while accounting locks are held.
+                    _,ask=check_quote(product,quote)
+                    # Quote validation is deliberately fallible work after the
+                    # earlier latch sample. Re-sample the independently writable
+                    # cut now so it remains the final guard before accounting.
+                    if cut_requested is not None and cut_requested():
+                        raise ValueError("EMERGENCY_CUT_INTERRUPTED_TRADE")
+                    capital=D(meta["initial"])
+                    exposure=sum((D(q)*D(entry) for q,entry in db.execute("SELECT quantity,entry FROM positions")),D(0))
+                    if exposure+amount>capital*D(".10"):raise ValueError("Aggregate exposure limit")
+                    if amount>capital*D(".02") or amount*(D(1)+FEE)>cash:
+                        raise ValueError("Position cap or cash exceeded")
+                    qty=amount/ask
+                    delta=-amount*(D(1)+FEE)
+                    db.execute("INSERT INTO positions(product,quantity,entry) VALUES(?,?,?)",(product,str(qty),str(ask)))
+                    db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))
+                    cur=db.execute("INSERT INTO ledger(at,action,product,cash_delta) VALUES(?,?,?,?)",(int(time.time()),"PAPER_BUY",product,str(delta)))
+                    db.execute("INSERT INTO position_events(ledger_id,action,product,quantity,entry) VALUES(?,?,?,?,?)",
+                               (cur.lastrowid,"PAPER_BUY",product,str(qty),str(ask)))
+                    from nexus.transaction_seals import append_seal
+                    append_seal(db,cur.lastrowid)
     return state()
 
 def sell(product,quote):
     bid,_=check_quote(product,quote)
     with LOCK:
         with closing(_connect()) as db:
-            with _transaction(db):
+            with _transaction(db,immediate=True):
                 if dict(db.execute("SELECT key,value FROM meta")).get("execution_linked")=="1":raise ValueError("Use linked execution gateway for paper fills")
                 cash=verify_ledger(db)
                 pos=db.execute("SELECT quantity,entry FROM positions WHERE product=?",(product,)).fetchone()
                 if not pos:raise ValueError("Paper position unavailable")
+                # The route preflight cannot cover time spent waiting for or
+                # auditing the ledger transaction. Revalidate the same captured
+                # public observation immediately before the first mutation;
+                # never fetch or retry provider transport under this lock.
+                bid,_=check_quote(product,quote)
                 qty=D(pos[0]);delta=qty*bid*(D(1)-FEE)
                 db.execute("DELETE FROM positions WHERE product=?",(product,))
                 db.execute("UPDATE meta SET value=? WHERE key='cash'",(str(cash+delta),))

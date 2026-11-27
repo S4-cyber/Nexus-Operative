@@ -44,6 +44,25 @@ def test_no_root_authority_claim_can_pass(report,flag):
     with pytest.raises(ValueError,match='RELEASE_EVIDENCE_AUTHORITY'):evidence.verify(encoded(report))
 
 
+@pytest.mark.parametrize(('row_index','field','value'),[
+    (0,'scope','BROKER_LIVE'),
+    (0,'routes',[{'method':'POST','path':'/api/funding/transfer'}]),
+    (0,'default','ON'),
+    (0,'gates',['NONE']),
+    (0,'reducing_exit_available_during_cut',True),
+    (0,'automatic_resume',0),
+    (0,'learned_policy_promotion',0),
+    (0,'broker_connected',0),
+    (0,'reducing_exit_available_during_cut',0),
+    (2,'reducing_exit_available_during_cut',1),
+])
+def test_saved_authority_declarations_must_match_current_source_contract(
+        report,row_index,field,value):
+    report['profiles']['http']['authority_inventory']['authorities'][row_index][field]=value
+    with pytest.raises(ValueError,match='RELEASE_EVIDENCE_PROFILE_FAILED'):
+        evidence.verify(encoded(report))
+
+
 @pytest.mark.parametrize('change,code',[
     ('version','VERSION'),('source','SOURCE_MISMATCH'),('missing','PROFILES'),('extra','PROFILES'),
     ('nested','PROFILE_FAILED'),('passed','RESULT'),('fingerprint_bool','FINGERPRINT'),('unknown','SHAPE'),

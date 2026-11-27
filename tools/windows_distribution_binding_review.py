@@ -19,10 +19,15 @@ SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
 VERSION = re.compile(r"0\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 INSTALLER_RESULT_REVIEW_NAME = "installer-result-review.json"
+PHASE_REVIEW_NAME = "installer-phase-review.json"
 RESULT_LIMITATIONS = (
     "Successful CI installer semantic checks with bounded redirected-output drainage only; descendant "
     "containment is not verified; not clean-machine, native-window, ordinary-user, power-loss, broker, "
     "market, funds or release acceptance."
+)
+PHASE_LIMITATIONS = (
+    "Successful CI phase-sequence review only. Timestamps and process results are runner-generated "
+    "evidence, not clean-machine, native-window, ordinary-user, broker, market, funds or release acceptance."
 )
 RESULT_TRUE = {
     "passed", "first_run_paper_defaults", "saved_setup_survived_reinstall",
@@ -31,7 +36,8 @@ RESULT_TRUE = {
     "prior_version_data_recovery", "packaged_backup_recovery", "same_version_reinstall",
     "halt_recovered", "uninstall_preserved_data", "external_process_output_drains_bounded",
     "phase_evidence_recorded", "phase_evidence_bound", "exact_source_bound",
-    "installer_digest_bound", "single_session_bound",
+    "installer_digest_bound", "single_session_bound", "installed_executable_matches_standalone",
+    "reinstalled_executable_matches_standalone",
 }
 RESULT_FALSE = {
     "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified", "native_windows_acceptance",
@@ -39,12 +45,16 @@ RESULT_FALSE = {
 }
 RESULT_KEYS = {
     "mode", "version", "source_commit", "installer_sha256", "session_id",
+    "standalone_executable_sha256", "installed_executable_sha256",
+    "reinstalled_executable_sha256",
     "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
+    "phase_review_bytes", "phase_review_sha256", "raw_phase_bytes", "raw_phase_sha256",
     "output_drain_timeout_seconds", "limitations",
 } | RESULT_TRUE | RESULT_FALSE
 PHASE_KEYS = {
     "mode", "passed", "phases_verified", "records_verified", "version", "source_commit",
     "installer_sha256", "session_id", "exact_source_bound", "installer_digest_bound",
+    "raw_phase_bytes", "raw_phase_sha256",
     "single_session_bound", "sequence_complete", "timeouts_respected",
     "maximum_root_process_timeout_seconds", "output_drain_timeout_seconds",
     "maximum_observed_duration_seconds", "native_windows_acceptance", "actual_broker_acceptance",
@@ -127,7 +137,8 @@ def _installer(path):
     return total, digest.hexdigest()
 
 
-def verify(phase, installer_result, manifest, *, installer_result_bytes, installer_result_sha256,
+def verify(phase, installer_result, manifest, *, phase_review_bytes, phase_review_sha256,
+           installer_result_bytes, installer_result_sha256,
            expected_version, expected_source_commit, installer_name, installer_bytes, installer_sha256):
     if type(expected_version) is not str or VERSION.fullmatch(expected_version) is None:
         raise DistributionBindingError("expected version")
@@ -143,6 +154,10 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
         raise DistributionBindingError("result review bytes")
     if type(installer_result_sha256) is not str or SHA256.fullmatch(installer_result_sha256) is None:
         raise DistributionBindingError("result review digest")
+    if type(phase_review_bytes) is not int or phase_review_bytes < 1:
+        raise DistributionBindingError("phase review bytes")
+    if type(phase_review_sha256) is not str or SHA256.fullmatch(phase_review_sha256) is None:
+        raise DistributionBindingError("phase review digest")
     if type(phase) is not dict or set(phase) != PHASE_KEYS:
         raise DistributionBindingError("phase shape")
     if type(installer_result) is not dict or set(installer_result) != RESULT_KEYS:
@@ -165,6 +180,9 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
             or phase["version"] != expected_version
             or phase["source_commit"] != expected_source_commit
             or phase["installer_sha256"] != installer_sha256
+            or type(phase["raw_phase_bytes"]) is not int or phase["raw_phase_bytes"] < 1
+            or type(phase["raw_phase_sha256"]) is not str
+            or SHA256.fullmatch(phase["raw_phase_sha256"]) is None
             or type(phase["phases_verified"]) is not int or phase["phases_verified"] != 10
             or type(phase["records_verified"]) is not int or phase["records_verified"] != 20
             or type(phase["maximum_root_process_timeout_seconds"]) is not int
@@ -175,7 +193,7 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
             or not math.isfinite(phase["maximum_observed_duration_seconds"])
             or not 0 <= phase["maximum_observed_duration_seconds"] <= 315
             or session.version != 4 or str(session) != phase["session_id"]
-            or type(phase["limitations"]) is not str or not phase["limitations"]
+            or phase["limitations"] != PHASE_LIMITATIONS
             or any(phase[key] is not True for key in required_true)
             or any(phase[key] is not False for key in required_false)):
         raise DistributionBindingError("phase binding")
@@ -183,11 +201,20 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
         result_session = uuid.UUID(installer_result["session_id"])
     except (ValueError, TypeError, AttributeError):
         raise DistributionBindingError("result review session") from None
+    if (installer_result["phase_review_bytes"] != phase_review_bytes
+            or installer_result["phase_review_sha256"] != phase_review_sha256):
+        raise DistributionBindingError("phase review binding")
     if (installer_result["mode"] != "VERIFIED_INSTALLER_RESULT_EVIDENCE"
             or installer_result["version"] != expected_version
             or installer_result["source_commit"] != expected_source_commit
             or installer_result["installer_sha256"] != installer_sha256
+            or type(installer_result["standalone_executable_sha256"]) is not str
+            or SHA256.fullmatch(installer_result["standalone_executable_sha256"]) is None
+            or installer_result["installed_executable_sha256"] != installer_result["standalone_executable_sha256"]
+            or installer_result["reinstalled_executable_sha256"] != installer_result["standalone_executable_sha256"]
             or installer_result["session_id"] != phase["session_id"]
+            or installer_result["raw_phase_bytes"] != phase["raw_phase_bytes"]
+            or installer_result["raw_phase_sha256"] != phase["raw_phase_sha256"]
             or result_session.version != 4 or str(result_session) != installer_result["session_id"]
             or type(installer_result["raw_result_bytes"]) is not int
             or installer_result["raw_result_bytes"] < 1
@@ -227,6 +254,14 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
             "name": INSTALLER_RESULT_REVIEW_NAME, "bytes": installer_result_bytes,
             "sha256": installer_result_sha256}:
         raise DistributionBindingError("result review manifest binding")
+    if entries.get(PHASE_REVIEW_NAME) != {
+            "name": PHASE_REVIEW_NAME, "bytes": phase_review_bytes,
+            "sha256": phase_review_sha256}:
+        raise DistributionBindingError("phase review manifest binding")
+    standalone_entry = entries.get("NexusOperative.exe")
+    if (standalone_entry is None
+            or standalone_entry["sha256"] != installer_result["standalone_executable_sha256"]):
+        raise DistributionBindingError("standalone manifest binding")
     return {
         "mode": "VERIFIED_INSTALLER_DISTRIBUTION_BINDING",
         "passed": True,
@@ -238,10 +273,21 @@ def verify(phase, installer_result, manifest, *, installer_result_bytes, install
         "installer_result_session_id": installer_result["session_id"],
         "installer_result_review_bytes": installer_result_bytes,
         "installer_result_review_sha256": installer_result_sha256,
+        "phase_review_bytes": phase_review_bytes,
+        "phase_review_sha256": phase_review_sha256,
+        "raw_phase_bytes": phase["raw_phase_bytes"],
+        "raw_phase_sha256": phase["raw_phase_sha256"],
+        "standalone_executable_sha256": installer_result["standalone_executable_sha256"],
         "phase_evidence_bound": True,
+        "phase_review_bound": True,
+        "phase_review_manifest_bound": True,
+        "raw_phase_evidence_bound": True,
         "installer_result_review_bound": True,
         "installer_result_semantics_bound": True,
         "artifact_manifest_bound": True,
+        "standalone_executable_manifest_bound": True,
+        "installed_executable_manifest_bound": True,
+        "reinstalled_executable_manifest_bound": True,
         "final_installer_rehashed": True,
         "native_windows_acceptance": False,
         "actual_broker_acceptance": False,
@@ -300,9 +346,12 @@ def main():
     try:
         installer = Path(args.installer)
         size, digest = _installer(installer)
+        phase, phase_raw = _read_json_raw(args.phase_review)
         installer_result, installer_result_raw = _read_json_raw(args.installer_result_review)
         result = verify(
-            _read_json(args.phase_review), installer_result, _read_json(args.artifact_manifest),
+            phase, installer_result, _read_json(args.artifact_manifest),
+            phase_review_bytes=len(phase_raw),
+            phase_review_sha256=hashlib.sha256(phase_raw).hexdigest(),
             installer_result_bytes=len(installer_result_raw),
             installer_result_sha256=hashlib.sha256(installer_result_raw).hexdigest(),
             expected_version=args.expected_version, expected_source_commit=args.expected_source_commit,

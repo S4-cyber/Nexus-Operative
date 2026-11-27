@@ -489,7 +489,8 @@ class PaperProviderPostBudget:
         return dict(head_sha256=ZERO, events=0, attempts=0, pending=None,
                     last_evaluated_at=0, next_allowed_at=0, review_required=False,
                     last_outcome=None, completed=[], recoveries=0,
-                    recovery_history=[], last_recovery=None)
+                    recovery_history=[], last_recovery=None,
+                    last_replaced_owner_interruption=None)
 
     @staticmethod
     def _admit(state, now):
@@ -563,6 +564,38 @@ class PaperProviderPostBudget:
                 state['last_outcome'] = 'INTERRUPTED_UNKNOWN'
                 state['next_allowed_at'] = now + UNKNOWN_COOLDOWN
                 state['review_required'] = True
+            elif body.get('kind') == 'OWNER_REPLACED_INTERRUPTED' and set(body) == {
+                    'kind','evaluated_at','token','expected_head',
+                    'retained_owner_sha256','replacement_owner_sha256',
+                    'confirm_owner_replaced','confirm_uncertainty_preserved'}:
+                now = clock(body['evaluated_at']); pending = state['pending']
+                if (body['confirm_owner_replaced'] is not True or
+                        body['confirm_uncertainty_preserved'] is not True):
+                    _fail('CONFIRMATION_REQUIRED')
+                if body['expected_head'] != previous: _fail('HEAD_DISAGREEMENT')
+                if pending is None or body['token'] != pending['token']:
+                    _fail('TOKEN_DISAGREEMENT')
+                retained = _digest(body['retained_owner_sha256'],
+                    'RETAINED_OWNER_INVALID')
+                replacement = _digest(body['replacement_owner_sha256'],
+                    'REPLACEMENT_OWNER_INVALID')
+                if retained != pending['owner_sha256']:
+                    _fail('OWNER_SCOPE_DISAGREEMENT')
+                if replacement == retained: _fail('OWNER_REPLACEMENT_REQUIRED')
+                if now < state['last_evaluated_at']: _fail('CLOCK_REGRESSION')
+                state['completed'].append(dict(**pending, after_head_sha256=digest,
+                    request_after_head_sha256=None, outcome='INTERRUPTED_UNKNOWN',
+                    actual_posts=None, completed_at=now))
+                state['pending'] = None; state['last_evaluated_at'] = now
+                state['last_outcome'] = 'INTERRUPTED_UNKNOWN'
+                state['next_allowed_at'] = now + UNKNOWN_COOLDOWN
+                state['review_required'] = True
+                state['last_replaced_owner_interruption'] = dict(
+                    token=body['token'], previous_head_sha256=previous,
+                    interruption_head_sha256=digest,
+                    retained_owner_sha256=retained,
+                    replacement_owner_sha256=replacement,
+                    interrupted_at=now)
             elif body.get('kind') == 'RECOVERY' and set(body) == {
                     'kind','policy','evaluated_at','expected_head','account_sha256',
                     'payload_sha256','client_order_sha256','blocked_attempt_head_sha256',
@@ -616,6 +649,7 @@ class PaperProviderPostBudget:
                 with _transaction(db):
                     db.execute('BEGIN'); state = self._load(db)
         completed = state.pop('completed'); state.pop('recovery_history')
+        state.pop('last_replaced_owner_interruption')
         pending = state.pop('pending')
         return dict(state, provider_sha256=self.provider_digest,
             completed_attempts=len(completed), pending_token=None if pending is None else pending['token'],
@@ -742,6 +776,33 @@ class PaperProviderPostBudget:
             ready_for_routing=False, live_orders_enabled=False,
             money_movement_enabled=False, release_approved=False)
 
+    def replaced_owner_interruption_receipt(self):
+        """Cold-replay the latest exact replaced-owner interruption.
+
+        This receipt is read-only, content-free and deliberately preserves the
+        unknown provider outcome.  It grants no retry, repair or routing
+        authority.
+        """
+        self._path_check()
+        if not self.path.exists(): _fail('INTERRUPTION_MISSING')
+        with closing(self._connect()) as db:
+            with _transaction(db):
+                db.execute('BEGIN'); state = self._load(db)
+        interruption = state['last_replaced_owner_interruption']
+        if interruption is None: _fail('INTERRUPTION_MISSING')
+        pending = state['pending']
+        return dict(interruption, head_sha256=state['head_sha256'],
+            last_evaluated_at=state['last_evaluated_at'],
+            next_allowed_at=state['next_allowed_at'],
+            review_required=state['review_required'],
+            pending_token=None if pending is None else pending['token'],
+            outcome=state['last_outcome'],
+            exact_interruption_replayed=True, read_only=True,
+            uncertainty_preserved=True, automatic_retry=False,
+            automatic_recovery=False, owner_repaired=False,
+            attempt_rearmed=False, ready_for_routing=False,
+            release_approved=False)
+
     def ownership(self):
         return _PostOwnership(self)
 
@@ -825,6 +886,57 @@ class PaperProviderPostBudget:
                     outcome='INTERRUPTED_UNKNOWN', uncertainty_preserved=True,
                     automatic_retry=False, automatic_recovery=False,
                     ready_for_routing=False, release_approved=False)
+
+    def interrupt_replaced_owner(self, token, *, expected_head,
+            confirm_owner_replaced=False, confirm_uncertainty_preserved=False,
+            admission, ownership=None):
+        """Close one abandoned tail after its owner pathname was replaced.
+
+        This is intentionally distinct from :meth:`interrupt`.  It requires
+        exact operator confirmations and records both owner identities while
+        retaining an unknown provider outcome and the full review block.
+        """
+        value = _digest(token, 'TOKEN_INVALID')
+        expected = _digest(expected_head, 'HEAD_INVALID')
+        if (confirm_owner_replaced is not True or
+                confirm_uncertainty_preserved is not True):
+            _fail('CONFIRMATION_REQUIRED')
+        if ownership is None:
+            with self.ownership() as owner:
+                return self.interrupt_replaced_owner(value,
+                    expected_head=expected,
+                    confirm_owner_replaced=True,
+                    confirm_uncertainty_preserved=True,
+                    admission=admission, ownership=owner)
+        self._owned(ownership); replacement_owner = ownership.identity()
+        with self._write_connection() as db:
+            with _transaction(db):
+                state = self._load(db); self._owned(ownership)
+                now = clock(admission()); pending = state['pending']
+                if state['head_sha256'] != expected:
+                    _fail('HEAD_DISAGREEMENT')
+                if pending is None or pending['token'] != value:
+                    _fail('TOKEN_DISAGREEMENT')
+                retained_owner = pending['owner_sha256']
+                if retained_owner == replacement_owner:
+                    _fail('OWNER_REPLACEMENT_REQUIRED')
+                body = dict(kind='OWNER_REPLACED_INTERRUPTED',
+                    evaluated_at=now, token=value, expected_head=expected,
+                    retained_owner_sha256=retained_owner,
+                    replacement_owner_sha256=replacement_owner,
+                    confirm_owner_replaced=True,
+                    confirm_uncertainty_preserved=True)
+                head = self._append(db, state['events'] + 1, body,
+                    state['head_sha256'])
+                self._load(db)
+                if clock(admission()) < now: _fail('CLOCK_REGRESSION')
+                self._owned(ownership)
+            return dict(head_sha256=head,
+                replaced_owner_interruption_recorded=True,
+                outcome='INTERRUPTED_UNKNOWN', uncertainty_preserved=True,
+                automatic_retry=False, automatic_recovery=False,
+                owner_repaired=False, attempt_rearmed=False,
+                ready_for_routing=False, release_approved=False)
 
     def recover_resolved_unknown(self, *, expected_head, expected_account_id,
             expected_payload_sha256, expected_client_order_id,

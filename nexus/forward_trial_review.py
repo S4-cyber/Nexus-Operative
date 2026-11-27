@@ -229,13 +229,15 @@ def _review(path, *, after, until, reconciliation_bundle):
                 bundle_sha256=digest
             result=_review_bound(pinned,after=after,until=until,start=start,end=end,
                 stable_source=stable_source,reconciliation_bundle=bundle,
-                reconciliation_bundle_sha256=bundle_sha256)
+                reconciliation_bundle_sha256=bundle_sha256,
+                forward_database_sha256=fingerprints[0][7])
         return result
     except ValueError:_fail()
 
 
 def _review_bound(path, *, after, until, start, end, stable_source,
-                  reconciliation_bundle,reconciliation_bundle_sha256):
+                  reconciliation_bundle,reconciliation_bundle_sha256,
+                  forward_database_sha256):
     """Bounded one-transaction local review; no app environment or default path."""
     deadline=time.monotonic()+20
     with _snapshot(path,stable_source) as db:
@@ -289,6 +291,7 @@ def _review_bound(path, *, after, until, start, end, stable_source,
         interval_candidates=[];cross_session_points=[];seen=selected=eligible=revalidated=disagreements=public=injected=unknown=flagged=0;session_count=0
         events_in_window=legacy_unbound=outcome_disagreements=event_incidents=0
         modeled_execution_events=0;modeled_in_window_by_session={}
+        events_by_quote_point={}
         reconciliation_sessions={}
         admissions_in_window=admission_incidents=0;cross_session_admissions=[]
         legacy_admission_incidents=unmatched_admission_incidents=0
@@ -352,6 +355,9 @@ def _review_bound(path, *, after, until, start, end, stable_source,
                     previous_event_at=None;previous_event_cycle=-1
                     for event in event_points:
                         record=event['record'];event_at=_number(record['at'])
+                        if record['cycle']>0:
+                            events_by_quote_point.setdefault(
+                                (sid,record['cycle']),[]).append(event)
                         event_counts[record['decision']]=event_counts.get(record['decision'],0)+1
                         if (not session_start<=event_at<=session_end or
                                 previous_event_at is not None and event_at<previous_event_at or
@@ -393,8 +399,8 @@ def _review_bound(path, *, after, until, start, end, stable_source,
                     for point in event_points)
                 if session_modeled_in_window:
                     modeled_in_window_by_session[sid]=session_modeled_in_window
-                    if reconciliation_bundle is not None:
-                        reconciliation_sessions[sid]=dict(session_summary=dict(
+                if session_modeled and reconciliation_bundle is not None:
+                    reconciliation_sessions[sid]=dict(session_summary=dict(
                             session=sid,started_at=started,updated_at=updated,state=state,
                             policy=policy,counts=counts,last=last),
                             quote_head_sha256=evidence['head_sha256'],
@@ -528,9 +534,34 @@ def _review_bound(path, *, after, until, start, end, stable_source,
         # at that pass must break both adjacent intervals; otherwise rapidly
         # rotating sessions can retain nominal 100% coverage even though their
         # boundary observations are no longer eligible.
-        intervals=[(left,right) for left,right,left_point,right_point in
-            interval_candidates if left_point not in cross_rejected and
-            right_point not in cross_rejected]
+        accepted_candidates=[candidate for candidate in interval_candidates
+            if candidate[2] not in cross_rejected and
+            candidate[3] not in cross_rejected]
+        intervals=[(left,right) for left,right,_,_ in accepted_candidates]
+        # A retained quote just outside the requested timestamps can still be
+        # an endpoint of clipped accepted coverage. Its event evidence is
+        # therefore part of the reviewed window's truthfulness boundary too;
+        # otherwise a modeled BUY/SELL or scheduler incident can supply
+        # coverage while disappearing from incident and reconciliation counts.
+        support_points={point for candidate in accepted_candidates
+            for point in candidate[2:]}
+        for point in support_points:
+            for event in events_by_quote_point.get(point,()):
+                record=event['record'];event_at=_number(record['at'])
+                if start<=event_at<=end:continue
+                events_in_window+=1
+                if (event['kind']=='SCHEDULER' or
+                        record['decision'] in ('PAUSED','VETO')):
+                    event_incidents+=1
+                if record['decision'] in ('BUY','SELL'):
+                    modeled_execution_events+=1
+                if is_modeled_outcome(event):
+                    sid=point[0]
+                    modeled_in_window_by_session[sid]=(
+                        modeled_in_window_by_session.get(sid,0)+1)
+        reconciliation_sessions={sid:reconciliation_sessions[sid]
+            for sid in modeled_in_window_by_session
+            if sid in reconciliation_sessions}
         reconciled_sessions=({} if reconciliation_bundle is None else
             forward_trial_reconciliation.validate(reconciliation_bundle,
                 reconciliation_sessions))
@@ -542,7 +573,8 @@ def _review_bound(path, *, after, until, start, end, stable_source,
         binding=hashlib.sha256(forward_evidence.canonical(dict(sessions=rows,
             quote_heads=heads,quote_rows=count,event_heads=event_heads,
             event_rows=event_count,exchange_admission_heads=admission_heads,
-            exchange_admission_rows=admission_count)).encode()).hexdigest()
+            exchange_admission_rows=admission_count,
+            forward_database_sha256=forward_database_sha256)).encode()).hexdigest()
     with localcontext() as context:
         context.prec=50
         merged=_merge(intervals);covered=sum((b-a for a,b in merged),Decimal(0));duration=end-start

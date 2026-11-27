@@ -11,6 +11,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -32,10 +33,15 @@ REVIEWER_NAME = "windows-owner-profile-review.py"
 ARTIFACT_MANIFEST_NAME = "artifact-manifest.json"
 DISTRIBUTION_BINDING_NAME = "distribution-binding-review.json"
 INSTALLER_RESULT_REVIEW_NAME = "installer-result-review.json"
+PHASE_REVIEW_NAME = "installer-phase-review.json"
 INSTALLER_RESULT_LIMITATIONS = (
     "Successful CI installer semantic checks with bounded redirected-output drainage only; descendant "
     "containment is not verified; not clean-machine, native-window, ordinary-user, power-loss, broker, "
     "market, funds or release acceptance."
+)
+PHASE_LIMITATIONS = (
+    "Successful CI phase-sequence review only. Timestamps and process results are runner-generated "
+    "evidence, not clean-machine, native-window, ordinary-user, broker, market, funds or release acceptance."
 )
 INSTALLER_RESULT_TRUE = {
     "passed", "first_run_paper_defaults", "saved_setup_survived_reinstall",
@@ -44,7 +50,8 @@ INSTALLER_RESULT_TRUE = {
     "prior_version_data_recovery", "packaged_backup_recovery", "same_version_reinstall",
     "halt_recovered", "uninstall_preserved_data", "external_process_output_drains_bounded",
     "phase_evidence_recorded", "phase_evidence_bound", "exact_source_bound",
-    "installer_digest_bound", "single_session_bound",
+    "installer_digest_bound", "single_session_bound", "installed_executable_matches_standalone",
+    "reinstalled_executable_matches_standalone",
 }
 INSTALLER_RESULT_FALSE = {
     "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified", "native_windows_acceptance",
@@ -52,7 +59,10 @@ INSTALLER_RESULT_FALSE = {
 }
 INSTALLER_RESULT_KEYS = {
     "mode", "version", "source_commit", "installer_sha256", "session_id",
+    "standalone_executable_sha256", "installed_executable_sha256",
+    "reinstalled_executable_sha256",
     "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
+    "phase_review_bytes", "phase_review_sha256", "raw_phase_bytes", "raw_phase_sha256",
     "output_drain_timeout_seconds", "limitations",
 } | INSTALLER_RESULT_TRUE | INSTALLER_RESULT_FALSE
 PROBE_LIMITATIONS = (
@@ -83,7 +93,20 @@ BINDING_KEYS = {
     "mode", "passed", "version", "source_commit", "installer_name", "installer_bytes",
     "installer_sha256", "installer_result_session_id", "installer_result_review_bytes",
     "installer_result_review_sha256", "phase_evidence_bound", "installer_result_review_bound",
+    "phase_review_bytes", "phase_review_sha256", "raw_phase_bytes", "raw_phase_sha256",
+    "phase_review_bound", "phase_review_manifest_bound", "raw_phase_evidence_bound",
     "installer_result_semantics_bound", "artifact_manifest_bound", "final_installer_rehashed",
+    "standalone_executable_sha256", "standalone_executable_manifest_bound",
+    "installed_executable_manifest_bound", "reinstalled_executable_manifest_bound",
+    "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
+    "money_movement_enabled", "release_approved", "limitations",
+}
+PHASE_KEYS = {
+    "mode", "passed", "phases_verified", "records_verified", "version", "source_commit",
+    "installer_sha256", "session_id", "raw_phase_bytes", "raw_phase_sha256",
+    "exact_source_bound", "installer_digest_bound", "single_session_bound",
+    "sequence_complete", "timeouts_respected", "maximum_root_process_timeout_seconds",
+    "output_drain_timeout_seconds", "maximum_observed_duration_seconds",
     "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
     "money_movement_enabled", "release_approved", "limitations",
 }
@@ -102,6 +125,15 @@ def _pairs(items):
             raise OwnerProfileReviewError("duplicate key")
         result[key] = value
     return result
+
+
+def _finite_float(value):
+    if len(value) > 64:
+        raise OwnerProfileReviewError("number")
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise OwnerProfileReviewError("number")
+    return parsed
 
 
 def _read_bytes(path, limit):
@@ -126,7 +158,7 @@ def _load_json_raw(path):
         raw = _read_bytes(path, MAX_JSON_BYTES)
         value = json.loads(
             raw.decode("utf-8-sig"), object_pairs_hook=_pairs,
-            parse_float=lambda _: (_ for _ in ()).throw(OwnerProfileReviewError("number")),
+            parse_float=_finite_float,
             parse_constant=lambda _: (_ for _ in ()).throw(OwnerProfileReviewError("number")),
         )
         return value, raw
@@ -201,8 +233,9 @@ def _distribution_envelope(envelope, *, version, source_commit,
     return entries
 
 
-def verify(probe, binding, installer_result, manifest, envelope, *, artifact_manifest_raw,
-           distribution_binding_raw, installer_result_raw, expected_version, expected_source_commit,
+def verify(probe, binding, installer_result, phase_review, manifest, envelope, *, artifact_manifest_raw,
+           distribution_binding_raw, installer_result_raw, phase_review_raw,
+           expected_version, expected_source_commit,
            probe_tool, reviewer_tool, executing_reviewer_tool):
     if type(expected_version) is not str or VERSION.fullmatch(expected_version) is None:
         raise OwnerProfileReviewError("expected version")
@@ -220,8 +253,10 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
         raise OwnerProfileReviewError("binding shape")
     if type(installer_result) is not dict or set(installer_result) != INSTALLER_RESULT_KEYS:
         raise OwnerProfileReviewError("installer result shape")
+    if type(phase_review) is not dict or set(phase_review) != PHASE_KEYS:
+        raise OwnerProfileReviewError("phase review shape")
     if (type(artifact_manifest_raw) is not bytes or type(distribution_binding_raw) is not bytes
-            or type(installer_result_raw) is not bytes):
+            or type(installer_result_raw) is not bytes or type(phase_review_raw) is not bytes):
         raise OwnerProfileReviewError("distribution bytes")
     if (binding["mode"] != "VERIFIED_INSTALLER_DISTRIBUTION_BINDING" or binding["passed"] is not True
             or binding["version"] != expected_version or binding["source_commit"] != expected_source_commit
@@ -233,10 +268,21 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
             or binding["installer_result_review_bytes"] < 1
             or type(binding["installer_result_review_sha256"]) is not str
             or SHA256.fullmatch(binding["installer_result_review_sha256"]) is None
+            or type(binding["phase_review_bytes"]) is not int or binding["phase_review_bytes"] < 1
+            or type(binding["phase_review_sha256"]) is not str
+            or SHA256.fullmatch(binding["phase_review_sha256"]) is None
+            or type(binding["raw_phase_bytes"]) is not int or binding["raw_phase_bytes"] < 1
+            or type(binding["raw_phase_sha256"]) is not str
+            or SHA256.fullmatch(binding["raw_phase_sha256"]) is None
+            or type(binding["standalone_executable_sha256"]) is not str
+            or SHA256.fullmatch(binding["standalone_executable_sha256"]) is None
             or any(binding[key] is not True for key in (
                 "phase_evidence_bound", "installer_result_review_bound",
+                "phase_review_bound", "phase_review_manifest_bound",
+                "raw_phase_evidence_bound",
                 "installer_result_semantics_bound", "artifact_manifest_bound",
-                "final_installer_rehashed"))
+                "final_installer_rehashed", "standalone_executable_manifest_bound",
+                "installed_executable_manifest_bound", "reinstalled_executable_manifest_bound"))
             or any(binding[key] is not False for key in (
                 "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
                 "money_movement_enabled", "release_approved"))
@@ -246,7 +292,14 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
             or installer_result["version"] != expected_version
             or installer_result["source_commit"] != expected_source_commit
             or installer_result["installer_sha256"] != binding["installer_sha256"]
+            or installer_result["standalone_executable_sha256"] != binding["standalone_executable_sha256"]
+            or installer_result["installed_executable_sha256"] != binding["standalone_executable_sha256"]
+            or installer_result["reinstalled_executable_sha256"] != binding["standalone_executable_sha256"]
             or installer_result["session_id"] != binding["installer_result_session_id"]
+            or installer_result["phase_review_bytes"] != binding["phase_review_bytes"]
+            or installer_result["phase_review_sha256"] != binding["phase_review_sha256"]
+            or installer_result["raw_phase_bytes"] != binding["raw_phase_bytes"]
+            or installer_result["raw_phase_sha256"] != binding["raw_phase_sha256"]
             or _session(installer_result["session_id"]) != installer_result["session_id"]
             or type(installer_result["raw_result_bytes"]) is not int
             or installer_result["raw_result_bytes"] < 1
@@ -265,6 +318,36 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
     if installer_result_info != (
             binding["installer_result_review_bytes"], binding["installer_result_review_sha256"]):
         raise OwnerProfileReviewError("installer result binding")
+    phase_review_info = (
+        len(phase_review_raw), hashlib.sha256(phase_review_raw).hexdigest())
+    if (phase_review_info != (binding["phase_review_bytes"], binding["phase_review_sha256"])
+            or phase_review["mode"] != "VERIFIED_INSTALLER_PHASE_EVIDENCE"
+            or phase_review["passed"] is not True
+            or phase_review["version"] != expected_version
+            or phase_review["source_commit"] != expected_source_commit
+            or phase_review["installer_sha256"] != binding["installer_sha256"]
+            or phase_review["session_id"] != binding["installer_result_session_id"]
+            or phase_review["raw_phase_bytes"] != binding["raw_phase_bytes"]
+            or phase_review["raw_phase_sha256"] != binding["raw_phase_sha256"]
+            or type(phase_review["phases_verified"]) is not int
+            or phase_review["phases_verified"] != 10
+            or type(phase_review["records_verified"]) is not int
+            or phase_review["records_verified"] != 20
+            or type(phase_review["maximum_root_process_timeout_seconds"]) is not int
+            or phase_review["maximum_root_process_timeout_seconds"] != 300
+            or type(phase_review["output_drain_timeout_seconds"]) is not int
+            or phase_review["output_drain_timeout_seconds"] != 10
+            or type(phase_review["maximum_observed_duration_seconds"]) not in (int, float)
+            or not math.isfinite(phase_review["maximum_observed_duration_seconds"])
+            or not 0 <= phase_review["maximum_observed_duration_seconds"] <= 315
+            or phase_review["limitations"] != PHASE_LIMITATIONS
+            or any(phase_review[key] is not True for key in (
+                "exact_source_bound", "installer_digest_bound", "single_session_bound",
+                "sequence_complete", "timeouts_respected"))
+            or any(phase_review[key] is not False for key in (
+                "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
+                "money_movement_enabled", "release_approved"))):
+        raise OwnerProfileReviewError("phase review binding")
     _distribution_envelope(envelope, version=expected_version,
         source_commit=expected_source_commit,
         artifact_manifest_raw=artifact_manifest_raw,
@@ -273,6 +356,7 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
     required_entries = {
         binding["installer_name"]: (binding["installer_bytes"], binding["installer_sha256"]),
         INSTALLER_RESULT_REVIEW_NAME: installer_result_info,
+        PHASE_REVIEW_NAME: phase_review_info,
         "NexusOperative.exe": None,
         PROBE_NAME: probe_tool,
         REVIEWER_NAME: reviewer_tool,
@@ -281,7 +365,7 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
         if name not in entries or (expected is not None and entries[name] != expected):
             raise OwnerProfileReviewError("manifest tool binding")
     executable_bytes, executable_sha256 = entries["NexusOperative.exe"]
-    if executable_bytes < 1:
+    if executable_bytes < 1 or executable_sha256 != binding["standalone_executable_sha256"]:
         raise OwnerProfileReviewError("executable")
     if (probe["profile"] != PROBE_PROFILE or probe["version"] != expected_version
             or probe["source_commit"] != expected_source_commit
@@ -315,6 +399,9 @@ def verify(probe, binding, installer_result, manifest, envelope, *, artifact_man
         "installer_result_review_bound": True,
         "installer_result_semantics_bound": True,
         "installed_executable_bound": True,
+        "installer_execution_identity_chain_bound": True,
+        "phase_review_artifact_bound": True,
+        "raw_phase_evidence_bound": True,
         "probe_tool_manifest_bound": True,
         "review_tool_manifest_bound": True,
         "executing_reviewer_bound": True,
@@ -367,6 +454,7 @@ def main():
     parser.add_argument("--probe", required=True)
     parser.add_argument("--distribution-binding", required=True)
     parser.add_argument("--installer-result-review", required=True)
+    parser.add_argument("--phase-review", required=True)
     parser.add_argument("--artifact-manifest", required=True)
     parser.add_argument("--distribution-envelope", required=True)
     parser.add_argument("--probe-tool", required=True)
@@ -384,12 +472,14 @@ def main():
         executing_reviewer_tool = _tool(Path(__file__).resolve())
         binding, binding_raw = _load_json_raw(args.distribution_binding)
         installer_result, installer_result_raw = _load_json_raw(args.installer_result_review)
+        phase_review, phase_review_raw = _load_json_raw(args.phase_review)
         artifact_manifest, artifact_manifest_raw = _load_json_raw(args.artifact_manifest)
         result = verify(
-            _load_json(args.probe), binding, installer_result, artifact_manifest,
+            _load_json(args.probe), binding, installer_result, phase_review, artifact_manifest,
             _load_json(args.distribution_envelope),
             artifact_manifest_raw=artifact_manifest_raw,
             distribution_binding_raw=binding_raw, installer_result_raw=installer_result_raw,
+            phase_review_raw=phase_review_raw,
             expected_version=args.expected_version,
             expected_source_commit=args.expected_source_commit, probe_tool=probe_tool,
             reviewer_tool=reviewer_tool, executing_reviewer_tool=executing_reviewer_tool,

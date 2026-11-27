@@ -5,7 +5,7 @@ Existing settings and explicitly saved switches are preserved. These limits only
 simulation gateway; they never override portfolio or global risk vetoes.
 """
 import sqlite3,threading,time
-from contextlib import closing
+from contextlib import closing,contextmanager
 from decimal import Decimal
 from nexus.state import (DB_BUSY_TIMEOUT_MS,db_path,load_settings,
     read_effective_settings,settings_busy,settings_database_busy,settings_transaction)
@@ -70,7 +70,7 @@ def configure(tier,enabled):
             settings_review_required=True,live_orders_enabled=False,broker_connected=False,
             note='This tier is OFF. Saved paper settings need review; no other tier limits are inferred.')
 
-def require_entry(tier,notional):
+def _entry_request(tier,notional):
     if type(tier) is not str or tier not in TIERS:
         raise ValueError("UNKNOWN_RISK_TIER")
     if type(notional) not in (int,float,Decimal):
@@ -78,10 +78,9 @@ def require_entry(tier,notional):
     amount=Decimal(str(notional))
     if not amount.is_finite() or amount<=0:
         raise ValueError("RISK_TIER_INTENT_INVALID")
-    # Permission and cap inputs must come from one durable SQLite snapshot.
-    # A disable or settings change can commit before or after this snapshot,
-    # but cannot be spliced between two independent reads.
-    config,saved=_policy_snapshot()
+    return amount
+
+def _require_entry_snapshot(tier,amount,config,saved):
     if saved.get(tier,0)!=1:raise ValueError("RISK_TIER_DISENGAGED")
     # Compare against the same snapshot's unrounded limit (avoid cent rounding
     # permitting excess).
@@ -89,4 +88,38 @@ def require_entry(tier,notional):
     cap=min(Decimal("200"),budget*TIERS[tier],budget*Decimal(str(config[tier+"_allocation"]))/100)
     if amount>cap:raise ValueError("RISK_TIER_INTENT_CAP_EXCEEDED")
     return {"tier":tier,"tier_cap_usd":float(cap),"paper_only":True}
+
+def require_entry(tier,notional):
+    amount=_entry_request(tier,notional)
+    # Permission and cap inputs must come from one durable SQLite snapshot.
+    # A disable or settings change can commit before or after this snapshot,
+    # but cannot be spliced between two independent reads.
+    config,saved=_policy_snapshot()
+    return _require_entry_snapshot(tier,amount,config,saved)
+
+@contextmanager
+def entry_commit_guard(tier,notional):
+    """Hold tier/settings mutation exclusion through one durable BUY commit.
+
+    A cooperating OFF or cap change either commits before this writer
+    reservation (and is observed here) or waits until the caller releases the
+    reservation after its order/portfolio transaction. Reducing exits and the
+    independent emergency latch never acquire this guard.
+    """
+    amount=_entry_request(tier,notional)
+    # Serialize only the bootstrap. The durable exclusion below is SQLite's
+    # writer reservation, so it also covers cooperating callers in another
+    # process rather than relying on this process-local lock.
+    with _lock:load_settings()
+    with closing(_db()) as db:
+        with settings_transaction(db):
+            db.execute('BEGIN IMMEDIATE')
+            config=read_effective_settings(db)
+            saved=dict(db.execute("SELECT tier,enabled FROM tier_permissions"))
+            try:yield _require_entry_snapshot(tier,amount,config,saved)
+            finally:
+                # This transaction never mutates settings. Roll back its
+                # writer reservation explicitly so a concurrent read cannot
+                # turn an already committed BUY into a false commit failure.
+                db.rollback()
 

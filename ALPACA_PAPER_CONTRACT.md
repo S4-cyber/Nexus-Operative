@@ -2,6 +2,36 @@
 
 Most components remain read-only or disconnected diagnostics. v0.228.0 adds mandatory shared-local provider POST coordination to the internal explicit paper-only single-attempt boundary; it is not exposed through the Portal, saved write credentials, startup or strategies. No broker was connected or tested.
 
+## v0.340.414 typed local transport authorization
+
+The disconnected single-attempt POST boundary now requires a distinct
+OFF-by-default authorization object armed for exactly one credential pair and
+one attempt. After all opaque permission, credential and clock callbacks have
+finished, the boundary claims that object and holds its mutex through
+synchronous opener entry. It simultaneously holds the marked request journal's
+existing writer-exclusion snapshot, so cooperating local revocation and SQLite
+head writers linearize before or after dispatch instead of mutating in an
+unprotected callback interval. The independent emergency stop shares neither
+guard and is sampled last. A stop observed before opener entry consumes the
+authorization and retained request as `NOT_SENT` with zero POSTs; neither can
+re-arm or retry automatically.
+
+The caller must separately confirm one canonical owner runtime/order path for
+the durable latch; the boundary never infers that path from a broker journal in
+another private root. After opaque callbacks, the original request and provider-
+budget identities and exact pending reservation are replayed again under the
+request-head guard. A callback-free trusted monotonic deadline bounds the added
+guard work and reduces the opener timeout before dispatch.
+
+The typed lease stores only an in-memory digest and grants no saved write scope.
+It coordinates cooperating in-process writers only; provider-side revocation,
+non-cooperating processes, other hosts, administrator changes and a stop
+asserted after the last sample remain outside its atomic boundary. This is not
+an atomic provider snapshot or distributed stop guarantee. It adds no Portal
+route, saved write credential scope, broker connection, live order, funds
+authority or release approval. The release fixture uses disposable local stores
+and an injected transport; it is not broker-paper acceptance.
+
 ## v0.228.0 shared-local provider POST budget
 
 Every internal submission now requires a distinct private `PaperProviderPostBudget` and exact expected head. The bounded hash chain binds account, request head, payload and hashed client-order identity while an OS ownership lease serializes cooperating callers sharing that path. The reservation precedes the request uncertainty marker and both precede POST. Response-observed and known zero-post aborts retain a 60-second local cooldown; attempted or explicitly interrupted unknown outcomes retain a full-day review block. Nothing retries, clears review or reclaims capacity automatically.

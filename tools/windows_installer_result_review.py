@@ -22,6 +22,10 @@ RESULT_LIMITATIONS = (
     "containment is not verified; not clean-machine, native-window, ordinary-user, power-loss, broker, "
     "market, funds or release acceptance."
 )
+PHASE_LIMITATIONS = (
+    "Successful CI phase-sequence review only. Timestamps and process results are runner-generated "
+    "evidence, not clean-machine, native-window, ordinary-user, broker, market, funds or release acceptance."
+)
 SEMANTIC_TRUE = {
     "first_run_paper_defaults", "saved_setup_survived_reinstall",
     "saved_setup_survived_restart", "setup_preserved_on_uninstall",
@@ -29,6 +33,7 @@ SEMANTIC_TRUE = {
     "prior_version_data_recovery", "packaged_backup_recovery",
     "same_version_reinstall", "halt_recovered", "uninstall_preserved_data",
     "external_process_output_drains_bounded", "phase_evidence_recorded",
+    "installed_executable_matches_standalone", "reinstalled_executable_matches_standalone",
 }
 SEMANTIC_FALSE = {
     "cross_version_upgrade_verified", "process_tree_containment_verified", "native_window_verified",
@@ -37,11 +42,14 @@ SEMANTIC_FALSE = {
 }
 RAW_KEYS = {
     "mode", "version", "source_commit", "installer_sha256", "session_id",
+    "standalone_executable_sha256", "installed_executable_sha256",
+    "reinstalled_executable_sha256",
     "maximum_root_process_timeout_seconds", "output_drain_timeout_seconds", "limitations",
 } | SEMANTIC_TRUE | SEMANTIC_FALSE
 PHASE_KEYS = {
     "mode", "passed", "phases_verified", "records_verified", "version", "source_commit",
     "installer_sha256", "session_id", "exact_source_bound", "installer_digest_bound",
+    "raw_phase_bytes", "raw_phase_sha256",
     "single_session_bound", "sequence_complete", "timeouts_respected",
     "maximum_root_process_timeout_seconds", "output_drain_timeout_seconds",
     "maximum_observed_duration_seconds", "native_windows_acceptance", "actual_broker_acceptance",
@@ -49,7 +57,10 @@ PHASE_KEYS = {
 }
 REVIEW_KEYS = {
     "mode", "passed", "version", "source_commit", "installer_sha256", "session_id",
+    "standalone_executable_sha256", "installed_executable_sha256",
+    "reinstalled_executable_sha256",
     "raw_result_bytes", "raw_result_sha256", "maximum_root_process_timeout_seconds",
+    "phase_review_bytes", "phase_review_sha256", "raw_phase_bytes", "raw_phase_sha256",
     "output_drain_timeout_seconds",
     "phase_evidence_bound", "exact_source_bound", "installer_digest_bound",
     "single_session_bound", "limitations",
@@ -110,6 +121,7 @@ def _session(value):
 
 
 def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
+           phase_review_bytes, phase_review_sha256,
            expected_version, expected_source_commit):
     if type(expected_version) is not str or VERSION.fullmatch(expected_version) is None:
         raise InstallerResultReviewError("expected version")
@@ -119,6 +131,10 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
         raise InstallerResultReviewError("result bytes")
     if type(raw_result_sha256) is not str or SHA256.fullmatch(raw_result_sha256) is None:
         raise InstallerResultReviewError("result digest")
+    if type(phase_review_bytes) is not int or phase_review_bytes < 1:
+        raise InstallerResultReviewError("phase review bytes")
+    if type(phase_review_sha256) is not str or SHA256.fullmatch(phase_review_sha256) is None:
+        raise InstallerResultReviewError("phase review digest")
     if type(result) is not dict or set(result) != RAW_KEYS:
         raise InstallerResultReviewError("result shape")
     if type(phase) is not dict or set(phase) != PHASE_KEYS:
@@ -130,6 +146,10 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
             or result["source_commit"] != expected_source_commit
             or type(result["installer_sha256"]) is not str
             or SHA256.fullmatch(result["installer_sha256"]) is None
+            or type(result["standalone_executable_sha256"]) is not str
+            or SHA256.fullmatch(result["standalone_executable_sha256"]) is None
+            or result["installed_executable_sha256"] != result["standalone_executable_sha256"]
+            or result["reinstalled_executable_sha256"] != result["standalone_executable_sha256"]
             or result["maximum_root_process_timeout_seconds"] != 300
             or type(result["maximum_root_process_timeout_seconds"]) is not int
             or result["output_drain_timeout_seconds"] != 10
@@ -144,6 +164,9 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
             or phase["source_commit"] != expected_source_commit
             or phase["installer_sha256"] != result["installer_sha256"]
             or phase_session_id != session_id
+            or type(phase["raw_phase_bytes"]) is not int or phase["raw_phase_bytes"] < 1
+            or type(phase["raw_phase_sha256"]) is not str
+            or SHA256.fullmatch(phase["raw_phase_sha256"]) is None
             or type(phase["phases_verified"]) is not int
             or phase["phases_verified"] != 10
             or type(phase["records_verified"]) is not int
@@ -155,7 +178,7 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
             or type(phase["maximum_observed_duration_seconds"]) not in (int, float)
             or not math.isfinite(phase["maximum_observed_duration_seconds"])
             or not 0 <= phase["maximum_observed_duration_seconds"] <= 315
-            or type(phase["limitations"]) is not str or not phase["limitations"]
+            or phase["limitations"] != PHASE_LIMITATIONS
             or any(phase[key] is not True for key in (
                 "exact_source_bound", "installer_digest_bound", "single_session_bound",
                 "sequence_complete", "timeouts_respected"))
@@ -169,9 +192,16 @@ def verify(result, phase, *, raw_result_bytes, raw_result_sha256,
         "version": expected_version,
         "source_commit": expected_source_commit,
         "installer_sha256": result["installer_sha256"],
+        "standalone_executable_sha256": result["standalone_executable_sha256"],
+        "installed_executable_sha256": result["installed_executable_sha256"],
+        "reinstalled_executable_sha256": result["reinstalled_executable_sha256"],
         "session_id": session_id,
         "raw_result_bytes": raw_result_bytes,
         "raw_result_sha256": raw_result_sha256,
+        "phase_review_bytes": phase_review_bytes,
+        "phase_review_sha256": phase_review_sha256,
+        "raw_phase_bytes": phase["raw_phase_bytes"],
+        "raw_phase_sha256": phase["raw_phase_sha256"],
         "maximum_root_process_timeout_seconds": 300,
         "output_drain_timeout_seconds": 10,
         **{key: True for key in sorted(SEMANTIC_TRUE)},
@@ -226,10 +256,12 @@ def main():
     args = parser.parse_args()
     try:
         result, raw = _load_json_raw(args.input)
-        phase, _ = _load_json_raw(args.phase_review)
+        phase, phase_raw = _load_json_raw(args.phase_review)
         review = verify(
             result, phase, raw_result_bytes=len(raw),
             raw_result_sha256=hashlib.sha256(raw).hexdigest(),
+            phase_review_bytes=len(phase_raw),
+            phase_review_sha256=hashlib.sha256(phase_raw).hexdigest(),
             expected_version=args.expected_version,
             expected_source_commit=args.expected_source_commit,
         )

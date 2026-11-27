@@ -6,7 +6,7 @@ ROADMAP.md is generated from this module; LAUNCH_DRIVE.md contains implementatio
 from dataclasses import dataclass, asdict
 from nexus.milestone_execution_plan import execution_plan, next_work_batches, markdown_lines as milestone_task_markdown_lines
 
-REVISION = '0.340.413'
+REVISION = '0.340.432'
 BRANCH = 'development/windows-portal-foundation'
 
 
@@ -281,6 +281,14 @@ MILESTONES = tuple(Milestone(item.id,item.title,item.status,
 
 DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Linked local-paper accounts now reserve one existing durable intent slot from ordinary intake and expose separate total, ordinary and reducing-exit headroom. The internal reducing command binds the exact SELL product, requested reduction and expected current holding in replayed history, rechecks position continuity at fill, and never raises the total ID limit. Public simulation, BUY, wrong-product, flat, unlinked, oversized, stale-position, halted and cut paths cannot consume the slot. This is bounded local exit-capacity hardening, not broker routing, market realism, provider/account acceptance, funding/live/cloud readiness or permission.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; composite Trial Readiness now accepts one explicitly supplied local reconciliation bundle only with a path-bound order gateway, binds it with history, order, portfolio and owner paths under one same-root distinct-path identity/fingerprint fence, preserves its dedicated 8 MiB cap across composition and rejects a bundle without retained history; exact locally bound modeled executions may clear only the unbound-local-bundle incident while every external authority remains false' if item.id in ('M4','M7','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Explicit offline Trial Readiness composition can now bind modeled BUY/SELL events to one exact local reconciliation bundle under the same history/order/portfolio/owner file-set fence. The bundle is never discovered automatically, keeps an 8 MiB limit through every sample, requires retained history and a path-bound gateway, and grants no source, broker, account, funds, sustained-market, live or release authority. This is local evidence composition, not accepted broker-paper or sustained-trial evidence.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
 MILESTONES = tuple(Milestone(item.id,item.title,item.status,
@@ -1429,8 +1437,162 @@ DELIVERY_STAGES = tuple((dict(stage,
     progress=stage['progress'] + ' Durable paper state changes now fail closed before consuming the final active-epoch or retained-history slot while still running. A penultimate-slot reset can be followed by a final durable halt; the last slot cannot be spent on another unhalted mutation, and diagnostics direct the operator to emergency halt. This is bounded local capacity and restart safety, not native storage-fault, sustained operation, broker-paper or release acceptance.')
     if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
 
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; distribution artifact verification now separates same-source metadata stability from Windows path-to-descriptor identity: descriptor samples retain strict change-time checks, while cross-source NTFS comparisons use creation time and still bind device, file index, size, modification time, link count and two complete digest passes' if item.id in ('M1','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Windows artifact verification no longer compares path creation time with descriptor change time as though both were the same CPython field. Same-source descriptor checks remain strict; cross-source identity keeps device, file index, size, modification time, link count, creation time when available and two full digests. This repairs a hosted Windows false rejection without weakening release authority or claiming native installer acceptance.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; linked durable BUY fills and direct paper-ledger BUY commits now hold one settings-database writer reservation from their authoritative tier/cap snapshot through their atomic durable commit, so a tier OFF or cap change either commits first and refuses the fill or waits to acknowledge until the admitted position commits; reducing exits and the independent emergency latch do not share the guard' if item.id in ('M3','M4') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Linked durable BUY admission and direct paper-ledger BUY commits now share a bounded settings writer reservation with their durable position commit. Tier OFF or cap changes that win first are observed and refuse the position; changes that lose wait until the admitted BUY commits. Reducing exits and the independent emergency latch remain outside the guard. This is local transaction ordering, not broker, genuine-market, sustained-trial or release acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct paper-ledger BUY admission now resamples the independently writable durable emergency latch after its portfolio and settings writer reservations and exact ledger audit but before the first accounting mutation, so a cut asserted during that wait rolls back without a position or ledger event' if item.id in ('M3','M4') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Direct paper-ledger BUY admission now samples the independently writable durable emergency latch again after both database writer reservations and ledger verification, before any accounting mutation. A standalone cut asserted while the BUY waits therefore refuses and rolls back the local entry. This is one bounded same-host sample, not distributed atomicity, broker acceptance or release approval.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct paper-ledger BUY admission now revalidates the exact captured public quote after its portfolio and settings writer reservations and emergency-latch sample, using only the post-wait validated ask for accounting, so a quote that ages beyond the existing ten-second limit during contention rolls back without a position or ledger event and without any refetch or retry' if item.id in ('M3','M4','M7') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Direct paper-ledger BUY admission now revalidates the same captured read-only public quote after both durable writer reservations and the emergency-latch sample, immediately before accounting mutation. A quote that ages out during contention refuses and rolls back without network I/O, retry, position or ledger event. This is bounded local freshness enforcement, not provider/source acceptance, genuine-market realism, sustained-trial acceptance or release approval.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct paper-ledger BUY admission now resamples the independently writable durable emergency latch again after exact captured-quote revalidation and immediately before its first accounting read or mutation, so a cut asserted during quote validation rolls back without a position, cash delta or ledger event while an already-active cut still outranks quote refusal' if item.id in ('M3','M4','M7') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Direct paper-ledger BUY admission now samples the independent emergency latch both before and after exact captured-quote revalidation. The final sample is the last fallible guard before accounting, while the earlier sample preserves emergency priority when both cut and quote refusal are already present. This is bounded same-host fail-closed ordering, not distributed atomicity, broker, sustained-trial or release acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; Windows cross-source distribution identity now treats birth time as optional exactly as Python documents: device, file index, size, modification time and link count remain mandatory, matching available integer birth times are compared, malformed exposed values reject, and same-source metadata plus two complete digest passes remain strict' if item.id in ('M1','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Windows path-to-descriptor artifact identity no longer rejects a stable file solely because optional birth-time metadata is unavailable on one sample. Initial pathname observations are retained and later pathname metadata must match independently; mandatory file identity, same-source descriptor stability, retained handles and two full digests remain strict, while malformed or unequal available birth times reject. This addresses a compatibility failure reproduced from the hosted error family without claiming its unlogged field-level cause or native Windows/installer acceptance.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the runtime dependency floor now requires cryptography 50.x after the former 47.x cap resolved to a package with current audit advisories; the project uses only AES-GCM and scrypt surfaces covered by focused compatibility tests, while the upper major-version bound remains explicit' if item.id in ('M1','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' The cryptography runtime range now requires the audited 50.x line instead of permitting the advisory-affected 47.x resolution. Existing AES-GCM and scrypt compatibility coverage remains mandatory; this dependency remediation is not an independent security review or release acceptance.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the standalone local-paper emergency command now rechecks the exact public journal identity after its final latch and data-root observations, then rechecks the root identity; journal mismatch on a pinned root clears durable confirmation, while root displacement during that observation preserves only historical durable evidence, without another halt, reset or retry' if item.id in ('M3','M4','M7') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Standalone emergency-stop verification now retains durable confirmation only while the public journal still names the exact file cold-replayed before final result construction, with the data root sampled again after that journal observation. Replacement or observation denial on the still-pinned root returns UNCONFIRMED; displacement during the journal sample preserves its existing historical durable flag but clears current latch/root authority and cannot verify. These are bounded read-only local identity samples, not an atomic cross-process lease, native Windows, broker-paper, sustained-trial or release acceptance.')
+    if stage['id']=='D3' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; direct paper-ledger reducing SELL admission now owns SQLite\'s writer reservation before reading ledger or position state and revalidates the same captured public quote immediately before accounting mutation, so competing exits cannot credit one position twice and a quote that expires during the ledger audit rolls back without a cash, position, event or seal change and without provider I/O, refetch or retry' if item.id in ('M3','M4','M7') else
+    '; the read-only admission-authority inventory now validates every source declaration against one exact reviewed ID/scope/route/default/gate/reducing-exit contract, rejects duplicate route ownership, requires automatic start/resume to remain false and derives published default/automatic claims from only those validated rows; saved offline release evidence must reproduce those same exact public authority rows before it can reverify' if item.id=='M9' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Direct local-paper reducing exits now hold SQLite\'s writer reservation before their ledger and position snapshot, then revalidate the exact captured quote at the final boundary before accounting mutation. Competing exits cannot both credit one position; expiry during the audit refuses and rolls back without network I/O or retry. A fresh quote still permits the reducing exit and the independent emergency cut does not become an entry-only veto.' if stage['id']=='D3' else
+    ' The read-only authority report now fails closed unless every declared authority exactly matches the reviewed source contract, including route ownership, gates and reducing-exit semantics; duplicate route ownership rejects explicitly, top-level default/automatic claims are derived from validated rows, and saved offline release evidence must reproduce the exact current public rows. This grants no authority and is not independent acceptance.' if stage['id']=='D9' else ''))
+    if stage['id'] in ('D3','D9') else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; linked durable order replay now compares every retained execution to the linked portfolio fill by exact order/event identity, action, product, quantity, price and fee before ordinary mutation and after each applied fill; linked lifecycle fills without priced execution evidence fail replay, while safety-only cancel, expiry and emergency-halt writes do not attach the portfolio and halt confirmation cold-replays only the exact journal' if item.id=='M4' else
+        '; retained exchange-admission rows without their session head now fail integrity review instead of appearing as legacy absence, cold feed recovery rejects admissions whose session is missing, canonical non-object payloads produce bounded integrity failure, and the forward-trial evidence snapshot digest includes the already bounded and rechecked main-database SHA-256 so diagnostic-changing retained-byte mutations change the published digest without another read' if item.id=='M7' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' Linked local-paper reconciliation now requires exact durable fill identity and content across the order and portfolio stores before ordinary mutation, not merely equal aggregate cash and positions. Unpriced linked lifecycle fills fail cold replay. Emergency halt, cancellation and expiry remain journal-only safety writes, and halt confirmation does not depend on portfolio availability or agreement. This is local integrity evidence, not broker/account acceptance.' if stage['id']=='D3' else
+        ' Retained forward-trial review now distinguishes truly absent legacy exchange-admission evidence from retained rows whose head is missing, and its evidence digest binds the exact already-guarded database bytes. This closes local diagnostic truthfulness gaps without authenticating the source, market realism, uptime or sustained acceptance.'))
+    if stage['id'] in ('D3','D8') else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the internal one-shot Alpaca paper POST boundary now '
+        'requires three sequential bounded, account-consistent empty '
+        'reported-open-order samples: initial and repeated pre-reservation '
+        'reads fail before durable attempt state, while a post-reservation '
+        'appearance retains the lookup-only marker, closes the local provider '
+        'budget as NOT_SENT and never dispatches; reported terms are not '
+        'treated as provider hold or spendable-funds proof' if item.id=='M8'
+        else ''),item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' The internal paper-only POST boundary now '
+        'requires empty bounded open-order collections at initial, repeated '
+        'pre-reservation and final post-reservation samples. A later reported '
+        'order refuses before POST and cannot re-arm a retained attempt. This '
+        'is a sequential fail-closed admission fence, not provider hold, '
+        'account or spendable-funds acceptance.' if stage['id']=='D4' else ''))
+    if stage['id']=='D4' else stage) for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the standalone emergency command now attempts and '
+        'rechecks its independent durable latch even when the selected order '
+        'journal leaf is a symlink, while the journal gateway still refuses '
+        'that unsafe leaf before SQLite mutation' if item.id=='M7' else
+        '; the internal one-shot Alpaca paper POST boundary now requires exact '
+        'JSON text, boolean and numeric asset field types and re-proves the '
+        'original provider-budget ownership lease inside the final serialized '
+        'request guard after credential resampling; a replaced owner marker '
+        'cannot enter the provider opener and leaves the lookup-only request '
+        'plus pending local budget for explicit review; a separately confirmed '
+        'replaced-owner interruption now closes that exact tail as permanent '
+        'unknown outcome with a full-day cooldown, cold receipt replay and no '
+        'retry, owner repair or request re-arm' if item.id=='M8' else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + (' The standalone emergency command no longer '
+        'lets an unsafe order-journal symlink suppress the independent stop '
+        'latch. The latch is durably attempted first and adopted by the running '
+        'paper loop, while journal mutation remains refused. This is bounded '
+        'same-host emergency independence, not native Windows, broker or '
+        'sustained-trial acceptance.' if stage['id']=='D3' else
+        ' The explicit paper-only POST boundary rejects numeric lookalikes for '
+        'asset booleans and re-proves its original local provider owner inside '
+        'the final serialized guard after credential resampling. Late owner '
+        'loss performs zero POSTs and cannot reacquire, repair or re-arm the '
+        'attempt automatically. A distinct operator-confirmed replaced-owner '
+        'event can now retain the attempt as INTERRUPTED_UNKNOWN under full-day '
+        'review, including lost local acknowledgement replay, without provider '
+        'or credential access. This is local injected fail-closed evidence, '
+        'not provider identity, authorized-account or broker acceptance.' if
+        stage['id']=='D4' else '')) if stage['id'] in ('D3','D4') else stage)
+    for stage in DELIVERY_STAGES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Windows installer smoke now hashes the exact standalone executable before installation, requires both the first installed and reinstalled executable hashes to match it, rechecks the standalone source after uninstall and carries the three equal digests through strict reviewed result evidence; distribution review then requires the public NexusOperative.exe manifest entry to match that digest, and owner-profile review rechecks the complete installer execution-identity chain' if item.id in ('M1','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+MILESTONES = tuple(Milestone(item.id,item.title,item.status,
+    item.evidence + ('; the Windows phase reviewer now binds the exact raw phase-log byte count and SHA-256, result review binds the exact phase-review artifact and carries raw-log lineage forward, and distribution plus owner-profile review require the shipped phase review to match its manifest entry byte-for-byte' if item.id in ('M1','M9') else ''),
+    item.remaining) for item in MILESTONES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Windows CI now fails closed unless the standalone executable, first installed executable and reinstalled executable have one exact SHA-256 identity, the standalone source remains unchanged through the smoke, and the reviewed artifact manifest binds NexusOperative.exe to that identity. The ordinary-user owner-profile reviewer independently rechecks the resulting closed evidence chain. This is exact CI artifact identity, not clean-machine, native-window, ordinary-user, power-loss, signing or release acceptance.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
+DELIVERY_STAGES = tuple((dict(stage,
+    progress=stage['progress'] + ' Windows CI also binds the exact raw phase-log identity into the phase review, the exact phase-review bytes into result evidence, and the shipped phase review into the distribution manifest and ordinary-user review chain. Semantically equivalent artifact substitution fails closed. This remains CI evidence integrity, not clean-machine, native-window, ordinary-user, power-loss, signing or release acceptance.')
+    if stage['id']=='D8' else stage) for stage in DELIVERY_STAGES)
+
 PROGRESS_SUMMARY = 'Current position: local research and experimental local paper trading are implemented foundations; broker-paper integration and acceptance are the next major gate. Secure funding, governed live workflows, computer-off cloud and final independent/owner acceptance remain unfinished. Version numbers and passing test counts are not percent-complete estimates.'
-CURRENT_HARDENING = "v0.340.413 reserves the final durable order-journal slot for emergency halt whenever a state-changing command would otherwise leave the gateway running. The invariant applies independently to the active epoch and retained history, runs before linked-ledger side effects, preserves no-op replay and halted archival behavior, and still permits a penultimate-slot reset followed by a final durable halt. Read-only capacity diagnostics expose the final halt reserve and recommend emergency halt. This is bounded local capacity and restart-safety hardening, not native storage-fault acceptance, broker/account/source acceptance, genuine-market or sustained-trial acceptance, performance, profitability, funding, cloud, native Windows/installer or release approval. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior and independent emergency-stop access remain unchanged. No button or editable parameter was added; seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted."
+CURRENT_HARDENING = "v0.340.432 closes a Windows phase-evidence substitution gap. The phase reviewer binds the exact raw installer phase-log bytes and SHA-256; result review binds the exact phase-review artifact and carries raw-log lineage forward; the workflow ships and manifests that phase review; distribution and ordinary-user owner-profile review recheck its exact bytes, manifest entry and lineage. Semantically equivalent substitution now fails closed. The raw JSONL remains separate diagnostic evidence and is not added to the public distribution. This is CI evidence integrity only, not clean-machine, native-window, ordinary-user, power-loss, signing, broker/account/source, genuine-market, sustained-trial or release acceptance. No Portal button or editable parameter was added. Runtime engagement and optional AI remain OFF by default; limits, account checks, reducing exits, fail-closed behavior, independent emergency stop, seven beginner-friendly tabs and black/bright-purple bottom-right hover help remain intact. Rough implementation remains about 40% with an exact weighted index of 38% (30-45%, low confidence), with 0/9 major stages fully accepted and no release or trading permission."
 PROGRESS_DIAGRAM = 'flowchart TD\n    A["Local research and paper foundation"] --> B["CURRENT: broker-paper integration"]\n    B --> C["Sustained trials and independent review"]\n    C --> D["Secure funding and governed live workflows"]\n    C --> E["Secure computer-off cloud"]\n    D --> F["Complete acceptance and owner approval"]\n    E --> F\n    F --> G["1.0 release"]'
 
 def markdown():

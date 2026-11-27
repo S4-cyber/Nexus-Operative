@@ -241,7 +241,6 @@ def activate(data_root=None):
     halt_result = order_identity = None
     try:
         if not root_stable:raise ValueError('DATA_ROOT_CHANGED')
-        if order_path.is_symlink():raise ValueError('ORDER_HISTORY_SYMLINK')
         try:
             emergency_intent.persist(order_path)
             if not _same_data_root(root,root_identity):
@@ -269,6 +268,13 @@ def activate(data_root=None):
                         intent_preceded = False
                         raise ValueError('DATA_ROOT_CHANGED')
                     halt_result = DurableOrderGateway(order_path).emergency_halt()
+                    # The independent reset workflow may have cleared or
+                    # replaced the exact latch after the pre-halt sample but
+                    # before SQLite acquired its writer lock. The durable halt
+                    # still stands; only the ordering claim is invalidated.
+                    if not emergency_intent.same_canonical(
+                            order_path,intent_identity):
+                        intent_preceded = False
                     # The warm return is not durable evidence.  Reopen and
                     # replay the journal through a fresh gateway before any
                     # public result may claim cleanup was confirmed.
@@ -328,6 +334,16 @@ def activate(data_root=None):
     root_stable = bool(root_stable and
         _same_data_root(root,root_identity))
     final_intent = bool(root_stable and final_intent)
+    # Retain durable evidence only while the public journal still names the
+    # exact file cold-replayed above.  Bracket that read with the pinned root:
+    # a root displaced during the journal sample keeps historical durable
+    # evidence but cannot keep current latch/root authority.  This is bounded
+    # read-only observation: no halt, reset or retry enters the cut path.
+    if root_stable and durable_halt:
+        journal_stable = _same_order(order_path,order_identity) is True
+        root_stable = _same_data_root(root,root_identity)
+        if root_stable:durable_halt = journal_stable
+        else:final_intent = False
     verified = root_stable and intent_preceded and durable_halt and final_intent
     return dict(mode='NEXUS_LOCAL_PAPER_EMERGENCY_STOP',passed=verified,
         halted=final_intent or durable_halt,

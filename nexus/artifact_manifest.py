@@ -21,6 +21,8 @@ SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
 SHA256 = re.compile(r"[0-9a-f]{64}")
 MANIFEST_KEYS = {"schema", "version", "source_commit", "signed", "release_approved", "artifacts"}
 ENTRY_KEYS = {"name", "bytes", "sha256"}
+_WINDOWS_STAT_COMPAT = os.name == "nt"
+_MISSING_STAT_FIELD = object()
 
 
 class ArtifactManifestError(ValueError):
@@ -45,6 +47,47 @@ def _valid_name(name):
 def _same_file(before, after):
     fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns", "st_nlink")
     return all(getattr(before, field) == getattr(after, field) for field in fields)
+
+
+def _same_path_and_open_file(path_sample, open_sample):
+    """Compare path/fd samples without mixing Windows ctime semantics.
+
+    Windows path and descriptor samples can expose different ctime semantics,
+    and Python documents birth time as optional. Keep ctime for same-source
+    stability checks. For this cross-source comparison, use birth time only
+    when both samples supply valid values.
+    """
+    fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_nlink")
+    if not all(getattr(path_sample, field) == getattr(open_sample, field)
+               for field in fields):
+        return False
+    if _WINDOWS_STAT_COMPAT:
+        path_birth = getattr(path_sample, "st_birthtime_ns", _MISSING_STAT_FIELD)
+        open_birth = getattr(open_sample, "st_birthtime_ns", _MISSING_STAT_FIELD)
+        if (path_birth is not _MISSING_STAT_FIELD
+                and type(path_birth) is not int):
+            return False
+        if (open_birth is not _MISSING_STAT_FIELD
+                and type(open_birth) is not int):
+            return False
+        if path_birth is _MISSING_STAT_FIELD or open_birth is _MISSING_STAT_FIELD:
+            return True
+        return path_birth == open_birth
+    return path_sample.st_ctime_ns == open_sample.st_ctime_ns
+
+
+def _same_path_sample(before, after):
+    """Require stable same-source path metadata, including birth time if exposed."""
+    if not _same_file(before, after):
+        return False
+    if not _WINDOWS_STAT_COMPAT:
+        return True
+    before_birth = getattr(before, "st_birthtime_ns", _MISSING_STAT_FIELD)
+    after_birth = getattr(after, "st_birthtime_ns", _MISSING_STAT_FIELD)
+    if before_birth is _MISSING_STAT_FIELD and after_birth is _MISSING_STAT_FIELD:
+        return True
+    return (type(before_birth) is int and type(after_birth) is int
+            and before_birth == after_birth)
 
 
 def _artifact_directory(directory):
@@ -77,7 +120,8 @@ def _assert_artifact_directory(path, identity, descriptor=None):
     if (stat.S_ISLNK(current.st_mode) or not stat.S_ISDIR(current.st_mode)
             or not stat.S_ISDIR(opened.st_mode)
             or not _same_file(identity, current)
-            or not _same_file(identity, opened)):
+            or (descriptor is not None
+                and not _same_path_and_open_file(identity, opened))):
         _fail("ARTIFACT_DIRECTORY_CHANGED")
 
 
@@ -117,13 +161,14 @@ def _open_artifact_leaf(directory, name, descriptor):
         _fail("INVALID_ARTIFACT_FILE")
     if (not stat.S_ISREG(opened.st_mode) or opened.st_nlink != 1
             or not 1 <= opened.st_size <= MAX_ARTIFACT_BYTES
-            or not _same_file(observed, opened)):
+            or not _same_path_and_open_file(observed, opened)):
         os.close(leaf)
         _fail("INVALID_ARTIFACT_FILE")
-    return leaf, opened
+    return leaf, opened, observed
 
 
-def _assert_artifact_leaf(directory, name, descriptor, leaf, identity):
+def _assert_artifact_leaf(
+        directory, name, descriptor, leaf, identity, path_identity):
     try:
         opened = os.fstat(leaf)
         public = _leaf_stat(directory, name, descriptor)
@@ -133,7 +178,8 @@ def _assert_artifact_leaf(directory, name, descriptor, leaf, identity):
         _fail("ARTIFACT_CHANGED_DURING_READ")
     if (not stat.S_ISREG(public.st_mode) or public.st_nlink != 1
             or not _same_file(identity, opened)
-            or not _same_file(identity, public)):
+            or not _same_path_sample(path_identity, public)
+            or not _same_path_and_open_file(public, identity)):
         _fail("ARTIFACT_CHANGED_DURING_READ")
 
 
@@ -222,7 +268,8 @@ def file_entry(path):
         _fail("ARTIFACT_CHANGED_DURING_READ")
     if (total != before.st_size or not _same_file(before, after)
             or not stat.S_ISREG(final.st_mode) or final.st_nlink != 1
-            or not _same_file(after, final)):
+            or not _same_path_sample(observed, final)
+            or not _same_path_and_open_file(final, after)):
         _fail("ARTIFACT_CHANGED_DURING_READ")
     return {"name": path.name, "bytes": total, "sha256": digest.hexdigest()}
 
@@ -288,37 +335,41 @@ def verify(document, directory):
             seen.add(entry["name"])
         for entry in document["artifacts"]:
             _assert_artifact_directory(directory, directory_identity, descriptor)
-            leaf, identity = _open_artifact_leaf(
+            leaf, identity, path_identity = _open_artifact_leaf(
                 directory, entry["name"], descriptor)
-            leaves.append((entry, leaf, identity))
+            leaves.append((entry, leaf, identity, path_identity))
             _assert_artifact_directory(directory, directory_identity, descriptor)
-        for entry, leaf, identity in leaves:
+        for entry, leaf, identity, path_identity in leaves:
             _assert_artifact_leaf(
-                directory, entry["name"], descriptor, leaf, identity)
+                directory, entry["name"], descriptor, leaf, identity,
+                path_identity)
         first_pass = {}
         for pass_index in range(2):
-            for entry, leaf, identity in leaves:
+            for entry, leaf, identity, path_identity in leaves:
                 _assert_artifact_directory(
                     directory, directory_identity, descriptor)
                 _assert_artifact_leaf(
-                    directory, entry["name"], descriptor, leaf, identity)
+                    directory, entry["name"], descriptor, leaf, identity,
+                    path_identity)
                 actual = _hash_artifact_leaf(entry["name"], leaf, identity)
                 _assert_artifact_directory(
                     directory, directory_identity, descriptor)
                 _assert_artifact_leaf(
-                    directory, entry["name"], descriptor, leaf, identity)
+                    directory, entry["name"], descriptor, leaf, identity,
+                    path_identity)
                 if actual != entry:
                     _fail("ARTIFACT_DIGEST_DISAGREEMENT")
                 if pass_index == 0:
                     first_pass[entry["name"]] = actual
                 elif actual != first_pass[entry["name"]]:
                     _fail("ARTIFACT_CHANGED_DURING_READ")
-        for entry, leaf, identity in leaves:
+        for entry, leaf, identity, path_identity in leaves:
             _assert_artifact_leaf(
-                directory, entry["name"], descriptor, leaf, identity)
+                directory, entry["name"], descriptor, leaf, identity,
+                path_identity)
         _assert_artifact_directory(directory, directory_identity, descriptor)
     finally:
-        for _entry, leaf, _identity in leaves:
+        for _entry, leaf, _identity, _path_identity in leaves:
             os.close(leaf)
         if descriptor is not None:
             os.close(descriptor)

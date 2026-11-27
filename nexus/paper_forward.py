@@ -271,6 +271,12 @@ class PaperForwardRunner:
             raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
         sessions=db.execute(
             'SELECT id,started_at,state FROM sessions ORDER BY started_at,id').fetchall()
+        if admission_names:
+            retained_sessions={row[0] for row in db.execute(
+                'SELECT session FROM forward_exchange_admissions UNION '
+                'SELECT session FROM forward_exchange_admission_heads')}
+            if not retained_sessions.issubset({row[0] for row in sessions}):
+                raise ValueError('FORWARD_RETAINED_FEED_BASELINE_INVALID')
         for session,started_at,state in sessions:
             evidence=forward_evidence.review(db,session)
             if not evidence['integrity_ok']:

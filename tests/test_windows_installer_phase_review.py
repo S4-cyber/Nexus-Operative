@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 import os
 
@@ -39,7 +40,8 @@ def evidence(*, status="completed", duration=1, timeout_delta=0):
 
 
 def test_successful_phase_evidence_requires_exact_complete_sequence():
-    result = verify(evidence())
+    raw = evidence()
+    result = verify(raw)
     assert result["passed"] is result["sequence_complete"] is result["timeouts_respected"] is True
     assert result["phases_verified"] == 10 and result["records_verified"] == 20
     assert result["maximum_root_process_timeout_seconds"] == 300
@@ -47,10 +49,23 @@ def test_successful_phase_evidence_requires_exact_complete_sequence():
     assert result["maximum_observed_duration_seconds"] == 1
     assert result["version"] == VERSION and result["source_commit"] == SOURCE_COMMIT
     assert result["installer_sha256"] == INSTALLER_SHA256 and result["session_id"] == SESSION_ID
+    assert result["raw_phase_bytes"] == len(raw)
+    assert result["raw_phase_sha256"] == hashlib.sha256(raw).hexdigest()
     assert result["exact_source_bound"] is result["installer_digest_bound"] is result["single_session_bound"] is True
     assert all(result[key] is False for key in (
         "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
         "money_movement_enabled", "release_approved"))
+
+
+def test_phase_review_binds_exact_raw_jsonl_bytes():
+    compact = evidence()
+    rows = [json.loads(line) for line in compact.splitlines()]
+    spaced = ("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n").encode()
+    compact_review = verify(compact)
+    spaced_review = verify(spaced)
+    assert compact_review["raw_phase_bytes"] == len(compact)
+    assert spaced_review["raw_phase_bytes"] == len(spaced)
+    assert compact_review["raw_phase_sha256"] != spaced_review["raw_phase_sha256"]
 
 
 @pytest.mark.parametrize("mutation", (

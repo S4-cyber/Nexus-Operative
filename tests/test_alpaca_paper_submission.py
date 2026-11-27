@@ -1,12 +1,14 @@
 """Injected single-attempt paper submission boundary; never provider IO."""
+from contextlib import contextmanager
 import io
 import json
 import os
+import threading
 from urllib.error import URLError
 
 import pytest
 
-from nexus import alpaca_paper_submission as module
+from nexus import alpaca_paper_submission as module, emergency_intent
 from nexus.broker_request_journal import BrokerRequestJournal
 from nexus.paper_provider_post_budget import PaperProviderPostBudget
 from test_alpaca_paper_contract import plan, response
@@ -14,6 +16,13 @@ from test_broker_request_journal import ACCOUNT
 
 KEY = 'fixture_key_only_123'
 SECRET = 'fixture_secret_only_123'
+
+
+def _capture(errors,action):
+    try:
+        return action()
+    except BaseException as error:
+        errors.append(error)
 
 
 def account(**changes):
@@ -30,6 +39,16 @@ def asset(**changes):
     value.update(changes); return value
 
 
+def open_order(**changes):
+    value=dict(id='01234567-89ab-cdef-0123-456789abcde1',
+        client_order_id='existing_buy',symbol='BTC/USD',asset_class='crypto',
+        side='buy',type='limit',time_in_force='ioc',order_class='simple',
+        extended_hours=False,qty='1',limit_price='100',status='new',
+        filled_qty='0',filled_avg_price=None,
+        updated_at='2026-10-17T18:00:00Z')
+    value.update(changes);return value
+
+
 class Reply:
     def __init__(self, value, *, url=None, status=200, headers=None, raw=None):
         self.url=url; self.status=status
@@ -43,13 +62,21 @@ class Reply:
 
 
 class Opener:
-    def __init__(self, values=None):
+    def __init__(self, values=None, open_orders=None):
         positions=[dict(symbol='BTC/USD',asset_class='crypto',side='long',qty='3',qty_available='3')]
         self.values=list(values or [account(),positions,asset(),account(),positions,
                                     account(),positions,asset(),response()])
+        self.open_orders=list(open_orders or ([],[],[]))
+        self.value_index=0;self.open_order_index=0
         self.requests=[];self.responses=[]
     def open(self, request, timeout):
-        self.requests.append((request,timeout)); value=self.values[len(self.requests)-1]
+        self.requests.append((request,timeout))
+        if request.full_url==getattr(module,'OPEN_ORDERS_URL',None):
+            value=self.open_orders[self.open_order_index]
+            self.open_order_index+=1
+        else:
+            value=self.values[self.value_index]
+            self.value_index+=1
         if isinstance(value,BaseException): raise value
         reply=value if isinstance(value,Reply) else Reply(value)
         if reply.url is None: reply.url=request.full_url
@@ -76,7 +103,34 @@ def submit(prepared, opener=None, **changes):
         credential_check=lambda:True)
     options.update(changes)
     api_key=options.pop('api_key',KEY);api_secret=options.pop('api_secret',SECRET)
+    if 'transport_authorization' not in options:
+        authorization=module.PaperTransportAuthorizationLease()
+        authorization.arm_once(api_key,api_secret,
+            confirm_single_attempt=True)
+        options['transport_authorization']=authorization
+    options.setdefault('emergency_stop_order_path',str(journal.path.resolve()))
+    options.setdefault('confirm_emergency_stop_binding',True)
     return module.submit_once(journal,'nx_fixture',api_key,api_secret,**options)
+
+
+def test_transport_authorization_is_off_by_default_and_one_shot():
+    authorization=module.PaperTransportAuthorizationLease()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='TRANSPORT_AUTHORIZATION_NOT_ARMED'):
+        with authorization.claim(KEY,SECRET):
+            raise AssertionError('unarmed authorization entered')
+    authorization.arm_once(KEY,SECRET,confirm_single_attempt=True)
+    with authorization.claim(KEY,SECRET):
+        pass
+    with pytest.raises(module.PaperSubmissionError,
+                       match='TRANSPORT_AUTHORIZATION_NOT_ARMED'):
+        with authorization.claim(KEY,SECRET):
+            raise AssertionError('consumed authorization re-entered')
+    revoked=module.PaperTransportAuthorizationLease()
+    revoked.arm_once(KEY,SECRET,confirm_single_attempt=True);revoked.revoke()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='TRANSPORT_AUTHORIZATION_ALREADY_USED'):
+        revoked.arm_once(KEY,SECRET,confirm_single_attempt=True)
 
 
 def test_equality_forging_credential_is_rejected_before_store_or_transport(prepared):
@@ -98,6 +152,22 @@ def test_polymorphic_account_fields_never_pass_submission_preflight():
         module._account_and_funds(raw,[],ACCOUNT,plan()['payload'])
 
 
+@pytest.mark.parametrize('field,value',[
+    ('tradable',1),('tradable',1.0),
+    ('fractionable',1),('fractionable',1.0),
+])
+def test_numeric_asset_flags_fail_before_reservations(prepared,field,value):
+    malformed=asset(**{field:value})
+    opener=Opener([account(),[],malformed,account(),[],account(),[],asset(),
+                   response()])
+    request_before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match='ASSET_INVALID'):
+        submit(prepared,opener)
+    assert prepared[0].path.read_bytes()==request_before
+    assert prepared[2].inspect()['attempts']==0
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+
+
 def test_single_attempt_commits_unknown_before_post_and_retains_response(prepared):
     opener=Opener();result=submit(prepared,opener)
     assert result['paper_only'] and result['single_attempt_consumed']
@@ -106,7 +176,14 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert result['sequential_preflight_stable']
     assert result['post_reservation_risk_resampled']
     assert result['post_reservation_asset_resampled']
+    assert result['open_order_reservations_absent_at_three_samples']
     assert result['post_transport_credentials_rechecked']
+    assert result['post_transport_controls_rechecked']
+    assert result['typed_local_transport_authorization_consumed']
+    assert result['pre_post_journal_writer_exclusion']
+    assert result['explicit_emergency_stop_binding']
+    assert result['trusted_transport_deadline_enforced']
+    assert result['terminal_store_bindings_rechecked']
     assert result['request_and_post_budget_store_bindings_pinned']
     assert result['request_and_post_budget_file_identities_pinned']
     assert result['post_reservation_durable_heads_rechecked']
@@ -128,11 +205,12 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
         'sendable','ready_for_routing','broker_account_reconciled','spendable_funds_verified',
         'ledger_applied','live_orders_enabled','money_movement_enabled','release_approved'))
     assert [request.full_url for request,_ in opener.requests]==[
+        module.ACCOUNT_URL,module.POSITIONS_URL,module.OPEN_ORDERS_URL,module.ASSET_URL,
+        module.ACCOUNT_URL,module.POSITIONS_URL,module.OPEN_ORDERS_URL,
         module.ACCOUNT_URL,module.POSITIONS_URL,module.ASSET_URL,
-        module.ACCOUNT_URL,module.POSITIONS_URL,module.ACCOUNT_URL,
-        module.POSITIONS_URL,module.ASSET_URL,module.ORDER_URL]
+        module.OPEN_ORDERS_URL,module.ORDER_URL]
     assert [request.get_method() for request,_ in opener.requests]==[
-        'GET','GET','GET','GET','GET','GET','GET','GET','POST']
+        'GET','GET','GET','GET','GET','GET','GET','GET','GET','GET','GET','POST']
     posted=json.loads(opener.requests[-1][0].data)
     assert posted==plan()['payload']
     assert all(request.get_header('Apca-api-key-id')==KEY and
@@ -144,6 +222,100 @@ def test_single_attempt_commits_unknown_before_post_and_retains_response(prepare
     assert (prepared[2].history()[0]['request_after_head_sha256']==
             result['journal']['head_sha256'])
     assert KEY not in json.dumps(result) and SECRET not in json.dumps(result)
+
+
+def test_existing_open_order_requires_review_before_reservation(prepared):
+    opener=Opener(open_orders=[[open_order()],[],[]])
+    before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,
+            match='OPEN_ORDER_RESERVATIONS_REVIEW_REQUIRED'):
+        submit(prepared,opener)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert prepared[0].path.read_bytes()==before
+    assert prepared[2].inspect()['attempts']==0
+
+
+def test_malformed_open_order_terms_fail_before_reservation(prepared):
+    opener=Opener(open_orders=[[{'private':SECRET,
+        'account_id':'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'}],[],[]])
+    before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,
+            match='OPEN_ORDERS_INVALID') as error:
+        submit(prepared,opener)
+    assert SECRET not in str(error.value)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert prepared[0].path.read_bytes()==before
+    assert prepared[2].inspect()['attempts']==0
+
+
+@pytest.mark.parametrize('orders',[
+    (),
+    type('OpenOrderList',(list,),{})([]),
+    [type('OpenOrderRow',(dict,),{})()],
+    [{} for _ in range(129)],
+])
+def test_open_order_collection_shape_is_exact_and_bounded(prepared,orders):
+    with pytest.raises(module.PaperSubmissionError,match='OPEN_ORDERS_INVALID'):
+        module._require_empty_open_orders(orders,ACCOUNT,
+            nonempty_code='OPEN_ORDER_RESERVATIONS_REVIEW_REQUIRED')
+
+
+def test_open_order_collection_cap_blocks_before_reservation(prepared):
+    opener=Opener(open_orders=[[{} for _ in range(129)],[],[]])
+    before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match='OPEN_ORDERS_INVALID'):
+        submit(prepared,opener)
+    assert prepared[0].path.read_bytes()==before
+    assert prepared[2].inspect()['attempts']==0
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+
+
+def test_open_orders_change_before_reservation_never_marks_or_posts(prepared):
+    opener=Opener(open_orders=[[],[open_order()],[]])
+    before=prepared[0].path.read_bytes()
+    with pytest.raises(module.PaperSubmissionError,match='PREFLIGHT_OPEN_ORDERS_CHANGED'):
+        submit(prepared,opener)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert prepared[0].path.read_bytes()==before
+    assert prepared[2].inspect()['attempts']==0
+
+
+def test_open_orders_change_after_reservation_never_posts_or_rearms(prepared):
+    opener=Opener(open_orders=[[],[],[open_order()]])
+    with pytest.raises(module.PaperSubmissionError,
+            match='POST_RESERVATION_OPEN_ORDERS_CHANGED'):
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    assert retained['lookup_by_original_client_id_required']
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    state=prepared[2].inspect()
+    assert state['pending_token'] is None and state['completed_attempts']==1
+    repeat=Opener()
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,repeat)
+    assert not repeat.requests and prepared[2].history()==history
+
+
+def test_open_orders_endpoint_and_session_boundary_are_exact():
+    assert module.OPEN_ORDERS_URL==(
+        'https://paper-api.alpaca.markets/v2/orders?status=open&limit=129&direction=asc')
+    opener=Opener()
+    def session():
+        return module._Session(KEY,SECRET,opener=opener,
+            wall_clock=lambda:1000,elapsed_clock=lambda:50,
+            permission_check=lambda:True,emergency_stop_check=lambda:False,
+            credential_check=lambda:True,store_binding_check=lambda:None)
+    with pytest.raises(module.PaperSubmissionError,match='PATH_DENIED'):
+        session().request(module.OPEN_ORDERS_URL+'&extra=true')
+    with pytest.raises(module.PaperSubmissionError,match='METHOD_DENIED'):
+        session().request(module.OPEN_ORDERS_URL,payload=plan()['payload'])
+    capped=session();capped.requests=module.MAX_REQUESTS
+    with pytest.raises(module.PaperSubmissionError,match='REQUEST_CAP'):
+        capped.request(module.ACCOUNT_URL)
+    assert module.MAX_REQUESTS==12 and not opener.requests
 
 
 @pytest.mark.parametrize('field,value',[('confirm_paper_order',False),('confirm_single_attempt',False)])
@@ -868,7 +1040,7 @@ def test_post_reservation_risk_change_never_posts_and_never_rearms(
     (asset(min_order_size='1'),'POST_RESERVATION_ASSET_CHANGED'),
     (asset(min_trade_increment='.25'),'POST_RESERVATION_ASSET_CHANGED'),
     (asset(price_increment='.25'),'POST_RESERVATION_ASSET_CHANGED'),
-    ({'malformed':'asset'},'ASSET_NOT_ELIGIBLE'),
+    ({'malformed':'asset'},'ASSET_INVALID'),
 ])
 def test_post_reservation_asset_change_never_posts_and_never_rearms(
         prepared,final_asset,code):
@@ -884,6 +1056,83 @@ def test_post_reservation_asset_change_never_posts_and_never_rearms(
         submit(prepared,Opener())
 
 
+@pytest.mark.parametrize('field,value',[
+    ('tradable',1),('tradable',1.0),
+    ('fractionable',1),('fractionable',1.0),
+])
+def test_numeric_final_asset_flags_never_post_or_rearm(
+        prepared,field,value):
+    malformed=asset(**{field:value})
+    opener=Opener([account(),[],asset(),account(),[],account(),[],malformed])
+    with pytest.raises(module.PaperSubmissionError,match='ASSET_INVALID'):
+        submit(prepared,opener)
+    retained=prepared[0].recovery()['requests'][0]
+    history=prepared[2].history()
+    assert retained['lookup_by_original_client_id_required']
+    assert retained['snapshot'] is None
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+def test_late_provider_owner_loss_never_enters_post_opener(
+        prepared,monkeypatch):
+    owner_type=type(prepared[2].ownership());original=owner_type.validate
+    owner_lost=False;credential_samples=0
+    def validate(self):
+        if owner_lost:raise ValueError(
+            'PAPER_PROVIDER_POST_BUDGET_OWNER_FILE_CHANGED')
+        return original(self)
+    def credential_check():
+        nonlocal owner_lost,credential_samples
+        credential_samples+=1
+        if credential_samples==3:owner_lost=True
+        return True
+    monkeypatch.setattr(owner_type,'validate',validate)
+    opener=Opener()
+    with pytest.raises(ValueError,match='OWNER_FILE_CHANGED'):
+        submit(prepared,opener,credential_check=credential_check)
+    retained=prepared[0].recovery()['requests'][0]
+    state=prepared[2].inspect()
+    assert credential_samples==3
+    assert retained['lookup_by_original_client_id_required']
+    assert retained['snapshot'] is None
+    assert state['pending_token'] is not None and state['review_required'] is False
+    assert prepared[2].history()==()
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+@pytest.mark.skipif(os.name=='nt',reason='Windows denies replacing the open owner marker')
+def test_replaced_provider_owner_path_never_enters_post_opener(
+        prepared,tmp_path):
+    budget=prepared[2];owner_path=budget.path.with_name(
+        budget.path.name+'.owner.lock')
+    credential_samples=0
+    def credential_check():
+        nonlocal credential_samples
+        credential_samples+=1
+        if credential_samples==3:
+            replacement=tmp_path/'replacement-owner.lock'
+            replacement.write_bytes(owner_path.read_bytes())
+            os.replace(replacement,owner_path)
+        return True
+    opener=Opener()
+    with pytest.raises(ValueError,match='OWNER_FILE_CHANGED'):
+        submit(prepared,opener,credential_check=credential_check)
+    retained=prepared[0].recovery()['requests'][0]
+    state=PaperProviderPostBudget(budget.path).inspect()
+    assert credential_samples==3
+    assert retained['lookup_by_original_client_id_required']
+    assert retained['snapshot'] is None
+    assert state['pending_token'] is not None and state['review_required'] is False
+    assert PaperProviderPostBudget(budget.path).history()==()
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+
+
 def test_credential_mutation_during_final_transport_checkpoint_never_posts(
         prepared):
     opener=Opener();credential_current=True;credential_samples=0
@@ -896,7 +1145,7 @@ def test_credential_mutation_during_final_transport_checkpoint_never_posts(
         # The second explicit credential sample occurs after the final risk
         # reads.  Mutate during the following POST-adjacent permission check,
         # reproducing the interval that used to follow the last pair check.
-        if credential_samples >= 2 and len(opener.requests)==8:
+        if credential_samples >= 2 and len(opener.requests)==11:
             credential_current=False
         return True
     with pytest.raises(module.PaperSubmissionError,
@@ -912,6 +1161,278 @@ def test_credential_mutation_during_final_transport_checkpoint_never_posts(
     assert history[0]['actual_posts']==0
     with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
         submit(prepared,Opener())
+
+
+def test_durable_emergency_stop_during_final_credential_sample_never_posts(
+        prepared):
+    journal,_,budget=prepared
+    opener=Opener();credential_samples=0
+    publish=threading.Event();published=threading.Event()
+    def persist_stop():
+        assert publish.wait(5)
+        emergency_intent.persist(journal.path)
+        published.set()
+    worker=threading.Thread(target=persist_stop)
+    worker.start()
+    def credential_check():
+        nonlocal credential_samples
+        credential_samples += 1
+        if credential_samples==3:
+            publish.set()
+            assert published.wait(5)
+        return True
+    try:
+        with pytest.raises(module.PaperSubmissionError,
+                           match='PAPER_SUBMISSION_EMERGENCY_STOP_ACTIVE'):
+            submit(prepared,opener,credential_check=credential_check,
+                   emergency_stop_check=lambda:emergency_intent.requested(
+                       journal.path))
+    finally:
+        publish.set();worker.join(5)
+    retained=journal.recovery()['requests'][0]
+    history=budget.history()
+    assert not worker.is_alive() and published.is_set()
+    assert credential_samples==3 and emergency_intent.requested(journal.path)
+    assert retained['lookup_by_original_client_id_required']
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+    with pytest.raises(module.PaperSubmissionError,match='LOCAL_REVIEW_BLOCKED'):
+        submit(prepared,Opener())
+
+
+def test_durable_stop_during_final_locked_replay_never_posts(
+        prepared,monkeypatch):
+    journal,_,budget=prepared
+    entered=threading.Event();published=threading.Event()
+    original=BrokerRequestJournal.locked_request_snapshot
+    @contextmanager
+    def blocked_snapshot(self,*args,**kwargs):
+        with original(self,*args,**kwargs) as read:
+            def blocked_read():
+                entered.set();assert published.wait(5);return read()
+            yield blocked_read
+    monkeypatch.setattr(BrokerRequestJournal,'locked_request_snapshot',
+                        blocked_snapshot)
+    def publish_stop():
+        assert entered.wait(5)
+        emergency_intent.persist(journal.path)
+        published.set()
+    worker=threading.Thread(target=publish_stop);worker.start();opener=Opener()
+    try:
+        with pytest.raises(module.PaperSubmissionError,
+                           match='PAPER_SUBMISSION_EMERGENCY_STOP_ACTIVE'):
+            submit(prepared,opener)
+    finally:
+        published.set();worker.join(5)
+    retained=journal.recovery()['requests'][0];history=budget.history()
+    assert not worker.is_alive() and entered.is_set()
+    assert retained['lookup_by_original_client_id_required']
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+
+
+def test_explicit_owner_stop_root_is_not_inferred_from_broker_journal(
+        prepared,tmp_path):
+    journal,_,budget=prepared
+    runtime=tmp_path/'runtime';runtime.mkdir()
+    owner_order_path=runtime/'orders.sqlite3'
+    credential_samples=0
+    def credential_check():
+        nonlocal credential_samples
+        credential_samples+=1
+        if credential_samples==3:
+            emergency_intent.persist(owner_order_path)
+        return True
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='PAPER_SUBMISSION_EMERGENCY_STOP_ACTIVE'):
+        submit(prepared,opener,credential_check=credential_check,
+            emergency_stop_check=lambda:emergency_intent.requested(
+                owner_order_path),
+            emergency_stop_order_path=str(owner_order_path.resolve()))
+    history=budget.history();retained=journal.recovery()['requests'][0]
+    assert credential_samples==3 and retained['lookup_by_original_client_id_required']
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+
+
+def test_trusted_transport_deadline_expires_during_final_guard(
+        prepared,monkeypatch):
+    samples=iter((0,5))
+    monkeypatch.setattr(module,'_TRUSTED_MONOTONIC',lambda:next(samples))
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,match='TIME_BUDGET'):
+        submit(prepared,opener)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+
+
+def test_trusted_transport_deadline_includes_final_checkpoint_work(
+        prepared,monkeypatch):
+    trusted_now=0
+    monkeypatch.setattr(module,'_TRUSTED_MONOTONIC',lambda:trusted_now)
+    original=module._Session.checkpoint
+    def delayed_checkpoint(self):
+        nonlocal trusted_now
+        result=original(self)
+        if self.request_head_guard is not None and self.requests==11:
+            trusted_now=17
+        return result
+    monkeypatch.setattr(module._Session,'checkpoint',delayed_checkpoint)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,match='TIME_BUDGET'):
+        submit(prepared,opener)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+
+
+@pytest.mark.parametrize('store_index',['request','budget'])
+def test_final_credential_store_replacement_never_posts(
+        prepared,tmp_path,store_index):
+    journal,_,budget=prepared
+    target=journal.path if store_index=='request' else budget.path
+    samples=0;replaced=False
+    def credential_check():
+        nonlocal samples,replaced
+        samples+=1
+        if samples==3:
+            replacement=tmp_path/f'late-{store_index}.sqlite3'
+            replacement.write_bytes(target.read_bytes())
+            os.replace(replacement,target);replaced=True
+        return True
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,match='STORE_BINDING_CHANGED'):
+        submit(prepared,opener,credential_check=credential_check)
+    assert samples==3 and replaced
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    history=PaperProviderPostBudget(budget.path).history()
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+
+
+def test_typed_transport_revocation_linearizes_before_or_after_opener_entry(
+        prepared):
+    entered=threading.Event();release=threading.Event()
+    revocation_started=threading.Event();revoked=threading.Event()
+    class BlockingOpener(Opener):
+        def open(self,request,timeout):
+            if request.get_method()=='POST':
+                entered.set();assert release.wait(5)
+            return super().open(request,timeout)
+    authorization=module.PaperTransportAuthorizationLease()
+    authorization.arm_once(KEY,SECRET,confirm_single_attempt=True)
+    opener=BlockingOpener();errors=[]
+    worker=threading.Thread(target=lambda:_capture(
+        errors,lambda:submit(prepared,opener,
+            transport_authorization=authorization)))
+    def revoke():
+        revocation_started.set();authorization.revoke();revoked.set()
+    revoker=threading.Thread(target=revoke)
+    worker.start()
+    try:
+        assert entered.wait(5)
+        revoker.start()
+        assert revocation_started.wait(5)
+        assert not revoked.wait(.05)
+        assert not any(request.get_method()=='POST'
+                       for request,_ in opener.requests)
+    finally:
+        release.set();worker.join(5);revoker.join(5)
+    assert not worker.is_alive() and not revoker.is_alive()
+    assert not errors and revoked.is_set()
+    assert sum(request.get_method()=='POST'
+               for request,_ in opener.requests)==1
+
+
+def test_request_head_writer_cannot_commit_before_opener_entry_returns(
+        prepared):
+    journal,_,_=prepared
+    entered=threading.Event();release=threading.Event()
+    writer_started=threading.Event();committed=threading.Event()
+    class BlockingOpener(Opener):
+        def open(self,request,timeout):
+            if request.get_method()=='POST':
+                entered.set();assert release.wait(5)
+            return super().open(request,timeout)
+    opener=BlockingOpener();submission_errors=[];writer_errors=[]
+    worker=threading.Thread(target=lambda:_capture(
+        submission_errors,lambda:submit(prepared,opener)))
+    def advance_head():
+        try:
+            writer_started.set()
+            BrokerRequestJournal(journal.path,ACCOUNT).begin_lookup(
+                'nx_fixture',evaluated_at=1001)
+            committed.set()
+        except BaseException as error:
+            writer_errors.append(error)
+    writer=threading.Thread(target=advance_head)
+    worker.start()
+    try:
+        assert entered.wait(5)
+        writer.start()
+        assert writer_started.wait(5)
+        assert not committed.wait(.05)
+        assert not any(request.get_method()=='POST'
+                       for request,_ in opener.requests)
+    finally:
+        release.set();worker.join(5);writer.join(5)
+    assert not worker.is_alive() and not writer.is_alive()
+    assert committed.is_set() and not writer_errors
+    assert sum(request.get_method()=='POST'
+               for request,_ in opener.requests)==1
+    assert (not submission_errors or
+            all(isinstance(error,module.PaperSubmissionError) for
+                error in submission_errors))
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome'] in (
+        'RESPONSE_OBSERVED','OUTCOME_UNKNOWN')
+    assert history[0]['actual_posts']==1
+
+
+def test_preopen_request_guard_failure_is_fixed_not_sent(prepared,monkeypatch):
+    @contextmanager
+    def failed_guard(*_args,**_kwargs):
+        raise ValueError('private guard detail')
+        yield
+    monkeypatch.setattr(BrokerRequestJournal,'locked_request_snapshot',
+                        failed_guard)
+    opener=Opener()
+    with pytest.raises(module.PaperSubmissionError,
+                       match='PRE_POST_TRANSPORT_GUARD_FAILED') as error:
+        submit(prepared,opener)
+    assert 'private guard detail' not in str(error.value)
+    assert not any(request.get_method()=='POST' for request,_ in opener.requests)
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='NOT_SENT'
+    assert history[0]['actual_posts']==0
+
+
+def test_process_signal_on_guard_exit_closes_unentered_response(
+        prepared,monkeypatch):
+    original=BrokerRequestJournal.locked_request_snapshot
+    @contextmanager
+    def signaled_guard(self,*args,**kwargs):
+        with original(self,*args,**kwargs) as read:
+            yield read
+            raise KeyboardInterrupt
+    monkeypatch.setattr(BrokerRequestJournal,'locked_request_snapshot',
+                        signaled_guard)
+    opener=Opener()
+    with pytest.raises(KeyboardInterrupt):
+        submit(prepared,opener)
+    assert sum(request.get_method()=='POST'
+               for request,_ in opener.requests)==1
+    assert opener.responses[-1].closed is True
+    history=prepared[2].history()
+    assert len(history)==1 and history[0]['outcome']=='OUTCOME_UNKNOWN'
+    assert history[0]['actual_posts']==1
 
 
 def test_credential_check_exception_is_fixed_and_post_silent(prepared):
@@ -1008,6 +1529,8 @@ def test_sell_requires_reported_available_btc(prepared):
     # Use a separate durable request so the fixture's buy remains untouched.
     journal.prepare(plan(client_order_id='sell_fixture',side='SELL'))
     selected=journal.lookup_request('sell_fixture')
+    authorization=module.PaperTransportAuthorizationLease()
+    authorization.arm_once(KEY,SECRET,confirm_single_attempt=True)
     options=dict(expected_account_id=ACCOUNT,expected_head=selected['head_sha256'],
         expected_payload_sha256=selected['plan']['payload_sha256'],
         post_budget=PaperProviderPostBudget(journal.path.with_name('sell-post-budget.sqlite3')),
@@ -1015,7 +1538,10 @@ def test_sell_requires_reported_available_btc(prepared):
         confirm_single_attempt=True,opener=Opener([account(),
             [dict(symbol='BTC/USD',asset_class='crypto',side='long',qty='2',qty_available='1')],asset()]),
         wall_clock=lambda:1000,elapsed_clock=lambda:50,permission_check=lambda:True,
-        emergency_stop_check=lambda:False,credential_check=lambda:True)
+        emergency_stop_check=lambda:False,credential_check=lambda:True,
+        transport_authorization=authorization,
+        emergency_stop_order_path=str(journal.path.resolve()),
+        confirm_emergency_stop_binding=True)
     before=journal.path.read_bytes()
     with pytest.raises(module.PaperSubmissionError,match='BTC_AVAILABLE_INSUFFICIENT'):
         module.submit_once(journal,'sell_fixture',KEY,SECRET,**options)

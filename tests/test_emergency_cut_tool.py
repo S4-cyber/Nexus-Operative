@@ -104,6 +104,78 @@ def test_priority_failure_never_prevents_latch_or_durable_halt(tmp_path,monkeypa
     assert emergency_intent.requested(tmp_path/'order_lifecycle.sqlite3')
 
 
+def test_standalone_cut_does_not_mutate_hardlinked_external_journal(tmp_path):
+    external=tmp_path.parent/(tmp_path.name+'-external.sqlite3')
+    external_gateway=DurableOrderGateway(external)
+    external_gateway.submit('external','BTC-USD','BUY',25)
+    before=external.read_bytes();report=external_gateway.recovery_report()
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    try:os.link(external,order_path)
+    except (OSError,NotImplementedError):pytest.skip('Hardlinks unavailable')
+    from nexus.emergency_cut_tool import activate
+    result=activate(tmp_path)
+    assert not result['passed']
+    assert result['emergency_cut_state']=='UNCONFIRMED'
+    assert emergency_intent.requested(order_path)
+    assert external.read_bytes()==before
+    order_path.unlink()
+    assert DurableOrderGateway(external).recovery_report()==report
+
+
+def test_symlinked_order_journal_cannot_suppress_independent_cut_latch(tmp_path):
+    external=tmp_path.parent/(tmp_path.name+'-symlink-target.sqlite3')
+    external_gateway=DurableOrderGateway(external)
+    external_gateway.submit('external-symlink','BTC-USD','BUY',25)
+    before=external.read_bytes();report=external_gateway.recovery_report()
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    try:order_path.symlink_to(external)
+    except (OSError,NotImplementedError):pytest.skip('Symlinks unavailable')
+    from nexus.emergency_cut_tool import activate
+    result=activate(tmp_path)
+    assert not result['passed']
+    assert result['emergency_cut_state']=='UNCONFIRMED'
+    assert result['halted'] and result['emergency_intent_present']
+    assert not result['durable_order_halt_confirmed']
+    assert result['data_root_path_pinned'] is True
+    assert emergency_intent.requested(order_path)
+    assert external.read_bytes()==before
+    order_path.unlink()
+    assert DurableOrderGateway(external).recovery_report()==report
+
+
+def test_symlink_leaf_during_inflight_fetch_still_stops_restored_runner(
+        tmp_path,monkeypatch):
+    monkeypatch.setenv('NEXUS_PORTABLE_DATA',str(tmp_path))
+    configure('terrestrial',True)
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    gateway=DurableOrderGateway(order_path)
+    clock=Clock();runner=PaperForwardRunner(gateway,clock.quote,lambda:clock.now)
+    runner.prepare('terrestrial');warmup(runner,clock)
+    before=[row['id'] for row in gateway.recovery_report()['orders']]
+    entered=threading.Event();release=threading.Event();outcome=[]
+    def blocked(product):
+        entered.set();assert release.wait(10);return clock.quote(product)
+    runner.fetcher=blocked;clock.now+=5;clock.price=102
+    worker=threading.Thread(target=lambda:outcome.append(runner.single_cycle()))
+    worker.start();assert entered.wait(5)
+    parked=tmp_path/'parked-order-lifecycle.sqlite3'
+    try:
+        order_path.rename(parked);order_path.symlink_to(parked)
+    except (OSError,NotImplementedError):
+        release.set();worker.join(5)
+        if parked.exists() and not order_path.exists():parked.rename(order_path)
+        pytest.skip('Open-journal symlink fixture unavailable')
+    from nexus.emergency_cut_tool import activate
+    stopped=activate(tmp_path)
+    order_path.unlink();parked.rename(order_path)
+    assert stopped['halted'] and stopped['emergency_intent_present']
+    assert not stopped['durable_order_halt_confirmed']
+    assert runner.status()['cut_requested'] and not runner.status()['enabled']
+    release.set();worker.join(5);assert not worker.is_alive()
+    assert outcome[0]['reason']=='STOPPED_DURING_FETCH'
+    assert [row['id'] for row in gateway.recovery_report()['orders']]==before
+
+
 @pytest.mark.parametrize('failure',[RuntimeError('PRIORITY_API_FAILED'),None,
     {'attempted':True,'confirmed':True,'priority_class':'STANDARD'},
     {'attempted':False,'confirmed':False,'priority_class':'HIGH'},
@@ -388,6 +460,65 @@ def test_root_replacement_during_final_latch_sample_cannot_keep_verified_claim(
     assert not report['emergency_intent_present'] and not report['data_root_path_pinned']
     assert not (root/'order_lifecycle.sqlite3').exists()
     assert DurableOrderGateway(retired/'order_lifecycle.sqlite3').recovery_report()['halted']
+
+
+def test_final_latch_sample_journal_replacement_cannot_remain_verified(
+        tmp_path,monkeypatch):
+    order_path=tmp_path/'order_lifecycle.sqlite3'
+    replacement=tmp_path/'unhalted-replacement.sqlite3'
+    DurableOrderGateway(replacement).reset()
+    from nexus import emergency_cut_tool
+    original=emergency_cut_tool._same_intent;calls=[]
+    def replace_after_sample(path,identity):
+        result=original(path,identity);calls.append(1)
+        if len(calls)==2:os.replace(replacement,order_path)
+        return result
+    monkeypatch.setattr(emergency_cut_tool,'_same_intent',replace_after_sample)
+    report=emergency_cut_tool.activate(tmp_path)
+    assert calls==[1,1]
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert not report['durable_order_halt_confirmed']
+    assert report['emergency_intent_present'] and report['halted']
+    assert report['data_root_path_pinned']
+    cold=DurableOrderGateway(order_path).recovery_report()
+    assert cold['journal_present'] and cold['commands']==0 and not cold['halted']
+
+
+def test_root_replacement_during_final_journal_sample_preserves_only_history(
+        tmp_path,monkeypatch):
+    root=tmp_path/'state';retired=tmp_path/'retired';root.mkdir()
+    from nexus import emergency_cut_tool
+    original_intent=emergency_cut_tool._same_intent
+    original_order=emergency_cut_tool._same_order
+    final_latch_sampled=False
+    def sample_intent(order_path,identity):
+        nonlocal final_latch_sampled
+        result=original_intent(order_path,identity)
+        if final_latch_sampled:
+            raise AssertionError('unexpected extra intent sample')
+        if sample_intent.calls==1:final_latch_sampled=True
+        sample_intent.calls+=1
+        return result
+    sample_intent.calls=0
+    def displace_root_during_journal_sample(order_path,identity):
+        if final_latch_sampled:
+            root.rename(retired);root.mkdir()
+            (retired/'order_lifecycle.sqlite3').replace(
+                root/'order_lifecycle.sqlite3')
+        return original_order(order_path,identity)
+    monkeypatch.setattr(emergency_cut_tool,'_same_intent',sample_intent)
+    monkeypatch.setattr(emergency_cut_tool,'_same_order',
+        displace_root_during_journal_sample)
+    report=emergency_cut_tool.activate(root)
+    assert not report['passed'] and report['emergency_cut_state']=='UNCONFIRMED'
+    assert report['intent_preceded_durable_halt']
+    assert report['durable_order_halt_confirmed'] and report['halted']
+    assert not report['emergency_intent_present']
+    assert not report['data_root_path_pinned']
+    assert emergency_intent.requested(retired/'order_lifecycle.sqlite3')
+    assert DurableOrderGateway(
+        root/'order_lifecycle.sqlite3').recovery_report()['halted']
 
 
 def test_storage_failure_retains_cut_until_explicit_retry_finishes_cleanup(tmp_path,monkeypatch):
@@ -707,6 +838,11 @@ def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
     monkeypatch.setattr(emergency_cut_tool,'_halt_replayed_bounded',
         lambda path,result,observed:replays.append(
             (path,result,observed)) or True)
+    # This schema-only fixture replaces the durable journal and replay with
+    # exact synthetic success evidence, so keep the new final read-only
+    # identity observation consistent with that isolated durable result.
+    monkeypatch.setattr(emergency_cut_tool,'_same_order',
+        lambda path,observed:observed is identity)
     report=emergency_cut_tool.activate(tmp_path)
     order_path=tmp_path/'order_lifecycle.sqlite3'
     assert halts==[order_path]
@@ -726,14 +862,14 @@ def test_malformed_intent_status_cannot_confirm_or_change_boolean_schema(
 def test_transient_final_replay_fault_is_bounded_and_read_only(
         tmp_path,monkeypatch):
     from nexus import emergency_cut_tool
-    original=DurableOrderGateway.recovery_report
+    original=DurableOrderGateway.halt_recovery_report
     calls=[]
     def transient_second_replay(self):
         calls.append(1)
         if len(calls)==2:
             raise ValueError('ORDER_JOURNAL_DATABASE_BUSY')
         return original(self)
-    monkeypatch.setattr(DurableOrderGateway,'recovery_report',
+    monkeypatch.setattr(DurableOrderGateway,'halt_recovery_report',
         transient_second_replay)
     report=emergency_cut_tool.activate(tmp_path)
     assert calls==[1,1,1]
@@ -741,6 +877,24 @@ def test_transient_final_replay_fault_is_bounded_and_read_only(
     recovery=DurableOrderGateway(
         tmp_path/'order_lifecycle.sqlite3').recovery_report()
     assert recovery['commands']==1 and recovery['halted']
+
+
+def test_reset_between_initial_intent_sample_and_halt_cannot_verify(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    original_halt=DurableOrderGateway.emergency_halt
+
+    def reset_then_halt(self):
+        emergency_intent.clear(self.path)
+        return original_halt(self)
+
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',reset_then_halt)
+    report=emergency_cut_tool.activate(tmp_path)
+
+    assert report['halted'] and report['emergency_intent_present']
+    assert not report['intent_preceded_durable_halt']
+    assert not report['passed']
+    assert report['emergency_cut_state']=='UNCONFIRMED'
 
 
 def test_transient_order_identity_observation_is_retried_without_reissuing_halt(

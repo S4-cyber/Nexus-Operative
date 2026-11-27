@@ -1,6 +1,7 @@
 import time
 import sqlite3
 from contextlib import closing
+from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 from nexus.app import app
@@ -41,6 +42,56 @@ def test_rejects_outdated_quote(tmp_path,monkeypatch):
     x=quote()
     x["received_at"]=time.time()-90
     with pytest.raises(ValueError):buy("BTC-USD",10,x)
+
+
+def test_sell_quote_expiring_during_ledger_audit_rolls_back(
+        tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    initialize(1000)
+    buy("BTC-USD",10,quote())
+    exit_quote=quote(bid=102,ask=103)
+    received=exit_quote["received_at"]
+    clock=[received+5]
+    monkeypatch.setattr(portfolio,"time",SimpleNamespace(time=lambda:clock[0]))
+    original=portfolio.verify_ledger
+
+    def age_quote_after_audit(db):
+        cash=original(db)
+        clock[0]=received+11
+        return cash
+
+    monkeypatch.setattr(portfolio,"verify_ledger",age_quote_after_audit)
+    before=state()
+
+    with pytest.raises(ValueError,match="^Quote too old$"):
+        sell("BTC-USD",exit_quote)
+
+    assert state()==before
+
+
+def test_sell_reserves_writer_before_position_snapshot(tmp_path,monkeypatch):
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(portfolio,"DB_BUSY_TIMEOUT_MS",50)
+    initialize(1000)
+    buy("BTC-USD",10,quote())
+    exit_quote=quote(bid=102,ask=103)
+    original=portfolio.check_quote
+    calls=[]
+
+    def interleave_second_seller(product,captured):
+        result=original(product,captured)
+        calls.append(True)
+        if len(calls)==2:
+            sell(product,captured)
+        return result
+
+    monkeypatch.setattr(portfolio,"check_quote",interleave_second_seller)
+    before=state()
+
+    with pytest.raises(ValueError,match="^PAPER_PORTFOLIO_DATABASE_BUSY$"):
+        sell("BTC-USD",exit_quote)
+
+    assert state()==before
 
 def test_registry_is_never_authorized():
     b=available_branches()

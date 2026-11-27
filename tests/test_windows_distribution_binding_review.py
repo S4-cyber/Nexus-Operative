@@ -16,24 +16,39 @@ def fixture(tmp_path):
     tmp_path.mkdir(parents=True, exist_ok=True)
     installer = tmp_path / f"NexusOperative-Setup-{VERSION}.exe"
     installer.write_bytes(b"installer distribution fixture")
+    standalone = tmp_path / "NexusOperative.exe"
+    standalone.write_bytes(b"standalone executable fixture")
+    standalone_digest = hashlib.sha256(standalone.read_bytes()).hexdigest()
     size, digest = review._installer(installer)
     phase = {
         "mode": "VERIFIED_INSTALLER_PHASE_EVIDENCE", "passed": True,
         "phases_verified": 10, "records_verified": 20, "version": VERSION,
         "source_commit": SOURCE, "installer_sha256": digest,
         "session_id": "12345678-1234-4234-8234-123456789abc",
+        "raw_phase_bytes": 456, "raw_phase_sha256": "e" * 64,
         "exact_source_bound": True, "installer_digest_bound": True, "single_session_bound": True,
         "sequence_complete": True, "timeouts_respected": True,
         "maximum_root_process_timeout_seconds": 300, "output_drain_timeout_seconds": 10,
         "maximum_observed_duration_seconds": 1, "native_windows_acceptance": False,
         "actual_broker_acceptance": False, "live_orders_enabled": False,
-        "money_movement_enabled": False, "release_approved": False, "limitations": "fixture",
+        "money_movement_enabled": False, "release_approved": False,
+        "limitations": review.PHASE_LIMITATIONS,
     }
+    phase_path = tmp_path / review.PHASE_REVIEW_NAME
+    phase_path.write_text(json.dumps(phase, sort_keys=True), encoding="utf-8")
+    phase_raw = phase_path.read_bytes()
     result_review = {
         "mode": "VERIFIED_INSTALLER_RESULT_EVIDENCE", "version": VERSION,
         "source_commit": SOURCE, "installer_sha256": digest,
+        "standalone_executable_sha256": standalone_digest,
+        "installed_executable_sha256": standalone_digest,
+        "reinstalled_executable_sha256": standalone_digest,
         "session_id": phase["session_id"], "raw_result_bytes": 123,
         "raw_result_sha256": "c" * 64, "maximum_root_process_timeout_seconds": 300,
+        "phase_review_bytes": len(phase_raw),
+        "phase_review_sha256": hashlib.sha256(phase_raw).hexdigest(),
+        "raw_phase_bytes": phase["raw_phase_bytes"],
+        "raw_phase_sha256": phase["raw_phase_sha256"],
         "output_drain_timeout_seconds": 10,
         "limitations": review.RESULT_LIMITATIONS,
         **{key: True for key in review.RESULT_TRUE},
@@ -42,12 +57,15 @@ def fixture(tmp_path):
     result_path = tmp_path / review.INSTALLER_RESULT_REVIEW_NAME
     result_path.write_text(json.dumps(result_review, sort_keys=True), encoding="utf-8")
     result_raw = result_path.read_bytes()
-    artifact = manifest([installer, result_path], VERSION, SOURCE)
+    artifact = manifest([installer, standalone, phase_path, result_path], VERSION, SOURCE)
     return installer, size, digest, phase, result_review, result_raw, artifact
 
 
 def verify(installer, size, digest, phase, result_review, result_raw, artifact):
+    phase_raw = json.dumps(phase, sort_keys=True).encode()
     return review.verify(phase, result_review, artifact,
+        phase_review_bytes=len(phase_raw),
+        phase_review_sha256=hashlib.sha256(phase_raw).hexdigest(),
         installer_result_bytes=len(result_raw),
         installer_result_sha256=hashlib.sha256(result_raw).hexdigest(),
         expected_version=VERSION, expected_source_commit=SOURCE,
@@ -64,10 +82,32 @@ def test_exact_phase_installer_and_manifest_binding_passes(tmp_path):
     assert result["passed"] and result["phase_evidence_bound"] and result["artifact_manifest_bound"]
     assert result["final_installer_rehashed"] and result["installer_sha256"] == parts[2]
     assert result["installer_result_review_bound"] and result["installer_result_semantics_bound"]
+    assert result["standalone_executable_sha256"] == parts[4]["standalone_executable_sha256"]
+    assert result["standalone_executable_manifest_bound"] is True
+    assert result["installed_executable_manifest_bound"] is True
+    assert result["reinstalled_executable_manifest_bound"] is True
     assert result["installer_result_session_id"] == parts[3]["session_id"]
+    assert result["phase_review_manifest_bound"] is True
+    assert result["phase_review_bytes"] == parts[4]["phase_review_bytes"]
+    assert result["phase_review_sha256"] == parts[4]["phase_review_sha256"]
     assert all(result[key] is False for key in (
         "native_windows_acceptance", "actual_broker_acceptance", "live_orders_enabled",
         "money_movement_enabled", "release_approved"))
+
+
+def test_substituted_phase_review_is_rejected_against_result_binding(tmp_path):
+    parts = list(fixture(tmp_path))
+    parts[3]["maximum_observed_duration_seconds"] = 314
+    with pytest.raises(review.DistributionBindingError, match="phase review binding"):
+        verify(*parts)
+
+
+def test_missing_or_changed_phase_review_manifest_entry_is_rejected(tmp_path):
+    parts = fixture(tmp_path)
+    parts[6]["artifacts"] = [entry for entry in parts[6]["artifacts"]
+        if entry["name"] != review.PHASE_REVIEW_NAME]
+    with pytest.raises(review.DistributionBindingError, match="phase review manifest binding"):
+        verify(*parts)
 
 
 @pytest.mark.parametrize("mutation", (
@@ -84,6 +124,8 @@ def test_exact_phase_installer_and_manifest_binding_passes(tmp_path):
     lambda phase, result, artifact: result.update(version="0.340.46"),
     lambda phase, result, artifact: result.update(source_commit="b" * 40),
     lambda phase, result, artifact: result.update(installer_sha256="b" * 64),
+    lambda phase, result, artifact: result.update(installed_executable_sha256="b" * 64),
+    lambda phase, result, artifact: result.update(reinstalled_executable_sha256="b" * 64),
     lambda phase, result, artifact: result.update(session_id="not-a-session"),
     lambda phase, result, artifact: result.update(first_run_paper_defaults=False),
     lambda phase, result, artifact: result.update(release_approved=True),
@@ -108,6 +150,23 @@ def test_missing_or_changed_result_review_manifest_entry_is_rejected(tmp_path):
     with pytest.raises(review.DistributionBindingError, match="result review manifest binding"):
         verify(*parts)
 
+
+def test_missing_or_changed_standalone_manifest_entry_is_rejected(tmp_path):
+    parts = fixture(tmp_path)
+    parts[6]["artifacts"] = [entry for entry in parts[6]["artifacts"]
+        if entry["name"] != "NexusOperative.exe"]
+    with pytest.raises(review.DistributionBindingError,
+            match="standalone manifest binding"):
+        verify(*parts)
+
+    parts = fixture(tmp_path / "changed-standalone")
+    entry = next(row for row in parts[6]["artifacts"]
+        if row["name"] == "NexusOperative.exe")
+    entry["sha256"] = "e" * 64
+    with pytest.raises(review.DistributionBindingError,
+            match="standalone manifest binding"):
+        verify(*parts)
+
     parts = fixture(tmp_path / "changed")
     entry = next(row for row in parts[6]["artifacts"]
         if row["name"] == review.INSTALLER_RESULT_REVIEW_NAME)
@@ -118,11 +177,11 @@ def test_missing_or_changed_result_review_manifest_entry_is_rejected(tmp_path):
 
 def test_cli_rehashes_final_installer_and_refuses_output_overwrite(tmp_path, monkeypatch):
     installer, _, digest, phase, result_review, result_raw, artifact = fixture(tmp_path)
-    phase_path = tmp_path / "phase.json"
+    phase_path = tmp_path / review.PHASE_REVIEW_NAME
     result_path = tmp_path / review.INSTALLER_RESULT_REVIEW_NAME
     manifest_path = tmp_path / "manifest.json"
     output = tmp_path / "binding.json"
-    phase_path.write_text(json.dumps(phase))
+    phase_path.write_text(json.dumps(phase, sort_keys=True))
     result_path.write_bytes(result_raw)
     manifest_path.write_text(json.dumps(artifact))
     monkeypatch.setattr("sys.argv", ["binding-review", "--phase-review", str(phase_path),

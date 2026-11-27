@@ -1,4 +1,5 @@
 """Installed-API coverage diagnostics are not a trial pass or permission."""
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -9,7 +10,9 @@ import pytest
 from fastapi.testclient import TestClient
 from nexus import trial_readiness as ready
 from nexus import forward_trial_review as trial
-from test_forward_trial_review import database,rewrite_first_outcome_decision,START
+from nexus.forward_trial_reconciliation import MAX_BUNDLE_BYTES
+from test_forward_trial_review import (database,rewrite_first_outcome_decision,
+    write_reconciliation_bundle,START)
 
 
 def snapshot(path,owner=None):
@@ -101,6 +104,227 @@ def test_readiness_preserves_unreconciled_modeled_execution_blocker_without_orde
     assert report['order_capacity']['journal_present'] is False
     assert not (tmp_path/'order_lifecycle.sqlite3').exists()
     assert snapshot(tmp_path)==before
+
+
+def test_explicit_reconciliation_bundle_binds_modeled_execution_without_authority(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',3600)
+    points=[(i,True) for i in range(0,3601,5)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release()
+    before=snapshot(tmp_path)
+
+    report=ready.build(path,hours=1,now=START+3600,
+        reconciliation_bundle=bundle_path)
+
+    review=report['review']
+    assert review['modeled_execution_events_in_window']==1
+    assert review['bundle_bound_modeled_execution_events_in_window']==1
+    assert review['unreconciled_modeled_execution_events_in_window']==0
+    assert review['reconciliation_bundle_sha256']==hashlib.sha256(
+        bundle_path.read_bytes()).hexdigest()
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' not in review[
+        'review_reasons']
+    assert review['operational_incidents_present'] is False
+    assert review['incident_free_coverage_target_met'] is True
+    assert all(report[key] is False and review[key] is False
+        for key in trial.FLAGS)
+    assert snapshot(tmp_path)==before
+
+
+def test_reconciliation_bundle_replacement_during_capacity_review_fails_closed(
+        tmp_path,monkeypatch):
+    points=[(i,True) for i in range(0,6)]
+    path=database(tmp_path,monkeypatch,[(points,trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'SELL')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    raw=bundle_path.read_bytes()
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release()
+    from nexus.durable_orders import DurableOrderGateway
+    original=DurableOrderGateway.recovery_report
+    def replace_bundle_after_retained_review(self):
+        result=original(self)
+        bundle_path.rename(tmp_path/'retired-reconciliation.json')
+        bundle_path.write_bytes(raw)
+        return result
+    monkeypatch.setattr(DurableOrderGateway,'recovery_report',
+        replace_bundle_after_retained_review)
+
+    with pytest.raises(ValueError,
+            match='^TRIAL_READINESS_FILE_SET_CHANGED$'):
+        ready.build(path,hours=1,now=START+3600,
+            reconciliation_bundle=bundle_path)
+
+
+def test_reconciliation_bundle_without_retained_history_is_not_credited(
+        tmp_path):
+    root=tmp_path/'unused';root.mkdir()
+    path=root/'paper_forward.sqlite3'
+    bundle_path=root/'trial-reconciliation.json'
+    bundle_path.write_bytes(b'{}')
+    before=snapshot(root)
+
+    with pytest.raises(ValueError,
+            match='^TRIAL_READINESS_BUNDLE_WITHOUT_HISTORY$'):
+        ready.build(path,hours=1,now=START+3600,
+            reconciliation_bundle=bundle_path)
+    assert snapshot(root)==before
+
+
+def test_oversized_reconciliation_bundle_is_rejected_before_composite_hashing(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    bundle_path.write_bytes(b'x'*(MAX_BUNDLE_BYTES+1))
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release()
+    before=snapshot(tmp_path)
+
+    with pytest.raises(ValueError,
+            match='^TRIAL_READINESS_RECONCILIATION_BUNDLE_CAP$'):
+        ready.build(path,hours=1,now=START+3600,
+            reconciliation_bundle=bundle_path)
+    assert snapshot(tmp_path)==before
+
+
+def test_reconciliation_bundle_growth_after_preflight_keeps_readiness_cap(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[([(0,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(tmp_path);owner.acquire();owner.release()
+    original=ready.check_existing
+    preflight_complete=False
+    def grow_after_preflight(candidate,maximum,prefix,**kwargs):
+        nonlocal preflight_complete
+        result=original(candidate,maximum,prefix,**kwargs)
+        if Path(candidate)==bundle_path and maximum==MAX_BUNDLE_BYTES and not preflight_complete:
+            preflight_complete=True
+            bundle_path.write_bytes(b'x'*(MAX_BUNDLE_BYTES+1))
+        return result
+    review_called=False
+    def reject_review(*args,**kwargs):
+        nonlocal review_called
+        review_called=True
+        raise AssertionError('oversized bundle reached semantic review')
+    monkeypatch.setattr(ready,'check_existing',grow_after_preflight)
+    monkeypatch.setattr(trial,'review',reject_review)
+
+    with pytest.raises(ValueError,
+            match='^TRIAL_READINESS_RECONCILIATION_BUNDLE_CAP$'):
+        ready.build(path,hours=1,now=START+3600,
+            reconciliation_bundle=bundle_path)
+    assert preflight_complete and not review_called
+
+
+def test_bundle_path_position_survives_windows_owner_normalization(
+        tmp_path,monkeypatch):
+    root=tmp_path/'unused';root.mkdir()
+    path=root/'paper_forward.sqlite3'
+    bundle_path=root/'trial-reconciliation.json';bundle_path.write_bytes(b'{}')
+    owner=root/'paper_forward.owner.lock'
+    normalized_owner=root/'PAPER_FORWARD.OWNER.LOCK'
+    original_resolve=Path.resolve
+    def windows_style_resolve(self,*args,**kwargs):
+        if self==owner:return normalized_owner
+        return original_resolve(self,*args,**kwargs)
+    observed={}
+    from contextlib import contextmanager
+    @contextmanager
+    def capture_scope(scope_root,paths,*,owner_index=None,history_index=0,
+            maximum_bytes=None,cap_codes=None):
+        observed.update(paths=paths,owner_index=owner_index,
+            maximum_bytes=maximum_bytes,cap_codes=cap_codes)
+        yield 'OWNER_PATH_ABSENCE_BOUND'
+    monkeypatch.setattr(Path,'resolve',windows_style_resolve)
+    monkeypatch.setattr(ready,'_readiness_scope',capture_scope)
+
+    with pytest.raises(ValueError,
+            match='^TRIAL_READINESS_BUNDLE_WITHOUT_HISTORY$'):
+        ready.build(path,hours=1,now=START+3600,
+            reconciliation_bundle=bundle_path)
+    assert observed['owner_index']==3
+    assert observed['paths'][3]==normalized_owner
+    assert observed['paths'][4]==bundle_path
+    assert observed['maximum_bytes'][4]==MAX_BUNDLE_BYTES
+    assert observed['cap_codes'][4]=='RECONCILIATION_BUNDLE_CAP'
+
+
+def test_bundle_requires_path_bound_order_gateway(tmp_path):
+    class Gateway:
+        def recovery_report(self):
+            raise AssertionError('unbound custom gateway must not be reviewed')
+    root=tmp_path/'unused';root.mkdir()
+    bundle_path=root/'trial-reconciliation.json';bundle_path.write_bytes(b'{}')
+
+    with pytest.raises(ValueError,match=(
+            '^TRIAL_READINESS_RECONCILIATION_REQUIRES_PATH_BOUND_GATEWAY$')):
+        ready.build(root/'paper_forward.sqlite3',hours=1,now=START+3600,
+            order_gateway=Gateway(),reconciliation_bundle=bundle_path)
+
+
+def test_reconciliation_bundle_cannot_resolve_outside_trial_root(
+        tmp_path,monkeypatch):
+    root=tmp_path/'trial';root.mkdir()
+    path=database(root,monkeypatch,[([(0,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    external=tmp_path/'external';external.mkdir()
+    external_bundle=external/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,external_bundle)
+    linked_bundle=root/'trial-reconciliation.json'
+    try:linked_bundle.symlink_to(external_bundle)
+    except OSError:pytest.skip('local filesystem cannot create file symlink')
+    from nexus.forward_ownership import ForwardOwnership
+    owner=ForwardOwnership(root);owner.acquire();owner.release()
+    review_called=False
+    original=trial.review
+    def observe_review(*args,**kwargs):
+        nonlocal review_called
+        review_called=True
+        return original(*args,**kwargs)
+    monkeypatch.setattr(trial,'review',observe_review)
+
+    with pytest.raises(ValueError,
+            match='^TRIAL_READINESS_STORAGE_ROOT_MISMATCH$'):
+        ready.build(path,hours=1,now=START+3600,
+            reconciliation_bundle=linked_bundle)
+    assert not review_called
+
+
+def test_order_gateway_path_cannot_resolve_outside_trial_root(tmp_path):
+    root=tmp_path/'trial';root.mkdir()
+    external=tmp_path/'external';external.mkdir()
+    external_order=external/'order_lifecycle.sqlite3'
+    linked_order=root/'order_lifecycle.sqlite3'
+    try:linked_order.symlink_to(external_order)
+    except OSError:pytest.skip('local filesystem cannot create file symlink')
+    recovery_called=False
+    class Gateway:
+        def _path(self):return linked_order
+        def recovery_report(self):
+            nonlocal recovery_called
+            recovery_called=True
+            raise AssertionError('outside-root journal reached recovery')
+
+    with pytest.raises(ValueError,
+            match='^TRIAL_READINESS_STORAGE_ROOT_MISMATCH$'):
+        ready.build(root/'paper_forward.sqlite3',hours=1,now=START+3600,
+            order_gateway=Gateway())
+    assert not recovery_called
 
 
 def test_retained_review_never_reopens_owner_marker_through_generic_guard(tmp_path,monkeypatch):

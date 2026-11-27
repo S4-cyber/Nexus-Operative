@@ -38,6 +38,10 @@ RECORD_KEYS = {
 SOURCE_COMMIT = re.compile(r"[0-9a-f]{40}")
 INSTALLER_SHA256 = re.compile(r"[0-9a-f]{64}")
 VERSION = re.compile(r"0\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
+PHASE_LIMITATIONS = (
+    "Successful CI phase-sequence review only. Timestamps and process results are runner-generated "
+    "evidence, not clean-machine, native-window, ordinary-user, broker, market, funds or release acceptance."
+)
 
 
 class PhaseEvidenceError(ValueError):
@@ -154,6 +158,8 @@ def verify(raw, *, expected_version, expected_source_commit, expected_installer_
         "source_commit": expected_source_commit,
         "installer_sha256": expected_installer_sha256,
         "session_id": session_id,
+        "raw_phase_bytes": len(raw),
+        "raw_phase_sha256": hashlib.sha256(raw).hexdigest(),
         "exact_source_bound": True,
         "installer_digest_bound": True,
         "single_session_bound": True,
@@ -167,10 +173,7 @@ def verify(raw, *, expected_version, expected_source_commit, expected_installer_
         "live_orders_enabled": False,
         "money_movement_enabled": False,
         "release_approved": False,
-        "limitations": (
-            "Successful CI phase-sequence review only. Timestamps and process results are runner-generated "
-            "evidence, not clean-machine, native-window, ordinary-user, broker, market, funds or release acceptance."
-        ),
+        "limitations": PHASE_LIMITATIONS,
     }
 
 

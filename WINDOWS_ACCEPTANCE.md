@@ -2,13 +2,15 @@
 
 ## Installer semantic-result evidence
 
-The distribution now includes `installer-result-review.json` alongside
+The distribution now includes `installer-phase-review.json` and
+`installer-result-review.json` alongside
 `artifact-manifest.json`, `distribution-binding-review.json`,
 `windows-owner-profile-probe.ps1` and `windows-owner-profile-review.py`. The
-inner manifest and distribution review bind the exact result-review bytes,
-digest, version, source commit, installer digest, phase session and required
-semantic assertions. Keep all files from one exact distribution together; do
-not substitute a result review from another run.
+inner manifest and distribution review bind the exact phase-review and
+result-review bytes and digests, version, source commit, installer digest,
+raw phase-log digest, phase session and required semantic assertions. Keep all
+files from one exact distribution together; do not substitute either review
+from another run.
 
 After generating the private ordinary-user probe, run the bundled reviewer with
 all shipped evidence inputs:
@@ -17,7 +19,7 @@ all shipped evidence inputs:
 $manifest = Get-Content -Raw .\artifact-manifest.json | ConvertFrom-Json
 $expectedVersion = [string]$manifest.version
 $expectedSourceCommit = [string]$manifest.source_commit
-python .\windows-owner-profile-review.py --probe .\owner-profile-probe.json --distribution-binding .\distribution-binding-review.json --installer-result-review .\installer-result-review.json --artifact-manifest .\artifact-manifest.json --distribution-envelope .\distribution-envelope.json --probe-tool .\windows-owner-profile-probe.ps1 --review-tool .\windows-owner-profile-review.py --expected-version $expectedVersion --expected-source-commit $expectedSourceCommit --output .\owner-profile-review.json
+python .\windows-owner-profile-review.py --probe .\owner-profile-probe.json --distribution-binding .\distribution-binding-review.json --installer-result-review .\installer-result-review.json --phase-review .\installer-phase-review.json --artifact-manifest .\artifact-manifest.json --distribution-envelope .\distribution-envelope.json --probe-tool .\windows-owner-profile-probe.ps1 --review-tool .\windows-owner-profile-review.py --expected-version $expectedVersion --expected-source-commit $expectedSourceCommit --output .\owner-profile-review.json
 ```
 
 This command validates a self-reported owner probe against the exact shipped

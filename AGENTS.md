@@ -1,4 +1,543 @@
 # Nexus Operative continuity instructions
+## v0.340.432 exact Windows phase evidence binding
+
+The Windows phase reviewer now binds the exact raw `installer-phases.jsonl`
+byte count and SHA-256. Result review binds the exact
+`installer-phase-review.json` bytes and carries the raw-log identity forward.
+The workflow ships and manifests that phase review; distribution and
+ordinary-user owner-profile review independently recheck its exact bytes,
+manifest entry and raw-log lineage. A semantically equivalent substituted
+phase review now fails closed.
+
+The raw JSONL remains separate diagnostic evidence and is not added to the
+public distribution. This closes a CI evidence-integrity gap only; it is not
+clean-machine, native-window, ordinary-user, power-loss, signing,
+broker/account/source, genuine-market, sustained-trial or release acceptance.
+No Portal button or editable parameter was added. Engagement and optional AI
+remain OFF by default; limits, account checks, reducing exits, fail-closed
+behavior, independent emergency stop, seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The roadmap
+estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
+## v0.340.431 installed executable identity binding
+
+The Windows installer smoke now hashes the exact standalone executable and
+requires both the first installed and reinstalled `NexusOperative.exe` to have
+the same SHA-256. It rechecks the standalone source after uninstall. Closed
+result evidence preserves all three equal digests, distribution review binds
+the public `NexusOperative.exe` manifest entry to that identity, and the
+ordinary-user owner-profile reviewer rechecks the full chain. Missing,
+changed, promoted or mismatched fields fail closed.
+
+This is exact CI artifact identity, not clean-machine, native-window,
+ordinary-user, power-loss, signing, broker/account/source, genuine-market,
+sustained-trial or release acceptance. No Portal button or editable parameter
+was added. Engagement and optional AI remain OFF by default; limits, account
+checks, reducing exits, fail-closed behavior, independent emergency stop,
+seven beginner-friendly tabs and black/bright-purple bottom-right hover help
+remain unchanged. The roadmap estimate remains exact 38% weighted (displayed
+about 40%, 30–45% low-confidence), with 0/9 stages independently accepted and
+no release or trading permission.
+
+
+## v0.340.430 replaced-owner POST interruption
+
+A pending paper POST reservation whose retained local owner marker identity was
+replaced now has one distinct, bounded reconciliation path. Ordinary
+interruption remains strict. The standalone operator command requires the exact
+pending token and chain head, proves the current and retained owner digests
+differ, requires explicit owner-replacement and uncertainty-preservation
+confirmations, appends at most one hash-chained interruption, and accepts a lost
+local acknowledgement only through two stable cold receipts under the
+replacement lease and exact journal identity.
+
+The private receipt is create-only and reserved before the journal append. It
+uses full-write, file-identity, size and durability checks; a failed receipt
+write can be retried only by cold-replaying the exact already-recorded token
+and previous head without another event. The Windows/source desktop allowlist
+exposes this bounded command as `--paper-tool post-interruption` without
+starting the UI, connecting a broker or reading credentials.
+
+The attempt becomes `INTERRUPTED_UNKNOWN` with unknown POST count, no
+request-after head, a full-day cooldown and review required. It cannot retry,
+re-arm, repair the owner or grant routing authority. Mandatory offline evidence
+also requires exact asset flag types, a final provider-owner reproof before
+POST, zero POST after owner loss and exact replaced-owner lost-ack replay.
+
+These are local injected fail-closed controls, not broker/account/source,
+genuine-market, sustained-trial, native Windows, installer, funding, live,
+cloud or release acceptance. No Portal button or editable parameter was added.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior, independent emergency stop, seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The roadmap estimate remains exact 38% weighted (displayed about
+40%, 30–45% low-confidence), with 0/9 stages independently accepted and no
+release or trading permission.
+
+
+## v0.340.429 execution-boundary authority
+
+The standalone emergency command now attempts and rechecks its independent
+durable latch even when the selected order-journal leaf is a symlink. The order
+gateway still refuses that unsafe leaf before SQLite mutation, while a running
+paper loop adopts the latch and stops before an in-flight quote can submit.
+
+The explicit one-shot Alpaca paper POST boundary now requires exact JSON text,
+boolean and numeric asset field types, so numeric lookalikes cannot satisfy
+eligibility. After the final credential sample and inside the serialized
+request guard, the original local provider-budget ownership lease is re-proved
+before the independent stop and provider opener. Late owner loss performs zero
+POSTs and leaves the lookup-only request plus pending local budget for explicit
+review, without owner reacquisition, repair, automatic retry or re-arming.
+
+These are local injected fail-closed controls, not broker/account/source,
+genuine-market, sustained-trial, native Windows, installer, funding, live,
+cloud or release acceptance. No Portal button or editable parameter was added.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior, independent emergency stop, seven
+beginner-friendly tabs and black/bright-purple bottom-right hover help remain
+unchanged. The roadmap estimate remains exact 38% weighted (displayed about
+40%, 30–45% low-confidence), with 0/9 stages independently accepted and no
+release or trading permission.
+
+Local verification passed the complete deterministic regression at 7,172
+tests with four expected platform skips and the existing Starlette/httpx
+deprecation warning. The focused execution-boundary suite passed 196 tests;
+the release/version/roadmap/evidence/workflow focus passed 227 with two
+platform skips; and independent review passed 207 without finding a safety
+bypass. All 16/16 bounded offline profiles revalidated against 437 source
+inputs at
+`0f2b3e654394bccb3eb943e92869a1593d9730fe2a9f0aa6b6128a4eea3e6efb`;
+the saved report SHA-256 is
+`09f24be14ccbd7ec5c3bceb08702449a72a962696af966880e6d575890d6bf74`.
+Compilation, dependency integrity, deterministic roadmap equality, Portal
+JavaScript syntax and all 35 CI-inventory checks passed. A clean isolated wheel
+install reported v0.340.429 with no broken requirements; the 170-member wheel
+SHA-256 is
+`bab75fd3680b73be9366f928ed39d80859afb482dd8f95a7197dc0df53afc0db`.
+These local and synthetic checks do not replace fresh exact-source hosted
+security, Windows-regression, browser/help, installer, broker-paper account or
+sustained-market acceptance.
+
+
+
+## v0.340.428 paper open-order admission fence
+
+The explicit one-shot Alpaca paper POST boundary now samples the fixed
+open-orders endpoint at initial preflight, repeated pre-reservation review and
+final post-reservation review. Each response must be an exact bounded,
+account-consistent empty collection. An initial or repeated-preflight order
+fails before either durable attempt reservation. A post-reservation order
+retains the lookup-only request marker, closes the shared local provider budget
+as NOT_SENT with zero actual POSTs and cannot re-arm automatically.
+
+Reported terms are deliberately not converted into available capacity. The
+three reads are sequential, not atomic provider snapshots, provider hold
+reconciliation or spendable-funds proof. This is local injected fail-closed
+evidence, not broker/account/source, genuine-market, sustained-trial, native
+Windows, funding, live, cloud or release acceptance. No Portal button or
+editable parameter was added. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior,
+independent emergency stop, seven beginner-friendly tabs and black/bright-
+purple bottom-right hover help remain unchanged. The roadmap estimate remains
+exact 38% weighted (displayed about 40%, 30–45% low-confidence), with 0/9
+stages independently accepted and no release or trading permission.
+
+
+## v0.340.427 order-journal leaf identity
+
+Every mutable order journal is now bound to one regular, single-link public
+leaf and its exact SQLite main attachment. Safe first creation uses an
+exclusive no-follow open. Existing symlink and hardlink aliases refuse before
+schema or command mutation, and the retained leaf is sampled after replay,
+before each command and immediately before commit. A public-path replacement
+therefore rolls back instead of acknowledging a command on retired evidence.
+The standalone emergency cut also cannot mutate a hardlinked external journal.
+
+Hosted predecessor run `45936468426` exposed two POSIX-only open-SQLite
+replacement fixtures on Windows. They now skip only where Windows itself
+denies the fixture mutation; the production guard remains exercised by its
+portable alias tests and exact-source hosted regression is still mandatory.
+
+Cancellation, expiry and emergency halt remain journal-only safety writes and
+do not gain a portfolio dependency. This is sampled local filesystem integrity,
+not an administrator-proof or continuously atomic lease, broker/account/source
+acceptance, genuine-market or sustained-trial acceptance, native Windows,
+funding, live, cloud or release approval. No Portal control or editable
+parameter was added. Engagement and optional AI remain OFF by default; limits,
+account checks, reducing exits, fail-closed behavior, seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate stays exact 38% weighted (displayed about 40%,
+30–45% low-confidence), with 0/9 stages independently accepted and no release
+or trading permission.
+
+
+## v0.340.426 storage-boundary truthfulness
+
+Ordinary linked-portfolio writes now reject symlink, non-regular and hardlinked
+public leaves before attachment, require the exact resolved SQLite attachment,
+and sample the original single-link file identity through schema, comparison,
+fill mutation and immediately before commit. An observed public-leaf
+replacement after attachment therefore fails closed. Cancellation, expiry and independent emergency halt remain
+journal-only and do not attach the portfolio.
+
+Clipped retained-trial coverage now includes every accepted interval support
+endpoint in event, incident and modeled-execution reconciliation accounting. A
+BUY or SELL immediately outside the requested timestamps can no longer supply
+coverage while disappearing from the incident fence. The standalone emergency
+command also rechecks the exact initially sampled latch after its single durable
+halt attempt; concurrent clear or replacement keeps the halt but invalidates
+`VERIFIED` ordering evidence without retrying or undoing the stop.
+
+These are local fail-closed integrity improvements, not broker, account, source,
+genuine-market, sustained-trial, native Windows, funding, live, cloud or release
+acceptance. No Portal control or editable parameter was added. Engagement and
+optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior, seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate stays
+exact 38% weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
+
+## v0.340.425 durable reconciliation truthfulness
+
+Linked order and portfolio recovery now compare every retained fill by exact
+order/event identity, action, product, quantity, price and fee in addition to
+the aggregate account snapshot. Missing, extra, renamed, duplicate or unequal
+fills fail cold recovery, session snapshots and ordinary linked mutation before
+new side effects. Retained linked lifecycle fills without priced execution
+evidence also fail replay. Cancellation, expiry and the independent emergency
+halt no longer attach the portfolio for safety-only writes, and halt
+confirmation cold-replays only the exact journal, so portfolio disagreement or
+unavailability cannot make these protective actions dependent on accounting.
+
+Retained exchange-admission rows without their session head now report explicit
+integrity failure instead of appearing as legacy absence. Cold feed recovery
+also rejects admission rows whose session is missing, and canonical non-object
+admission payloads now produce bounded integrity failure. The forward-trial
+evidence snapshot digest also includes the already bounded and rechecked main
+database SHA-256, so retained-byte changes that alter diagnostics alter the
+digest without a second read. These are local integrity fences, not broker,
+account, source, genuine-market, sustained-trial, native Windows, funding, live,
+cloud or release acceptance. No Portal control or editable parameter was added.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior, seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+Local verification completed 16/16 bounded offline profiles and independent
+saved-evidence revalidation against 437 source inputs at
+`9c8f7dd73605c2e7a8f0a75fdbc74a85aa608efa208af4751d909f60c33ea6ce`;
+the saved report SHA-256 is
+`2d8120335c430b67e2c87892241790d502061e5f017094aca2fdd71d2de41f0f`.
+The six affected modules passed 295 tests, and the final lock-independence
+focus passed three tests. The complete deterministic shards passed 3,564 and
+3,571 tests respectively, with four total expected platform skips and the
+existing Starlette/httpx deprecation warning. Compilation, dependency
+integrity, deterministic roadmap output, Portal syntax, 14 Node controllers
+and all 35 CI-inventory checks passed. A clean wheel install reported
+v0.340.425; its 170-member SHA-256 is
+`7d8e816f25cd2cb3ddd96dde9dd0848750b7e2a660e7cb920a7d47a7dd19375c`.
+These local and synthetic checks do not replace exact-source hosted Windows,
+installer, browser or security gates.
+
+
+## v0.340.424 reducing-exit and authority truthfulness fences
+
+Direct paper-ledger reducing SELL admission now owns SQLite's writer reservation
+before reading ledger or position state, then revalidates the same captured
+public quote immediately before accounting mutation. Competing exits cannot
+both credit one position. If the quote expires during the ledger audit, the
+transaction rolls back without changing cash, position, event history or the
+ledger seal. The protected check performs no provider I/O, refetch or retry.
+A fresh quote still permits the reducing exit, including while the independent
+emergency cut restricts new entry.
+
+The read-only admission-authority inventory now validates each source
+declaration against one exact reviewed contract for its ID, scope, routes,
+default, gates, automatic-start/resume flags and reducing-exit semantics.
+Duplicate route ownership fails closed, and top-level default and automatic
+claims are derived only from validated rows. Saved offline release evidence
+must reproduce those same exact current public authority rows before it can
+reverify. This grants no authority and is
+not broker, account, source, genuine-market, sustained-trial, native Windows,
+funding, live, cloud or release acceptance. No Portal button or editable
+parameter was added. Engagement and optional AI remain OFF by default; limits,
+account checks, fail-closed behavior, seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
+## v0.340.423 explicit Trial Readiness reconciliation composition
+
+Trial Readiness can now consume one explicitly supplied, privacy-safe local
+forward-trial reconciliation bundle. The bundle shares one canonical same-root,
+distinct-path fence with retained history, durable orders, linked portfolio and
+the owner marker. Existing non-owner files are identity/fingerprint sampled
+before and after the composite review, while the owner marker stays protected by
+its retained lease. The bundle's dedicated 8 MiB limit is enforced at preflight,
+initial sampling and final verification.
+
+A bundle without retained history, or one paired with a custom order gateway
+that cannot expose its durable journal path, fails closed. Omitting the bundle
+preserves the existing unreconciled-modeled-execution blocker. An exact bundle
+can bind locally modeled BUY/SELL events, but it cannot attest source, broker,
+account, funds, market realism, sustained operation, live readiness or release
+acceptance. No Portal button, editable field, query parameter or automatic
+private-evidence discovery was added. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain intact. Seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
+## v0.340.422 final emergency journal identity fence
+
+The standalone local-paper emergency command now performs one final read-only
+comparison against the exact public journal identity captured before its cold
+replays, then rechecks the data-root identity. If the replayed journal is
+replaced or becomes unobservable while the original root remains pinned, or
+the root is displaced during that final journal observation,
+durable confirmation is cleared and the command returns `UNCONFIRMED`. It does
+not issue another halt, reset, retry or writer lock. Existing displaced-root
+history remains visible but cannot produce `VERIFIED`.
+
+A real disposable SQLite regression swaps in a separately initialized,
+unhalted zero-command journal during the final latch sample and verifies the
+replacement remains unmodified. This is sampled offline local emergency
+evidence, not an atomic cross-process lease, native Windows/installer,
+broker-paper, sustained-trial, funding, cloud, live or release acceptance.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and the independent emergency stop remain
+intact. No button or editable parameter was added, so seven beginner-friendly
+tabs and black/bright-purple bottom-right hover help remain unchanged. The
+read-only roadmap estimate remains exact 38% weighted (displayed about 40%,
+30–45% low-confidence), with 0/9 stages independently accepted and no release
+or trading permission.
+
+## v0.340.421 optional Windows artifact birth time
+
+Exact development-branch Windows run `45807905265` first failed artifact
+verification and then cascaded through other artifact consumers. The run did
+not retain field-level stat observations, so its exact metadata cause remains
+unverified. Local reproduction identified a matching compatibility failure:
+Python documents `st_birthtime_ns` as optional, while the verifier required a
+compatible path/open-descriptor pair. Windows cross-source identity now keeps
+device, file index, size, modification time and link count mandatory, compares
+birth time only when both samples expose exact integers, and rejects malformed
+exposed or unequal available values.
+
+The initial pathname observation is retained separately and every later path
+sample must preserve same-source metadata and any available birth time. Same-
+source descriptor stability, regular-file and single-link checks, retained
+handles, directory pinning and both complete SHA-256 passes remain strict.
+Deterministic component regressions model path birth time present and
+descriptor birth time absent while their cross-source ctime meanings differ,
+plus pathname-only metadata changes after open. The runtime dependency floor
+also moves from the advisory-
+affected `cryptography` 47.x resolution to the 50.x line. Nexus uses AES-GCM
+and scrypt; focused compatibility tests and a clean dependency audit are
+required. This is local compatibility evidence pending an exact hosted
+Windows pass, not Windows/installer acceptance, signing, provenance,
+independent security clearance, broker/
+account/source or sustained-trial acceptance, performance, profitability,
+funding, cloud or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, reducing exits, fail-closed behavior and the
+independent emergency stop remain intact. No button or editable parameter was
+added, so seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The read-only roadmap estimate remains exact 38%
+weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
+## v0.340.420 final direct paper BUY emergency fence
+
+Direct paper-portfolio BUY admission now samples the independently writable
+durable emergency latch both before and after exact captured-quote
+revalidation. The first sample preserves emergency refusal priority when both
+the cut and quote refusal are already present. The final sample is the last
+fallible guard before the first accounting read or mutation, so a cut asserted
+during quote validation rolls back without a position, cash delta, position
+event or seal. The protected checks perform no market fetch or retry; tier-OFF
+ordering remains intact and reducing SELL exits remain available.
+
+A deterministic regression asserts the durable cut from inside the second
+exact-quote validation and requires the initialization-only ledger to remain.
+This is bounded same-host fail-closed ordering, not distributed atomicity,
+provider/account/source or broker acceptance, genuine-market or sustained-
+trial acceptance, performance, profitability, funding, cloud, Windows/
+installer or release approval. Engagement and optional AI remain OFF by
+default; limits, account checks, fail-closed behavior and exits remain intact.
+No button or editable parameter was added, so the seven beginner-friendly tabs
+and black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45% low-
+confidence), with 0/9 stages independently accepted and no release or trading
+permission.
+
+## v0.340.419 direct paper BUY post-wait quote freshness
+
+Direct paper-portfolio BUY admission now revalidates the exact captured
+read-only public quote after acquiring its portfolio and settings writer
+reservations, verifying the exact ledger and sampling the independent emergency
+latch. Only the post-wait validated ask enters quantity and cash accounting. A
+quote that was fresh at route admission but ages beyond the existing ten-second
+limit during contention now refuses and rolls back without a position, cash
+delta, position event or seal. The protected check performs no second market
+fetch and no retry; emergency refusal remains higher priority, tier-OFF ordering
+remains intact, and reducing SELL exits remain available.
+
+A deterministic synthetic-clock regression advances the quote during the
+protected ledger audit and requires the initialization-only ledger to remain.
+This is bounded local freshness enforcement, not provider/account/source
+acceptance, genuine-market or sustained-trial acceptance, performance,
+profitability, funding, cloud, Windows/installer or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed behavior and exits remain intact. No button or editable parameter
+was added, so the seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate
+remains exact 38% weighted (displayed about 40%, 30–45% low-confidence), with
+0/9 stages independently accepted and no release or trading permission.
+
+## v0.340.418 direct paper BUY emergency-latch checkpoint
+
+Direct paper-portfolio BUY admission now resamples the independently writable
+durable emergency latch after acquiring its portfolio and settings writer
+reservations and verifying the exact ledger, but before the first accounting
+mutation. A standalone cut asserted while the BUY waits therefore refuses the
+entry and rolls back without a new position, cash delta, position event or
+seal. The latch takes neither database guard, the v0.340.417 tier-OFF ordering
+remains intact, and reducing SELL exits remain available.
+
+A threaded real-SQLite regression forces the cut after both writers are held.
+This is one bounded same-host stop sample, not atomic distributed coordination,
+broker/account/source acceptance, genuine-market or sustained-trial acceptance,
+performance, profitability, funding, cloud, Windows/installer or release
+approval. Engagement and optional AI remain OFF by default; limits, account
+checks, fail-closed behavior and exits remain intact. No button or editable
+parameter was added, so the seven beginner-friendly tabs and black/bright-
+purple bottom-right hover help remain unchanged. The read-only roadmap estimate
+remains exact 38% weighted (displayed about 40%, 30–45% low-confidence), with
+0/9 stages independently accepted and no release or trading permission.
+
+## v0.340.417 direct paper BUY tier-OFF commit fence
+
+The direct paper-portfolio BUY path now carries its selected tier into the
+durable ledger transaction. After the portfolio writer reservation and exact
+ledger-governor audit, it acquires the same bounded settings-database writer
+reservation used by linked fills. An OFF or cap change that commits first is
+therefore observed and refuses the position. If the BUY owns both writer
+reservations first, OFF cannot acknowledge until the position, cash delta,
+position event and transaction seal commit atomically. The route's earlier
+permission check remains only a fail-fast preflight; the in-transaction guard
+is authoritative.
+
+Two threaded real-SQLite regressions force both orderings and verify the
+resulting durable portfolio plus final OFF state. The linked gateway fence from
+v0.340.416 remains intact, while reducing SELL exits and the independent
+emergency latch do not acquire the tier guard. This is cooperating local
+transaction ordering, not broker/account/source acceptance, genuine-market or
+sustained-trial acceptance, distributed coordination, performance,
+profitability, funding, cloud, Windows/installer or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+fail-closed behavior and exits remain intact. No button or editable parameter
+was added, so the seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate
+remains exact 38% weighted (displayed about 40%, 30–45% low-confidence), with
+0/9 stages independently accepted and no release or trading permission.
+
+
+
+## v0.340.416 tier-OFF durable BUY commit fence
+
+A linked durable BUY fill now holds a bounded SQLite writer reservation on the
+paper settings database from its authoritative tier/cap snapshot through the
+order-journal and attached-portfolio commit. An OFF or cap change that commits
+first is observed and refuses the BUY without a new position. A BUY that wins
+the reservation commits both durable stores before OFF can acknowledge. Cold
+replay verifies both order and linked-portfolio outcomes, and subsequent BUYs
+remain refused after OFF.
+
+The guard applies only to non-idempotent linked BUY fills. Reducing SELL exits
+and the independent emergency latch do not acquire it. This is cooperating
+same-settings-database transaction ordering, not broker/account/source
+acceptance, genuine-market or sustained-trial acceptance, distributed
+coordination, performance, profitability, funding, cloud, Windows/installer or
+release approval. Engagement and optional AI remain OFF by default; limits,
+account checks, fail-closed behavior and exits remain intact. No button or
+editable parameter was added, so the seven beginner-friendly tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
+
+## v0.340.415 Windows artifact stat coherence
+
+Hosted Windows run 45807797630 exposed 92 false artifact-integrity rejections
+because CPython can report path-based `stat().st_ctime_ns` as file creation
+time while descriptor-based `fstat().st_ctime_ns` reports metadata change
+time for the same NTFS file. Distribution verification now separates
+same-source stability from path-to-handle identity. Descriptor samples still
+bind device, file index, size, modification time, change time and link count.
+Only the cross-source Windows comparison substitutes `st_birthtime_ns` for
+the incompatible ctime field, while preserving device, file index, size,
+modification time, link count, retained handles and two complete SHA-256
+passes. Synthetic regressions reject changes to every retained compatibility
+field.
+
+This is offline distribution-integrity and hosted-Windows compatibility
+hardening, not native installer/profile/ACL/power-loss acceptance, signing,
+provenance, broker/account/source acceptance, genuine-market or sustained-trial
+acceptance, performance, profitability, funding, cloud or release approval.
+Engagement and optional AI remain OFF by default; limits, account checks,
+reducing exits, fail-closed behavior and independent emergency-stop access are
+unchanged. No button or editable parameter was added, so the seven tabs and
+black/bright-purple bottom-right hover help remain unchanged. The read-only
+roadmap estimate remains exact 38% weighted (displayed about 40%, 30–45%
+low-confidence), with 0/9 stages independently accepted and no release or
+trading permission.
+
+
+## v0.340.414 typed paper-POST transport fence
+
+The disconnected single-attempt Alpaca paper boundary now requires an
+OFF-by-default, one-shot typed local credential/permission lease. Opaque caller
+callbacks finish before that lease and the marked request's SQLite writer-
+exclusion snapshot are acquired. Cooperating local credential/permission
+revocation and request-head writers therefore linearize before or after
+synchronous opener entry instead of racing between ordered callbacks. The
+independent emergency stop shares neither guard and is sampled last; a durable
+cut observed before opener entry consumes the authorization and request as
+`NOT_SENT` with zero POSTs and cannot re-arm automatically. Threaded release
+regressions make these local ordering guarantees mandatory.
+
+The final edge uses an explicitly confirmed canonical owner runtime/order path,
+not a path inferred from broker evidence storage. After opaque callbacks it
+rechecks both originally pinned store identities, exact reservation state and a
+callback-free trusted monotonic deadline before reading that bound durable stop.
+
+This is cooperating local linearization plus a sampled stop, not atomic or
+distributed broker coordination. Provider-side credential revocation,
+non-cooperating writers, other hosts and a stop asserted after the last sample
+are not atomically excluded. It is not broker/account/source, genuine-market,
+sustained-trial, performance, profitability, funding, cloud, Windows/installer
+or release acceptance. Engagement and optional AI remain OFF by default;
+limits, account checks, reducing exits, fail-closed behavior and the independent
+emergency-stop path remain unchanged. No button or editable parameter was
+added, so the seven beginner-friendly tabs and black/bright-purple bottom-right
+hover help remain unchanged. The read-only roadmap estimate stays exact 38%
+weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
 ## v0.340.413 durable final-halt reserve
 
 Durable order admission now preserves one final appendable command slot for

@@ -180,6 +180,245 @@ def test_paper_ledger_buy_requires_selected_engaged_tier(tmp_path,monkeypatch):
     assert c.post("/api/paper/portfolio/sell",json={"product":"BTC-USD"}).status_code==200
     c.post("/api/portal",json={"enabled":False})
 
+
+def test_tier_off_committed_during_direct_buy_vetoes_ledger_commit(
+        tmp_path,monkeypatch):
+    """An OFF commit between route admission and ledger mutation must win."""
+    import threading
+    from nexus import portfolio_governor
+
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",
+                       json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+
+    admitted=threading.Event();release=threading.Event()
+    original=portfolio_governor.require_safe_ledger
+
+    def hold_after_ledger_writer_reservation(db):
+        admitted.set()
+        assert release.wait(2)
+        return original(db)
+
+    monkeypatch.setattr(portfolio_governor,"require_safe_ledger",
+                        hold_after_ledger_writer_reservation)
+    result={}
+    worker=threading.Thread(target=lambda:result.update(response=client.post(
+        "/api/paper/portfolio/buy",json={"product":"BTC-USD","notional":10,
+                                         "tier":"terrestrial"})))
+    worker.start()
+    try:
+        assert admitted.wait(2)
+        configure("terrestrial",False)
+    finally:
+        release.set()
+        worker.join(2)
+    assert not worker.is_alive()
+    assert result["response"].status_code==422
+    assert result["response"].json()=={"detail":"RISK_TIER_DISENGAGED"}
+    snapshot=client.get("/api/paper/portfolio").json()
+    assert snapshot["positions"]==[] and snapshot["event_count"]==1
+
+
+def test_direct_buy_writer_reservation_holds_tier_permission_until_commit(
+        tmp_path,monkeypatch):
+    """Once BUY owns both writers, OFF waits for its durable commit."""
+    import threading
+    from nexus import paper_portfolio
+
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",
+                       json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+
+    writers_held=threading.Event();release=threading.Event()
+    disable_started=threading.Event();disable_finished=threading.Event()
+    original=paper_portfolio.verify_ledger
+
+    def hold_with_both_writer_reservations(db):
+        writers_held.set()
+        assert release.wait(2)
+        return original(db)
+
+    monkeypatch.setattr(paper_portfolio,"verify_ledger",
+                        hold_with_both_writer_reservations)
+    result={}
+    buyer=threading.Thread(target=lambda:result.update(response=client.post(
+        "/api/paper/portfolio/buy",json={"product":"BTC-USD","notional":10,
+                                         "tier":"terrestrial"})))
+
+    def disable():
+        disable_started.set()
+        configure("terrestrial",False)
+        disable_finished.set()
+
+    buyer.start()
+    disabler=None
+    try:
+        assert writers_held.wait(2)
+        disabler=threading.Thread(target=disable);disabler.start()
+        assert disable_started.wait(2)
+        assert not disable_finished.wait(.1)
+    finally:
+        release.set()
+        buyer.join(2)
+        if disabler is not None:disabler.join(2)
+    assert not buyer.is_alive() and not disabler.is_alive()
+    assert result["response"].status_code==200
+    assert disable_finished.is_set()
+    assert not next(row for row in current()["tiers"]
+                    if row["tier"]=="terrestrial")["enabled"]
+    snapshot=client.get("/api/paper/portfolio").json()
+    assert len(snapshot["positions"])==1 and snapshot["event_count"]==2
+
+
+def test_direct_buy_quote_expiring_during_writer_wait_rolls_back(
+        tmp_path,monkeypatch):
+    """A quote that ages out while both BUY writers are held cannot commit."""
+    from nexus import paper_portfolio
+
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    clock={"now":100.0}
+    monkeypatch.setattr(paper_portfolio.time,"time",lambda:clock["now"])
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":100.0,
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",
+                       json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+
+    original=paper_portfolio.verify_ledger
+
+    def age_quote_after_protected_ledger_audit(db):
+        cash=original(db)
+        clock["now"]=111.0
+        return cash
+
+    monkeypatch.setattr(paper_portfolio,"verify_ledger",
+                        age_quote_after_protected_ledger_audit)
+    response=client.post("/api/paper/portfolio/buy",json={
+        "product":"BTC-USD","notional":10,"tier":"terrestrial"})
+
+    assert response.status_code==422
+    assert response.json()=={"detail":"Quote too old"}
+    snapshot=client.get("/api/paper/portfolio").json()
+    assert snapshot["positions"]==[] and snapshot["event_count"]==1
+
+
+def test_direct_buy_cut_during_quote_revalidation_rolls_back(
+        tmp_path,monkeypatch):
+    """A cut published inside the protected quote check must veto the BUY."""
+    from nexus import emergency_intent,paper_portfolio
+
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public",
+           "received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",
+                       json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+
+    original=paper_portfolio.check_quote
+    calls={"count":0}
+
+    def publish_cut_after_protected_quote_validation(product,value):
+        result=original(product,value)
+        calls["count"]+=1
+        if calls["count"]==2:
+            emergency_intent.path(
+                backend.research_order_gateway._path()).write_bytes(
+                    emergency_intent.RECORD)
+        return result
+
+    monkeypatch.setattr(paper_portfolio,"check_quote",
+                        publish_cut_after_protected_quote_validation)
+    response=client.post("/api/paper/portfolio/buy",json={
+        "product":"BTC-USD","notional":10,"tier":"terrestrial"})
+
+    assert calls["count"]==2
+    assert response.status_code==409
+    assert response.json()=={"detail":"EMERGENCY_CUT_INTERRUPTED_TRADE"}
+    snapshot=client.get("/api/paper/portfolio").json()
+    assert snapshot["positions"]==[] and snapshot["event_count"]==1
+    assert emergency_intent.requested(backend.research_order_gateway._path())
+
+
+def test_standalone_cut_during_direct_buy_vetoes_ledger_commit(
+        tmp_path,monkeypatch):
+    """A durable cut asserted after both BUY writer reservations must win."""
+    import threading
+    from nexus import emergency_intent,paper_portfolio
+
+    monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))
+    monkeypatch.setattr(backend,"_paused",False)
+    monkeypatch.setattr(backend,"_halted",False)
+    monkeypatch.setattr(backend,"_cut_confirmed",False)
+    quote={"product":"BTC-USD","read_only":True,"orders_allowed":False,
+           "provider":"coinbase_exchange_public","received_at":__import__("time").time(),
+           "bid":100.0,"ask":100.05}
+    monkeypatch.setattr(backend,"read_ticker",lambda product:dict(quote))
+    client=TestClient(app)
+    assert client.post("/api/paper/portfolio/init",
+                       json={"paper_capital":10000}).status_code==200
+    configure("terrestrial",True)
+
+    writers_held=threading.Event();release=threading.Event()
+    original=paper_portfolio.verify_ledger
+
+    def hold_with_both_writer_reservations(db):
+        writers_held.set()
+        assert release.wait(2)
+        return original(db)
+
+    monkeypatch.setattr(paper_portfolio,"verify_ledger",
+                        hold_with_both_writer_reservations)
+    result={}
+    buyer=threading.Thread(target=lambda:result.update(response=client.post(
+        "/api/paper/portfolio/buy",json={"product":"BTC-USD","notional":10,
+                                         "tier":"terrestrial"})))
+    buyer.start()
+    try:
+        assert writers_held.wait(2)
+        intent_path=emergency_intent.path(backend.research_order_gateway._path())
+        intent_path.write_bytes(emergency_intent.RECORD)
+    finally:
+        release.set()
+        buyer.join(2)
+    assert not buyer.is_alive()
+    assert result["response"].status_code==409
+    assert result["response"].json()=={
+        "detail":"EMERGENCY_CUT_INTERRUPTED_TRADE"}
+    snapshot=client.get("/api/paper/portfolio").json()
+    assert snapshot["positions"]==[] and snapshot["event_count"]==1
+    assert emergency_intent.requested(backend.research_order_gateway._path())
+
 def test_emergency_cut_keeps_reducing_paper_exit_available(tmp_path,monkeypatch):
     from nexus import emergency_intent
     monkeypatch.setenv("NEXUS_PORTABLE_DATA",str(tmp_path))

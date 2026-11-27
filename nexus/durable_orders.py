@@ -11,7 +11,7 @@ import math
 import os
 import sqlite3
 import stat
-from contextlib import closing, contextmanager
+from contextlib import ExitStack, closing, contextmanager
 from decimal import Decimal
 from pathlib import Path
 from nexus.order_gateway import OrderGateway
@@ -26,6 +26,7 @@ MAX_PORTFOLIO_SNAPSHOT_ROWS = MAX_RETAINED_COMMANDS*4+256
 DB_BUSY_TIMEOUT_MS = 10_000
 ROTATION_MARKER = 'nexus-order-rotation.intent'
 METHODS = frozenset(('submit', 'submit_reducing', 'simulate_event', 'cancel', 'emergency_halt', 'reset', 'initialize_account', 'simulate_priced_fill', 'link_portfolio', 'set_execution_terms', 'expire_order', 'simulate_quote_fill', 'expire_due', 'archive_terminal', 'bind_replacement_epoch'))
+SAFETY_METHODS = frozenset(('emergency_halt','cancel','expire_order','expire_due'))
 MAX_COMMAND_ARGUMENT_NODES = 1024
 MAX_COMMAND_ARGUMENT_DEPTH = 16
 
@@ -120,6 +121,75 @@ class _OrderRootIdentity:
             raise ValueError('ORDER_STORAGE_ROOT_CHANGED')
 
 
+class _MutableOrderLeaf:
+    """Retain one regular, single-link journal leaf across a write."""
+    def __init__(self,path,root_guard):
+        self.path=Path(path);self.root_guard=root_guard
+        root_guard.require_current()
+        try:observed=self.path.lstat()
+        except FileNotFoundError:
+            flags=os.O_RDWR|os.O_CREAT|os.O_EXCL
+            flags|=getattr(os,'O_NOFOLLOW',0)|getattr(os,'O_BINARY',0)
+            try:fd=os.open(self.path,flags,0o600)
+            except FileExistsError:
+                observed=self._observe()
+            except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+            else:
+                try:
+                    opened=os.fstat(fd)
+                    observed=self._observe()
+                    if not os.path.samestat(opened,observed):
+                        raise ValueError('ORDER_HISTORY_CHANGED')
+                finally:os.close(fd)
+        self._require_valid(observed)
+        try:resolved=self.path.resolve(strict=True)
+        except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+        after=self._observe()
+        self._require_valid(after)
+        if not os.path.samestat(observed,after):
+            raise ValueError('ORDER_HISTORY_CHANGED')
+        root_guard.require_current()
+        self.observed=observed;self.resolved=resolved
+
+    def _observe(self):
+        try:return self.path.lstat()
+        except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+
+    @staticmethod
+    def _require_valid(observed):
+        if stat.S_ISLNK(observed.st_mode):raise ValueError('ORDER_HISTORY_SYMLINK')
+        if not stat.S_ISREG(observed.st_mode):
+            raise ValueError('ORDER_HISTORY_REGULAR_FILE_REQUIRED')
+        if observed.st_nlink!=1:raise ValueError('ORDER_HISTORY_SINGLE_LINK_REQUIRED')
+
+    def require_current(self):
+        self.root_guard.require_current()
+        current=self._observe()
+        if (stat.S_ISLNK(current.st_mode) or not stat.S_ISREG(current.st_mode) or
+                current.st_nlink!=1 or
+                not os.path.samestat(self.observed,current)):
+            raise ValueError('ORDER_HISTORY_CHANGED')
+        try:resolved=self.path.resolve(strict=True)
+        except OSError:raise ValueError('ORDER_HISTORY_CHANGED') from None
+        if resolved!=self.resolved:raise ValueError('ORDER_HISTORY_CHANGED')
+        self.root_guard.require_current()
+
+    def require_attached(self,db):
+        self.require_current()
+        try:
+            attached=[Path(filename).resolve(strict=True)
+                for _,name,filename in db.execute('PRAGMA database_list')
+                if name=='main']
+        except OSError:raise ValueError('ORDER_HISTORY_CONNECTION_MISMATCH') from None
+        if len(attached)!=1 or attached[0]!=self.resolved:
+            raise ValueError('ORDER_HISTORY_CONNECTION_MISMATCH')
+        self.require_current()
+
+
+class _GuardedOrderConnection(sqlite3.Connection):
+    """SQLite connection carrying its exact write-side filesystem leases."""
+
+
 class DurableOrderGateway:
     def __init__(self, path=None, checkpoints_enabled=True, rotation_recovery=False):
         if type(checkpoints_enabled) is not bool:raise ValueError('INVALID_CHECKPOINT_OPTION')
@@ -146,15 +216,22 @@ class DurableOrderGateway:
 
     def _connect(self,path=None):
         path=self._path() if path is None else Path(path)
-        self._require_rotation_clear(path)
+        root_guard=_OrderRootIdentity(path,create=True)
+        path=root_guard.path
+        root_guard.require_current();self._require_rotation_clear(path)
+        leaf_guard=_MutableOrderLeaf(path,root_guard)
         db = None
         try:
-            db = sqlite3.connect(path, timeout=DB_BUSY_TIMEOUT_MS/1000)
+            db = sqlite3.connect(leaf_guard.resolved,
+                timeout=DB_BUSY_TIMEOUT_MS/1000,factory=_GuardedOrderConnection)
+            db.order_leaf_guard=leaf_guard;db.order_root_guard=root_guard
+            leaf_guard.require_attached(db)
             db.execute(f'PRAGMA busy_timeout={DB_BUSY_TIMEOUT_MS}')
             db.execute('PRAGMA synchronous=FULL')
             db.execute('''CREATE TABLE IF NOT EXISTS commands(
                 sequence INTEGER PRIMARY KEY, payload TEXT NOT NULL)''')
             db.execute('CREATE TABLE IF NOT EXISTS order_checkpoints(sequence INTEGER PRIMARY KEY,prefix_sha256 TEXT NOT NULL,state_json TEXT NOT NULL)')
+            leaf_guard.require_attached(db)
             return db
         except sqlite3.OperationalError as error:
             if db is not None:db.close()
@@ -213,7 +290,7 @@ class DurableOrderGateway:
             path=self._path() if path is None else Path(path)
             if root_guard is not None:root_guard.require_current()
             portfolio=execution_portfolio.attach_read_only(db,path.parent/'paper_portfolio.sqlite3')
-            execution_portfolio.compare(portfolio,gateway.account)
+            execution_portfolio.compare_linked(portfolio,gateway)
             if root_guard is not None:root_guard.require_current()
         return gateway,count
 
@@ -230,6 +307,10 @@ class DurableOrderGateway:
                     if command['method'] not in METHODS:raise ValueError('INVALID_COMMAND')
                     if command['method']=='archive_terminal' and (len(command['args'])!=2 or command['args'][1]!=sequence):
                         raise ValueError('INVALID_ARCHIVE_BOUNDARY')
+                    if (gateway.portfolio_linked and command['method']=='simulate_event' and
+                            (command['kwargs'].get('kind') or
+                             (command['args'][3] if len(command['args'])>3 else None))=='FILL'):
+                        raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
                     getattr(gateway,command['method'])(*command['args'],**command['kwargs'])
             except (ValueError,TypeError,KeyError,AttributeError) as exc:
                 raise ValueError('ORDER_JOURNAL_RECOVERY_FAILED') from exc
@@ -278,14 +359,18 @@ class DurableOrderGateway:
             if [step[0] for step in prepared]!=['submit','set_execution_terms','simulate_quote_fill','cancel']:
                 raise ValueError('INVALID_QUOTE_ORDER_TRANSACTION')
             if len({step[1][0] for step in prepared})!=1:raise ValueError('QUOTE_ORDER_TRANSACTION_ID_MISMATCH')
-        with closing(self._connect(path)) as db:
-            root_guard.require_current()
+        with closing(self._connect(path)) as db,ExitStack() as entry_guards:
+            leaf_guard=getattr(db,'order_leaf_guard',None)
+            if not isinstance(leaf_guard,_MutableOrderLeaf):
+                raise ValueError('ORDER_HISTORY_CONNECTION_MISMATCH')
+            leaf_guard.require_attached(db)
             with _transaction(db):
                 db.execute('BEGIN IMMEDIATE')
                 # Linearize ordinary mutation against the independent latch
                 # after any SQLite wait. A cut published first must win.
                 if cut_guarded:require_cut_clear()
                 gateway,count=self._restore(db)
+                leaf_guard.require_attached(db)
                 portfolio=None
                 # A linked quote fill must sample its runtime clock only after
                 # both durable stores are writable. Otherwise a portfolio-lock
@@ -312,19 +397,26 @@ class DurableOrderGateway:
                     evaluated_prepared.append((method,args,kwargs,payload))
                 prepared=evaluated_prepared
                 self._require_last_halt_reserve(db,gateway,count,prepared)
-                if portfolio is None:
+                if (portfolio is None and
+                        any(method not in SAFETY_METHODS
+                            for method,_,_,_ in prepared)):
                     portfolio=execution_portfolio.attach(
                         db,path.parent/'paper_portfolio.sqlite3')
                     root_guard.require_current()
                 results=[]
                 for method,args,kwargs,payload in prepared:
                     if cut_guarded:require_cut_clear()
-                    result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload)
+                    leaf_guard.require_attached(db)
+                    result,count=self._apply(db,portfolio,gateway,count,method,args,kwargs,payload,entry_guards)
                     results.append(result)
                 # A cut published by or during the final mutation must still
                 # win before SQLite can commit the order and linked portfolio.
                 if cut_guarded:require_cut_clear()
+                if portfolio is not None:portfolio.require_current()
+                leaf_guard.require_attached(db)
                 root_guard.require_current()
+            # The order and linked portfolio commit before ExitStack releases
+            # the settings writer reservation held by any admitted BUY fill.
         return results
 
     def _require_last_halt_reserve(self,db,gateway,count,prepared):
@@ -349,16 +441,18 @@ class DurableOrderGateway:
                     raise ValueError('ORDER_JOURNAL_LAST_HALT_RESERVE')
                 count+=1
 
-    def _apply(self,db,portfolio,gateway,count,method,args,kwargs,payload):
+    def _apply(self,db,portfolio,gateway,count,method,args,kwargs,payload,entry_guards):
         active_count=count-gateway.archival_boundary
         if method=='archive_terminal':
             args=(*args,count+1)
             payload=json.dumps(dict(method=method,args=args,kwargs=kwargs),allow_nan=False)
         linked=gateway.portfolio_linked
-        portfolio_checked=linked and method not in ('emergency_halt','cancel','expire_order','expire_due')
-        linked_account=copy.deepcopy(gateway.account) if portfolio_checked else None
+        portfolio_checked=linked and method not in SAFETY_METHODS
         if linked and method=='simulate_event' and (kwargs.get('kind') or (args[3] if len(args)>3 else None))=='FILL':
             raise ValueError('LINKED_ACCOUNT_REQUIRES_PRICED_FILLS')
+        if portfolio_checked:
+            if portfolio is None:raise ValueError('LINKED_PORTFOLIO_UNAVAILABLE')
+            execution_portfolio.compare_linked(portfolio,gateway)
         before=_state_snapshot(gateway)
         result = getattr(gateway, method)(*args, **kwargs)
         after=_state_snapshot(gateway)
@@ -370,9 +464,6 @@ class DurableOrderGateway:
                     ((method!='archive_terminal' and active_count+1>=MAX_COMMANDS) or
                      count+1>=MAX_RETAINED_COMMANDS)):
                 raise ValueError('ORDER_JOURNAL_LAST_HALT_RESERVE')
-        if portfolio_checked:
-            if portfolio is None:raise ValueError('LINKED_PORTFOLIO_UNAVAILABLE')
-            execution_portfolio.compare(portfolio,linked_account)
         if before != after:
             if method=='link_portfolio':
                 execution_portfolio.link(portfolio,gateway.account)
@@ -382,9 +473,11 @@ class DurableOrderGateway:
                 eid=args[1] if len(args)>1 else kwargs['event_id']
                 order=gateway.intents[oid]
                 if order['side']=='BUY':
-                    from nexus.tier_permissions import require_entry
-                    require_entry(order['tier'],Decimal(order['notional']))
+                    from nexus.tier_permissions import entry_commit_guard
+                    entry_guards.enter_context(entry_commit_guard(
+                        order['tier'],Decimal(order['notional'])))
                 execution_portfolio.apply_fill(portfolio,order,eid,gateway.executions[(oid,eid)],gateway.account)
+                execution_portfolio.compare_linked(portfolio,gateway)
             # Halt/cancel/reset must remain possible when normal intake is full.
             if (active_count >= MAX_COMMANDS-CONTROL_RESERVE or count>=MAX_RETAINED_COMMANDS-CONTROL_RESERVE) and method in ('submit','submit_reducing','simulate_event','simulate_priced_fill','initialize_account','link_portfolio','set_execution_terms','simulate_quote_fill','bind_replacement_epoch'):
                 raise ValueError('ORDER_JOURNAL_CAP_REACHED')
@@ -490,7 +583,7 @@ class DurableOrderGateway:
                 # Bound linked-ledger intake before semantic audit readers can
                 # materialize a corrupted oversized ledger.
                 portfolio_snapshot=execution_portfolio.snapshot(portfolio,MAX_PORTFOLIO_SNAPSHOT_ROWS)
-                execution_portfolio.compare(portfolio,gateway.account)
+                execution_portfolio.compare_linked(portfolio,gateway)
                 root_guard.require_current()
             journal_digest=hashlib.sha256(b'nexus.order-journal-snapshot.v1\n');command_rows=checkpoint_rows=0
             if db is not None:
@@ -602,6 +695,14 @@ class DurableOrderGateway:
                                   command_history_deleted=False,physical_compaction=False),
                     note='Missing order history is not evidence of a flat account or absence of a separate portfolio. Reference notionals cannot establish quantities, positions or ownership. Read-only snapshots grant no execution permission.')
 
+    def halt_recovery_report(self):
+        """Replay only the order journal when confirming an independent halt."""
+        root_guard=_OrderRootIdentity(self._path(),create=False);path=root_guard.path
+        with self._read_connection(path,root_guard) as db:
+            present=db is not None
+            gateway,count=self._read_restore(db,path=path,root_guard=root_guard)
+        return dict(journal_present=present,commands=count,halted=gateway.halted)
+
 
 def emergency_halt_replayed(path,result):
     """Require an exact warm acknowledgement and a fresh durable replay.
@@ -611,7 +712,7 @@ def emergency_halt_replayed(path,result):
     before any control surface may describe cleanup as confirmed.
     """
     if type(result) is not dict or result.get('halted') is not True:return False
-    report=DurableOrderGateway(path).recovery_report()
+    report=DurableOrderGateway(path).halt_recovery_report()
     return (type(report) is dict
         and report.get('journal_present') is True
         and type(report.get('commands')) is int and report['commands'] >= 1

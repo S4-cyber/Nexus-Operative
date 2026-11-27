@@ -39,9 +39,11 @@ class AttachedPortfolio:
             raise ValueError('LINKED_PORTFOLIO_CHANGED')
 
     def execute(self, sql, parameters=()):
+        self.require_current()
         return self.db.execute(re.sub(TABLES, r'portfolio.\1', sql), parameters)
 
     def executemany(self, sql, parameters):
+        self.require_current()
         return self.db.executemany(re.sub(TABLES, r'portfolio.\1', sql), parameters)
 
 
@@ -51,8 +53,48 @@ def _require_current(portfolio):
     if checker is not None:checker()
 
 
+def _ordinary_attachment_target(path):
+    """Pin an existing leaf, while allowing SQLite to create a new ledger."""
+    path=Path(path)
+    try:observed=path.lstat()
+    except FileNotFoundError:return path,path.resolve(strict=False),None
+    if stat.S_ISLNK(observed.st_mode):raise ValueError('LINKED_PORTFOLIO_SYMLINK')
+    if not stat.S_ISREG(observed.st_mode):
+        raise ValueError('LINKED_PORTFOLIO_REGULAR_FILE_REQUIRED')
+    if observed.st_nlink!=1:raise ValueError('LINKED_PORTFOLIO_SINGLE_LINK_REQUIRED')
+    try:resolved=path.resolve(strict=True)
+    except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
+    try:after_resolve=path.lstat()
+    except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
+    if (stat.S_ISLNK(after_resolve.st_mode) or
+            not stat.S_ISREG(after_resolve.st_mode) or
+            after_resolve.st_nlink!=1 or
+            not os.path.samestat(observed,after_resolve)):
+        raise ValueError('LINKED_PORTFOLIO_CHANGED')
+    return path,resolved,observed
+
+
 def attach(db, path):
-    db.execute('ATTACH DATABASE ? AS portfolio', (str(path),))
+    path,resolved,observed=_ordinary_attachment_target(path)
+    db.execute('ATTACH DATABASE ? AS portfolio', (str(resolved),))
+    if observed is None:
+        try:observed=path.lstat()
+        except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
+        if (stat.S_ISLNK(observed.st_mode) or
+                not stat.S_ISREG(observed.st_mode) or observed.st_nlink!=1):
+            raise ValueError('LINKED_PORTFOLIO_CHANGED')
+        try:resolved=path.resolve(strict=True)
+        except OSError:raise ValueError('LINKED_PORTFOLIO_CHANGED') from None
+    portfolio=AttachedPortfolio(db,path,observed)
+    portfolio.require_current()
+    try:
+        attached=[Path(filename).resolve(strict=True) for _,name,filename in
+            db.execute('PRAGMA database_list') if name=='portfolio']
+    except OSError:
+        raise ValueError('LINKED_PORTFOLIO_CONNECTION_MISMATCH') from None
+    if len(attached)!=1 or attached[0]!=resolved:
+        raise ValueError('LINKED_PORTFOLIO_CONNECTION_MISMATCH')
+    portfolio.require_current()
     # Atomic multi-file commit requires rollback journals on both databases.
     if db.execute('PRAGMA main.journal_mode').fetchone()[0] != 'delete' or db.execute('PRAGMA portfolio.journal_mode').fetchone()[0] != 'delete':
         raise ValueError('ATOMIC_PORTFOLIO_REQUIRES_DELETE_JOURNALS')
@@ -60,8 +102,8 @@ def attach(db, path):
         if db.execute('PRAGMA portfolio.synchronous').fetchone()[0]!=2:
             raise ValueError('ATOMIC_PORTFOLIO_REQUIRES_FULL_SYNC')
     else:db.execute('PRAGMA portfolio.synchronous=FULL')
-    portfolio = AttachedPortfolio(db)
     create_schema(portfolio)
+    portfolio.require_current()
     return portfolio
 
 

@@ -1,5 +1,7 @@
 from decimal import Decimal
 import json
+import os
+import shutil
 import sqlite3
 import threading
 import pytest
@@ -325,6 +327,81 @@ def test_linked_safety_only_transactions_do_not_attach_portfolio(
     assert gateway.expire_due(1005)['expired_order_ids']==['due']
     halt=gateway.emergency_halt()
     assert halt['halted'] and emergency_halt_replayed(gateway.path,halt)
+
+
+@pytest.mark.parametrize('replacement_kind',['symlink','hardlink'])
+def test_linked_fill_rejects_alias_portfolio_leaf_without_mutation(
+        tmp_path,monkeypatch,replacement_kind):
+    gateway=linked(tmp_path,monkeypatch)
+    portfolio_path=tmp_path/'paper_portfolio.sqlite3'
+    retained=tmp_path/'retained_portfolio.sqlite3'
+    portfolio_path.rename(retained)
+    if replacement_kind=='symlink':
+        try:portfolio_path.symlink_to(retained.name)
+        except (OSError,NotImplementedError):
+            pytest.skip('symlink creation unavailable for this platform profile')
+    else:
+        os.link(retained,portfolio_path)
+    before=(gateway.path.read_bytes(),retained.read_bytes())
+
+    with pytest.raises(ValueError,match='^LINKED_PORTFOLIO_'):
+        gateway.simulate_priced_fill('buy','aliased',1,1,25)
+
+    assert (gateway.path.read_bytes(),retained.read_bytes())==before
+
+
+def test_linked_fill_rechecks_portfolio_leaf_after_attach_before_commit(
+        tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch)
+    portfolio_path=tmp_path/'paper_portfolio.sqlite3'
+    original_attach=execution_portfolio.attach
+    replaced=[]
+
+    def replace_after_attach(db,path):
+        portfolio=original_attach(db,path)
+        replacement=tmp_path/'replacement_portfolio.sqlite3'
+        shutil.copy2(portfolio_path,replacement)
+        os.replace(replacement,portfolio_path)
+        replaced.append(True)
+        return portfolio
+
+    monkeypatch.setattr(execution_portfolio,'attach',replace_after_attach)
+    before_order=gateway.path.read_bytes()
+    before_portfolio=portfolio_path.read_bytes()
+    with pytest.raises(ValueError,match='^LINKED_PORTFOLIO_CHANGED$'):
+        gateway.simulate_priced_fill('buy','replaced',1,1,25)
+
+    assert replaced==[True]
+    assert gateway.path.read_bytes()==before_order
+    assert portfolio_path.read_bytes()==before_portfolio
+
+
+def test_linked_fill_rechecks_portfolio_leaf_after_final_comparison(
+        tmp_path,monkeypatch):
+    gateway=linked(tmp_path,monkeypatch)
+    portfolio_path=tmp_path/'paper_portfolio.sqlite3'
+    before_order=gateway.path.read_bytes()
+    before_portfolio=portfolio_path.read_bytes()
+    original_compare=execution_portfolio.compare_linked
+    comparisons=[]
+
+    def replace_after_post_fill_compare(portfolio,account):
+        result=original_compare(portfolio,account)
+        comparisons.append(True)
+        if len(comparisons)==2:
+            replacement=tmp_path/'replacement_after_compare.sqlite3'
+            replacement.write_bytes(before_portfolio)
+            os.replace(replacement,portfolio_path)
+        return result
+
+    monkeypatch.setattr(execution_portfolio,'compare_linked',
+        replace_after_post_fill_compare)
+    with pytest.raises(ValueError,match='^LINKED_PORTFOLIO_CHANGED$'):
+        gateway.simulate_priced_fill('buy','post_compare_replaced',1,1,25)
+
+    assert comparisons==[True,True]
+    assert gateway.path.read_bytes()==before_order
+    assert portfolio_path.read_bytes()==before_portfolio
 
 
 def test_linked_replay_rejects_retained_unpriced_fill(tmp_path,monkeypatch):

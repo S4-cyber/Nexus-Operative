@@ -269,6 +269,13 @@ def activate(data_root=None):
                         intent_preceded = False
                         raise ValueError('DATA_ROOT_CHANGED')
                     halt_result = DurableOrderGateway(order_path).emergency_halt()
+                    # The independent reset workflow may have cleared or
+                    # replaced the exact latch after the pre-halt sample but
+                    # before SQLite acquired its writer lock. The durable halt
+                    # still stands; only the ordering claim is invalidated.
+                    if not emergency_intent.same_canonical(
+                            order_path,intent_identity):
+                        intent_preceded = False
                     # The warm return is not durable evidence.  Reopen and
                     # replay the journal through a fresh gateway before any
                     # public result may claim cleanup was confirmed.

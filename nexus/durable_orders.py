@@ -331,6 +331,7 @@ class DurableOrderGateway:
                 # A cut published by or during the final mutation must still
                 # win before SQLite can commit the order and linked portfolio.
                 if cut_guarded:require_cut_clear()
+                if portfolio is not None:portfolio.require_current()
                 root_guard.require_current()
             # The order and linked portfolio commit before ExitStack releases
             # the settings writer reservation held by any admitted BUY fill.

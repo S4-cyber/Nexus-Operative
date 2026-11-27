@@ -770,6 +770,46 @@ def test_modeled_execution_without_durable_reconciliation_blocks_incident_free_c
     assert all(result[key] is False for key in trial.FLAGS)
 
 
+def test_clipped_coverage_counts_modeled_execution_at_boundary_support_point(
+        tmp_path,monkeypatch):
+    path=database(tmp_path,monkeypatch,[
+        ([(-5,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+
+    result=trial.review(path,after=until(0),until=until(10))
+
+    assert result['declared_public_covered_seconds']=='10'
+    assert result['modeled_execution_events_in_window']==1
+    assert result['bundle_bound_modeled_execution_events_in_window']==0
+    assert result['unreconciled_modeled_execution_events_in_window']==1
+    assert result['operational_incidents_present'] is True
+    assert result['incident_free_coverage_target_met'] is False
+    assert 'MODELED_EXECUTION_LOCAL_BUNDLE_NOT_BOUND' in result['review_reasons']
+    assert all(result[key] is False for key in trial.FLAGS)
+
+
+def test_exact_bundle_binds_modeled_execution_at_boundary_support_point(
+        tmp_path,monkeypatch):
+    monkeypatch.setattr(trial,'MINIMUM_SECONDS',10)
+    path=database(tmp_path,monkeypatch,[
+        ([(-5,True),(5,True),(10,True)],trial.PUBLIC,'STOPPED')],
+        admissions=True)
+    rewrite_first_outcome_decision(path,'BUY')
+    bundle_path=tmp_path/'trial-reconciliation.json'
+    write_reconciliation_bundle(path,bundle_path)
+
+    result=trial.review(path,after=until(0),until=until(10),
+        reconciliation_bundle=bundle_path)
+
+    assert result['declared_coverage_target_met'] is True
+    assert result['modeled_execution_events_in_window']==1
+    assert result['bundle_bound_modeled_execution_events_in_window']==1
+    assert result['unreconciled_modeled_execution_events_in_window']==0
+    assert result['operational_incidents_present'] is False
+    assert result['incident_free_coverage_target_met'] is True
+
+
 @pytest.mark.parametrize('decision',['BUY','SELL'])
 def test_exact_detached_bundle_binds_local_modeled_execution_without_authority(
         tmp_path,monkeypatch,decision):

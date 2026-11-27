@@ -1,4 +1,31 @@
 # Nexus Operative continuity instructions
+## v0.340.426 storage-boundary truthfulness
+
+Ordinary linked-portfolio writes now reject symlink, non-regular and hardlinked
+public leaves before attachment, require the exact resolved SQLite attachment,
+and sample the original single-link file identity through schema, comparison,
+fill mutation and immediately before commit. An observed public-leaf
+replacement after attachment therefore fails closed. Cancellation, expiry and independent emergency halt remain
+journal-only and do not attach the portfolio.
+
+Clipped retained-trial coverage now includes every accepted interval support
+endpoint in event, incident and modeled-execution reconciliation accounting. A
+BUY or SELL immediately outside the requested timestamps can no longer supply
+coverage while disappearing from the incident fence. The standalone emergency
+command also rechecks the exact initially sampled latch after its single durable
+halt attempt; concurrent clear or replacement keeps the halt but invalidates
+`VERIFIED` ordering evidence without retrying or undoing the stop.
+
+These are local fail-closed integrity improvements, not broker, account, source,
+genuine-market, sustained-trial, native Windows, funding, live, cloud or release
+acceptance. No Portal control or editable parameter was added. Engagement and
+optional AI remain OFF by default; limits, account checks, reducing exits,
+fail-closed behavior, seven beginner-friendly tabs and black/bright-purple
+bottom-right hover help remain unchanged. The read-only roadmap estimate stays
+exact 38% weighted (displayed about 40%, 30–45% low-confidence), with 0/9 stages
+independently accepted and no release or trading permission.
+
+
 ## v0.340.425 durable reconciliation truthfulness
 
 Linked order and portfolio recovery now compare every retained fill by exact

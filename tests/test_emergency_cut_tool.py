@@ -807,6 +807,24 @@ def test_transient_final_replay_fault_is_bounded_and_read_only(
     assert recovery['commands']==1 and recovery['halted']
 
 
+def test_reset_between_initial_intent_sample_and_halt_cannot_verify(
+        tmp_path,monkeypatch):
+    from nexus import emergency_cut_tool
+    original_halt=DurableOrderGateway.emergency_halt
+
+    def reset_then_halt(self):
+        emergency_intent.clear(self.path)
+        return original_halt(self)
+
+    monkeypatch.setattr(DurableOrderGateway,'emergency_halt',reset_then_halt)
+    report=emergency_cut_tool.activate(tmp_path)
+
+    assert report['halted'] and report['emergency_intent_present']
+    assert not report['intent_preceded_durable_halt']
+    assert not report['passed']
+    assert report['emergency_cut_state']=='UNCONFIRMED'
+
+
 def test_transient_order_identity_observation_is_retried_without_reissuing_halt(
         tmp_path,monkeypatch):
     from nexus import emergency_cut_tool
